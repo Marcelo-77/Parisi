@@ -1,0 +1,193 @@
+Guia Completo - Colocar o Sistema na Web Gratis
+Projeto: Parisi Warehouse System
+
+====================================================
+1) Arquitetura recomendada (gratis)
+====================================================
+
+- Codigo/API (Node.js + Express): Render (plano free)
+- Banco PostgreSQL: Neon (plano free) ou Supabase
+- Repositorio de codigo: GitHub
+
+Para seu projeto atual (backend/server.js + backend/public), esse fluxo e o mais simples.
+
+====================================================
+2) Preparar o projeto local
+====================================================
+
+2.1 Conferir server.js
+
+No backend/server.js, confirme:
+
+1) Porta por variavel de ambiente:
+
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+});
+
+2) Servir arquivos estaticos do frontend:
+
+app.use(express.static(path.join(__dirname, 'public')));
+
+3) Banco sem credencial fixa no codigo.
+Use process.env.DATABASE_URL.
+
+2.2 Conferir package.json (dentro de backend/)
+
+Scripts minimos:
+
+"scripts": {
+  "start": "node server.js"
+}
+
+2.3 .env local (opcional para rodar local)
+
+Arquivo backend/.env:
+
+DATABASE_URL=postgresql://USUARIO:SENHA@HOST:PORT/BANCO
+PORT=3000
+
+Observacao:
+- Nao subir .env para GitHub.
+- Em producao, as variaveis serao configuradas no Render.
+
+====================================================
+3) Subir codigo para GitHub
+====================================================
+
+Na raiz do projeto:
+
+git init
+git add .
+git commit -m "prepare deploy"
+git branch -M main
+git remote add origin https://github.com/SEU_USUARIO/SEU_REPO.git
+git push -u origin main
+
+Criar/verificar .gitignore:
+
+node_modules
+.env
+
+====================================================
+4) Criar banco PostgreSQL gratis (Neon)
+====================================================
+
+1) Acesse: https://neon.tech/
+2) Crie conta e um novo projeto.
+3) Crie database e copie a connection string.
+4) Guarde essa URL para usar como DATABASE_URL no Render.
+
+Se voce ja tem scripts SQL (backend/scripts), rode no SQL Editor do Neon
+para criar tabelas e dados iniciais.
+
+====================================================
+5) Deploy no Render (passo a passo)
+====================================================
+
+1) Acesse: https://render.com/
+2) New + -> Web Service
+3) Conecte seu repositorio do GitHub.
+4) Configure:
+
+- Name: yahuah-app (ou outro)
+- Environment: Node
+- Root Directory: backend
+- Build Command: npm install
+- Start Command: npm start
+
+5) Environment Variables:
+
+- DATABASE_URL = (string do Neon)
+- NODE_ENV = production
+
+6) Clique em Create Web Service.
+
+Quando finalizar, o Render gera URL publica, por exemplo:
+https://seu-app.onrender.com
+
+====================================================
+6) Validacao apos deploy
+====================================================
+
+Teste:
+
+1) Abrir:
+   https://seu-app.onrender.com/
+   ou uma pagina especifica:
+   https://seu-app.onrender.com/warehouse.html
+
+2) Conferir:
+- Frontend carrega (HTML/CSS/JS)
+- API responde
+- Insercao/leitura no banco funciona
+
+====================================================
+7) Problemas comuns e como resolver
+====================================================
+
+7.1 Porta fixa
+Sintoma: app nao sobe no Render.
+Solucao: usar process.env.PORT || 3000.
+
+7.2 Banco nao conecta
+Sintoma: erro de conexao PostgreSQL.
+Solucao:
+- Confirmar DATABASE_URL no painel do Render
+- Verificar SSL se necessario (dependendo da configuracao da lib PG)
+
+Exemplo comum em producao:
+ssl: { rejectUnauthorized: false }
+
+7.3 App "dorme" no free tier
+Sintoma: primeiro acesso fica lento.
+Solucao: comportamento normal no plano gratuito.
+
+7.4 Variaveis sensiveis no codigo
+Sintoma: credenciais expostas.
+Solucao:
+- remover do codigo
+- manter apenas em variaveis de ambiente
+
+====================================================
+8) Checklist final (rapido)
+====================================================
+
+[ ] server.js usa process.env.PORT
+[ ] server.js serve backend/public
+[ ] conexao DB usa process.env.DATABASE_URL
+[ ] backend/package.json tem script start
+[ ] codigo no GitHub
+[ ] banco criado no Neon
+[ ] Render com Root Directory = backend
+[ ] variaveis de ambiente configuradas
+[ ] URL publica funcionando
+
+====================================================
+9) Comandos uteis para debug
+====================================================
+
+Local:
+
+cd backend
+npm install
+npm start
+
+Git:
+
+git status
+git add .
+git commit -m "update deploy config"
+git push
+
+====================================================
+10) Sugestao de evolucao futura (opcional)
+====================================================
+
+- Configurar dominio proprio
+- Adicionar monitoramento de erro (Sentry)
+- Backups periodicos do banco
+- CI/CD (deploy automatico por push no GitHub)
+
+Fim do documento.

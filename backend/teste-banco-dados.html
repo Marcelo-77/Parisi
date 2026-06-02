@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teste - Banco de Dados PostgreSQL</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
+        .success { background-color: #d4edda; border-color: #c3e6cb; }
+        .error { background-color: #f8d7da; border-color: #f5c6cb; }
+        .info { background-color: #d1ecf1; border-color: #bee5eb; }
+        .warning { background-color: #fff3cd; border-color: #ffeaa7; }
+        button { padding: 10px 15px; margin: 5px; cursor: pointer; }
+        pre { background: #f8f9fa; padding: 10px; border-radius: 3px; overflow-x: auto; }
+        .step { margin: 10px 0; padding: 10px; background: #f8f9fa; border-left: 4px solid #007bff; }
+        .step h4 { margin: 0 0 5px 0; color: #007bff; }
+        .code { background: #2d3748; color: #e2e8f0; padding: 10px; border-radius: 5px; font-family: monospace; }
+    </style>
+</head>
+<body>
+    <h1>🗄️ Teste de Integração com Banco de Dados PostgreSQL</h1>
+    
+    <div class="test-section info">
+        <h2>📋 Configuração do Banco de Dados</h2>
+        <p><strong>Banco:</strong> PostgreSQL</p>
+        <p><strong>Localização:</strong> Dados agora são salvos em banco de dados real</p>
+        <p><strong>Persistência:</strong> Dados permanecem mesmo após reiniciar o servidor</p>
+        <p><strong>Performance:</strong> Consultas otimizadas com índices</p>
+    </div>
+
+    <div class="test-section warning">
+        <h2>⚠️ Pré-requisitos</h2>
+        <p>Antes de testar, certifique-se de que:</p>
+        <ol>
+            <li><strong>PostgreSQL está instalado e rodando</strong></li>
+            <li><strong>Banco de dados foi criado:</strong> <code>funcionarios_db</code></li>
+            <li><strong>Dependências instaladas:</strong> <code>npm install pg</code></li>
+            <li><strong>Arquivo de configuração:</strong> <code>config.env</code> configurado</li>
+        </ol>
+    </div>
+
+    <div class="test-section">
+        <h2>1. Teste de Conexão com Banco</h2>
+        <button onclick="testarConexao()">Testar Conexão</button>
+        <div id="conexao-result"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>2. Teste de Listagem de Funcionários</h2>
+        <button onclick="testarListagem()">Listar Funcionários</button>
+        <div id="listagem-result"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>3. Teste de Cadastro no Banco</h2>
+        <button onclick="testarCadastro()">Cadastrar Funcionário de Teste</button>
+        <div id="cadastro-result"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>4. Teste de Filtros e Ordenação</h2>
+        <button onclick="testarFiltros()">Testar Filtros</button>
+        <div id="filtros-result"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>5. Teste de Estatísticas</h2>
+        <button onclick="testarEstatisticas()">Obter Estatísticas</button>
+        <div id="estatisticas-result"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>6. Instruções de Configuração</h2>
+        <div class="step">
+            <h4>Passo 1: Instalar PostgreSQL</h4>
+            <p>Baixe e instale o PostgreSQL: <a href="https://www.postgresql.org/download/" target="_blank">https://www.postgresql.org/download/</a></p>
+        </div>
+        
+        <div class="step">
+            <h4>Passo 2: Criar Banco de Dados</h4>
+            <div class="code">
+psql -U postgres<br>
+CREATE DATABASE funcionarios_db;<br>
+\q
+            </div>
+        </div>
+        
+        <div class="step">
+            <h4>Passo 3: Instalar Dependências</h4>
+            <div class="code">
+npm install pg
+            </div>
+        </div>
+        
+        <div class="step">
+            <h4>Passo 4: Configurar Variáveis de Ambiente</h4>
+            <p>Edite o arquivo <code>config.env</code> com suas credenciais:</p>
+            <div class="code">
+DB_HOST=localhost<br>
+DB_PORT=5432<br>
+DB_NAME=funcionarios_db<br>
+DB_USER=postgres<br>
+DB_PASSWORD=sua_senha_aqui
+            </div>
+        </div>
+        
+        <div class="step">
+            <h4>Passo 5: Inicializar Banco</h4>
+            <div class="code">
+node scripts/init-database.js
+            </div>
+        </div>
+        
+        <div class="step">
+            <h4>Passo 6: Iniciar Servidor</h4>
+            <div class="code">
+node server.js
+            </div>
+        </div>
+    </div>
+
+    <div class="test-section">
+        <h2>7. Acessar Telas do Sistema</h2>
+        <button onclick="window.open('http://localhost:3000/', '_blank')">📝 Tela de Cadastro</button>
+        <button onclick="window.open('http://localhost:3000/pesquisa.html', '_blank')">🔍 Tela de Pesquisa</button>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:3000/api/funcionarios';
+
+        async function testarConexao() {
+            const resultDiv = document.getElementById('conexao-result');
+            try {
+                const response = await fetch('http://localhost:3000/health');
+                const data = await response.json();
+                
+                resultDiv.innerHTML = `
+                    <div class="success">
+                        <h3>✅ Servidor Conectado</h3>
+                        <p><strong>Status:</strong> ${data.status}</p>
+                        <p><strong>Timestamp:</strong> ${data.timestamp}</p>
+                        <p><em>Se o servidor está rodando, o banco de dados foi inicializado com sucesso!</em></p>
+                    </div>
+                `;
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="error">
+                        <h3>❌ Erro de Conexão</h3>
+                        <p>${error.message}</p>
+                        <p><strong>Verifique se:</strong></p>
+                        <ul>
+                            <li>O servidor está rodando (node server.js)</li>
+                            <li>PostgreSQL está instalado e rodando</li>
+                            <li>As configurações no config.env estão corretas</li>
+                        </ul>
+                    </div>
+                `;
+            }
+        }
+
+        async function testarListagem() {
+            const resultDiv = document.getElementById('listagem-result');
+            try {
+                const response = await fetch(API_BASE);
+                const data = await response.json();
+                
+                resultDiv.innerHTML = `
+                    <div class="success">
+                        <h3>✅ Listagem do Banco de Dados</h3>
+                        <p><strong>Total de funcionários:</strong> ${data.total}</p>
+                        <p><strong>Fonte:</strong> PostgreSQL Database</p>
+                        <details>
+                            <summary>Ver dados do banco</summary>
+                            <pre>${JSON.stringify(data, null, 2)}</pre>
+                        </details>
+                    </div>
+                `;
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="error">
+                        <h3>❌ Erro na Listagem</h3>
+                        <p>${error.message}</p>
+                    </div>
+                `;
+            }
+        }
+
+        async function testarCadastro() {
+            const resultDiv = document.getElementById('cadastro-result');
+            const timestamp = new Date().toISOString().slice(0, 19).replace('T', ' ');
+            
+            const funcionarioTeste = {
+                nome: `Funcionário Banco ${timestamp}`,
+                email: `banco.${Date.now()}@empresa.com`,
+                telefone: '(11) 99999-9999',
+                cargo: 'Desenvolvedor',
+                departamento: 'TI',
+                salario: 6000,
+                dataAdmissao: '2024-01-15',
+                ativo: true
+            };
+
+            try {
+                const response = await fetch(API_BASE, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(funcionarioTeste)
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    resultDiv.innerHTML = `
+                        <div class="success">
+                            <h3>✅ Funcionário Salvo no Banco!</h3>
+                            <p><strong>Nome:</strong> ${data.data.nome}</p>
+                            <p><strong>Email:</strong> ${data.data.email}</p>
+                            <p><strong>ID:</strong> ${data.data.id}</p>
+                            <p><em>Dados salvos permanentemente no PostgreSQL!</em></p>
+                        </div>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `
+                        <div class="error">
+                            <h3>❌ Erro no Cadastro</h3>
+                            <pre>${JSON.stringify(data, null, 2)}</pre>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="error">
+                        <h3>❌ Erro na Requisição</h3>
+                        <p>${error.message}</p>
+                    </div>
+                `;
+            }
+        }
+
+        async function testarFiltros() {
+            const resultDiv = document.getElementById('filtros-result');
+            try {
+                const response = await fetch(`${API_BASE}?departamento=TI&ordenarPor=salario&direcao=desc`);
+                const data = await response.json();
+                
+                resultDiv.innerHTML = `
+                    <div class="success">
+                        <h3>✅ Filtros do Banco Funcionando</h3>
+                        <p><strong>Filtro:</strong> Departamento = TI</p>
+                        <p><strong>Ordenação:</strong> Salário (decrescente)</p>
+                        <p><strong>Resultados:</strong> ${data.total} funcionários</p>
+                        <details>
+                            <summary>Ver funcionários filtrados</summary>
+                            <pre>${JSON.stringify(data, null, 2)}</pre>
+                        </details>
+                    </div>
+                `;
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="error">
+                        <h3>❌ Erro nos Filtros</h3>
+                        <p>${error.message}</p>
+                    </div>
+                `;
+            }
+        }
+
+        async function testarEstatisticas() {
+            const resultDiv = document.getElementById('estatisticas-result');
+            try {
+                const response = await fetch(`${API_BASE}/estatisticas`);
+                const data = await response.json();
+                
+                resultDiv.innerHTML = `
+                    <div class="success">
+                        <h3>✅ Estatísticas do Banco</h3>
+                        <p><strong>Total:</strong> ${data.data.total}</p>
+                        <p><strong>Ativos:</strong> ${data.data.ativos}</p>
+                        <p><strong>Inativos:</strong> ${data.data.inativos}</p>
+                        <p><strong>Salário Médio:</strong> R$ ${data.data.salarioMedio.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</p>
+                        <details>
+                            <summary>Ver estatísticas completas</summary>
+                            <pre>${JSON.stringify(data, null, 2)}</pre>
+                        </details>
+                    </div>
+                `;
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="error">
+                        <h3>❌ Erro nas Estatísticas</h3>
+                        <p>${error.message}</p>
+                    </div>
+                `;
+            }
+        }
+
+        // Teste automático ao carregar a página
+        window.addEventListener('load', () => {
+            console.log('🗄️ Página de teste do banco de dados carregada');
+            testarConexao();
+        });
+    </script>
+</body>
+</html>
+
+
+

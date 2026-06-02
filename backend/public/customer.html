@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Parisi Warehouse System - Customer</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="warehouse-styles.css">
+    <link rel="stylesheet" href="pesquisa-styles.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <div class="header-stats-row">
+                <div class="header-stats-left">
+                    <div class="header-stat header-stat-total">
+                        <span class="header-stat-value" id="totalItems">0</span>
+                        <span class="header-stat-label">Total Items</span>
+                    </div>
+                    <div class="header-stat header-stat-low">
+                        <span class="header-stat-value" id="lowStockItems">0</span>
+                        <span class="header-stat-label">Low Stock</span>
+                    </div>
+                </div>
+                <img src="parisi_logo.jpg" alt="Parisi Logo" class="parisi-logo">
+                <div class="header-stats-right">
+                    <div class="header-stat header-stat-entries">
+                        <span class="header-stat-value" id="totalEntradas">0</span>
+                        <span class="header-stat-label">Entries Today</span>
+                    </div>
+                    <div class="header-stat header-stat-exits">
+                        <span class="header-stat-value" id="totalSaidas">0</span>
+                        <span class="header-stat-label">Exits Today</span>
+                    </div>
+                </div>
+            </div>
+            <div class="header-content">
+                <h1><i class="fas fa-warehouse"></i> Parisi Warehouse System</h1>
+                <p class="header-search-users-label" id="customerPageTitle">Customer</p>
+                <div class="header-actions">
+                    <div class="users-dropdown">
+                        <button type="button" class="btn btn-primary" id="usersMenuBtn" aria-haspopup="true" aria-expanded="false">
+                            <i class="fas fa-users"></i> Users <i class="fas fa-chevron-down"></i>
+                        </button>
+                        <div class="users-dropdown-menu" id="usersDropdownMenu" aria-hidden="true">
+                            <a href="index.html" class="dropdown-item"><i class="fas fa-user-plus"></i> New User</a>
+                            <a href="pesquisa.html" class="dropdown-item"><i class="fas fa-search"></i> Search User</a>
+                        </div>
+                    </div>
+                    <div class="customer-dropdown">
+                        <button type="button" class="btn btn-primary" id="customerMenuBtn" aria-haspopup="true" aria-expanded="false">
+                            <i class="fas fa-user"></i> Customer <i class="fas fa-chevron-down"></i>
+                        </button>
+                        <div class="customer-dropdown-menu" id="customerDropdownMenu" aria-hidden="true">
+                            <a href="customer.html" class="dropdown-item"><i class="fas fa-plus"></i> New Customer</a>
+                            <a href="customer.html?mode=search" class="dropdown-item"><i class="fas fa-search"></i> Search Customer</a>
+                        </div>
+                    </div>
+                    <div class="product-dropdown">
+                        <button type="button" class="btn btn-primary" id="productMenuBtn" aria-haspopup="true" aria-expanded="false">
+                            <i class="fas fa-box"></i> Product <i class="fas fa-chevron-down"></i>
+                        </button>
+                        <div class="product-dropdown-menu" id="productDropdownMenu" aria-hidden="true">
+                            <button type="button" id="newProductBtn" class="dropdown-item"><i class="fas fa-plus"></i> New Product</button>
+                            <button type="button" id="searchProductBtn" class="dropdown-item"><i class="fas fa-search"></i> Search Product</button>
+                        </div>
+                    </div>
+                    <div class="location-dropdown">
+                        <button type="button" class="btn btn-primary" id="locationMenuBtn" aria-haspopup="true" aria-expanded="false">
+                            <i class="fas fa-map-marker-alt"></i> Location <i class="fas fa-chevron-down"></i>
+                        </button>
+                        <div class="location-dropdown-menu" id="locationDropdownMenu" aria-hidden="true">
+                            <a href="location.html" class="dropdown-item"><i class="fas fa-plus"></i> New Location</a>
+                            <a href="location-search.html" class="dropdown-item"><i class="fas fa-search"></i> Search Location</a>
+                            <a href="location-product.html" class="dropdown-item"><i class="fas fa-boxes-stacked"></i> Location Product</a>
+                            <a href="log-location-product.html" class="dropdown-item"><i class="fas fa-history"></i> Log Location Product</a>
+                        </div>
+                    </div>
+                    <div class="movement-dropdown">
+                        <button type="button" class="btn btn-primary" id="movementMenuBtn" aria-haspopup="true" aria-expanded="false">
+                            <i class="fas fa-exchange-alt"></i> Movement <i class="fas fa-chevron-down"></i>
+                        </button>
+                        <div class="movement-dropdown-menu" id="movementDropdownMenu" aria-hidden="true">
+                            <a href="movement.html" class="dropdown-item"><i class="fas fa-plus"></i> New Movement</a>
+                            <a href="movement.html?mode=search" class="dropdown-item"><i class="fas fa-search"></i> Search Movement</a>
+                            <a href="movement-situation.html" class="dropdown-item"><i class="fas fa-stream"></i> Situation of the Movement</a>
+                        </div>
+                    </div>
+                    <div class="picking-dropdown">
+                        <button type="button" class="btn btn-primary" id="pickingMenuBtn" aria-haspopup="true" aria-expanded="false">
+                            <i class="fas fa-dolly"></i> Picking <i class="fas fa-chevron-down"></i>
+                        </button>
+                        <div class="picking-dropdown-menu" id="pickingDropdownMenu" aria-hidden="true">
+                            <a href="picking.html" class="dropdown-item"><i class="fas fa-list"></i> Picking List</a>
+                            <a href="picking.html?mode=search" class="dropdown-item"><i class="fas fa-search"></i> Order Sent for Picking</a>
+                            <a href="separation-picking.html" class="dropdown-item"><i class="fas fa-box-open"></i> Separation and Picking</a>
+                            <a href="double-checking.html" class="dropdown-item"><i class="fas fa-clipboard-check"></i> Sent for Double Checking</a>
+                        </div>
+                    </div>
+                    <div class="help-dropdown">
+                        <button type="button" class="btn btn-primary" id="helpMenuBtn" aria-haspopup="true" aria-expanded="false">
+                            <i class="fas fa-circle-question"></i> Help <i class="fas fa-chevron-down"></i>
+                        </button>
+                        <div class="help-dropdown-menu" id="helpDropdownMenu" aria-hidden="true">
+                            <a href="help.html" class="dropdown-item"><i class="fas fa-book"></i> Help Center</a>
+                            <a href="help.html#modules" class="dropdown-item"><i class="fas fa-th-large"></i> System Modules</a>
+                            <a href="help.html#picking" class="dropdown-item"><i class="fas fa-dolly"></i> Picking Workflow</a>
+                            <a href="help.html#qrcode" class="dropdown-item"><i class="fas fa-qrcode"></i> Generate QR Code</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <main class="main-content">
+            <!-- New Customer -->
+            <div id="newCustomerSection" class="form-container" style="width:100%;max-width:600px;">
+                <div class="filters-container">
+                    <div class="filters-header">
+                        <h2><i class="fas fa-plus"></i> New Customer</h2>
+                    </div>
+                    <div class="filters-content show">
+                        <form id="newCustomerForm">
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="newCustNmCustomer"><i class="fas fa-tag"></i> Customer Name</label>
+                                    <input type="text" id="newCustNmCustomer" maxlength="50" placeholder="e.g. Harvey Norman">
+                                </div>
+                                <div class="form-group">
+                                    <label for="newCustCdCode"><i class="fas fa-barcode"></i> Code</label>
+                                    <input type="text" id="newCustCdCode" maxlength="20" placeholder="e.g. CUST001">
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group full-width">
+                                    <label for="newCustDsAddress"><i class="fas fa-map-marker-alt"></i> Address</label>
+                                    <input type="text" id="newCustDsAddress" maxlength="100" placeholder="Full address">
+                                </div>
+                            </div>
+                            <div class="form-actions" style="margin-top:20px;">
+                                <button type="submit" class="btn btn-primary" id="saveCustomerBtn"><i class="fas fa-save"></i> Save Customer</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Search Customer -->
+            <div id="searchCustomerSection" class="form-container" style="width:100%;max-width:none; display:none;">
+                <div class="filters-container">
+                    <div class="filters-header">
+                        <h2><i class="fas fa-search"></i> Search Customer</h2>
+                    </div>
+                    <div class="filters-content show">
+                        <div class="filters-grid">
+                            <div class="filter-group">
+                                <label for="filterCustNmCustomer"><i class="fas fa-tag"></i> Customer Name</label>
+                                <input type="text" id="filterCustNmCustomer" placeholder="Name">
+                            </div>
+                            <div class="filter-group">
+                                <label for="filterCustCdCode"><i class="fas fa-barcode"></i> Code</label>
+                                <input type="text" id="filterCustCdCode" placeholder="Code">
+                            </div>
+                        </div>
+                        <div class="filters-actions">
+                            <button id="applyCustomerFiltersBtn" class="btn btn-primary" type="button"><i class="fas fa-search"></i> Search</button>
+                            <button id="clearCustomerFiltersBtn" class="btn btn-secondary" type="button"><i class="fas fa-eraser"></i> Clear</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="results-container" style="margin-top:20px;">
+                    <div class="results-header">
+                        <h3>Customers</h3>
+                        <span id="customerResultsCount">0 records</span>
+                    </div>
+                    <div class="table-container">
+                        <table class="warehouse-table">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Name</th>
+                                    <th>Code</th>
+                                    <th>Address</th>
+                                </tr>
+                            </thead>
+                            <tbody id="searchCustomerTableBody">
+                                <tr>
+                                    <td colspan="4" class="empty-state">Use filters and click Search to load customers.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <footer class="footer">
+            <p>&copy; 2026 Parisi Warehouse System. All rights reserved.</p>
+        </footer>
+    </div>
+
+    <script src="customer-script.js"></script>
+</body>
+</html>

@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Parisi Warehouse System</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="warehouse-styles.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <div class="header-stats-row">
+                <div class="header-stats-left">
+                    <div class="header-stat header-stat-total">
+                        <span class="header-stat-value" id="totalItems">0</span>
+                        <span class="header-stat-label">Total Items</span>
+                    </div>
+                    <div class="header-stat header-stat-low">
+                        <span class="header-stat-value" id="lowStockItems">0</span>
+                        <span class="header-stat-label">Low Stock</span>
+                    </div>
+                </div>
+                <img src="parisi_logo.jpg" alt="Parisi Logo" class="parisi-logo">
+                <div class="header-stats-right">
+                    <div class="header-stat header-stat-entries">
+                        <span class="header-stat-value" id="totalEntradas">0</span>
+                        <span class="header-stat-label">Entries Today</span>
+                    </div>
+                    <div class="header-stat header-stat-exits">
+                        <span class="header-stat-value" id="totalSaidas">0</span>
+                        <span class="header-stat-label">Exits Today</span>
+                    </div>
+                </div>
+            </div>
+            <div class="header-content">
+                <h1><i class="fas fa-warehouse"></i> Parisi Warehouse System</h1>
+                <p>Manage your warehouse inventory and movements</p>
+                <div class="header-actions">
+                    <div class="users-dropdown">
+<button type="button" class="btn btn-primary" id="usersMenuBtn" aria-haspopup="true" aria-expanded="false">
+                                <i class="fas fa-users"></i> Users <i class="fas fa-chevron-down"></i>
+                            </button>
+                        <div class="users-dropdown-menu" id="usersDropdownMenu" aria-hidden="true">
+                            <a href="index.html" class="dropdown-item" id="newUserLink">
+                                <i class="fas fa-user-plus"></i> New User
+                            </a>
+                            <a href="pesquisa.html" class="dropdown-item" id="searchUserLink">
+                                <i class="fas fa-search"></i> Search User
+                            </a>
+                        </div>
+                    </div>
+                    <div class="customer-dropdown">
+                        <button type="button" class="btn btn-primary" id="customerMenuBtn" aria-haspopup="true" aria-expanded="false">
+                            <i class="fas fa-user"></i> Customer <i class="fas fa-chevron-down"></i>
+                        </button>
+                        <div class="customer-dropdown-menu" id="customerDropdownMenu" aria-hidden="true">
+                            <a href="customer.html" class="dropdown-item"><i class="fas fa-plus"></i> New Customer</a>
+                            <a href="customer.html?mode=search" class="dropdown-item"><i class="fas fa-search"></i> Search Customer</a>
+                        </div>
+                    </div>
+                    <div class="product-dropdown">
+                        <button type="button" class="btn btn-primary" id="productMenuBtn" aria-haspopup="true" aria-expanded="false">
+                            <i class="fas fa-box"></i> Product <i class="fas fa-chevron-down"></i>
+                        </button>
+                        <div class="product-dropdown-menu" id="productDropdownMenu" aria-hidden="true">
+                            <button type="button" id="newProductBtn" class="dropdown-item">
+                                <i class="fas fa-plus"></i> New Product
+                            </button>
+                            <button type="button" id="searchProductBtn" class="dropdown-item">
+                                <i class="fas fa-search"></i> Search Product
+                            </button>
+                        </div>
+                    </div>
+                    <div class="location-dropdown">
+                        <button type="button" class="btn btn-primary" id="locationMenuBtn" aria-haspopup="true" aria-expanded="false">
+                            <i class="fas fa-map-marker-alt"></i> Location <i class="fas fa-chevron-down"></i>
+                        </button>
+                        <div class="location-dropdown-menu" id="locationDropdownMenu" aria-hidden="true">
+                            <a href="location.html" class="dropdown-item">
+                                <i class="fas fa-plus"></i> New Location
+                            </a>
+                            <a href="location-search.html" class="dropdown-item">
+                                <i class="fas fa-search"></i> Search Location
+                            </a>
+                            <a href="location-product.html" class="dropdown-item">
+                                <i class="fas fa-boxes-stacked"></i> Location Product
+                            </a>
+                            <a href="log-location-product.html" class="dropdown-item">
+                                <i class="fas fa-history"></i> Log Location Product
+                            </a>
+                        </div>
+                    </div>
+                    <div class="movement-dropdown">
+                        <button type="button" class="btn btn-primary" id="movementMenuBtn" aria-haspopup="true" aria-expanded="false">
+                            <i class="fas fa-exchange-alt"></i> Movement <i class="fas fa-chevron-down"></i>
+                        </button>
+                        <div class="movement-dropdown-menu" id="movementDropdownMenu" aria-hidden="true">
+                            <a href="movement.html" class="dropdown-item"><i class="fas fa-plus"></i> New Movement</a>
+                            <a href="movement.html?mode=search" class="dropdown-item"><i class="fas fa-search"></i> Search Movement</a>
+                            <a href="movement-situation.html" class="dropdown-item"><i class="fas fa-stream"></i> Situation of the Movement</a>
+                        </div>
+                    </div>
+                    <div class="picking-dropdown">
+                        <button type="button" class="btn btn-primary" id="pickingMenuBtn" aria-haspopup="true" aria-expanded="false">
+                            <i class="fas fa-dolly"></i> Picking <i class="fas fa-chevron-down"></i>
+                        </button>
+                        <div class="picking-dropdown-menu" id="pickingDropdownMenu" aria-hidden="true">
+                            <a href="picking.html" class="dropdown-item"><i class="fas fa-list"></i> Picking List</a>
+                            <a href="picking.html?mode=search" class="dropdown-item"><i class="fas fa-search"></i> Order Sent for Picking</a>
+                            <a href="separation-picking.html" class="dropdown-item"><i class="fas fa-box-open"></i> Separation and Picking</a>
+                            <a href="double-checking.html" class="dropdown-item"><i class="fas fa-clipboard-check"></i> Sent for Double Checking</a>
+                            <a href="last-check-label.html" class="dropdown-item"><i class="fas fa-tags"></i> Last check and Label</a>
+                            <a href="movement-situation.html" class="dropdown-item"><i class="fas fa-stream"></i> Situation of the Movement</a>
+                        </div>
+                    </div>
+                    <div class="help-dropdown">
+                        <button type="button" class="btn btn-primary" id="helpMenuBtn" aria-haspopup="true" aria-expanded="false">
+                            <i class="fas fa-circle-question"></i> Help <i class="fas fa-chevron-down"></i>
+                        </button>
+                        <div class="help-dropdown-menu" id="helpDropdownMenu" aria-hidden="true">
+                            <a href="help.html" class="dropdown-item"><i class="fas fa-book"></i> Help Center</a>
+                            <a href="help.html#modules" class="dropdown-item"><i class="fas fa-th-large"></i> System Modules</a>
+                            <a href="help.html#picking" class="dropdown-item"><i class="fas fa-dolly"></i> Picking Workflow</a>
+                            <a href="help.html#qrcode" class="dropdown-item"><i class="fas fa-qrcode"></i> Generate QR Code</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <main class="main-content">
+            <!-- Seção Search Product (exibida só ao clicar em Search Product) -->
+            <div id="productSearchSection" class="product-search-section" style="display: none;">
+            <!-- Filtros e Busca -->
+            <div class="filters-section">
+                <div class="search-bar">
+                    <i class="fas fa-search"></i>
+                    <select id="searchByField" class="filter-select" style="max-width: 220px; margin-left: 8px;">
+                        <option value="codigo">Search by Code</option>
+                        <option value="nome">Search by Name</option>
+                        <option value="barcode">Search by Barcode</option>
+                    </select>
+                    <input type="text" id="searchInput" placeholder="Search by code, name or barcode...">
+                    <button id="searchBtn" class="btn btn-primary" type="button" title="Search items">
+                        <i class="fas fa-search"></i> Search
+                    </button>
+                    <button id="clearSearch" class="btn-icon" title="Clear search">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="filters-row">
+                    <select id="filterCategoria" class="filter-select">
+                        <option value="">All Category</option>
+                        <option value="TAPWARE">Tapware</option>
+                        <option value="BATHWARE">BathWare</option>
+                        <option value="CENTRAL">Central</option>
+                        <option value="WAREHOUSE2">Warehouse2</option>
+                        <option value="OTHER">Other</option>
+                    </select>
+                    <select id="filterStatus" class="filter-select">
+                        <option value="">All Status</option>
+                        <option value="available">Available</option>
+                        <option value="low-stock">Low Stock</option>
+                        <option value="out-of-stock">Out of Stock</option>
+                    </select>
+                    <select id="sortBy" class="filter-select">
+                        <option value="nome">Sort by Name</option>
+                        <option value="codigo">Sort by Code</option>
+                        <option value="quantidade">Sort by Quantity</option>
+                        <option value="categoria">Sort by Category</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Tabela de Itens -->
+            <div class="table-container">
+                <table class="warehouse-table">
+                    <thead>
+                        <tr>
+                            <th><i class="fas fa-barcode"></i> Code</th>
+                            <th><i class="fas fa-tag"></i> Name</th>
+                            <th><i class="fas fa-folder"></i> Category</th>
+                            <th><i class="fas fa-barcode"></i> Barcode</th>
+                            <th><i class="fas fa-boxes"></i> Quantity</th>
+                            <th><i class="fas fa-info-circle"></i> Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="itemsTableBody">
+                        <tr>
+                            <td colspan="6" class="empty-state" id="emptyStateRow">
+                                <i class="fas fa-search"></i>
+                                <p>Use search or filters and click <strong>Search</strong> to load items.</p>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            </div>
+            <!-- fim productSearchSection -->
+        </main>
+
+        <!-- Modal de Adicionar/Editar Item -->
+        <div id="itemModal" class="modal">
+            <div class="modal-content modal-large">
+                <div class="modal-header success">
+                    <h3 id="modalTitle"><i class="fas fa-box"></i> New Item</h3>
+                    <button class="modal-close" id="closeModal">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <form id="itemForm" class="warehouse-form">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="codigo">
+                                    <i class="fas fa-barcode"></i> Item Code *
+                                </label>
+                                <input type="text" id="codigo" name="codigo" required 
+                                       placeholder="Ex: PROD-001" 
+                                       pattern="[A-Z0-9\-.]+">
+                                <span class="error-message" id="codigo-error"></span>
+                            </div>
+                            <div class="form-group">
+                                <label for="nome">
+                                    <i class="fas fa-tag"></i> Item Name *
+                                </label>
+                                <input type="text" id="nome" name="nome" required 
+                                       placeholder="Product name" 
+                                       minlength="2" maxlength="100">
+                                <span class="error-message" id="nome-error"></span>
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="categoria">
+                                    <i class="fas fa-folder"></i> Category *
+                                </label>
+                                <select id="categoria" name="categoria" required>
+                                    <option value="">Select category</option>
+                                    <option value="TAPWARE">Tapware</option>
+                                    <option value="BATHWARE">BathWare</option>
+                                    <option value="CENTRAL">Central</option>
+                                    <option value="WAREHOUSE2">Warehouse2</option>
+                                    <option value="OTHER">Other</option>
+                                </select>
+                                <span class="error-message" id="categoria-error"></span>
+                            </div>
+                            <div class="form-group">
+                                <label for="barcode">
+                                    <i class="fas fa-barcode"></i> Barcode
+                                </label>
+                                <input type="text" id="barcode" name="barcode"
+                                       placeholder="Up to 20 digits"
+                                       maxlength="20" pattern="[0-9]+">
+                                <span class="error-message" id="barcode-error"></span>
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="peso">
+                                    <i class="fas fa-weight-hanging"></i> Weight (kg)
+                                </label>
+                                <input type="number" id="peso" name="peso"
+                                       placeholder="Ex: 1.25" min="0" step="0.01">
+                                <span class="error-message" id="peso-error"></span>
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="quantidade">
+                                    <i class="fas fa-boxes"></i> Quantity *
+                                </label>
+                                <input type="number" id="quantidade" name="quantidade" required 
+                                       placeholder="0" min="0" step="1">
+                                <span class="error-message" id="quantidade-error"></span>
+                            </div>
+                            <div class="form-group">
+                                <label for="quantidadeMinima">
+                                    <i class="fas fa-exclamation-triangle"></i> Minimum Quantity *
+                                </label>
+                                <input type="number" id="quantidadeMinima" name="quantidadeMinima" required 
+                                       placeholder="0" min="0" step="1">
+                                <span class="error-message" id="quantidadeMinima-error"></span>
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group full-width">
+                                <label for="descricao">
+                                    <i class="fas fa-align-left"></i> Description
+                                </label>
+                                <textarea id="descricao" name="descricao" rows="3" 
+                                          placeholder="Detailed item description" 
+                                          maxlength="500"></textarea>
+                            </div>
+                        </div>
+
+                        <div class="form-actions">
+                            <button type="button" id="cancelBtn" class="btn btn-secondary">
+                                <i class="fas fa-times"></i> Cancel
+                            </button>
+                            <button type="submit" id="saveItemBtn" class="btn btn-primary">
+                                <i class="fas fa-save"></i> Save
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal de Movimentação -->
+        <div id="movementModal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header success">
+                    <h3 id="movementTitle"><i class="fas fa-exchange-alt"></i> Stock Movement</h3>
+                    <button class="modal-close" id="closeMovementModal">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <form id="movementForm" class="warehouse-form">
+                        <div class="form-group">
+                            <label for="movementType">
+                                <i class="fas fa-arrows-alt-v"></i> Movement Type *
+                            </label>
+                            <select id="movementType" name="movementType" required>
+                                <option value="">Select type</option>
+                                <option value="entrada">Entry</option>
+                                <option value="saida">Exit</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="movementQuantity">
+                                <i class="fas fa-boxes"></i> Quantity *
+                            </label>
+                            <input type="number" id="movementQuantity" name="movementQuantity" required 
+                                   placeholder="0" min="1" step="1">
+                        </div>
+                        <div class="form-group">
+                            <label for="movementReason">
+                                <i class="fas fa-comment"></i> Reason
+                            </label>
+                            <textarea id="movementReason" name="movementReason" rows="3" 
+                                      placeholder="Movement reason" 
+                                      maxlength="200"></textarea>
+                        </div>
+                        <div class="form-actions">
+                            <button type="button" id="cancelMovementBtn" class="btn btn-secondary">
+                                <i class="fas fa-times"></i> Cancel
+                            </button>
+                            <button type="submit" id="saveMovementBtn" class="btn btn-primary">
+                                <i class="fas fa-check"></i> Confirm
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal de Detalhes -->
+        <div id="detailsModal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header success">
+                    <h3><i class="fas fa-info-circle"></i> Item Details</h3>
+                    <button class="modal-close" id="closeDetailsModal">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div id="itemDetails" class="item-details"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal de Relatório/Impressão -->
+        <div id="printModal" class="modal">
+            <div class="modal-content modal-large">
+                <div class="modal-header success">
+                    <h3><i class="fas fa-print"></i> Print Report</h3>
+                    <button class="modal-close" id="closePrintModal">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div id="printContent" class="print-content">
+                        <!-- Conteúdo será gerado dinamicamente -->
+                    </div>
+                    <div class="form-actions">
+                        <button type="button" id="printBtn" class="btn btn-primary">
+                            <i class="fas fa-print"></i> Print
+                        </button>
+                        <button type="button" id="closePrintBtn" class="btn btn-secondary">
+                            <i class="fas fa-times"></i> Close
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <footer class="footer">
+            <p>&copy; 2026 Parisi Warehouse System. All rights reserved.</p>
+        </footer>
+    </div>
+
+    <!-- Barcode and QR Code Libraries - Arquivos locais -->
+    <script src="jsbarcode.min.js"></script>
+    <script src="qrcode.min.js"></script>
+    
+    <script>
+        // Verificar bibliotecas após carregamento
+        window.addEventListener('load', function() {
+            setTimeout(function() {
+                console.log('🔍 Verifying local libraries...');
+                if (typeof JsBarcode !== 'undefined') {
+                    console.log('✅ JsBarcode library loaded from local file');
+                    window.JsBarcodeReady = true;
+                } else {
+                    console.error('❌ JsBarcode is NOT available - local file may be missing');
+                }
+                
+                if (typeof QRCode !== 'undefined') {
+                    console.log('✅ QRCode library loaded from local file');
+                    window.QRCodeReady = true;
+                } else {
+                    console.error('❌ QRCode is NOT available - local file may be missing');
+                }
+            }, 500);
+        });
+    </script>
+    <script src="warehouse-script.js"></script>
+</body>
+</html>

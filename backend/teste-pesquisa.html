@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teste - Tela de Pesquisa</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
+        .success { background-color: #d4edda; border-color: #c3e6cb; }
+        .error { background-color: #f8d7da; border-color: #f5c6cb; }
+        .info { background-color: #d1ecf1; border-color: #bee5eb; }
+        button { padding: 10px 15px; margin: 5px; cursor: pointer; }
+        pre { background: #f8f9fa; padding: 10px; border-radius: 3px; overflow-x: auto; }
+        .link-section { text-align: center; margin: 30px 0; }
+        .link-section a { display: inline-block; padding: 15px 30px; background: #667eea; color: white; text-decoration: none; border-radius: 8px; margin: 10px; }
+        .link-section a:hover { background: #5a6fd8; }
+    </style>
+</head>
+<body>
+    <h1>🧪 Teste da Tela de Pesquisa de Funcionários</h1>
+    
+    <div class="test-section info">
+        <h2>📋 Informações sobre a Tela de Pesquisa</h2>
+        <p><strong>Funcionalidades implementadas:</strong></p>
+        <ul>
+            <li>✅ <strong>Filtros avançados</strong> - Nome, email, cargo, departamento, status, salário, data</li>
+            <li>✅ <strong>Pesquisa em tempo real</strong> - Resultados instantâneos</li>
+            <li>✅ <strong>Ordenação</strong> - Por nome, cargo, departamento, salário, data</li>
+            <li>✅ <strong>Visualização</strong> - Lista e grade</li>
+            <li>✅ <strong>Detalhes completos</strong> - Modal com informações do funcionário</li>
+            <li>✅ <strong>Exclusão</strong> - Com confirmação</li>
+            <li>✅ <strong>Design responsivo</strong> - Funciona em mobile e desktop</li>
+        </ul>
+    </div>
+
+    <div class="test-section">
+        <h2>1. Teste da API de Funcionários</h2>
+        <button onclick="testarAPI()">Testar API</button>
+        <div id="api-result"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>2. Teste de Filtros</h2>
+        <button onclick="testarFiltros()">Testar Filtros</button>
+        <div id="filtros-result"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>3. Teste de Ordenação</h2>
+        <button onclick="testarOrdenacao()">Testar Ordenação</button>
+        <div id="ordenacao-result"></div>
+    </div>
+
+    <div class="link-section">
+        <h2>🚀 Acessar Telas do Sistema</h2>
+        <a href="http://localhost:3000/" target="_blank">
+            📝 Tela de Cadastro
+        </a>
+        <a href="http://localhost:3000/pesquisa.html" target="_blank">
+            🔍 Tela de Pesquisa
+        </a>
+        <a href="http://localhost:3000/teste-persistencia.html" target="_blank">
+            💾 Teste de Persistência
+        </a>
+    </div>
+
+    <div class="test-section">
+        <h2>4. Instruções de Teste</h2>
+        <ol>
+            <li><strong>Acesse a tela de pesquisa</strong> clicando no link acima</li>
+            <li><strong>Teste os filtros</strong> - Digite nomes, emails, cargos</li>
+            <li><strong>Teste a ordenação</strong> - Mude os campos de ordenação</li>
+            <li><strong>Teste as visualizações</strong> - Alterne entre lista e grade</li>
+            <li><strong>Teste os detalhes</strong> - Clique em "Ver" para ver detalhes</li>
+            <li><strong>Teste a exclusão</strong> - Clique em "Excluir" (cuidado!)</li>
+            <li><strong>Teste a responsividade</strong> - Redimensione a janela</li>
+        </ol>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:3000/api/funcionarios';
+
+        async function testarAPI() {
+            const resultDiv = document.getElementById('api-result');
+            try {
+                const response = await fetch(API_BASE);
+                const data = await response.json();
+                
+                resultDiv.innerHTML = `
+                    <div class="success">
+                        <h3>✅ API Funcionando</h3>
+                        <p><strong>Total de funcionários:</strong> ${data.total}</p>
+                        <p><strong>Status:</strong> ${response.status}</p>
+                        <details>
+                            <summary>Ver dados da API</summary>
+                            <pre>${JSON.stringify(data, null, 2)}</pre>
+                        </details>
+                    </div>
+                `;
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="error">
+                        <h3>❌ Erro na API</h3>
+                        <p>${error.message}</p>
+                    </div>
+                `;
+            }
+        }
+
+        async function testarFiltros() {
+            const resultDiv = document.getElementById('filtros-result');
+            try {
+                // Teste com filtro de departamento
+                const response = await fetch(`${API_BASE}?departamento=TI`);
+                const data = await response.json();
+                
+                resultDiv.innerHTML = `
+                    <div class="success">
+                        <h3>✅ Filtros Funcionando</h3>
+                        <p><strong>Funcionários do departamento TI:</strong> ${data.total}</p>
+                        <p><strong>Filtro testado:</strong> departamento=TI</p>
+                        <details>
+                            <summary>Ver funcionários filtrados</summary>
+                            <pre>${JSON.stringify(data, null, 2)}</pre>
+                        </details>
+                    </div>
+                `;
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="error">
+                        <h3>❌ Erro nos Filtros</h3>
+                        <p>${error.message}</p>
+                    </div>
+                `;
+            }
+        }
+
+        async function testarOrdenacao() {
+            const resultDiv = document.getElementById('ordenacao-result');
+            try {
+                // Teste com ordenação por nome
+                const response = await fetch(`${API_BASE}?ordenarPor=nome&direcao=asc`);
+                const data = await response.json();
+                
+                resultDiv.innerHTML = `
+                    <div class="success">
+                        <h3>✅ Ordenação Funcionando</h3>
+                        <p><strong>Ordenação testada:</strong> nome (crescente)</p>
+                        <p><strong>Total de funcionários:</strong> ${data.total}</p>
+                        <details>
+                            <summary>Ver funcionários ordenados</summary>
+                            <pre>${JSON.stringify(data, null, 2)}</pre>
+                        </details>
+                    </div>
+                `;
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="error">
+                        <h3>❌ Erro na Ordenação</h3>
+                        <p>${error.message}</p>
+                    </div>
+                `;
+            }
+        }
+
+        // Teste automático ao carregar a página
+        window.addEventListener('load', () => {
+            console.log('🧪 Página de teste da pesquisa carregada');
+            testarAPI();
+        });
+    </script>
+</body>
+</html>
+
+

@@ -1,0 +1,723 @@
+/* Estilos específicos para a tela de pesquisa */
+
+/* Cabeçalho "Search Users" - fonte maior e negrito */
+.header-search-users-label {
+    font-size: 1.5rem;
+    font-weight: bold;
+}
+
+/* Header com ações */
+.header-actions {
+    margin-top: 15px;
+}
+
+.header-actions .btn {
+    margin: 0 5px;
+}
+
+/* Parisi Warehouse dropdown (igual ao warehouse.html) */
+.warehouse-dropdown {
+    position: relative;
+    display: inline-block;
+}
+.warehouse-dropdown .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+.warehouse-dropdown .btn .fa-chevron-down {
+    font-size: 0.75rem;
+    margin-left: 2px;
+}
+.warehouse-dropdown-menu {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    margin-top: 6px;
+    min-width: 200px;
+    background: white;
+    border-radius: 10px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+    padding: 6px 0;
+    z-index: 1000;
+    border: 1px solid #e1e5e9;
+}
+.warehouse-dropdown-menu[aria-hidden="true"] {
+    display: none;
+}
+.warehouse-dropdown-menu .dropdown-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    padding: 10px 16px;
+    border: none;
+    background: none;
+    text-align: left;
+    font-size: 0.95rem;
+    color: #333;
+    text-decoration: none;
+    cursor: pointer;
+    transition: background 0.2s;
+    box-sizing: border-box;
+}
+.warehouse-dropdown-menu .dropdown-item:hover {
+    background: #f0f0f0;
+}
+.warehouse-dropdown-menu .dropdown-item i {
+    color: #667eea;
+    width: 20px;
+}
+
+/* Barra de info acima da tabela (igual warehouse) */
+.results-info-bar {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 12px;
+    font-size: 0.95rem;
+    color: #555;
+}
+.results-info-bar #resultsTime {
+    color: #888;
+}
+
+/* Container de filtros */
+.filters-container {
+    background: white;
+    border-radius: 15px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    margin-bottom: 20px;
+    overflow: hidden;
+}
+
+.filters-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 30px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+}
+
+.filters-header h2 {
+    margin: 0;
+    font-size: 1.3rem;
+}
+
+.filters-content {
+    padding: 30px;
+    display: none;
+}
+
+.filters-content.show {
+    display: block;
+}
+
+.filters-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 20px;
+    margin-bottom: 25px;
+}
+
+.filter-group {
+    display: flex;
+    flex-direction: column;
+}
+
+.filter-group label {
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 8px;
+    font-size: 0.9rem;
+}
+
+.filter-group label i {
+    margin-right: 8px;
+    color: #667eea;
+}
+
+.filter-group input,
+.filter-group select {
+    padding: 10px 12px;
+    border: 2px solid #e1e5e9;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    transition: all 0.3s ease;
+    background: #fafafa;
+}
+
+.filter-group input:focus,
+.filter-group select:focus {
+    outline: none;
+    border-color: #667eea;
+    background: white;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.filters-actions {
+    display: flex;
+    gap: 15px;
+    justify-content: center;
+    padding-top: 20px;
+    border-top: 2px solid #f0f0f0;
+}
+
+/* Controles */
+.controls-container {
+    background: white;
+    border-radius: 15px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    padding: 20px 30px;
+    margin-bottom: 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 20px;
+}
+
+.controls-left,
+.controls-right {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.sort-controls {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.sort-controls label {
+    font-weight: 600;
+    color: #333;
+    white-space: nowrap;
+}
+
+.sort-controls select {
+    padding: 8px 12px;
+    border: 2px solid #e1e5e9;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    background: #fafafa;
+    transition: all 0.3s ease;
+}
+
+.sort-controls select:focus {
+    outline: none;
+    border-color: #667eea;
+    background: white;
+}
+
+.view-controls {
+    display: flex;
+    gap: 5px;
+}
+
+.view-controls .btn {
+    padding: 8px 12px;
+    font-size: 0.9rem;
+}
+
+.view-controls .btn.active {
+    background: #667eea;
+    color: white;
+    border-color: #667eea;
+}
+
+/* Container de resultados */
+.results-container {
+    background: white;
+    border-radius: 15px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    overflow: hidden;
+}
+
+.results-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 30px;
+    background: #f8f9fa;
+    border-bottom: 2px solid #e9ecef;
+}
+
+.results-header h3 {
+    margin: 0;
+    color: #333;
+    font-size: 1.2rem;
+}
+
+.results-info {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 5px;
+}
+
+.results-info span {
+    font-size: 0.9rem;
+    color: #666;
+}
+
+.results-content {
+    padding: 20px;
+}
+
+/* Indicador de carregamento */
+.loading-indicator {
+    text-align: center;
+    padding: 40px;
+    color: #667eea;
+    font-size: 1.1rem;
+}
+
+.loading-indicator i {
+    margin-right: 10px;
+    font-size: 1.3rem;
+}
+
+/* Sem resultados */
+.no-results {
+    text-align: center;
+    padding: 60px 20px;
+    color: #666;
+}
+
+.no-results i {
+    font-size: 4rem;
+    color: #ddd;
+    margin-bottom: 20px;
+}
+
+.no-results h3 {
+    margin-bottom: 10px;
+    color: #333;
+}
+
+.no-results p {
+    margin-bottom: 30px;
+    font-size: 1.1rem;
+}
+
+/* Visualização em lista */
+.view-list .funcionario-item {
+    display: flex;
+    align-items: center;
+    padding: 20px;
+    border: 1px solid #e9ecef;
+    border-radius: 10px;
+    margin-bottom: 15px;
+    transition: all 0.3s ease;
+    background: #fafafa;
+}
+
+.view-list .funcionario-item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    background: white;
+}
+
+.view-list .funcionario-avatar {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 1.5rem;
+    font-weight: bold;
+    margin-right: 20px;
+    flex-shrink: 0;
+}
+
+.view-list .funcionario-info {
+    flex: 1;
+}
+
+.view-list .funcionario-nome {
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 5px;
+}
+
+.view-list .funcionario-details {
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+    color: #666;
+    font-size: 0.9rem;
+}
+
+.view-list .funcionario-details span {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.view-list .funcionario-actions {
+    display: flex;
+    gap: 10px;
+    flex-shrink: 0;
+}
+
+/* Visualização em grade */
+.view-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 20px;
+}
+
+.view-grid .funcionario-item {
+    background: #fafafa;
+    border: 1px solid #e9ecef;
+    border-radius: 15px;
+    padding: 25px;
+    text-align: center;
+    transition: all 0.3s ease;
+}
+
+.view-grid .funcionario-item:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+    background: white;
+}
+
+.view-grid .funcionario-avatar {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 2rem;
+    font-weight: bold;
+    margin: 0 auto 20px;
+}
+
+.view-grid .funcionario-nome {
+    font-size: 1.3rem;
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 10px;
+}
+
+.view-grid .funcionario-cargo {
+    color: #667eea;
+    font-weight: 600;
+    margin-bottom: 15px;
+}
+
+.view-grid .funcionario-details {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 20px;
+    color: #666;
+    font-size: 0.9rem;
+}
+
+.view-grid .funcionario-details span {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.view-grid .funcionario-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+}
+
+/* Status badge */
+.status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.status-badge.ativo {
+    background: #d4edda;
+    color: #155724;
+}
+
+.status-badge.inativo {
+    background: #f8d7da;
+    color: #721c24;
+}
+
+/* Botões de ação */
+.btn-action {
+    padding: 8px 12px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.btn-action.btn-view {
+    background: #17a2b8;
+    color: white;
+}
+
+.btn-action.btn-edit {
+    background: #ffc107;
+    color: #212529;
+}
+
+.btn-action.btn-delete {
+    background: #dc3545;
+    color: white;
+}
+
+.btn-action:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 3px 8px rgba(0,0,0,0.2);
+}
+
+/* Modal grande */
+#funcionarioModal .modal-content.large {
+    max-width: 600px;
+    width: 80%;
+    margin: 0% auto 3%;
+}
+
+/* Detalhes do funcionário no modal */
+.funcionario-details-modal {
+    display: grid;
+    grid-template-columns: 1fr 2fr;
+    gap: 30px;
+    align-items: start;
+}
+
+.funcionario-details-modal .funcionario-avatar-large {
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 3rem;
+    font-weight: bold;
+    margin: 0 auto;
+}
+
+.funcionario-details-modal .funcionario-info-large {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.funcionario-details-modal .info-group {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.funcionario-details-modal .info-label {
+    font-weight: 600;
+    color: #333;
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.funcionario-details-modal .info-value {
+    color: #666;
+    font-size: 1.1rem;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .filters-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .controls-container {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .controls-left,
+    .controls-right {
+        justify-content: center;
+    }
+    
+    .view-list .funcionario-item {
+        flex-direction: column;
+        text-align: center;
+    }
+    
+    .view-list .funcionario-avatar {
+        margin: 0 0 15px 0;
+    }
+    
+    .view-list .funcionario-details {
+        justify-content: center;
+    }
+    
+    .view-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .funcionario-details-modal {
+        grid-template-columns: 1fr;
+        text-align: center;
+    }
+    
+    .results-header {
+        flex-direction: column;
+        gap: 10px;
+        text-align: center;
+    }
+    
+    .results-info {
+        align-items: center;
+    }
+}
+
+@media (max-width: 480px) {
+    .filters-header {
+        flex-direction: column;
+        gap: 15px;
+        text-align: center;
+    }
+    
+    .filters-actions {
+        flex-direction: column;
+    }
+    
+    .view-controls {
+        width: 100%;
+        justify-content: center;
+    }
+    
+    .sort-controls {
+        flex-direction: column;
+        gap: 10px;
+    }
+}
+
+/* Modal Edit Location (Search Locations page) */
+.modal.show {
+    display: block;
+}
+
+.modal-content .modal-header {
+    position: relative;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+}
+
+.modal-close {
+    position: absolute;
+    top: 15px;
+    right: 20px;
+    background: none;
+    border: none;
+    color: white;
+    font-size: 2rem;
+    cursor: pointer;
+    line-height: 1;
+    transition: transform 0.3s ease;
+}
+
+.modal-close:hover {
+    transform: rotate(90deg);
+}
+
+.modal-content form {
+    padding: 20px 30px 25px;
+}
+
+.modal-content .form-group {
+    margin-bottom: 15px;
+}
+
+.modal-content .form-group label {
+    display: block;
+    margin-bottom: 6px;
+    font-weight: 600;
+    color: #333;
+}
+
+.modal-content .form-group input,
+.modal-content .form-group select {
+    width: 100%;
+    padding: 10px 12px;
+    border: 2px solid #e1e5e9;
+    border-radius: 8px;
+    font-size: 0.95rem;
+}
+
+.modal-actions {
+    display: flex;
+    gap: 12px;
+    justify-content: flex-end;
+    margin-top: 20px;
+    padding-top: 15px;
+    border-top: 1px solid #eee;
+}
+
+.th-actions {
+    width: 120px;
+    text-align: center;
+}
+
+.td-actions .btn-edit,
+.td-actions .btn-delete {
+    padding: 6px 12px;
+    font-size: 0.85rem;
+    margin: 0 3px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+}
+
+.td-actions .btn-edit i,
+.td-actions .btn-delete i {
+    font-size: 0.8rem;
+    margin-right: 4px;
+}
+
+.btn-edit {
+    background: #3498db;
+    color: white;
+}
+
+.btn-edit:hover {
+    background: #2980b9;
+}
+
+.btn-delete {
+    background: #e74c3c;
+    color: white;
+}
+
+.btn-delete:hover {
+    background: #c0392b;
+}
+
+

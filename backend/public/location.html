@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Parisi Warehouse System - New Location</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="warehouse-styles.css">
+    <link rel="stylesheet" href="pesquisa-styles.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <div class="header-stats-row">
+                <div class="header-stats-left">
+                    <div class="header-stat header-stat-total">
+                        <span class="header-stat-value" id="totalItems">0</span>
+                        <span class="header-stat-label">Total Items</span>
+                    </div>
+                    <div class="header-stat header-stat-low">
+                        <span class="header-stat-value" id="lowStockItems">0</span>
+                        <span class="header-stat-label">Low Stock</span>
+                    </div>
+                </div>
+                <img src="parisi_logo.jpg" alt="Parisi Logo" class="parisi-logo">
+                <div class="header-stats-right">
+                    <div class="header-stat header-stat-entries">
+                        <span class="header-stat-value" id="totalEntradas">0</span>
+                        <span class="header-stat-label">Entries Today</span>
+                    </div>
+                    <div class="header-stat header-stat-exits">
+                        <span class="header-stat-value" id="totalSaidas">0</span>
+                        <span class="header-stat-label">Exits Today</span>
+                    </div>
+                </div>
+            </div>
+            <div class="header-content">
+                <h1><i class="fas fa-warehouse"></i> Parisi Warehouse System</h1>
+                <p class="header-search-users-label">New Location</p>
+                <div class="header-actions">
+                    <div class="users-dropdown">
+                        <button type="button" class="btn btn-primary" id="usersMenuBtn" aria-haspopup="true" aria-expanded="false">
+                            <i class="fas fa-users"></i> Users <i class="fas fa-chevron-down"></i>
+                        </button>
+                        <div class="users-dropdown-menu" id="usersDropdownMenu" aria-hidden="true">
+                            <a href="index.html" class="dropdown-item"><i class="fas fa-user-plus"></i> New User</a>
+                            <a href="pesquisa.html" class="dropdown-item"><i class="fas fa-search"></i> Search User</a>
+                        </div>
+                    </div>
+                    <div class="product-dropdown">
+                        <button type="button" class="btn btn-primary" id="productMenuBtn" aria-haspopup="true" aria-expanded="false">
+                            <i class="fas fa-box"></i> Product <i class="fas fa-chevron-down"></i>
+                        </button>
+                        <div class="product-dropdown-menu" id="productDropdownMenu" aria-hidden="true">
+                            <button type="button" id="newProductBtn" class="dropdown-item"><i class="fas fa-plus"></i> New Product</button>
+                            <button type="button" id="searchProductBtn" class="dropdown-item"><i class="fas fa-search"></i> Search Product</button>
+                        </div>
+                    </div>
+                    <div class="location-dropdown">
+                        <button type="button" class="btn btn-primary" id="locationMenuBtn" aria-haspopup="true" aria-expanded="false">
+                            <i class="fas fa-map-marker-alt"></i> Location <i class="fas fa-chevron-down"></i>
+                        </button>
+                        <div class="location-dropdown-menu" id="locationDropdownMenu" aria-hidden="true">
+                            <a href="location.html" class="dropdown-item"><i class="fas fa-plus"></i> New Location</a>
+                            <a href="location-search.html" class="dropdown-item"><i class="fas fa-search"></i> Search Location</a>
+                            <a href="location-product.html" class="dropdown-item"><i class="fas fa-boxes-stacked"></i> Location Product</a>
+                            <a href="log-location-product.html" class="dropdown-item"><i class="fas fa-history"></i> Log Location Product</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <main class="main-content">
+            <div class="form-container">
+                <div class="form-header">
+                    <h2><i class="fas fa-plus-circle"></i> Create New Location</h2>
+                    <p>Fill in the fields below to register a new warehouse location</p>
+                </div>
+
+                <form id="locationForm" class="funcionario-form">
+                    <div class="form-row">
+                        <div class="form-group full-width">
+                            <label for="locationCode">
+                                <i class="fas fa-map-marker-alt"></i> Location *
+                            </label>
+                            <input type="text" id="locationCode" name="locationCode" required
+                                   placeholder="Ex: A-01-B-03"
+                                   minlength="2" maxlength="50">
+                            <span class="error-message" id="locationCode-error"></span>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="locationStatus">
+                                <i class="fas fa-toggle-on"></i> Status *
+                            </label>
+                            <select id="locationStatus" name="locationStatus" required>
+                                <option value="">Select status</option>
+                                <option value="active">Active</option>
+                                <option value="inactive">Inactive</option>
+                            </select>
+                            <span class="error-message" id="locationStatus-error"></span>
+                        </div>
+                        <div class="form-group">
+                            <label for="accessType">
+                                <i class="fas fa-truck-loading"></i> Access Type *
+                            </label>
+                            <select id="accessType" name="accessType" required>
+                                <option value="">Select access type</option>
+                                <option value="Shelf by Hand">Shelf by Hand</option>
+                                <option value="Shelf by Wave">Shelf by Wave</option>
+                                <option value="Shelf By Fork">Shelf By Fork</option>
+                            </select>
+                            <span class="error-message" id="accessType-error"></span>
+                        </div>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="button" id="clearLocationBtn" class="btn btn-secondary">
+                            <i class="fas fa-eraser"></i> Clear
+                        </button>
+                        <button type="submit" id="saveLocationBtn" class="btn btn-primary">
+                            <i class="fas fa-save"></i> Save Location
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </main>
+
+        <footer class="footer">
+            <p>&copy; 2026 Parisi Warehouse System. All rights reserved.</p>
+        </footer>
+    </div>
+
+    <script src="location-script.js"></script>
+</body>
+</html>
+

@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Parisi Warehouse System - Help</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="warehouse-styles.css">
+    <link rel="stylesheet" href="pesquisa-styles.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+      .help-section { margin-bottom: 28px; }
+      .help-section h3 { color: #667eea; margin-bottom: 10px; }
+      .help-section p, .help-section li { color: #444; line-height: 1.6; }
+      .help-section ul { padding-left: 1.25rem; margin: 0; }
+      .help-card { background: #f8f9fc; border-radius: 10px; padding: 20px 24px; border: 1px solid #e1e5e9; }
+      .qrcode-generate-row { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; margin-bottom: 16px; }
+      .qrcode-generate-row .filter-group { flex: 1; min-width: 220px; margin: 0; }
+      .qrcode-output { display: flex; justify-content: center; padding: 16px; min-height: 120px; }
+      .qrcode-output .qrcode-container { display: inline-block; padding: 12px; background: #fff; border-radius: 8px; border: 1px solid #e1e5e9; }
+      .qrcode-placeholder { color: #888; font-size: 0.95rem; text-align: center; padding: 24px; }
+      .qrcode-error { color: #c0392b; font-size: 0.9rem; margin-top: 8px; }
+      .qrcode-save-dir-row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-top: 8px; }
+      .qrcode-save-dir-label { flex: 1; min-width: 160px; font-size: 0.9rem; color: #555; }
+      .qrcode-save-dir-label.is-set { color: #2d6a4f; font-weight: 500; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <div class="header-stats-row">
+                <div class="header-stats-left">
+                    <div class="header-stat header-stat-total">
+                        <span class="header-stat-value" id="totalItems">0</span>
+                        <span class="header-stat-label">Total Items</span>
+                    </div>
+                    <div class="header-stat header-stat-low">
+                        <span class="header-stat-value" id="lowStockItems">0</span>
+                        <span class="header-stat-label">Low Stock</span>
+                    </div>
+                </div>
+                <img src="parisi_logo.jpg" alt="Parisi Logo" class="parisi-logo">
+                <div class="header-stats-right">
+                    <div class="header-stat header-stat-entries">
+                        <span class="header-stat-value" id="totalEntradas">0</span>
+                        <span class="header-stat-label">Entries Today</span>
+                    </div>
+                    <div class="header-stat header-stat-exits">
+                        <span class="header-stat-value" id="totalSaidas">0</span>
+                        <span class="header-stat-label">Exits Today</span>
+                    </div>
+                </div>
+            </div>
+            <div class="header-content">
+                <h1><i class="fas fa-warehouse"></i> Parisi Warehouse System</h1>
+                <p class="header-search-users-label">Help</p>
+                <div class="header-actions">
+                    <div class="users-dropdown">
+                        <button type="button" class="btn btn-primary" id="usersMenuBtn" aria-haspopup="true" aria-expanded="false">
+                            <i class="fas fa-users"></i> Users <i class="fas fa-chevron-down"></i>
+                        </button>
+                        <div class="users-dropdown-menu" id="usersDropdownMenu" aria-hidden="true">
+                            <a href="index.html" class="dropdown-item"><i class="fas fa-user-plus"></i> New User</a>
+                            <a href="pesquisa.html" class="dropdown-item"><i class="fas fa-search"></i> Search User</a>
+                        </div>
+                    </div>
+                    <div class="customer-dropdown">
+                        <button type="button" class="btn btn-primary" id="customerMenuBtn" aria-haspopup="true" aria-expanded="false">
+                            <i class="fas fa-user"></i> Customer <i class="fas fa-chevron-down"></i>
+                        </button>
+                        <div class="customer-dropdown-menu" id="customerDropdownMenu" aria-hidden="true">
+                            <a href="customer.html" class="dropdown-item"><i class="fas fa-plus"></i> New Customer</a>
+                            <a href="customer.html?mode=search" class="dropdown-item"><i class="fas fa-search"></i> Search Customer</a>
+                        </div>
+                    </div>
+                    <div class="product-dropdown">
+                        <button type="button" class="btn btn-primary" id="productMenuBtn" aria-haspopup="true" aria-expanded="false">
+                            <i class="fas fa-box"></i> Product <i class="fas fa-chevron-down"></i>
+                        </button>
+                        <div class="product-dropdown-menu" id="productDropdownMenu" aria-hidden="true">
+                            <button type="button" id="newProductBtn" class="dropdown-item"><i class="fas fa-plus"></i> New Product</button>
+                            <button type="button" id="searchProductBtn" class="dropdown-item"><i class="fas fa-search"></i> Search Product</button>
+                        </div>
+                    </div>
+                    <div class="location-dropdown">
+                        <button type="button" class="btn btn-primary" id="locationMenuBtn" aria-haspopup="true" aria-expanded="false">
+                            <i class="fas fa-map-marker-alt"></i> Location <i class="fas fa-chevron-down"></i>
+                        </button>
+                        <div class="location-dropdown-menu" id="locationDropdownMenu" aria-hidden="true">
+                            <a href="location.html" class="dropdown-item"><i class="fas fa-plus"></i> New Location</a>
+                            <a href="location-search.html" class="dropdown-item"><i class="fas fa-search"></i> Search Location</a>
+                            <a href="location-product.html" class="dropdown-item"><i class="fas fa-boxes-stacked"></i> Location Product</a>
+                            <a href="log-location-product.html" class="dropdown-item"><i class="fas fa-history"></i> Log Location Product</a>
+                        </div>
+                    </div>
+                    <div class="movement-dropdown">
+                        <button type="button" class="btn btn-primary" id="movementMenuBtn" aria-haspopup="true" aria-expanded="false">
+                            <i class="fas fa-exchange-alt"></i> Movement <i class="fas fa-chevron-down"></i>
+                        </button>
+                        <div class="movement-dropdown-menu" id="movementDropdownMenu" aria-hidden="true">
+                            <a href="movement.html" class="dropdown-item"><i class="fas fa-plus"></i> New Movement</a>
+                            <a href="movement.html?mode=search" class="dropdown-item"><i class="fas fa-search"></i> Search Movement</a>
+                            <a href="movement-situation.html" class="dropdown-item"><i class="fas fa-stream"></i> Situation of the Movement</a>
+                        </div>
+                    </div>
+                    <div class="picking-dropdown">
+                        <button type="button" class="btn btn-primary" id="pickingMenuBtn" aria-haspopup="true" aria-expanded="false">
+                            <i class="fas fa-dolly"></i> Picking <i class="fas fa-chevron-down"></i>
+                        </button>
+                        <div class="picking-dropdown-menu" id="pickingDropdownMenu" aria-hidden="true">
+                            <a href="picking.html" class="dropdown-item"><i class="fas fa-list"></i> Picking List</a>
+                            <a href="picking.html?mode=search" class="dropdown-item"><i class="fas fa-search"></i> Order Sent for Picking</a>
+                            <a href="separation-picking.html" class="dropdown-item"><i class="fas fa-box-open"></i> Separation and Picking</a>
+                            <a href="double-checking.html" class="dropdown-item"><i class="fas fa-clipboard-check"></i> Sent for Double Checking</a>
+                            <a href="last-check-label.html" class="dropdown-item"><i class="fas fa-tags"></i> Last check and Label</a>
+                            <a href="movement-situation.html" class="dropdown-item"><i class="fas fa-stream"></i> Situation of the Movement</a>
+                        </div>
+                    </div>
+                    <div class="help-dropdown">
+                        <button type="button" class="btn btn-primary" id="helpMenuBtn" aria-haspopup="true" aria-expanded="false">
+                            <i class="fas fa-circle-question"></i> Help <i class="fas fa-chevron-down"></i>
+                        </button>
+                        <div class="help-dropdown-menu" id="helpDropdownMenu" aria-hidden="true">
+                            <a href="help.html" class="dropdown-item"><i class="fas fa-book"></i> Help Center</a>
+                            <a href="help.html#modules" class="dropdown-item"><i class="fas fa-th-large"></i> System Modules</a>
+                            <a href="help.html#picking" class="dropdown-item"><i class="fas fa-dolly"></i> Picking Workflow</a>
+                            <a href="help.html#qrcode" class="dropdown-item"><i class="fas fa-qrcode"></i> Generate QR Code</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <main class="main-content">
+            <div class="form-container" style="width:100%;max-width:900px;">
+                <div class="filters-container">
+                    <div class="filters-header">
+                        <h2><i class="fas fa-circle-question"></i> Help Center</h2>
+                    </div>
+                    <div class="filters-content show">
+                        <div class="help-card">
+                            <section id="overview" class="help-section">
+                                <h3><i class="fas fa-info-circle"></i> Overview</h3>
+                                <p>Parisi Warehouse System manages inventory, locations, movements, and the picking workflow. Use the header menus to navigate between modules.</p>
+                            </section>
+                            <section id="modules" class="help-section">
+                                <h3><i class="fas fa-th-large"></i> System Modules</h3>
+                                <ul>
+                                    <li><strong>Users</strong> — register and search system users.</li>
+                                    <li><strong>Customer</strong> — create and search customers linked to movements.</li>
+                                    <li><strong>Product</strong> — add products and search warehouse inventory.</li>
+                                    <li><strong>Location</strong> — manage warehouse locations and product placement.</li>
+                                    <li><strong>Movement</strong> — create, search, and track movement status.</li>
+                                    <li><strong>Picking</strong> — handle order picking, separation, double checking, and labels.</li>
+                                </ul>
+                            </section>
+                            <section id="picking" class="help-section">
+                                <h3><i class="fas fa-dolly"></i> Picking Workflow</h3>
+                                <ol>
+                                    <li><strong>Picking List</strong> — view items ready for picking (Phase 2, Type 1).</li>
+                                    <li><strong>Order Sent for Picking</strong> — filter and locate orders by movement or product.</li>
+                                    <li><strong>Separation and Picking</strong> — separate and confirm picked quantities.</li>
+                                    <li><strong>Double Checking</strong> — verify picked items before dispatch.</li>
+                                    <li><strong>Last check and Label</strong> — final validation and label printing.</li>
+                                </ol>
+                            </section>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="filters-container" style="margin-top: 20px;">
+                    <div class="filters-header">
+                        <h2 id="qrcode"><i class="fas fa-qrcode"></i> Generate QR Code</h2>
+                    </div>
+                    <div class="filters-content show">
+                        <div class="help-card">
+                            <div class="qrcode-generate-row">
+                                <div class="filter-group">
+                                    <label for="qrcodeTextInput"><i class="fas fa-keyboard"></i> Text</label>
+                                    <input type="text" id="qrcodeTextInput" placeholder="Enter text to encode in QR code" maxlength="2000">
+                                </div>
+                                <button type="button" id="generateQrcodeBtn" class="btn btn-primary">
+                                    <i class="fas fa-qrcode"></i> Generate
+                                </button>
+                                <button type="button" id="saveQrcodeBtn" class="btn btn-secondary" disabled>
+                                    <i class="fas fa-download"></i> Save
+                                </button>
+                            </div>
+                            <p id="qrcodeError" class="qrcode-error" style="display: none;" role="alert"></p>
+                            <div id="qrcodeOutput" class="qrcode-output">
+                                <p class="qrcode-placeholder">Enter text and click Generate to create a QR code.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <div id="qrcodeSaveModal" class="modal" style="display: none;">
+        <div class="modal-content" style="max-width: 480px;">
+            <div class="modal-header success">
+                <h3><i class="fas fa-download"></i> Save QR Code</h3>
+                <button type="button" class="modal-close" id="closeQrcodeSaveModal" aria-label="Close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="qrcodeSaveFilename"><i class="fas fa-file"></i> File name</label>
+                    <input type="text" id="qrcodeSaveFilename" placeholder="e.g. my-qrcode" maxlength="120">
+                </div>
+                <div class="form-group">
+                    <label for="qrcodeSaveFormat"><i class="fas fa-image"></i> Format</label>
+                    <select id="qrcodeSaveFormat">
+                        <option value="png">PNG</option>
+                        <option value="jpg">JPG</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label><i class="fas fa-folder-open"></i> Folder</label>
+                    <div class="qrcode-save-dir-row">
+                        <span id="qrcodeSaveDirLabel" class="qrcode-save-dir-label">No folder selected</span>
+                        <button type="button" id="qrcodeBrowseDirBtn" class="btn btn-secondary">
+                            <i class="fas fa-folder-open"></i> Select folder
+                        </button>
+                    </div>
+                </div>
+                <div class="form-actions" style="margin-top: 16px;">
+                    <button type="button" id="cancelQrcodeSaveBtn" class="btn btn-secondary">
+                        <i class="fas fa-times"></i> Cancel
+                    </button>
+                    <button type="button" id="confirmQrcodeSaveBtn" class="btn btn-primary">
+                        <i class="fas fa-save"></i> Save
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="qrcode.min.js"></script>
+    <script src="help-script.js"></script>
+</body>
+</html>

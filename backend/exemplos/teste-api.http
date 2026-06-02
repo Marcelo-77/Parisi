@@ -1,0 +1,106 @@
+### Teste da API de Funcionários
+### Use com extensão REST Client no VS Code ou similar
+
+@baseUrl = http://localhost:3000/api/funcionarios
+
+### 1. Health Check
+GET http://localhost:3000/health
+
+### 2. Listar todos os funcionários
+GET {{baseUrl}}
+
+### 3. Listar funcionários ativos
+GET {{baseUrl}}?ativo=true
+
+### 4. Listar funcionários do departamento TI
+GET {{baseUrl}}?departamento=TI
+
+### 5. Listar funcionários ordenados por nome
+GET {{baseUrl}}?ordenarPor=nome&direcao=asc
+
+### 6. Obter estatísticas
+GET {{baseUrl}}/estatisticas
+
+### 7. Buscar funcionário por ID (substitua pelo ID real)
+GET {{baseUrl}}/123e4567-e89b-12d3-a456-426614174000
+
+### 8. Criar novo funcionário
+POST {{baseUrl}}
+Content-Type: application/json
+
+{
+  "nome": "Ana Costa",
+  "email": "ana.costa@empresa.com",
+  "telefone": "(11) 77777-7777",
+  "cargo": "Designer",
+  "departamento": "Marketing",
+  "salario": 4000,
+  "dataAdmissao": "2023-11-01"
+}
+
+### 9. Atualizar funcionário (substitua pelo ID real)
+PUT {{baseUrl}}/123e4567-e89b-12d3-a456-426614174000
+Content-Type: application/json
+
+{
+  "nome": "Ana Costa Silva",
+  "email": "ana.costa@empresa.com",
+  "telefone": "(11) 77777-7777",
+  "cargo": "Designer Sênior",
+  "departamento": "Marketing",
+  "salario": 4500,
+  "dataAdmissao": "2023-11-01",
+  "ativo": true
+}
+
+### 10. Atualização parcial (substitua pelo ID real)
+PATCH {{baseUrl}}/123e4567-e89b-12d3-a456-426614174000
+Content-Type: application/json
+
+{
+  "salario": 5000,
+  "cargo": "Designer Lead"
+}
+
+### 11. Desativar funcionário (substitua pelo ID real)
+DELETE {{baseUrl}}/123e4567-e89b-12d3-a456-426614174000
+
+### 12. Excluir funcionário permanentemente (substitua pelo ID real)
+DELETE {{baseUrl}}/123e4567-e89b-12d3-a456-426614174000/permanente
+
+### 13. Teste de validação - Email inválido
+POST {{baseUrl}}
+Content-Type: application/json
+
+{
+  "nome": "Teste",
+  "email": "email-invalido",
+  "telefone": "(11) 99999-9999",
+  "cargo": "Teste",
+  "departamento": "Teste"
+}
+
+### 14. Teste de validação - Nome muito curto
+POST {{baseUrl}}
+Content-Type: application/json
+
+{
+  "nome": "A",
+  "email": "teste@teste.com",
+  "telefone": "(11) 99999-9999",
+  "cargo": "Teste",
+  "departamento": "Teste"
+}
+
+### 15. Teste de conflito - Email duplicado
+POST {{baseUrl}}
+Content-Type: application/json
+
+{
+  "nome": "Outro Nome",
+  "email": "joao.silva@empresa.com",
+  "telefone": "(11) 88888-8888",
+  "cargo": "Teste",
+  "departamento": "Teste"
+}
+

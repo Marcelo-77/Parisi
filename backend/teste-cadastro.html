@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teste - Cadastro de Funcionários</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
+        .success { background-color: #d4edda; border-color: #c3e6cb; }
+        .error { background-color: #f8d7da; border-color: #f5c6cb; }
+        button { padding: 10px 15px; margin: 5px; cursor: pointer; }
+        pre { background: #f8f9fa; padding: 10px; border-radius: 3px; overflow-x: auto; }
+    </style>
+</head>
+<body>
+    <h1>🧪 Teste da API de Cadastro de Funcionários</h1>
+    
+    <div class="test-section">
+        <h2>1. Teste de Health Check</h2>
+        <button onclick="testHealth()">Testar Health Check</button>
+        <div id="health-result"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>2. Teste de Listagem de Funcionários</h2>
+        <button onclick="testListFuncionarios()">Listar Funcionários</button>
+        <div id="list-result"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>3. Teste de Cadastro de Funcionário</h2>
+        <button onclick="testCreateFuncionario()">Cadastrar Funcionário de Teste</button>
+        <div id="create-result"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>4. Teste de Estatísticas</h2>
+        <button onclick="testEstatisticas()">Obter Estatísticas</button>
+        <div id="stats-result"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>5. Acessar Tela de Cadastro</h2>
+        <button onclick="window.open('http://localhost:3000/', '_blank')">Abrir Tela de Cadastro</button>
+        <p>Clique no botão acima para abrir a tela de cadastro em uma nova aba.</p>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:3000/api/funcionarios';
+
+        async function testHealth() {
+            const resultDiv = document.getElementById('health-result');
+            try {
+                const response = await fetch('http://localhost:3000/health');
+                const data = await response.json();
+                
+                resultDiv.innerHTML = `
+                    <div class="success">
+                        <h3>✅ Health Check OK</h3>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                    </div>
+                `;
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="error">
+                        <h3>❌ Erro no Health Check</h3>
+                        <p>${error.message}</p>
+                    </div>
+                `;
+            }
+        }
+
+        async function testListFuncionarios() {
+            const resultDiv = document.getElementById('list-result');
+            try {
+                const response = await fetch(API_BASE);
+                const data = await response.json();
+                
+                resultDiv.innerHTML = `
+                    <div class="success">
+                        <h3>✅ Listagem de Funcionários</h3>
+                        <p><strong>Total:</strong> ${data.total}</p>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                    </div>
+                `;
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="error">
+                        <h3>❌ Erro na Listagem</h3>
+                        <p>${error.message}</p>
+                    </div>
+                `;
+            }
+        }
+
+        async function testCreateFuncionario() {
+            const resultDiv = document.getElementById('create-result');
+            const funcionarioTeste = {
+                nome: 'Funcionário Teste',
+                email: 'teste@empresa.com',
+                telefone: '(11) 99999-9999',
+                cargo: 'Desenvolvedor',
+                departamento: 'TI',
+                salario: 5000,
+                dataAdmissao: '2024-01-15',
+                ativo: true
+            };
+
+            try {
+                const response = await fetch(API_BASE, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(funcionarioTeste)
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    resultDiv.innerHTML = `
+                        <div class="success">
+                            <h3>✅ Funcionário Cadastrado com Sucesso</h3>
+                            <pre>${JSON.stringify(data, null, 2)}</pre>
+                        </div>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `
+                        <div class="error">
+                            <h3>❌ Erro no Cadastro</h3>
+                            <pre>${JSON.stringify(data, null, 2)}</pre>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="error">
+                        <h3>❌ Erro na Requisição</h3>
+                        <p>${error.message}</p>
+                    </div>
+                `;
+            }
+        }
+
+        async function testEstatisticas() {
+            const resultDiv = document.getElementById('stats-result');
+            try {
+                const response = await fetch(`${API_BASE}/estatisticas`);
+                const data = await response.json();
+                
+                resultDiv.innerHTML = `
+                    <div class="success">
+                        <h3>✅ Estatísticas</h3>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                    </div>
+                `;
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="error">
+                        <h3>❌ Erro nas Estatísticas</h3>
+                        <p>${error.message}</p>
+                    </div>
+                `;
+            }
+        }
+
+        // Teste automático ao carregar a página
+        window.addEventListener('load', () => {
+            console.log('🧪 Página de teste carregada');
+            console.log('📋 Teste a API usando os botões acima');
+        });
+    </script>
+</body>
+</html>
+
+
