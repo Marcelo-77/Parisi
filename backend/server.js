@@ -27,13 +27,13 @@ app.use(morgan('combined'));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
+// Home page: warehouse first (before static so / does not serve index.html)
+app.get('/', (req, res) => {
+  res.sendFile(__dirname + '/public/warehouse.html');
+});
+
 // Serve static files
 app.use(express.static('public'));
-
-// Route for home page
-app.get('/', (req, res) => {
-  res.sendFile(__dirname + '/public/index.html');
-});
 
 // API Routes
 app.use('/api/funcionarios', funcionariosRoutes);
