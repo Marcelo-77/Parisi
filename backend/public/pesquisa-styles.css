@@ -1,4 +1,4 @@
-/* Estilos específicos para a tela de pesquisa */
+﻿/* Estilos específicos para a tela de pesquisa */
 
 /* Cabeçalho "Search Users" - fonte maior e negrito */
 .header-search-users-label {
@@ -15,7 +15,7 @@
     margin: 0 5px;
 }
 
-/* Parisi Warehouse dropdown (igual ao warehouse.html) */
+/* Double-Y Warehouse dropdown (igual ao warehouse.html) */
 .warehouse-dropdown {
     position: relative;
     display: inline-block;

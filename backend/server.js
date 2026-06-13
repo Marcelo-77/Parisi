@@ -2,6 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
 const morgan = require('morgan');
+const path = require('path');
 require('dotenv').config({ path: './config.env' });
 
 const funcionariosRoutes = require('./routes/funcionarios');
@@ -12,6 +13,8 @@ const movementRoutes = require('./routes/movement');
 const customersRoutes = require('./routes/customers');
 const situationsRoutes = require('./routes/situations');
 const pickingRoutes = require('./routes/picking');
+const authRoutes = require('./routes/auth');
+const { isAuthenticated, protectPages, requireAuth } = require('./middleware/auth');
 const funcionarioServiceDB = require('./services/funcionarioServiceDB');
 const { initDatabase } = require('./scripts/init-database');
 
@@ -27,13 +30,35 @@ app.use(morgan('combined'));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// Home page: warehouse first (before static so / does not serve index.html)
-app.get('/', (req, res) => {
-  res.sendFile(__dirname + '/public/warehouse.html');
+// Health check route (public)
+app.get('/health', (req, res) => {
+  res.status(200).json({ 
+    status: 'OK', 
+    message: 'Server running correctly',
+    timestamp: new Date().toISOString()
+  });
 });
 
+// Home page: login or warehouse
+app.get('/', (req, res) => {
+  if (isAuthenticated(req)) {
+    res.sendFile(path.join(__dirname, 'public', 'warehouse.html'));
+  } else {
+    res.redirect('/login.html');
+  }
+});
+
+// Auth routes (public)
+app.use('/api/auth', authRoutes);
+
+// Protect HTML pages before static files
+app.use(protectPages);
+
 // Serve static files
-app.use(express.static('public'));
+app.use(express.static(path.join(__dirname, 'public')));
+
+// Protect API routes (except /api/auth, registered above)
+app.use('/api', requireAuth);
 
 // API Routes
 app.use('/api/funcionarios', funcionariosRoutes);
@@ -44,15 +69,6 @@ app.use('/api/movement', movementRoutes);
 app.use('/api/customers', customersRoutes);
 app.use('/api/situations', situationsRoutes);
 app.use('/api/picking', pickingRoutes);
-
-// Health check route
-app.get('/health', (req, res) => {
-  res.status(200).json({ 
-    status: 'OK', 
-    message: 'Server running correctly',
-    timestamp: new Date().toISOString()
-  });
-});
 
 // Error handling middleware
 app.use((err, req, res, next) => {

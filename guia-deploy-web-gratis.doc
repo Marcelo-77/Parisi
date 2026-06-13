@@ -1,5 +1,5 @@
 Guia Completo - Colocar o Sistema na Web Gratis
-Projeto: Parisi Warehouse System
+Projeto: Double-Y Warehouse System
 
 ====================================================
 1) Arquitetura recomendada (gratis)
@@ -77,6 +77,12 @@ node_modules
 1) Acesse: https://neon.tech/
 2) Crie conta e um novo projeto.
 3) Crie database e copie a connection string.
+
+postgresql://neondb_owner:npg_1pO6RgmPxFzb@ep-nameless-forest-apd4r0pi.c-7.us-east-1.aws.neon.tech/neondb?sslmode=require
+
+
+
+
 4) Guarde essa URL para usar como DATABASE_URL no Render.
 
 Se voce ja tem scripts SQL (backend/scripts), rode no SQL Editor do Neon

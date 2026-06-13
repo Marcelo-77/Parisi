@@ -1,4 +1,4 @@
-// Configuração da API
+﻿// Configuração da API
 const API_BASE_URL = 'http://localhost:3000/api/warehouse';
 
 function escapeHtml(text) {
@@ -111,7 +111,7 @@ window.printReport = function(itemId) {
     printContent.innerHTML = `
         <div class="print-report">
             <div class="print-header">
-                <h2><i class="fas fa-warehouse"></i> Parisi Warehouse System</h2>
+                <h2><i class="fas fa-warehouse"></i> Double-Y Warehouse System</h2>
                 <p>Item Report</p>
             </div>
             <div class="print-item-info">

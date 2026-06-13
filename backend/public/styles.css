@@ -1,4 +1,4 @@
-/* Reset e configurações básicas */
+﻿/* Reset e configurações básicas */
 * {
     margin: 0;
     padding: 0;
@@ -29,15 +29,60 @@ body {
     color: white;
 }
 
-.parisi-logo {
-    max-height: 80px;
-    margin-bottom: 10px;
-    filter: drop-shadow(0 8px 20px rgba(0,0,0,0.45));
-    animation: parisiLogoPulse 2s ease-in-out forwards;
+.double-y-wordmark {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.2rem;
+    color: white;
+    animation: doubleYLogoPulse 2s ease-in-out forwards;
     transform-origin: center center;
 }
 
-@keyframes parisiLogoPulse {
+.double-y-wordmark .double-y-name {
+    font-size: 1rem;
+    font-weight: 600;
+    line-height: 1;
+    letter-spacing: 0.02em;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.25);
+}
+
+.double-y-wordmark .double-y-glyph {
+    width: 1rem;
+    height: auto;
+    filter: brightness(0) invert(1) drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+}
+
+.double-y-wordmark--login {
+    color: #222;
+    animation: none;
+    filter: none;
+    background: #ffffff;
+    padding: 10px 16px;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.double-y-wordmark--login .double-y-name {
+    text-shadow: none;
+}
+
+.double-y-wordmark--login .double-y-glyph {
+    filter: none;
+}
+
+/* Legacy img logo (if used elsewhere) */
+.double-y-logo {
+    max-height: 80px;
+    margin-bottom: 10px;
+    filter: drop-shadow(0 8px 20px rgba(0,0,0,0.45));
+    animation: doubleYLogoPulse 2s ease-in-out forwards;
+    transform-origin: center center;
+}
+
+@keyframes doubleYLogoPulse {
     0% {
         transform: scale(1);
         filter: drop-shadow(0 8px 20px rgba(0,0,0,0.45)) brightness(1);

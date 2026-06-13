@@ -1,4 +1,4 @@
-/* Estatísticas ao lado do logo no header */
+﻿/* Estatísticas ao lado do logo no header */
 .header-stats-row {
     display: flex;
     align-items: center;
@@ -7,7 +7,13 @@
     margin-bottom: 16px;
     flex-wrap: wrap;
 }
-.header-stats-row .parisi-logo {
+.header-stats-row .double-y-wordmark {
+    margin: 0;
+    order: 0;
+    flex-shrink: 0;
+}
+
+.header-stats-row .double-y-logo {
     max-height: 70px;
     margin: 0;
     order: 0;
