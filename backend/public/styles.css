@@ -30,47 +30,252 @@ body {
 }
 
 .double-y-wordmark {
+    position: relative;
     display: inline-flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
     gap: 0.2rem;
     color: white;
-    animation: doubleYLogoPulse 2s ease-in-out forwards;
     transform-origin: center center;
+    animation:
+        doubleYEntrance 1.2s ease-out both,
+        doubleYFloat 5s ease-in-out 1.2s infinite;
+}
+
+.double-y-wordmark::before {
+    content: '';
+    position: absolute;
+    inset: -14px -22px;
+    border-radius: 999px;
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.35) 0%, rgba(102, 126, 234, 0.2) 45%, transparent 72%);
+    opacity: 0.55;
+    z-index: 0;
+    pointer-events: none;
+    animation: doubleYGlow 3.5s ease-in-out infinite;
+}
+
+.double-y-wordmark::after {
+    content: '';
+    position: absolute;
+    inset: -6px -10px;
+    border-radius: 16px;
+    background: linear-gradient(
+        120deg,
+        transparent 30%,
+        rgba(255, 255, 255, 0.45) 50%,
+        transparent 70%
+    );
+    background-size: 220% 100%;
+    opacity: 0;
+    z-index: 2;
+    pointer-events: none;
+    animation: doubleYSweep 4.5s ease-in-out 1.5s infinite;
+}
+
+.double-y-wordmark .double-y-name,
+.double-y-wordmark .double-y-glyph {
+    position: relative;
+    z-index: 1;
 }
 
 .double-y-wordmark .double-y-name {
     font-size: 1rem;
     font-weight: 600;
     line-height: 1;
-    letter-spacing: 0.02em;
+    letter-spacing: 0.06em;
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.25);
+    background: linear-gradient(
+        90deg,
+        #ffffff 0%,
+        #eef1ff 20%,
+        #ffffff 40%,
+        #ddd6fe 60%,
+        #ffffff 80%,
+        #eef1ff 100%
+    );
+    background-size: 220% auto;
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    animation: doubleYShimmer 3.2s linear infinite;
+    filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.28));
 }
 
 .double-y-wordmark .double-y-glyph {
     width: 1rem;
     height: auto;
-    filter: brightness(0) invert(1) drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+    filter: brightness(0) invert(1) drop-shadow(0 0 6px rgba(255, 255, 255, 0.55));
+    animation: doubleYGlyphPulse 2.8s ease-in-out infinite;
+}
+
+.double-y-wordmark .double-y-glyph-bottom {
+    animation-delay: 0.35s;
 }
 
 .double-y-wordmark--login {
     color: #222;
-    animation: none;
-    filter: none;
     background: #ffffff;
-    padding: 10px 16px;
-    border-radius: 12px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    padding: 12px 18px;
+    border-radius: 14px;
+    box-shadow:
+        0 2px 8px rgba(0, 0, 0, 0.08),
+        0 0 0 1px rgba(102, 126, 234, 0.12);
+}
+
+.double-y-wordmark--login::before {
+    background: radial-gradient(circle, rgba(102, 126, 234, 0.18) 0%, rgba(118, 75, 162, 0.1) 50%, transparent 72%);
+    opacity: 0.85;
+}
+
+.double-y-wordmark--login::after {
+    background: linear-gradient(
+        120deg,
+        transparent 28%,
+        rgba(102, 126, 234, 0.22) 50%,
+        transparent 72%
+    );
 }
 
 .double-y-wordmark--login .double-y-name {
-    text-shadow: none;
+    background: linear-gradient(
+        90deg,
+        #667eea 0%,
+        #764ba2 25%,
+        #667eea 50%,
+        #764ba2 75%,
+        #667eea 100%
+    );
+    background-size: 220% auto;
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    filter: drop-shadow(0 1px 2px rgba(102, 126, 234, 0.2));
 }
 
 .double-y-wordmark--login .double-y-glyph {
-    filter: none;
+    filter: drop-shadow(0 0 4px rgba(102, 126, 234, 0.35));
+}
+
+@keyframes doubleYEntrance {
+    0% {
+        opacity: 0;
+        transform: scale(0.82) translateY(12px);
+    }
+    70% {
+        opacity: 1;
+        transform: scale(1.04) translateY(-2px);
+    }
+    100% {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
+
+@keyframes doubleYFloat {
+    0%, 100% {
+        transform: translateY(0);
+    }
+    50% {
+        transform: translateY(-5px);
+    }
+}
+
+@keyframes doubleYGlow {
+    0%, 100% {
+        opacity: 0.45;
+        transform: scale(0.96);
+    }
+    50% {
+        opacity: 0.85;
+        transform: scale(1.08);
+    }
+}
+
+@keyframes doubleYShimmer {
+    0% {
+        background-position: 0% center;
+    }
+    100% {
+        background-position: 220% center;
+    }
+}
+
+@keyframes doubleYSweep {
+    0%, 100% {
+        opacity: 0;
+        background-position: 180% center;
+    }
+    45% {
+        opacity: 0.55;
+        background-position: -20% center;
+    }
+}
+
+@keyframes doubleYGlyphPulse {
+    0%, 100% {
+        transform: scale(1) rotate(0deg);
+        filter: brightness(0) invert(1) drop-shadow(0 0 4px rgba(255, 255, 255, 0.35));
+    }
+    50% {
+        transform: scale(1.15) rotate(-3deg);
+        filter: brightness(0) invert(1) drop-shadow(0 0 10px rgba(255, 255, 255, 0.85));
+    }
+}
+
+.double-y-wordmark--settled {
+    animation: none !important;
+    transform: none;
+}
+
+.double-y-wordmark--settled::before,
+.double-y-wordmark--settled::after {
+    animation: none !important;
+    opacity: 0;
+}
+
+.double-y-wordmark--settled .double-y-name {
+    animation: none !important;
+    background: none;
+    -webkit-text-fill-color: currentColor;
+    color: inherit;
+    filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.25));
+}
+
+.double-y-wordmark--settled .double-y-glyph {
+    animation: none !important;
+    transform: none;
+    filter: brightness(0) invert(1) drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+}
+
+.double-y-wordmark--login.double-y-wordmark--settled .double-y-name {
+    background: linear-gradient(90deg, #667eea, #764ba2);
+    background-size: 100% auto;
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    color: transparent;
+    filter: drop-shadow(0 1px 2px rgba(102, 126, 234, 0.2));
+}
+
+.double-y-wordmark--login.double-y-wordmark--settled .double-y-glyph {
+    filter: drop-shadow(0 0 3px rgba(102, 126, 234, 0.25));
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .double-y-wordmark,
+    .double-y-wordmark::before,
+    .double-y-wordmark::after,
+    .double-y-wordmark .double-y-name,
+    .double-y-wordmark .double-y-glyph {
+        animation: none !important;
+    }
+
+    .double-y-wordmark .double-y-name {
+        -webkit-text-fill-color: currentColor;
+        background: none;
+        color: inherit;
+    }
 }
 
 /* Legacy img logo (if used elsewhere) */

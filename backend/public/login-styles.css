@@ -17,6 +17,37 @@
     text-align: center;
 }
 
+.double-y-wordmark--login .double-y-glyph {
+    filter: drop-shadow(0 0 4px rgba(102, 126, 234, 0.35));
+    animation: doubleYGlyphPulseLogin 2.8s ease-in-out infinite;
+}
+
+.double-y-wordmark--login .double-y-glyph-bottom {
+    animation-delay: 0.35s;
+}
+
+@keyframes doubleYGlyphPulseLogin {
+    0%, 100% {
+        transform: scale(1) rotate(0deg);
+        filter: drop-shadow(0 0 3px rgba(102, 126, 234, 0.25));
+    }
+    50% {
+        transform: scale(1.15) rotate(3deg);
+        filter: drop-shadow(0 0 8px rgba(118, 75, 162, 0.55));
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .double-y-wordmark--login .double-y-glyph {
+        animation: none !important;
+    }
+}
+
+.double-y-wordmark--login.double-y-wordmark--settled .double-y-glyph {
+    animation: none !important;
+    transform: none;
+}
+
 .login-wordmark {
     margin-bottom: 16px;
 }
