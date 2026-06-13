@@ -1,5 +1,5 @@
 ﻿// Configuração da API
-const API_BASE_URL = 'http://localhost:3000/api/warehouse';
+const API_BASE_URL = '/api/warehouse';
 
 function escapeHtml(text) {
     if (text == null || text === '') return '';

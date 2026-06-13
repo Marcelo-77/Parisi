@@ -1,5 +1,5 @@
 // Configuração da API
-const API_BASE_URL = 'http://localhost:3000/api/funcionarios';
+const API_BASE_URL = '/api/funcionarios';
 
 // Elementos do DOM
 const form = document.getElementById('funcionarioForm');
@@ -450,7 +450,7 @@ function formatDate(dateString) {
 // Verificar se a API está disponível
 async function checkAPIHealth() {
     try {
-        const response = await fetch('http://localhost:3000/health');
+        const response = await fetch('/health');
         const result = await response.json();
         
         if (result.status === 'OK') {
