@@ -463,48 +463,118 @@ document.addEventListener('DOMContentLoaded', () => {
   const doPrintBtn = document.getElementById('doPrintBtn');
   const printLocationCodesList = document.getElementById('printLocationCodesList');
 
+  function getRecordProductCode(record) {
+    return record.productCode != null ? record.productCode : record.product_code || '';
+  }
+
+  function normalizeLocationCode(code) {
+    return String(code == null ? '' : code).trim().toUpperCase();
+  }
+
+  function locationCodesMatch(a, b) {
+    return normalizeLocationCode(a) === normalizeLocationCode(b);
+  }
+
+  function getRecordBarcode(record) {
+    if (record.barcode != null) {
+      const fromRecord = String(record.barcode).trim();
+      if (fromRecord) return fromRecord;
+    }
+    const productCode = getRecordProductCode(record);
+    if (!productCode) return null;
+    const product = products.find((p) =>
+      normalizeLocationCode(p.codigo) === normalizeLocationCode(productCode)
+    );
+    if (product && product.barcode != null) {
+      const fromProduct = String(product.barcode).trim();
+      if (fromProduct) return fromProduct;
+    }
+    return null;
+  }
+
+  function getJsBarcodeOptions(barcodeValue) {
+    const digits = String(barcodeValue).replace(/\D/g, '');
+    const base = { width: 1.5, height: 52, displayValue: true };
+    if (digits.length === 13) return { ...base, format: 'EAN13' };
+    if (digits.length === 8) return { ...base, format: 'EAN8' };
+    return { ...base, format: 'CODE128' };
+  }
+
+  function renderBarcodeSvg(svgId, barcodeValue) {
+    const opts = getJsBarcodeOptions(barcodeValue);
+    try {
+      JsBarcode('#' + svgId, barcodeValue, opts);
+      return true;
+    } catch (e) {
+      if (opts.format !== 'CODE128') {
+        try {
+          JsBarcode('#' + svgId, barcodeValue, { ...opts, format: 'CODE128' });
+          return true;
+        } catch (e2) {}
+      }
+    }
+    return false;
+  }
+
   async function openPrintModal() {
     if (!printModal || !printLocationCodesList) return;
-    printModal.style.display = 'block';
+    printModal.classList.add('show');
     printLocationCodesList.innerHTML = '<p>Loading...</p>';
     try {
-      const url = API_LOCATION_PRODUCT + '/location-codes-with-quantity';
-      const res = await fetch(url);
-      if (!res.ok) {
-        throw new Error('Network response was not ok: ' + res.status);
-      }
-      const data = await res.json();
-      let codes = [];
-      if (data.success && data.data != null) {
-        codes = Array.isArray(data.data)
-          ? data.data.map(c => (typeof c === 'string' ? c : (c && (c.location_code || c.locationCode)) || ''))
-          : [];
-      }
-      codes = codes.filter(c => c != null && String(c).trim() !== '');
+      await Promise.all([loadLocations(), loadProducts()]);
+      const qtyRes = await fetch(API_LOCATION_PRODUCT + '/location-codes-with-quantity');
+      if (!qtyRes.ok) throw new Error('Failed to load locations with stock');
+      const qtyData = await qtyRes.json();
+      const withQty = new Set(
+        (qtyData.success && Array.isArray(qtyData.data) ? qtyData.data : [])
+          .map((code) => normalizeLocationCode(code))
+          .filter(Boolean)
+      );
+
+      const codes = locations
+        .map((loc) => loc.location || loc.locationCode || loc.location_code)
+        .filter((code) => code != null && String(code).trim() !== '')
+        .sort((a, b) => {
+          const aKey = normalizeLocationCode(a);
+          const bKey = normalizeLocationCode(b);
+          const aHasQty = withQty.has(aKey) ? 0 : 1;
+          const bHasQty = withQty.has(bKey) ? 0 : 1;
+          if (aHasQty !== bHasQty) return aHasQty - bHasQty;
+          return String(a).localeCompare(String(b), undefined, { sensitivity: 'base' });
+        });
+
       if (codes.length === 0) {
-        printLocationCodesList.innerHTML = '<p class="empty-state">No location codes found in location_product.</p>';
+        printLocationCodesList.innerHTML = '<p class="empty-state">No location codes found. Register locations first.</p>';
         return;
       }
+
       const optionsHtml = codes
-        .map(code => `<option value="${escapeHtml(String(code))}">${escapeHtml(String(code))}</option>`)
+        .map((code) => {
+          const label = withQty.has(normalizeLocationCode(code))
+            ? String(code)
+            : `${code} (no stock)`;
+          return `<option value="${escapeHtml(String(code))}">${escapeHtml(label)}</option>`;
+        })
         .join('');
+
       printLocationCodesList.innerHTML = `
         <label for="printLocationCodeSelect" class="print-location-code-item">
           Location code:
-          <select id="printLocationCodeSelect" class="form-control" style="margin-left:8px; min-width: 160px;">
+          <select id="printLocationCodeSelect" class="form-control" style="margin-left:8px; min-width: 220px;">
             <option value="">Select location code</option>
             ${optionsHtml}
           </select>
         </label>
+        <p class="print-modal-desc" style="margin-top:10px;">Locations with products appear first. Empty locations show "(no stock)".</p>
       `;
     } catch (e) {
       console.error('Print modal error:', e);
-      printLocationCodesList.innerHTML = '<p class="error-message">Error loading location codes. Check console and ensure the server is running.</p>';
+      printLocationCodesList.innerHTML = '<p class="error-message">Error loading locations. Check console and ensure the server is running.</p>';
     }
   }
 
   function closePrintModal() {
-    printModal.style.display = 'none';
+    printModal.classList.remove('show');
   }
 
   function getSelectedLocationCode() {
@@ -523,17 +593,24 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
       }
       try {
+        if (products.length === 0) {
+          await loadProducts();
+        }
         const res = await fetch(API_LOCATION_PRODUCT + '?locationCode=' + encodeURIComponent(selected));
         if (!res.ok) throw new Error('Failed to load records');
         const data = await res.json();
         const allRecords = (data.success && data.data) ? data.data : [];
         const records = allRecords
-          .filter(r => (r.locationCode || r.location_code) === selected)
+          .filter((r) => locationCodesMatch(r.locationCode || r.location_code, selected))
           .sort((a, b) => {
-            const pa = String(a.productCode != null ? a.productCode : a.product_code || '').toUpperCase();
-            const pb = String(b.productCode != null ? b.productCode : b.product_code || '').toUpperCase();
+            const pa = String(getRecordProductCode(a)).toUpperCase();
+            const pb = String(getRecordProductCode(b)).toUpperCase();
             return pa.localeCompare(pb);
           });
+        if (records.length === 0) {
+          alert('No products with quantity at this location. Choose a location without "(no stock)".');
+          return;
+        }
         let accessType = '';
         try {
           const locRes = await fetch(API_LOCATIONS + '/code/' + encodeURIComponent(selected));
@@ -547,8 +624,8 @@ document.addEventListener('DOMContentLoaded', () => {
           locationCode: selected,
           printDate,
           products: records.map(r => ({
-            productCode: r.productCode || r.product_code,
-            barcode: r.barcode || null,
+            productCode: getRecordProductCode(r),
+            barcode: getRecordBarcode(r),
             quantityCurrent: r.quantityCurrent != null ? r.quantityCurrent : r.quantity_current
           }))
         };
@@ -561,22 +638,22 @@ document.addEventListener('DOMContentLoaded', () => {
         temp.id = tempId;
         temp.style.cssText = 'position:absolute;left:-9999px;top:0;visibility:hidden;';
         document.body.appendChild(temp);
-        const barcodeOpts = { format: 'CODE128', width: 1.5, height: 52, displayValue: true };
         const barcodeSvgs = [];
+        const barcodePrefix = 'bcPrint_' + Date.now() + '_';
         for (let i = 0; i < records.length; i++) {
-          const code = String(
-            records[i].barcode != null && String(records[i].barcode).trim() !== ''
-              ? records[i].barcode
-              : (records[i].productCode != null ? records[i].productCode : records[i].product_code || '')
-          );
-          const svg = document.createElement('svg');
+          const barcodeValue = getRecordBarcode(records[i]);
+          if (!barcodeValue) {
+            barcodeSvgs.push('');
+            continue;
+          }
+          const svgId = barcodePrefix + i;
+          const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
           svg.setAttribute('class', 'report-barcode');
-          svg.id = 'bc' + i;
+          svg.id = svgId;
           temp.appendChild(svg);
-          try {
-            JsBarcode('#bc' + i, code, barcodeOpts);
+          if (renderBarcodeSvg(svgId, barcodeValue)) {
             barcodeSvgs.push(svg.outerHTML);
-          } catch (e) {
+          } else {
             barcodeSvgs.push('');
           }
           temp.removeChild(svg);
@@ -585,11 +662,11 @@ document.addEventListener('DOMContentLoaded', () => {
           locationCode: selected,
           printDate,
           itemCount: records.length,
-          barcodes: records.map(r => (
-            r.barcode != null && String(r.barcode).trim() !== ''
-              ? String(r.barcode).trim()
-              : String(r.productCode != null ? r.productCode : r.product_code || '')
-          ))
+          products: records.map((r) => ({
+            productCode: getRecordProductCode(r),
+            barcode: getRecordBarcode(r),
+            quantityCurrent: r.quantityCurrent != null ? r.quantityCurrent : r.quantity_current
+          }))
         };
         const qrText = JSON.stringify(qrPayload);
         const qrDiv = document.createElement('div');
@@ -609,15 +686,20 @@ document.addEventListener('DOMContentLoaded', () => {
           } catch (e2) {}
           document.body.removeChild(temp);
           const rowsHtml = records.map((r, i) => {
-            const pc = escapeHtml(String(r.productCode != null ? r.productCode : r.product_code || ''));
+            const pc = escapeHtml(String(getRecordProductCode(r)));
             const qc = r.quantityCurrent != null ? r.quantityCurrent : (r.quantity_current ?? 0);
-            const barcodeHtml = barcodeSvgs[i] || '<span>-</span>';
+            const barcodeValue = getRecordBarcode(r);
+            const barcodeHtml = barcodeSvgs[i]
+              ? `<div class="report-barcode-wrapper">${barcodeSvgs[i]}</div>`
+              : (barcodeValue
+                ? `<div class="report-barcode-wrapper"><span>${escapeHtml(barcodeValue)}</span></div>`
+                : '<div class="report-barcode-wrapper"><span>-</span></div>');
             return `<tr>
               <td><div class="report-product-code">${pc}</div></td>
               <td>${qc}</td>
             </tr>
             <tr>
-              <td colspan="2"><div class="report-barcode-wrapper">${barcodeHtml}</div></td>
+              <td colspan="2">${barcodeHtml}</td>
             </tr>`;
           }).join('');
         const qrImgHtml = qrDataUrl ? '<img src="' + qrDataUrl.replace(/"/g, '&quot;') + '" alt="QR Code" width="180" height="180" />' : '<span>QR not generated</span>';
@@ -648,7 +730,7 @@ document.addEventListener('DOMContentLoaded', () => {
 </head><body>
 <div class="report-header"></div>
 <table>
-  <thead><tr><th>Barcode (Product)</th><th>QTY Current</th></tr></thead>
+  <thead><tr><th>Product Code</th><th>QTY Current</th></tr></thead>
   <tbody>${rowsHtml}</tbody>
 </table>
 <div class="report-footer">
