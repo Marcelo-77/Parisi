@@ -1,6 +1,7 @@
 (function () {
   const TAB_SESSION_KEY = 'doubley_tab_auth';
   const form = document.getElementById('loginForm');
+  const emailInput = document.getElementById('email');
   const passwordInput = document.getElementById('password');
   const loginBtn = document.getElementById('loginBtn');
   const loginError = document.getElementById('loginError');
@@ -37,6 +38,7 @@
     event.preventDefault();
     hideError();
 
+    const email = emailInput.value.trim();
     const password = passwordInput.value;
     loginBtn.disabled = true;
     loginBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Verifying...';
@@ -45,7 +47,7 @@
       const res = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ password }),
+        body: JSON.stringify({ email, password }),
       });
 
       const data = await res.json().catch(() => ({}));
@@ -56,9 +58,13 @@
         return;
       }
 
-      showError(data.message || 'Incorrect password. Please try again.');
-      passwordInput.focus();
-      passwordInput.select();
+      showError(data.message || 'Invalid email or password. Please try again.');
+      if (!email) {
+        emailInput.focus();
+      } else {
+        passwordInput.focus();
+        passwordInput.select();
+      }
     } catch {
       showError('Unable to connect to the server. Please try again.');
     } finally {

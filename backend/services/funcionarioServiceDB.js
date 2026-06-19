@@ -1,6 +1,7 @@
 // Employee service using PostgreSQL
 const { query } = require('../config/database');
 const Funcionario = require('../models/Funcionario');
+const { verifyStoredPassword } = require('../middleware/auth');
 
 class FuncionarioServiceDB {
   constructor() {
@@ -154,6 +155,37 @@ class FuncionarioServiceDB {
       return result.rows.length > 0 ? this.mapRowToFuncionario(result.rows[0]) : null;
     } catch (error) {
       console.error('❌ Error fetching employee by email:', error);
+      throw error;
+    }
+  }
+
+  async autenticar(email, senha) {
+    const normalizedEmail = email != null ? String(email).trim().toLowerCase() : '';
+    const password = senha != null ? String(senha) : '';
+
+    if (!normalizedEmail || !password) {
+      return null;
+    }
+
+    const selectQuery = `
+      SELECT * FROM ${this.tableName}
+      WHERE LOWER(email) = $1 AND ativo = true
+    `;
+
+    try {
+      const result = await query(selectQuery, [normalizedEmail]);
+      if (result.rows.length === 0) {
+        return null;
+      }
+
+      const row = result.rows[0];
+      if (!verifyStoredPassword(row.password, password)) {
+        return null;
+      }
+
+      return this.mapRowToFuncionario(row);
+    } catch (error) {
+      console.error('❌ Error authenticating employee:', error);
       throw error;
     }
   }
