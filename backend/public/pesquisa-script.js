@@ -351,7 +351,7 @@ function renderResults() {
             <tr>
                 <td colspan="7" class="empty-state" id="emptyStateRow">
                     <i class="fas fa-search"></i>
-                    <p>No employees found. Use filters and click <strong>Search</strong>, or <a href="index.html">register a new user</a>.</p>
+                    <p>No employees found. Use filters and click <strong>Search</strong>, or <a href="users.html">register a new user</a>.</p>
                 </td>
             </tr>
         `;
@@ -469,7 +469,7 @@ function verDetalhes(id) {
 function editarFuncionario(id) {
     // For now, redirect to the registration page
     // In a full implementation, this would open an edit modal
-    window.location.href = `index.html?edit=${id}`;
+    window.location.href = `users.html?edit=${id}`;
 }
 
 // Delete employee

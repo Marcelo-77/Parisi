@@ -285,7 +285,7 @@ async function initDatabase() {
     console.log('✅ Tabela system_applications criada/verificada');
 
     const menuApplications = [
-      'index.html',
+      'users.html',
       'pesquisa.html',
       'customer.html',
       'warehouse.html',
@@ -313,6 +313,12 @@ async function initDatabase() {
       );
     }
     console.log(`✅ system_applications: ${menuApplications.length} menu HTML pages verified`);
+
+    await query(`
+      UPDATE system_applications
+      SET syap_nm_application = 'users.html'
+      WHERE syap_nm_application = 'users.html'
+    `);
 
     await query(`
       CREATE UNIQUE INDEX IF NOT EXISTS idx_system_applications_name

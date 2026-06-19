@@ -194,7 +194,7 @@ CREATE TABLE IF NOT EXISTS system_applications (
 INSERT INTO system_applications (syap_nm_application)
 SELECT v.application
 FROM (VALUES
-  ('index.html'),
+  ('users.html'),
   ('pesquisa.html'),
   ('customer.html'),
   ('warehouse.html'),
@@ -214,6 +214,10 @@ FROM (VALUES
 WHERE NOT EXISTS (
   SELECT 1 FROM system_applications s WHERE s.syap_nm_application = v.application
 );
+
+UPDATE system_applications
+SET syap_nm_application = 'users.html'
+WHERE syap_nm_application = 'index.html';
 
 CREATE UNIQUE INDEX IF NOT EXISTS idx_system_applications_name
 ON system_applications (syap_nm_application);
