@@ -1,6 +1,9 @@
 // Configuração da API
 const API_BASE_URL = '/api/funcionarios';
 
+let editingUserId = null;
+let existingPhoto = null;
+
 // Elementos do DOM
 const form = document.getElementById('funcionarioForm');
 const limparBtn = document.getElementById('limparBtn');
@@ -59,8 +62,111 @@ const validacoes = {
 document.addEventListener('DOMContentLoaded', function() {
     setupEventListeners();
     setupFormValidation();
-    setDefaultDate();
+    initializePageMode();
+    checkAPIHealth();
 });
+
+function getEditUserIdFromUrl() {
+    const params = new URLSearchParams(window.location.search);
+    const id = params.get('edit');
+    return id && String(id).trim() ? String(id).trim() : null;
+}
+
+function toDateInputValue(value) {
+    if (!value) return '';
+    const d = new Date(value);
+    if (isNaN(d.getTime())) return '';
+    return d.toISOString().split('T')[0];
+}
+
+function setCreateMode() {
+    editingUserId = null;
+    existingPhoto = null;
+    validacoes.password.required = true;
+    const passwordInput = document.getElementById('password');
+    const passwordLabel = document.getElementById('passwordLabel');
+    if (passwordInput) {
+        passwordInput.required = true;
+        passwordInput.placeholder = 'Enter a secure password';
+    }
+    if (passwordLabel) passwordLabel.innerHTML = '<i class="fas fa-lock"></i> Password *';
+    const formTitle = document.getElementById('formTitle');
+    const formSubtitle = document.getElementById('formSubtitle');
+    if (formTitle) formTitle.innerHTML = '<i class="fas fa-user-plus"></i> New User';
+    if (formSubtitle) formSubtitle.textContent = 'Fill in the data below to register a new user';
+    document.title = 'User Registration';
+    setDefaultDate();
+    updateSubmitButton(false);
+}
+
+function setEditMode(user) {
+    editingUserId = user.id;
+    existingPhoto = user.photo || null;
+    validacoes.password.required = false;
+    const passwordInput = document.getElementById('password');
+    const passwordLabel = document.getElementById('passwordLabel');
+    if (passwordInput) {
+        passwordInput.required = false;
+        passwordInput.value = '';
+        passwordInput.placeholder = 'Leave blank to keep current password';
+    }
+    if (passwordLabel) passwordLabel.innerHTML = '<i class="fas fa-lock"></i> Password (optional)';
+    const formTitle = document.getElementById('formTitle');
+    const formSubtitle = document.getElementById('formSubtitle');
+    if (formTitle) formTitle.innerHTML = '<i class="fas fa-user-edit"></i> Edit User';
+    if (formSubtitle) formSubtitle.textContent = 'Update the user data below and click Save Changes';
+    document.title = 'Edit User';
+
+    document.getElementById('nome').value = user.nome || '';
+    document.getElementById('email').value = user.email || '';
+    document.getElementById('telefone').value = user.telefone || '';
+    document.getElementById('cargo').value = user.cargo || '';
+    document.getElementById('departamento').value = user.departamento || '';
+    document.getElementById('dataAdmissao').value = toDateInputValue(user.dataAdmissao);
+    document.getElementById('ativo').checked = user.ativo !== false;
+
+    const photoPreview = document.getElementById('photoPreview');
+    const photoPreviewImg = document.getElementById('photoPreviewImg');
+    if (existingPhoto && photoPreview && photoPreviewImg) {
+        photoPreviewImg.src = existingPhoto;
+        photoPreview.style.display = 'block';
+    }
+
+    updateSubmitButton(true);
+}
+
+async function initializePageMode() {
+    const editId = getEditUserIdFromUrl();
+    if (!editId) {
+        setCreateMode();
+        return;
+    }
+
+    try {
+        setLoading(true);
+        const response = await fetch(`${API_BASE_URL}/${encodeURIComponent(editId)}`);
+        const result = await response.json();
+        if (!response.ok || !result.success || !result.data) {
+            throw new Error(result.error || 'User not found');
+        }
+        setEditMode(result.data);
+    } catch (error) {
+        console.error('Error loading user for edit:', error);
+        showError(error.message || 'Could not load user for editing.');
+        setCreateMode();
+    } finally {
+        setLoading(false);
+    }
+}
+
+function updateSubmitButton(isEdit) {
+    if (!salvarBtn) return;
+    if (isEdit) {
+        salvarBtn.innerHTML = '<i class="fas fa-save"></i> Save Changes';
+    } else {
+        salvarBtn.innerHTML = '<i class="fas fa-save"></i> Register User';
+    }
+}
 
 // Configurar event listeners
 function setupEventListeners() {
@@ -164,6 +270,10 @@ function validateField(campo) {
     
     // Se campo vazio e não obrigatório, é válido
     if (!value && !validacao.required) {
+        return true;
+    }
+
+    if (campo === 'password' && editingUserId && !value) {
         return true;
     }
     
@@ -275,20 +385,30 @@ async function handleFormSubmit(e) {
     const dados = {
         nome: formData.get('nome').trim(),
         email: formData.get('email').trim(),
-        password: formData.get('password'),
         telefone: formData.get('telefone').trim(),
         cargo: formData.get('cargo').trim(),
         departamento: formData.get('departamento'),
         dataAdmissao: formData.get('dataAdmissao') || null,
-        photo: photoBase64,
         ativo: formData.get('ativo') === 'on'
     };
+
+    const passwordValue = formData.get('password');
+    if (passwordValue && String(passwordValue).trim()) {
+        dados.password = String(passwordValue);
+    }
+
+    if (photoBase64) {
+        dados.photo = photoBase64;
+    } else if (editingUserId && existingPhoto) {
+        dados.photo = existingPhoto;
+    }
     
     // Enviar dados
     try {
         setLoading(true);
-        const response = await fetch(API_BASE_URL, {
-            method: 'POST',
+        const isEdit = Boolean(editingUserId);
+        const response = await fetch(isEdit ? `${API_BASE_URL}/${editingUserId}` : API_BASE_URL, {
+            method: isEdit ? 'PATCH' : 'POST',
             headers: {
                 'Content-Type': 'application/json',
             },
@@ -298,10 +418,14 @@ async function handleFormSubmit(e) {
         const result = await response.json();
         
         if (response.ok && result.success) {
-            showSuccess(result.data);
-            limparFormulario();
+            showSuccess(result.data, isEdit);
+            if (isEdit) {
+                setEditMode(result.data);
+            } else {
+                limparFormulario();
+            }
         } else {
-            throw new Error(result.error || 'Erro ao cadastrar funcionário');
+            throw new Error(result.error || (isEdit ? 'Error updating user' : 'Error registering user'));
         }
     } catch (error) {
         console.error('Erro:', error);
@@ -312,7 +436,7 @@ async function handleFormSubmit(e) {
 }
 
 // Mostrar sucesso
-function showSuccess(funcionario) {
+function showSuccess(funcionario, isEdit) {
     const photoHtml = funcionario.photo 
         ? `<div style="text-align: center; margin-bottom: 15px;">
              <img src="${funcionario.photo}" alt="Employee photo" 
@@ -320,9 +444,13 @@ function showSuccess(funcionario) {
            </div>`
         : '';
     
+    const title = isEdit ? 'User Updated!' : 'Employee Registered!';
+    const modalHeader = successModal.querySelector('.modal-header h3');
+    if (modalHeader) modalHeader.textContent = title;
+
     funcionarioInfo.innerHTML = `
         ${photoHtml}
-        <h4><i class="fas fa-user"></i> Dados do Funcionário Cadastrado</h4>
+        <h4><i class="fas fa-user"></i> ${isEdit ? 'Updated User Data' : 'Registered User Data'}</h4>
         <p><strong>Nome:</strong> ${funcionario.nome}</p>
         <p><strong>Email:</strong> ${funcionario.email}</p>
         <p><strong>Telefone:</strong> ${funcionario.telefone}</p>
@@ -360,15 +488,22 @@ function setLoading(loading) {
     
     if (loading) {
         salvarBtn.classList.add('loading');
-        salvarBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Cadastrando...';
+        salvarBtn.innerHTML = editingUserId
+            ? '<i class="fas fa-spinner fa-spin"></i> Saving...'
+            : '<i class="fas fa-spinner fa-spin"></i> Registering...';
     } else {
         salvarBtn.classList.remove('loading');
-        salvarBtn.innerHTML = '<i class="fas fa-save"></i> Cadastrar Funcionário';
+        updateSubmitButton(Boolean(editingUserId));
     }
 }
 
 // Limpar formulário
 function limparFormulario() {
+    if (editingUserId) {
+        window.location.href = 'users.html';
+        return;
+    }
+
     form.reset();
     
     // Limpar preview da foto
@@ -463,8 +598,4 @@ async function checkAPIHealth() {
         showError('Não foi possível conectar com o servidor. Verifique se a API está rodando na porta 3000.');
     }
 }
-
-// Verificar API ao carregar a página
-document.addEventListener('DOMContentLoaded', checkAPIHealth);
-
 

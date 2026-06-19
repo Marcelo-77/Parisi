@@ -27,8 +27,8 @@
         <main class="main-content">
             <div class="form-container">
                 <div class="form-header">
-                    <h2><i class="fas fa-user-plus"></i> New User</h2>
-                    <p>Fill in the data below to register a new user</p>
+                    <h2 id="formTitle"><i class="fas fa-user-plus"></i> New User</h2>
+                    <p id="formSubtitle">Fill in the data below to register a new user</p>
                 </div>
 
                 <form id="funcionarioForm" class="funcionario-form">
@@ -55,12 +55,12 @@
 
                     <div class="form-row">
                         <div class="form-group">
-                            <label for="password">
+                            <label for="password" id="passwordLabel">
                                 <i class="fas fa-lock"></i> Password *
                             </label>
                             <input type="password" id="password" name="password" required 
                                    placeholder="Enter a secure password"
-                                   minlength="6" maxlength="100">
+                                   minlength="6" maxlength="100" autocomplete="new-password">
                             <span class="error-message" id="password-error"></span>
                         </div>
 

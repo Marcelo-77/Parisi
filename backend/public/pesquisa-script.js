@@ -467,9 +467,9 @@ function verDetalhes(id) {
 
 // Edit employee
 function editarFuncionario(id) {
-    // For now, redirect to the registration page
-    // In a full implementation, this would open an edit modal
-    window.location.href = `users.html?edit=${id}`;
+    const userId = id || (funcionarioSelecionado && funcionarioSelecionado.id);
+    if (!userId) return;
+    window.location.href = `users.html?edit=${encodeURIComponent(userId)}`;
 }
 
 // Delete employee
