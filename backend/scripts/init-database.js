@@ -300,7 +300,8 @@ async function initDatabase() {
       'double-checking.html',
       'last-check-label.html',
       'help.html',
-      'applications.html'
+      'applications.html',
+      'application_users.html'
     ];
     for (const application of menuApplications) {
       await query(
@@ -324,6 +325,16 @@ async function initDatabase() {
       CREATE UNIQUE INDEX IF NOT EXISTS idx_system_applications_name
       ON system_applications (syap_nm_application)
     `);
+
+    await query(`
+      CREATE TABLE IF NOT EXISTS user_applications (
+        id_funcionario UUID NOT NULL REFERENCES funcionarios(id) ON DELETE CASCADE,
+        syap_cd_seq INTEGER NOT NULL REFERENCES system_applications(syap_cd_seq) ON DELETE CASCADE,
+        criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY (id_funcionario, syap_cd_seq)
+      )
+    `);
+    console.log('✅ Tabela user_applications criada/verificada');
 
     // Criar tabela location_product (chave primária: location_code, product_code, sipr_sq_number)
     await query(`

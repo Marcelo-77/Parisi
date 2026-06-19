@@ -209,7 +209,8 @@ FROM (VALUES
   ('double-checking.html'),
   ('last-check-label.html'),
   ('help.html'),
-  ('applications.html')
+  ('applications.html'),
+  ('application_users.html')
 ) AS v(application)
 WHERE NOT EXISTS (
   SELECT 1 FROM system_applications s WHERE s.syap_nm_application = v.application
@@ -221,6 +222,13 @@ WHERE syap_nm_application = 'index.html';
 
 CREATE UNIQUE INDEX IF NOT EXISTS idx_system_applications_name
 ON system_applications (syap_nm_application);
+
+CREATE TABLE IF NOT EXISTS user_applications (
+  id_funcionario UUID NOT NULL REFERENCES funcionarios(id) ON DELETE CASCADE,
+  syap_cd_seq INTEGER NOT NULL REFERENCES system_applications(syap_cd_seq) ON DELETE CASCADE,
+  criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (id_funcionario, syap_cd_seq)
+);
 
 CREATE TABLE IF NOT EXISTS location_product (
   location_code VARCHAR(50) NOT NULL REFERENCES warehouse_locations(location) ON DELETE CASCADE,
