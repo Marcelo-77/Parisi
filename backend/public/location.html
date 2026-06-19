@@ -12,6 +12,7 @@
 <body>
     <script src="auth-check.js"></script>
     <script src="double-y-logo-effect.js"></script>
+    <script src="dev-environment-badge.js"></script>
     <div class="container">
         <header class="header">
             <div class="header-stats-row">
@@ -58,7 +59,17 @@
                             <button type="button" id="newProductBtn" class="dropdown-item"><i class="fas fa-plus"></i> New Product</button>
                             <button type="button" id="searchProductBtn" class="dropdown-item"><i class="fas fa-search"></i> Search Product</button>
                         </div>
+                    </div>                    <div class="applications-dropdown">
+                        <button type="button" class="btn btn-primary" id="applicationsMenuBtn" aria-haspopup="true" aria-expanded="false">
+                            <i class="fas fa-window-restore"></i> Applications <i class="fas fa-chevron-down"></i>
+                        </button>
+                        <div class="applications-dropdown-menu" id="applicationsDropdownMenu" aria-hidden="true">
+                            <a href="applications.html" class="dropdown-item"><i class="fas fa-plus"></i> New Applications</a>
+                            <a href="applications.html?mode=search" class="dropdown-item"><i class="fas fa-search"></i> Search Applications</a>
+                        </div>
                     </div>
+
+
                     <div class="location-dropdown">
                         <button type="button" class="btn btn-primary" id="locationMenuBtn" aria-haspopup="true" aria-expanded="false">
                             <i class="fas fa-map-marker-alt"></i> Location <i class="fas fa-chevron-down"></i>

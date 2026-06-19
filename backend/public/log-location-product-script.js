@@ -82,6 +82,8 @@
     var usersDropdownMenu = document.getElementById('usersDropdownMenu');
     var productMenuBtn = document.getElementById('productMenuBtn');
     var productDropdownMenu = document.getElementById('productDropdownMenu');
+    var applicationsMenuBtn = document.getElementById('applicationsMenuBtn');
+    var applicationsDropdownMenu = document.getElementById('applicationsDropdownMenu');
     var locationMenuBtn = document.getElementById('locationMenuBtn');
     var locationDropdownMenu = document.getElementById('locationDropdownMenu');
     var locationProductMenuBtn = document.getElementById('locationProductMenuBtn');
@@ -96,10 +98,10 @@
     var helpDropdownMenu = document.getElementById('helpDropdownMenu');
 
     function closeAll() {
-      [usersDropdownMenu, productDropdownMenu, locationDropdownMenu, locationProductDropdownMenu, movementDropdownMenu, pickingDropdownMenu, customerDropdownMenu, helpDropdownMenu].forEach(function (el) {
+      [usersDropdownMenu, productDropdownMenu, applicationsDropdownMenu, locationDropdownMenu, locationProductDropdownMenu, movementDropdownMenu, pickingDropdownMenu, customerDropdownMenu, helpDropdownMenu].forEach(function (el) {
         if (el) el.setAttribute('aria-hidden', 'true');
       });
-      [usersMenuBtn, productMenuBtn, locationMenuBtn, locationProductMenuBtn, movementMenuBtn, pickingMenuBtn, customerMenuBtn, helpMenuBtn].forEach(function (el) {
+      [usersMenuBtn, productMenuBtn, applicationsMenuBtn, locationMenuBtn, locationProductMenuBtn, movementMenuBtn, pickingMenuBtn, customerMenuBtn, helpMenuBtn].forEach(function (el) {
         if (el) el.setAttribute('aria-expanded', 'false');
       });
     }
@@ -119,6 +121,15 @@
         var open = productDropdownMenu.getAttribute('aria-hidden') !== 'true';
         productDropdownMenu.setAttribute('aria-hidden', open ? 'true' : 'false');
         productMenuBtn.setAttribute('aria-expanded', !open);
+      });
+    }
+    if (applicationsMenuBtn && applicationsDropdownMenu) {
+      applicationsMenuBtn.addEventListener('click', function (e) {
+        e.stopPropagation();
+        closeAll();
+        var open = applicationsDropdownMenu.getAttribute('aria-hidden') !== 'true';
+        applicationsDropdownMenu.setAttribute('aria-hidden', open ? 'true' : 'false');
+        applicationsMenuBtn.setAttribute('aria-expanded', !open);
       });
     }
     if (locationMenuBtn && locationDropdownMenu) {

@@ -184,6 +184,40 @@ SELECT 'Missing Lid' WHERE NOT EXISTS (SELECT 1 FROM situation_product WHERE sip
 INSERT INTO situation_product (sipr_nm_description)
 SELECT 'Missing Filter' WHERE NOT EXISTS (SELECT 1 FROM situation_product WHERE sipr_nm_description = 'Missing Filter');
 
+CREATE TABLE IF NOT EXISTS system_applications (
+  syap_cd_seq SERIAL PRIMARY KEY,
+  syap_nm_application VARCHAR(100) NOT NULL,
+  syap_ds_detailed VARCHAR(150),
+  CONSTRAINT syap_cd_seq_max CHECK (syap_cd_seq >= 1 AND syap_cd_seq <= 9999)
+);
+
+INSERT INTO system_applications (syap_nm_application)
+SELECT v.application
+FROM (VALUES
+  ('index.html'),
+  ('pesquisa.html'),
+  ('customer.html'),
+  ('warehouse.html'),
+  ('location.html'),
+  ('location-search.html'),
+  ('location-product.html'),
+  ('log-location-product.html'),
+  ('movement.html'),
+  ('movement-situation.html'),
+  ('picking.html'),
+  ('separation-picking.html'),
+  ('double-checking.html'),
+  ('last-check-label.html'),
+  ('help.html'),
+  ('applications.html')
+) AS v(application)
+WHERE NOT EXISTS (
+  SELECT 1 FROM system_applications s WHERE s.syap_nm_application = v.application
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_system_applications_name
+ON system_applications (syap_nm_application);
+
 CREATE TABLE IF NOT EXISTS location_product (
   location_code VARCHAR(50) NOT NULL REFERENCES warehouse_locations(location) ON DELETE CASCADE,
   product_code VARCHAR(50) NOT NULL REFERENCES warehouse_items(codigo) ON DELETE CASCADE,

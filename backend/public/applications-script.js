@@ -1,5 +1,5 @@
 const API_BASE = (typeof window !== 'undefined' && window.location && window.location.origin) ? window.location.origin : 'http://localhost:3000';
-const API_CUSTOMERS = API_BASE + '/api/customers';
+const API_APPLICATIONS = API_BASE + '/api/system-applications';
 
 function getMode() {
   const params = new URLSearchParams(window.location.search);
@@ -8,17 +8,17 @@ function getMode() {
 
 function showSection() {
   const mode = getMode();
-  const newSection = document.getElementById('newCustomerSection');
-  const searchSection = document.getElementById('searchCustomerSection');
-  const titleEl = document.getElementById('customerPageTitle');
+  const newSection = document.getElementById('newApplicationsSection');
+  const searchSection = document.getElementById('searchApplicationsSection');
+  const titleEl = document.getElementById('applicationsPageTitle');
   if (mode === 'search') {
     if (newSection) newSection.style.display = 'none';
     if (searchSection) searchSection.style.display = 'block';
-    if (titleEl) titleEl.textContent = 'Search Customer';
+    if (titleEl) titleEl.textContent = 'Search Applications';
   } else {
     if (newSection) newSection.style.display = 'block';
     if (searchSection) searchSection.style.display = 'none';
-    if (titleEl) titleEl.textContent = 'New Customer';
+    if (titleEl) titleEl.textContent = 'New Applications';
   }
 }
 
@@ -28,7 +28,6 @@ function setupHeaderDropdowns() {
     ['productMenuBtn', 'productDropdownMenu'],
     ['applicationsMenuBtn', 'applicationsDropdownMenu'],
     ['locationMenuBtn', 'locationDropdownMenu'],
-    ['locationProductMenuBtn', 'locationProductDropdownMenu'],
     ['movementMenuBtn', 'movementDropdownMenu'],
     ['pickingMenuBtn', 'pickingDropdownMenu'],
     ['helpMenuBtn', 'helpDropdownMenu'],
@@ -76,34 +75,32 @@ function escapeHtml(text) {
   return div.innerHTML;
 }
 
-async function submitNewCustomer(e) {
+async function submitNewApplication(e) {
   e.preventDefault();
-  const custNmCustomer = document.getElementById('newCustNmCustomer') && document.getElementById('newCustNmCustomer').value.trim();
-  const custCdCode = document.getElementById('newCustCdCode') && document.getElementById('newCustCdCode').value.trim();
-  const custDsAddress = document.getElementById('newCustDsAddress') && document.getElementById('newCustDsAddress').value.trim();
-  if (!custNmCustomer && !custCdCode) {
-    alert('Please enter Customer Name or Code.');
+  const syapNmApplication = document.getElementById('newSyapNmApplication') && document.getElementById('newSyapNmApplication').value.trim();
+  const syapDsDetailed = document.getElementById('newSyapDsDetailed') && document.getElementById('newSyapDsDetailed').value.trim();
+  if (!syapNmApplication) {
+    alert('Please enter Application Name.');
     return;
   }
 
-  const saveBtn = document.getElementById('saveCustomerBtn');
+  const saveBtn = document.getElementById('saveApplicationBtn');
   if (saveBtn) saveBtn.disabled = true;
   try {
-    const res = await fetch(API_CUSTOMERS, {
+    const res = await fetch(API_APPLICATIONS, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        custNmCustomer: custNmCustomer || undefined,
-        custCdCode: custCdCode || undefined,
-        custDsAddress: custDsAddress || undefined
+        syapNmApplication,
+        syapDsDetailed: syapDsDetailed || undefined
       })
     });
     const data = await res.json();
     if (data.success) {
-      alert('Customer saved successfully.');
-      document.getElementById('newCustomerForm').reset();
+      alert('Application saved successfully.');
+      document.getElementById('newApplicationsForm').reset();
     } else {
-      alert(data.message || data.error || 'Error saving customer.');
+      alert(data.message || data.error || 'Error saving application.');
     }
   } catch (err) {
     console.error(err);
@@ -113,56 +110,59 @@ async function submitNewCustomer(e) {
   }
 }
 
-async function searchCustomers() {
-  const custNmCustomer = document.getElementById('filterCustNmCustomer') && document.getElementById('filterCustNmCustomer').value.trim();
-  const custCdCode = document.getElementById('filterCustCdCode') && document.getElementById('filterCustCdCode').value.trim();
+async function searchApplications() {
+  const syapNmApplication = document.getElementById('filterSyapNmApplication') && document.getElementById('filterSyapNmApplication').value.trim();
+  const syapDsDetailed = document.getElementById('filterSyapDsDetailed') && document.getElementById('filterSyapDsDetailed').value.trim();
 
   const params = new URLSearchParams();
-  if (custNmCustomer) params.set('custNmCustomer', custNmCustomer);
-  if (custCdCode) params.set('custCdCode', custCdCode);
+  if (syapNmApplication) params.set('syapNmApplication', syapNmApplication);
+  if (syapDsDetailed) params.set('syapDsDetailed', syapDsDetailed);
 
-  const tbody = document.getElementById('searchCustomerTableBody');
-  const countEl = document.getElementById('customerResultsCount');
+  const tbody = document.getElementById('searchApplicationsTableBody');
+  const countEl = document.getElementById('applicationsResultsCount');
   try {
-    const res = await fetch(API_CUSTOMERS + '?' + params.toString());
+    const res = await fetch(API_APPLICATIONS + '?' + params.toString());
     const data = await res.json();
     const list = (data.success && data.data) ? data.data : [];
     if (countEl) countEl.textContent = list.length + ' record(s)';
 
     if (list.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="4" class="empty-state">No customers found.</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="3" class="empty-state">No applications found.</td></tr>';
       return;
     }
 
-    tbody.innerHTML = list.map(c => `
+    tbody.innerHTML = list.map(app => `
       <tr>
-        <td>${escapeHtml(c.custCdId)}</td>
-        <td>${escapeHtml(c.custNmCustomer || '-')}</td>
-        <td>${escapeHtml(c.custCdCode || '-')}</td>
-        <td>${escapeHtml(c.custDsAddress || '-')}</td>
+        <td>${escapeHtml(app.syapCdSeq)}</td>
+        <td>${escapeHtml(app.syapNmApplication || '-')}</td>
+        <td>${escapeHtml(app.syapDsDetailed || '-')}</td>
       </tr>
     `).join('');
   } catch (err) {
     console.error(err);
     if (countEl) countEl.textContent = '0 records';
-    tbody.innerHTML = '<tr><td colspan="4" class="empty-state">Error loading customers.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="3" class="empty-state">Error loading applications.</td></tr>';
   }
 }
 
-function clearCustomerFilters() {
-  const nameEl = document.getElementById('filterCustNmCustomer');
-  const codeEl = document.getElementById('filterCustCdCode');
+function clearApplicationsFilters() {
+  const nameEl = document.getElementById('filterSyapNmApplication');
+  const descEl = document.getElementById('filterSyapDsDetailed');
   if (nameEl) nameEl.value = '';
-  if (codeEl) codeEl.value = '';
-  document.getElementById('searchCustomerTableBody').innerHTML = '<tr><td colspan="4" class="empty-state">Use filters and click Search to load customers.</td></tr>';
-  document.getElementById('customerResultsCount').textContent = '0 records';
+  if (descEl) descEl.value = '';
+  document.getElementById('searchApplicationsTableBody').innerHTML = '<tr><td colspan="3" class="empty-state">Use filters and click Search to load applications.</td></tr>';
+  document.getElementById('applicationsResultsCount').textContent = '0 records';
 }
 
 document.addEventListener('DOMContentLoaded', () => {
   showSection();
   setupHeaderDropdowns();
 
-  document.getElementById('newCustomerForm').addEventListener('submit', submitNewCustomer);
-  document.getElementById('applyCustomerFiltersBtn').addEventListener('click', searchCustomers);
-  document.getElementById('clearCustomerFiltersBtn').addEventListener('click', clearCustomerFilters);
+  document.getElementById('newApplicationsForm').addEventListener('submit', submitNewApplication);
+  document.getElementById('applyApplicationsFiltersBtn').addEventListener('click', searchApplications);
+  document.getElementById('clearApplicationsFiltersBtn').addEventListener('click', clearApplicationsFilters);
+
+  if (getMode() === 'search') {
+    searchApplications();
+  }
 });

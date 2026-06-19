@@ -7,6 +7,7 @@ function setupHeaderDropdowns() {
   const dropdowns = [
     ['usersMenuBtn', 'usersDropdownMenu'],
     ['productMenuBtn', 'productDropdownMenu'],
+    ['applicationsMenuBtn', 'applicationsDropdownMenu'],
     ['locationMenuBtn', 'locationDropdownMenu'],
     ['movementMenuBtn', 'movementDropdownMenu'],
     ['pickingMenuBtn', 'pickingDropdownMenu'],

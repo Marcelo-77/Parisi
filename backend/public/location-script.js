@@ -6,16 +6,18 @@ function setupHeaderDropdowns() {
     const usersDropdownMenu = document.getElementById('usersDropdownMenu');
     const productMenuBtn = document.getElementById('productMenuBtn');
     const productDropdownMenu = document.getElementById('productDropdownMenu');
+    const applicationsMenuBtn = document.getElementById('applicationsMenuBtn');
+    const applicationsDropdownMenu = document.getElementById('applicationsDropdownMenu');
     const locationMenuBtn = document.getElementById('locationMenuBtn');
     const locationDropdownMenu = document.getElementById('locationDropdownMenu');
     const locationProductMenuBtn = document.getElementById('locationProductMenuBtn');
     const locationProductDropdownMenu = document.getElementById('locationProductDropdownMenu');
 
     function closeAll() {
-        [usersDropdownMenu, productDropdownMenu, locationDropdownMenu, locationProductDropdownMenu].forEach(el => {
+        [usersDropdownMenu, productDropdownMenu, applicationsDropdownMenu, locationDropdownMenu, locationProductDropdownMenu].forEach(el => {
             if (el) el.setAttribute('aria-hidden', 'true');
         });
-        [usersMenuBtn, productMenuBtn, locationMenuBtn, locationProductMenuBtn].forEach(el => {
+        [usersMenuBtn, productMenuBtn, applicationsMenuBtn, locationMenuBtn, locationProductMenuBtn].forEach(el => {
             if (el) el.setAttribute('aria-expanded', 'false');
         });
     }
@@ -35,6 +37,15 @@ function setupHeaderDropdowns() {
             const open = productDropdownMenu.getAttribute('aria-hidden') !== 'true';
             productDropdownMenu.setAttribute('aria-hidden', open ? 'true' : 'false');
             productMenuBtn.setAttribute('aria-expanded', !open);
+        });
+    }
+    if (applicationsMenuBtn && applicationsDropdownMenu) {
+        applicationsMenuBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            closeAll();
+            const open = applicationsDropdownMenu.getAttribute('aria-hidden') !== 'true';
+            applicationsDropdownMenu.setAttribute('aria-hidden', open ? 'true' : 'false');
+            applicationsMenuBtn.setAttribute('aria-expanded', !open);
         });
     }
     if (locationMenuBtn && locationDropdownMenu) {

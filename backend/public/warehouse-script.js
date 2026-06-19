@@ -31,6 +31,8 @@ const itemModal = document.getElementById('itemModal');
 const productSearchSection = document.getElementById('productSearchSection');
 const productMenuBtn = document.getElementById('productMenuBtn');
 const productDropdownMenu = document.getElementById('productDropdownMenu');
+const applicationsMenuBtn = document.getElementById('applicationsMenuBtn');
+const applicationsDropdownMenu = document.getElementById('applicationsDropdownMenu');
 const usersMenuBtn = document.getElementById('usersMenuBtn');
 const usersDropdownMenu = document.getElementById('usersDropdownMenu');
 const locationMenuBtn = document.getElementById('locationMenuBtn');
@@ -294,6 +296,7 @@ function setupEventListeners() {
         productMenuBtn.addEventListener('click', (e) => {
             e.stopPropagation();
             closeUsersDropdown();
+            closeApplicationsDropdown();
             closeLocationDropdown();
             closeLocationProductDropdown();
             if (movementDropdownMenu) movementDropdownMenu.setAttribute('aria-hidden', 'true');
@@ -309,10 +312,33 @@ function setupEventListeners() {
         if (productDropdownMenu) productDropdownMenu.setAttribute('aria-hidden', 'true');
         if (productMenuBtn) productMenuBtn.setAttribute('aria-expanded', 'false');
     }
+    function closeApplicationsDropdown() {
+        if (applicationsDropdownMenu) applicationsDropdownMenu.setAttribute('aria-hidden', 'true');
+        if (applicationsMenuBtn) applicationsMenuBtn.setAttribute('aria-expanded', 'false');
+    }
+    if (applicationsMenuBtn && applicationsDropdownMenu) {
+        applicationsMenuBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            closeProductDropdown();
+            closeApplicationsDropdown();
+            closeUsersDropdown();
+            closeApplicationsDropdown();
+            closeLocationDropdown();
+            closeLocationProductDropdown();
+            closeMovementDropdown();
+            closePickingDropdown();
+            closeHelpDropdown();
+            closeCustomerDropdown();
+            const open = applicationsDropdownMenu.getAttribute('aria-hidden') !== 'true';
+            applicationsDropdownMenu.setAttribute('aria-hidden', open ? 'true' : 'false');
+            applicationsMenuBtn.setAttribute('aria-expanded', !open);
+        });
+    }
     if (usersMenuBtn && usersDropdownMenu) {
         usersMenuBtn.addEventListener('click', (e) => {
             e.stopPropagation();
             closeProductDropdown();
+            closeApplicationsDropdown();
             closeLocationDropdown();
             closeLocationProductDropdown();
             if (movementDropdownMenu) movementDropdownMenu.setAttribute('aria-hidden', 'true');
@@ -332,6 +358,7 @@ function setupEventListeners() {
         locationMenuBtn.addEventListener('click', (e) => {
             e.stopPropagation();
             closeProductDropdown();
+            closeApplicationsDropdown();
             closeUsersDropdown();
             closeLocationProductDropdown();
             if (movementDropdownMenu) movementDropdownMenu.setAttribute('aria-hidden', 'true');
@@ -351,7 +378,9 @@ function setupEventListeners() {
         locationProductMenuBtn.addEventListener('click', (e) => {
             e.stopPropagation();
             closeProductDropdown();
+            closeApplicationsDropdown();
             closeUsersDropdown();
+            closeApplicationsDropdown();
             closeLocationDropdown();
             if (movementDropdownMenu) movementDropdownMenu.setAttribute('aria-hidden', 'true');
             if (movementMenuBtn) movementMenuBtn.setAttribute('aria-expanded', 'false');
@@ -386,7 +415,9 @@ function setupEventListeners() {
         movementMenuBtn.addEventListener('click', (e) => {
             e.stopPropagation();
             closeProductDropdown();
+            closeApplicationsDropdown();
             closeUsersDropdown();
+            closeApplicationsDropdown();
             closeLocationDropdown();
             closeLocationProductDropdown();
             closePickingDropdown();
@@ -401,7 +432,9 @@ function setupEventListeners() {
         pickingMenuBtn.addEventListener('click', (e) => {
             e.stopPropagation();
             closeProductDropdown();
+            closeApplicationsDropdown();
             closeUsersDropdown();
+            closeApplicationsDropdown();
             closeLocationDropdown();
             closeLocationProductDropdown();
             closeMovementDropdown();
@@ -416,7 +449,9 @@ function setupEventListeners() {
         helpMenuBtn.addEventListener('click', (e) => {
             e.stopPropagation();
             closeProductDropdown();
+            closeApplicationsDropdown();
             closeUsersDropdown();
+            closeApplicationsDropdown();
             closeLocationDropdown();
             closeLocationProductDropdown();
             closeMovementDropdown();
@@ -431,7 +466,9 @@ function setupEventListeners() {
         customerMenuBtn.addEventListener('click', (e) => {
             e.stopPropagation();
             closeProductDropdown();
+            closeApplicationsDropdown();
             closeUsersDropdown();
+            closeApplicationsDropdown();
             closeLocationDropdown();
             closeLocationProductDropdown();
             closeMovementDropdown();
@@ -444,6 +481,7 @@ function setupEventListeners() {
     }
     document.addEventListener('click', () => {
         closeProductDropdown();
+        closeApplicationsDropdown();
         closeUsersDropdown();
         closeLocationDropdown();
         closeLocationProductDropdown();

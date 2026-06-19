@@ -273,6 +273,52 @@ async function initDatabase() {
     `);
     console.log('✅ Tabela situation_product criada/verificada');
 
+    // Criar tabela system_applications
+    await query(`
+      CREATE TABLE IF NOT EXISTS system_applications (
+        syap_cd_seq SERIAL PRIMARY KEY,
+        syap_nm_application VARCHAR(100) NOT NULL,
+        syap_ds_detailed VARCHAR(150),
+        CONSTRAINT syap_cd_seq_max CHECK (syap_cd_seq >= 1 AND syap_cd_seq <= 9999)
+      )
+    `);
+    console.log('✅ Tabela system_applications criada/verificada');
+
+    const menuApplications = [
+      'index.html',
+      'pesquisa.html',
+      'customer.html',
+      'warehouse.html',
+      'location.html',
+      'location-search.html',
+      'location-product.html',
+      'log-location-product.html',
+      'movement.html',
+      'movement-situation.html',
+      'picking.html',
+      'separation-picking.html',
+      'double-checking.html',
+      'last-check-label.html',
+      'help.html',
+      'applications.html'
+    ];
+    for (const application of menuApplications) {
+      await query(
+        `INSERT INTO system_applications (syap_nm_application)
+         SELECT $1::VARCHAR(100)
+         WHERE NOT EXISTS (
+           SELECT 1 FROM system_applications WHERE syap_nm_application = $1::VARCHAR(100)
+         )`,
+        [application]
+      );
+    }
+    console.log(`✅ system_applications: ${menuApplications.length} menu HTML pages verified`);
+
+    await query(`
+      CREATE UNIQUE INDEX IF NOT EXISTS idx_system_applications_name
+      ON system_applications (syap_nm_application)
+    `);
+
     // Criar tabela location_product (chave primária: location_code, product_code, sipr_sq_number)
     await query(`
       CREATE TABLE IF NOT EXISTS location_product (

@@ -11,6 +11,7 @@ const locationsRoutes = require('./routes/locations');
 const locationProductRoutes = require('./routes/locationProduct');
 const movementRoutes = require('./routes/movement');
 const customersRoutes = require('./routes/customers');
+const systemApplicationsRoutes = require('./routes/systemApplications');
 const situationsRoutes = require('./routes/situations');
 const pickingRoutes = require('./routes/picking');
 const authRoutes = require('./routes/auth');
@@ -67,6 +68,7 @@ app.use('/api/locations', locationsRoutes);
 app.use('/api/location-product', locationProductRoutes);
 app.use('/api/movement', movementRoutes);
 app.use('/api/customers', customersRoutes);
+app.use('/api/system-applications', systemApplicationsRoutes);
 app.use('/api/situations', situationsRoutes);
 app.use('/api/picking', pickingRoutes);
 

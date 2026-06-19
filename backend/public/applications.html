@@ -1,21 +1,13 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Double-Y Warehouse System - Location Product</title>
+    <title>Double-Y Warehouse System - Applications</title>
     <link rel="stylesheet" href="styles.css">
     <link rel="stylesheet" href="warehouse-styles.css">
     <link rel="stylesheet" href="pesquisa-styles.css">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <style>
-        .print-modal-desc { margin-bottom: 12px; color: #555; }
-        .print-location-codes-list { max-height: 320px; overflow-y: auto; border: 1px solid #e1e5e9; border-radius: 8px; padding: 12px; background: #fafafa; }
-        .print-location-code-item { display: block; padding: 6px 0; cursor: pointer; }
-        .print-location-code-item input { margin-right: 8px; }
-        .print-modal-actions .checkbox-label { cursor: pointer; }
-        input.input-readonly { background: #e9ecef; color: #495057; cursor: not-allowed; }
-    </style>
 </head>
 <body>
     <script src="auth-check.js"></script>
@@ -48,7 +40,7 @@
             </div>
             <div class="header-content">
                 <h1><i class="fas fa-warehouse"></i> Double-Y Warehouse System</h1>
-                <p class="header-search-users-label">Location Product</p>
+                <p class="header-search-users-label" id="applicationsPageTitle">Applications</p>
                 <div class="header-actions">
                     <div class="users-dropdown">
                         <button type="button" class="btn btn-primary" id="usersMenuBtn" aria-haspopup="true" aria-expanded="false">
@@ -76,7 +68,8 @@
                             <button type="button" id="newProductBtn" class="dropdown-item"><i class="fas fa-plus"></i> New Product</button>
                             <button type="button" id="searchProductBtn" class="dropdown-item"><i class="fas fa-search"></i> Search Product</button>
                         </div>
-                    </div>                    <div class="applications-dropdown">
+                    </div>
+                    <div class="applications-dropdown">
                         <button type="button" class="btn btn-primary" id="applicationsMenuBtn" aria-haspopup="true" aria-expanded="false">
                             <i class="fas fa-window-restore"></i> Applications <i class="fas fa-chevron-down"></i>
                         </button>
@@ -85,8 +78,6 @@
                             <a href="applications.html?mode=search" class="dropdown-item"><i class="fas fa-search"></i> Search Applications</a>
                         </div>
                     </div>
-
-
                     <div class="location-dropdown">
                         <button type="button" class="btn btn-primary" id="locationMenuBtn" aria-haspopup="true" aria-expanded="false">
                             <i class="fas fa-map-marker-alt"></i> Location <i class="fas fa-chevron-down"></i>
@@ -135,77 +126,72 @@
         </header>
 
         <main class="main-content">
-            <div class="form-container" style="width:100%;max-width:none;">
+            <div id="newApplicationsSection" class="form-container" style="width:100%;max-width:600px;">
                 <div class="filters-container">
                     <div class="filters-header">
-                        <h2><i class="fas fa-filter"></i> Filters</h2>
+                        <h2><i class="fas fa-plus"></i> New Applications</h2>
+                    </div>
+                    <div class="filters-content show">
+                        <form id="newApplicationsForm">
+                            <div class="form-row">
+                                <div class="form-group full-width">
+                                    <label for="newSyapNmApplication"><i class="fas fa-file-code"></i> Application Name</label>
+                                    <input type="text" id="newSyapNmApplication" maxlength="100" required placeholder="e.g. warehouse.html">
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group full-width">
+                                    <label for="newSyapDsDetailed"><i class="fas fa-align-left"></i> Detailed Description</label>
+                                    <input type="text" id="newSyapDsDetailed" maxlength="150" placeholder="Optional description">
+                                </div>
+                            </div>
+                            <div class="form-actions" style="margin-top:20px;">
+                                <button type="submit" class="btn btn-primary" id="saveApplicationBtn"><i class="fas fa-save"></i> Save Application</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <div id="searchApplicationsSection" class="form-container" style="width:100%;max-width:none; display:none;">
+                <div class="filters-container">
+                    <div class="filters-header">
+                        <h2><i class="fas fa-search"></i> Search Applications</h2>
                     </div>
                     <div class="filters-content show">
                         <div class="filters-grid">
                             <div class="filter-group">
-                                <label for="filterLocationCode"><i class="fas fa-map-marker-alt"></i> Location Code</label>
-                                <input type="text" id="filterLocationCode" placeholder="Code location">
+                                <label for="filterSyapNmApplication"><i class="fas fa-file-code"></i> Application Name</label>
+                                <input type="text" id="filterSyapNmApplication" placeholder="e.g. warehouse.html">
                             </div>
                             <div class="filter-group">
-                                <label for="filterProductCode"><i class="fas fa-barcode"></i> Product Code</label>
-                                <input type="text" id="filterProductCode" placeholder="Code product">
-                            </div>
-                            <div class="filter-group">
-                                <label for="filterSituation"><i class="fas fa-tag"></i> Situation</label>
-                                <select id="filterSituation">
-                                    <option value="">All</option>
-                                </select>
-                            </div>
-                            <div class="filter-group">
-                                <label for="filterEntryFrom"><i class="fas fa-calendar"></i> Entry From</label>
-                                <input type="datetime-local" id="filterEntryFrom">
-                            </div>
-                            <div class="filter-group">
-                                <label for="filterEntryTo"><i class="fas fa-calendar"></i> Entry To</label>
-                                <input type="datetime-local" id="filterEntryTo">
+                                <label for="filterSyapDsDetailed"><i class="fas fa-align-left"></i> Description</label>
+                                <input type="text" id="filterSyapDsDetailed" placeholder="Description">
                             </div>
                         </div>
                         <div class="filters-actions">
-                            <button id="newRecordBtn" class="btn btn-primary" type="button">
-                                <i class="fas fa-plus"></i> New Record
-                            </button>
-                            <button id="applyFiltersBtn" class="btn btn-primary" type="button">
-                                <i class="fas fa-search"></i> Search
-                            </button>
-                            <button id="clearFiltersBtn" class="btn btn-secondary" type="button">
-                                <i class="fas fa-eraser"></i> Clear
-                            </button>
-                            <button id="printBtn" class="btn btn-secondary" type="button">
-                                <i class="fas fa-print"></i> Print
-                            </button>
+                            <button id="applyApplicationsFiltersBtn" class="btn btn-primary" type="button"><i class="fas fa-search"></i> Search</button>
+                            <button id="clearApplicationsFiltersBtn" class="btn btn-secondary" type="button"><i class="fas fa-eraser"></i> Clear</button>
                         </div>
                     </div>
                 </div>
-
                 <div class="results-container" style="margin-top:20px;">
                     <div class="results-header">
-                        <h3>Records</h3>
-                        <span id="resultsCount">0 records</span>
+                        <h3>Applications</h3>
+                        <span id="applicationsResultsCount">0 records</span>
                     </div>
                     <div class="table-container">
                         <table class="warehouse-table">
                             <thead>
                                 <tr>
-                                    <th>Location Code</th>
-                                    <th>Product Code</th>
-                                    <th>Entry Date/Time</th>
-                                    <th>Situation</th>
-                                    <th>Qty Informed</th>
-                                    <th>Qty Current</th>
-                                    <th class="th-actions">Actions</th>
+                                    <th>ID</th>
+                                    <th>Application Name</th>
+                                    <th>Detailed Description</th>
                                 </tr>
                             </thead>
-                            <tbody id="tableBody">
+                            <tbody id="searchApplicationsTableBody">
                                 <tr>
-                                    <td colspan="7" class="empty-state">
-                                        <i class="fas fa-inbox"></i>
-                                        <p>No records. Click "New Record" to add.</p>
-                                    </td>
+                                    <td colspan="3" class="empty-state">Use filters and click Search to load applications.</td>
                                 </tr>
                             </tbody>
                         </table>
@@ -219,102 +205,6 @@
         </footer>
     </div>
 
-    <!-- Modal New/Edit Record -->
-    <div id="recordModal" class="modal">
-        <div class="modal-content modal-large">
-            <div class="modal-header success">
-                <h3 id="recordModalTitle"><i class="fas fa-plus"></i> New Record</h3>
-                <button type="button" class="modal-close" id="closeRecordModal">&times;</button>
-            </div>
-            <div class="modal-body">
-                <form id="recordForm">
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="recordLocationCode"><i class="fas fa-map-marker-alt"></i> Location Code *</label>
-                            <select id="recordLocationCode" required></select>
-                        </div>
-                        <div class="form-group">
-                            <label for="recordProductCode"><i class="fas fa-barcode"></i> Product Code *</label>
-                            <select id="recordProductCode" required></select>
-                        </div>
-                    </div>
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="recordEntryDatetime"><i class="fas fa-calendar-alt"></i> Entry Date/Time *</label>
-                            <input type="datetime-local" id="recordEntryDatetime" required readonly class="input-readonly">
-                        </div>
-                        <div class="form-group">
-                            <label for="recordSituation"><i class="fas fa-tag"></i> Situation *</label>
-                            <select id="recordSituation" required></select>
-                        </div>
-                    </div>
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="recordQuantityInformed"><i class="fas fa-list-ol"></i> Quantity Informed</label>
-                            <input type="number" id="recordQuantityInformed" min="0" value="0" step="1">
-                        </div>
-                        <div class="form-group">
-                            <label for="recordQuantityCurrent"><i class="fas fa-boxes"></i> Quantity Current</label>
-                            <input type="number" id="recordQuantityCurrent" min="0" value="0" step="1">
-                        </div>
-                    </div>
-                    <div class="form-actions" style="margin-top:20px;">
-                        <button type="button" class="btn btn-secondary" id="cancelRecordBtn">Cancel</button>
-                        <button type="submit" class="btn btn-primary" id="saveRecordBtn"><i class="fas fa-save"></i> Save</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
-
-    <!-- Modal Print - Seleção de Location Codes (quantity informed > 0) -->
-    <div id="printModal" class="modal">
-        <div class="modal-content modal-large">
-            <div class="modal-header success">
-                <h3><i class="fas fa-print"></i> Print - Select Location Codes</h3>
-                <button type="button" class="modal-close" id="closePrintModal">&times;</button>
-            </div>
-            <div class="modal-body">
-                <p class="print-modal-desc">Select a location from Location module, then print product code, quantity and barcode.</p>
-                <div id="printLocationCodesList" class="print-location-codes-list"></div>
-                <div class="form-actions" style="margin-top:20px;">
-                    <button type="button" class="btn btn-secondary" id="closePrintModalBtn">Close</button>
-                    <button type="button" class="btn btn-primary" id="doPrintBtn"><i class="fas fa-print"></i> Print</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Modal Edit Quantity Current (somente Quantity Current editável) -->
-    <div id="editQuantityCurrentModal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header success">
-                <h3><i class="fas fa-edit"></i> Edit Quantity Current</h3>
-                <button type="button" class="modal-close" id="closeEditQuantityCurrentModal">&times;</button>
-            </div>
-            <div class="modal-body">
-                <form id="editQuantityCurrentForm">
-                    <input type="hidden" id="editLocationCode">
-                    <input type="hidden" id="editProductCode">
-                    <input type="hidden" id="editEntryDatetime">
-                    <input type="hidden" id="editSiprSqNumber">
-                    <input type="hidden" id="editQuantityInformed">
-                    <p class="detail-label" id="editRecordSummary"></p>
-                    <div class="form-group">
-                        <label for="editQuantityCurrent"><i class="fas fa-boxes"></i> Quantity Current *</label>
-                        <input type="number" id="editQuantityCurrent" min="0" step="1" required>
-                    </div>
-                    <div class="form-actions" style="margin-top:20px;">
-                        <button type="button" class="btn btn-secondary" id="cancelEditQuantityCurrentBtn">Cancel</button>
-                        <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Update</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
-
-    <script src="jsbarcode.min.js"></script>
-    <script src="qrcode.min.js"></script>
-    <script src="location-product-script.js"></script>
+    <script src="applications-script.js"></script>
 </body>
 </html>
