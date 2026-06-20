@@ -2,6 +2,7 @@ const crypto = require('crypto');
 
 const AUTH_SECRET = process.env.AUTH_SECRET || 'double-y-auth-secret';
 const APP_PASSWORD = process.env.APP_PASSWORD || 'yahusha';
+const ROOT_USER = 'root';
 const SESSION_COOKIE = 'doubley_session';
 
 function signToken(userId) {
@@ -37,16 +38,30 @@ function parseCookies(req) {
   }, {});
 }
 
+function getSessionPayload(req) {
+  return verifyToken(parseCookies(req)[SESSION_COOKIE]);
+}
+
 function isAuthenticated(req) {
-  return Boolean(verifyToken(parseCookies(req)[SESSION_COOKIE]));
+  return Boolean(getSessionPayload(req));
 }
 
 function getSessionUserId(req) {
-  const payload = verifyToken(parseCookies(req)[SESSION_COOKIE]);
-  if (!payload || payload === 'authenticated') return null;
+  const payload = getSessionPayload(req);
+  if (!payload || payload === 'authenticated' || payload === ROOT_USER) return null;
   return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(payload)
     ? payload
     : null;
+}
+
+function isRootSession(req) {
+  return getSessionPayload(req) === ROOT_USER;
+}
+
+function verifyRootLogin(email, password) {
+  const normalizedEmail = email != null ? String(email).trim().toLowerCase() : '';
+  if (normalizedEmail !== ROOT_USER) return false;
+  return verifyPassword(password);
 }
 
 function setSessionCookie(res, userId) {
@@ -119,13 +134,16 @@ function requireAuth(req, res, next) {
 
 module.exports = {
   APP_PASSWORD,
+  ROOT_USER,
   SESSION_COOKIE,
   isAuthenticated,
   setSessionCookie,
   clearSessionCookie,
   verifyPassword,
   verifyStoredPassword,
+  verifyRootLogin,
   getSessionUserId,
+  isRootSession,
   protectPages,
   requireAuth,
 };

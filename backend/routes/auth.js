@@ -4,6 +4,9 @@ const {
   setSessionCookie,
   clearSessionCookie,
   getSessionUserId,
+  isRootSession,
+  verifyRootLogin,
+  ROOT_USER,
 } = require('../middleware/auth');
 const funcionarioServiceDB = require('../services/funcionarioServiceDB');
 
@@ -12,6 +15,18 @@ const router = express.Router();
 router.get('/check', async (req, res) => {
   if (!isAuthenticated(req)) {
     return res.json({ authenticated: false });
+  }
+
+  if (isRootSession(req)) {
+    return res.json({
+      authenticated: true,
+      user: {
+        id: ROOT_USER,
+        nome: 'Root',
+        email: ROOT_USER,
+        isRoot: true
+      }
+    });
   }
 
   const userId = getSessionUserId(req);
@@ -46,6 +61,20 @@ router.post('/login', async (req, res) => {
   }
 
   try {
+    if (verifyRootLogin(email, password)) {
+      setSessionCookie(res, ROOT_USER);
+      return res.json({
+        success: true,
+        message: 'Login successful',
+        user: {
+          id: ROOT_USER,
+          nome: 'Root',
+          email: ROOT_USER,
+          isRoot: true
+        }
+      });
+    }
+
     const user = await funcionarioServiceDB.autenticar(email, password);
 
     if (!user) {
