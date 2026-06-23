@@ -178,6 +178,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         fetch(LOCATIONS_API_URL, {
             method: 'POST',
+            credentials: 'include',
             headers: {
                 'Content-Type': 'application/json'
             },

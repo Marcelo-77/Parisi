@@ -83,8 +83,27 @@ function getLocationPartsForExport(loc) {
     };
 }
 
+function getUsuarioInseriuNome(loc) {
+    if (!loc) return '';
+    if (loc.usuarioInseriuNome) return loc.usuarioInseriuNome;
+    if (loc.usuario_inseriu_nome) return loc.usuario_inseriu_nome;
+    const key = loc.usuarioInseriu != null ? String(loc.usuarioInseriu).trim().toLowerCase()
+        : (loc.usuario_inseriu != null ? String(loc.usuario_inseriu).trim().toLowerCase() : '');
+    if (key === 'root') return 'Root';
+    return '';
+}
+
+function getInsertedAt(loc) {
+    const raw = loc.criadoEm != null ? loc.criadoEm : loc.criado_em;
+    if (!raw) return '';
+    const date = new Date(raw);
+    if (Number.isNaN(date.getTime())) return '';
+    const pad = (n) => String(n).padStart(2, '0');
+    return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
+}
+
 function buildLocationsExcelXml(list) {
-    const headers = ['Street', 'Building', 'Level', 'Sublevel', 'Side', 'Location', 'Status', 'Access Type', 'Section'];
+    const headers = ['Street', 'Building', 'Level', 'Sublevel', 'Side', 'Location', 'Status', 'Access Type', 'Section', 'Inserted By', 'Inserted At'];
     const headerRow = headers.map((header) =>
         `<Cell><Data ss:Type="String">${escapeXml(header)}</Data></Cell>`
     ).join('');
@@ -102,7 +121,9 @@ function buildLocationsExcelXml(list) {
             loc.location || '',
             statusLabel,
             loc.accessType || loc.access_type || '',
-            sectionLabel
+            sectionLabel,
+            getUsuarioInseriuNome(loc),
+            getInsertedAt(loc)
         ].map((value) => `<Cell><Data ss:Type="String">${escapeXml(value)}</Data></Cell>`).join('');
         return `<Row>${cells}</Row>`;
     }).join('');
@@ -127,6 +148,8 @@ function buildLocationsExcelXml(list) {
 <Column ss:Width="80"/>
 <Column ss:Width="140"/>
 <Column ss:Width="120"/>
+<Column ss:Width="140"/>
+<Column ss:Width="150"/>
 <Row>${headerRow}</Row>
 ${dataRows}
 </Table>
@@ -496,6 +519,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             fetch(`${LOCATIONS_API_URL}/${encodeURIComponent(id)}`, {
                 method: 'PUT',
+                credentials: 'include',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(data)
             })

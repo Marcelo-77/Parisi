@@ -21,8 +21,8 @@ class LocationService {
 
     const insertQuery = `
       INSERT INTO ${this.tableName}
-        (location, status, access_type, section)
-      VALUES ($1, $2, $3, $4)
+        (location, status, access_type, section, usuario_inseriu, usuario_alterou)
+      VALUES ($1, $2, $3, $4, $5, $6)
       RETURNING *
     `;
 
@@ -30,7 +30,9 @@ class LocationService {
       dados.location,
       dados.status,
       dados.accessType,
-      dados.section
+      dados.section,
+      dados.usuarioInseriu || null,
+      dados.usuarioAlterou || dados.usuarioInseriu || null
     ];
 
     try {
@@ -48,31 +50,37 @@ class LocationService {
     let idx = 1;
 
     if (filtros.location) {
-      whereClauses.push(`location ILIKE $${idx++}`);
+      whereClauses.push(`wl.location ILIKE $${idx++}`);
       values.push(`%${filtros.location}%`);
     }
 
     if (filtros.status) {
-      whereClauses.push(`status = $${idx++}`);
+      whereClauses.push(`wl.status = $${idx++}`);
       values.push(filtros.status);
     }
 
     if (filtros.accessType) {
-      whereClauses.push(`access_type = $${idx++}`);
+      whereClauses.push(`wl.access_type = $${idx++}`);
       values.push(filtros.accessType);
     }
 
     if (filtros.section) {
-      whereClauses.push(`section = $${idx++}`);
+      whereClauses.push(`wl.section = $${idx++}`);
       values.push(filtros.section);
     }
 
     const where = whereClauses.length ? `WHERE ${whereClauses.join(' AND ')}` : '';
 
     const selectQuery = `
-      SELECT * FROM ${this.tableName}
+      SELECT wl.*,
+        CASE
+          WHEN LOWER(TRIM(COALESCE(wl.usuario_inseriu, ''))) = 'root' THEN 'Root'
+          ELSE f.nome
+        END AS usuario_inseriu_nome
+      FROM ${this.tableName} wl
+      LEFT JOIN funcionarios f ON f.id::text = wl.usuario_inseriu
       ${where}
-      ORDER BY location ASC
+      ORDER BY wl.location ASC
     `;
 
     try {
@@ -135,6 +143,7 @@ class LocationService {
           status = COALESCE($3, status),
           access_type = COALESCE($4, access_type),
           section = COALESCE($5, section),
+          usuario_alterou = COALESCE($6, usuario_alterou),
           atualizado_em = CURRENT_TIMESTAMP
       WHERE id = $1::uuid
       RETURNING *
@@ -145,7 +154,8 @@ class LocationService {
       dados.location ? dados.location.trim() : existente.location,
       dados.status || existente.status,
       dados.accessType || existente.accessType,
-      dados.section || existente.section
+      dados.section || existente.section,
+      dados.usuarioAlterou || null
     ];
 
     try {
@@ -196,6 +206,13 @@ class LocationService {
     return erros;
   }
 
+  resolveUsuarioInseriuNome(row) {
+    if (row.usuario_inseriu_nome) return row.usuario_inseriu_nome;
+    const key = row.usuario_inseriu != null ? String(row.usuario_inseriu).trim().toLowerCase() : '';
+    if (key === 'root') return 'Root';
+    return null;
+  }
+
   mapRowToLocation(row) {
     return {
       id: row.id,
@@ -203,6 +220,9 @@ class LocationService {
       status: row.status,
       accessType: row.access_type,
       section: row.section || 'OTHER',
+      usuarioInseriu: row.usuario_inseriu || null,
+      usuarioAlterou: row.usuario_alterou || null,
+      usuarioInseriuNome: this.resolveUsuarioInseriuNome(row),
       criadoEm: row.criado_em,
       atualizadoEm: row.atualizado_em
     };

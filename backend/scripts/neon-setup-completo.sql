@@ -163,12 +163,20 @@ CREATE TABLE IF NOT EXISTS warehouse_locations (
   status VARCHAR(20) NOT NULL,
   access_type VARCHAR(50) NOT NULL,
   section VARCHAR(50) NOT NULL DEFAULT 'OTHER',
+  usuario_inseriu VARCHAR(50),
+  usuario_alterou VARCHAR(50),
   criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   atualizado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 ALTER TABLE warehouse_locations
   ADD COLUMN IF NOT EXISTS section VARCHAR(50) NOT NULL DEFAULT 'OTHER';
+
+ALTER TABLE warehouse_locations
+  ADD COLUMN IF NOT EXISTS usuario_inseriu VARCHAR(50);
+
+ALTER TABLE warehouse_locations
+  ADD COLUMN IF NOT EXISTS usuario_alterou VARCHAR(50);
 
 UPDATE warehouse_locations
 SET section = 'TAPWARE',

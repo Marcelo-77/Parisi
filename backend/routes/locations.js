@@ -1,6 +1,7 @@
 const express = require('express');
 const { body, query, validationResult } = require('express-validator');
 const locationService = require('../services/locationService');
+const { getSessionUserKey } = require('../middleware/auth');
 
 const router = express.Router();
 
@@ -125,7 +126,12 @@ router.get('/:id', async (req, res) => {
 // POST /api/locations
 router.post('/', validarLocation, handleValidationErrors, async (req, res) => {
   try {
-    const location = await locationService.criar(req.body);
+    const userKey = getSessionUserKey(req);
+    const location = await locationService.criar({
+      ...req.body,
+      usuarioInseriu: userKey,
+      usuarioAlterou: userKey
+    });
     res.status(201).json({
       success: true,
       message: 'Location created successfully',
@@ -145,7 +151,11 @@ router.post('/', validarLocation, handleValidationErrors, async (req, res) => {
 // PUT /api/locations/:id
 router.put('/:id', validarLocation, handleValidationErrors, async (req, res) => {
   try {
-    const location = await locationService.atualizar(req.params.id, req.body);
+    const userKey = getSessionUserKey(req);
+    const location = await locationService.atualizar(req.params.id, {
+      ...req.body,
+      usuarioAlterou: userKey
+    });
     res.json({
       success: true,
       message: 'Location updated successfully',

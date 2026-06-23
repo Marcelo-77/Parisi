@@ -55,6 +55,13 @@ function getSessionUserId(req) {
     : null;
 }
 
+function getSessionUserKey(req) {
+  const payload = getSessionPayload(req);
+  if (!payload || payload === 'authenticated') return null;
+  if (payload === ROOT_USER) return ROOT_USER;
+  return getSessionUserId(req);
+}
+
 function isRootSession(req) {
   return getSessionPayload(req) === ROOT_USER;
 }
@@ -191,6 +198,7 @@ module.exports = {
   verifyStoredPassword,
   verifyRootLogin,
   getSessionUserId,
+  getSessionUserKey,
   isRootSession,
   protectPages,
   requireAuth,

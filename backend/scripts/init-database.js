@@ -259,6 +259,8 @@ async function initDatabase() {
         status VARCHAR(20) NOT NULL,
         access_type VARCHAR(50) NOT NULL,
         section VARCHAR(50) NOT NULL DEFAULT 'OTHER',
+        usuario_inseriu VARCHAR(50),
+        usuario_alterou VARCHAR(50),
         criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         atualizado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
@@ -270,6 +272,16 @@ async function initDatabase() {
       ADD COLUMN IF NOT EXISTS section VARCHAR(50) NOT NULL DEFAULT 'OTHER'
     `);
     console.log('✅ warehouse_locations.section verificada');
+
+    await query(`
+      ALTER TABLE warehouse_locations
+      ADD COLUMN IF NOT EXISTS usuario_inseriu VARCHAR(50)
+    `);
+    await query(`
+      ALTER TABLE warehouse_locations
+      ADD COLUMN IF NOT EXISTS usuario_alterou VARCHAR(50)
+    `);
+    console.log('✅ warehouse_locations.usuario_inseriu / usuario_alterou verificadas');
 
     // Criar tabela situation_product
     await query(`
