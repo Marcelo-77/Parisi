@@ -258,11 +258,18 @@ async function initDatabase() {
         location VARCHAR(50) UNIQUE NOT NULL,
         status VARCHAR(20) NOT NULL,
         access_type VARCHAR(50) NOT NULL,
+        section VARCHAR(50) NOT NULL DEFAULT 'OTHER',
         criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         atualizado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
     `);
     console.log('✅ Tabela warehouse_locations criada/verificada');
+
+    await query(`
+      ALTER TABLE warehouse_locations
+      ADD COLUMN IF NOT EXISTS section VARCHAR(50) NOT NULL DEFAULT 'OTHER'
+    `);
+    console.log('✅ warehouse_locations.section verificada');
 
     // Criar tabela situation_product
     await query(`
@@ -284,36 +291,46 @@ async function initDatabase() {
     `);
     console.log('✅ Tabela system_applications criada/verificada');
 
-    const menuApplications = [
-      'users.html',
-      'pesquisa.html',
-      'customer.html',
-      'warehouse.html',
-      'location.html',
-      'location-search.html',
-      'location-product.html',
-      'log-location-product.html',
-      'movement.html',
-      'movement-situation.html',
-      'picking.html',
-      'separation-picking.html',
-      'double-checking.html',
-      'last-check-label.html',
-      'help.html',
-      'applications.html',
-      'application_users.html'
+    const systemApplicationMenus = [
+      { application: 'users.html', menuName: 'Users' },
+      { application: 'pesquisa.html', menuName: 'Users_search' },
+      { application: 'customer.html', menuName: 'Customer' },
+      { application: 'warehouse.html', menuName: 'Product' },
+      { application: 'special-search-product.html', menuName: 'Product_Special_Search' },
+      { application: 'upload-warehouse-map.html', menuName: 'Applications_Upload_Warehouse_Map' },
+      { application: 'location.html', menuName: 'Location' },
+      { application: 'location-search.html', menuName: 'Location_Search' },
+      { application: 'location-product.html', menuName: 'Location_Product' },
+      { application: 'log-location-product.html', menuName: 'Location' },
+      { application: 'movement.html', menuName: 'Movement' },
+      { application: 'movement-situation.html', menuName: 'Movement_Situation' },
+      { application: 'picking.html', menuName: 'Picking' },
+      { application: 'separation-picking.html', menuName: 'Separation_Picking' },
+      { application: 'double-checking.html', menuName: 'Double_Checking' },
+      { application: 'last-check-label.html', menuName: 'Packing' },
+      { application: 'help.html', menuName: 'Help' },
+      { application: 'applications.html', menuName: 'Applications' },
+      { application: 'application_users.html', menuName: 'Applications_Users' },
+      { application: 'change-password.html', menuName: 'Users_Change_Password' }
     ];
-    for (const application of menuApplications) {
+
+    for (const item of systemApplicationMenus) {
       await query(
-        `INSERT INTO system_applications (syap_nm_application)
-         SELECT $1::VARCHAR(100)
+        `INSERT INTO system_applications (syap_nm_application, syap_ds_detailed)
+         SELECT $1::VARCHAR(100), $2::VARCHAR(150)
          WHERE NOT EXISTS (
            SELECT 1 FROM system_applications WHERE syap_nm_application = $1::VARCHAR(100)
          )`,
-        [application]
+        [item.application, item.menuName]
+      );
+      await query(
+        `UPDATE system_applications
+         SET syap_ds_detailed = $2::VARCHAR(150)
+         WHERE syap_nm_application = $1::VARCHAR(100)`,
+        [item.application, item.menuName]
       );
     }
-    console.log(`✅ system_applications: ${menuApplications.length} menu HTML pages verified`);
+    console.log(`✅ system_applications: ${systemApplicationMenus.length} menu HTML pages verified`);
 
     await query(`
       UPDATE system_applications
@@ -376,20 +393,24 @@ async function initDatabase() {
 
     // Renomear sta_cd_id para stat_cd_id se existir; senão adicionar stat_cd_id
     try {
-      await query(`
-        ALTER TABLE location_product RENAME COLUMN sta_cd_id TO stat_cd_id
+      const statCol = await query(`
+        SELECT 1 FROM information_schema.columns
+        WHERE table_schema = 'public' AND table_name = 'location_product' AND column_name = 'stat_cd_id'
       `);
-      console.log('✅ Coluna sta_cd_id renomeada para stat_cd_id em location_product');
-    } catch (error) {
-      try {
-        await query(`
-          ALTER TABLE location_product
-          ADD COLUMN IF NOT EXISTS stat_cd_id VARCHAR(1)
-        `);
+      const staCol = await query(`
+        SELECT 1 FROM information_schema.columns
+        WHERE table_schema = 'public' AND table_name = 'location_product' AND column_name = 'sta_cd_id'
+      `);
+
+      if ((staCol.rows || []).length > 0 && (statCol.rows || []).length === 0) {
+        await query(`ALTER TABLE location_product RENAME COLUMN sta_cd_id TO stat_cd_id`);
+        console.log('✅ Coluna sta_cd_id renomeada para stat_cd_id em location_product');
+      } else if ((statCol.rows || []).length === 0) {
+        await query(`ALTER TABLE location_product ADD COLUMN IF NOT EXISTS stat_cd_id VARCHAR(1)`);
         console.log('✅ Coluna stat_cd_id adicionada/verificada em location_product');
-      } catch (err) {
-        // Coluna pode já existir, ignorar erro
       }
+    } catch (err) {
+      console.warn('⚠️ Migração stat_cd_id location_product:', err.message);
     }
 
     // Atualizar todos os registros de location_product para stat_cd_id = 'A'

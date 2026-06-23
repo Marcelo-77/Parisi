@@ -162,9 +162,18 @@ CREATE TABLE IF NOT EXISTS warehouse_locations (
   location VARCHAR(50) UNIQUE NOT NULL,
   status VARCHAR(20) NOT NULL,
   access_type VARCHAR(50) NOT NULL,
+  section VARCHAR(50) NOT NULL DEFAULT 'OTHER',
   criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   atualizado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+ALTER TABLE warehouse_locations
+  ADD COLUMN IF NOT EXISTS section VARCHAR(50) NOT NULL DEFAULT 'OTHER';
+
+UPDATE warehouse_locations
+SET section = 'TAPWARE',
+    atualizado_em = CURRENT_TIMESTAMP
+WHERE section IS DISTINCT FROM 'TAPWARE';
 
 CREATE TABLE IF NOT EXISTS situation_product (
   sipr_sq_number SERIAL PRIMARY KEY,
@@ -191,30 +200,59 @@ CREATE TABLE IF NOT EXISTS system_applications (
   CONSTRAINT syap_cd_seq_max CHECK (syap_cd_seq >= 1 AND syap_cd_seq <= 9999)
 );
 
-INSERT INTO system_applications (syap_nm_application)
-SELECT v.application
+INSERT INTO system_applications (syap_nm_application, syap_ds_detailed)
+SELECT v.application, v.menu_name
 FROM (VALUES
-  ('users.html'),
-  ('pesquisa.html'),
-  ('customer.html'),
-  ('warehouse.html'),
-  ('location.html'),
-  ('location-search.html'),
-  ('location-product.html'),
-  ('log-location-product.html'),
-  ('movement.html'),
-  ('movement-situation.html'),
-  ('picking.html'),
-  ('separation-picking.html'),
-  ('double-checking.html'),
-  ('last-check-label.html'),
-  ('help.html'),
-  ('applications.html'),
-  ('application_users.html')
-) AS v(application)
+  ('users.html', 'Users'),
+  ('pesquisa.html', 'Users_search'),
+  ('customer.html', 'Customer'),
+  ('warehouse.html', 'Product'),
+  ('special-search-product.html', 'Product_Special_Search'),
+  ('upload-warehouse-map.html', 'Applications_Upload_Warehouse_Map'),
+  ('location.html', 'Location'),
+  ('location-search.html', 'Location_Search'),
+  ('location-product.html', 'Location_Product'),
+  ('log-location-product.html', 'Location'),
+  ('movement.html', 'Movement'),
+  ('movement-situation.html', 'Movement_Situation'),
+  ('picking.html', 'Picking'),
+  ('separation-picking.html', 'Separation_Picking'),
+  ('double-checking.html', 'Double_Checking'),
+  ('last-check-label.html', 'Packing'),
+  ('help.html', 'Help'),
+  ('applications.html', 'Applications'),
+  ('application_users.html', 'Applications_Users'),
+  ('change-password.html', 'Users_Change_Password')
+) AS v(application, menu_name)
 WHERE NOT EXISTS (
   SELECT 1 FROM system_applications s WHERE s.syap_nm_application = v.application
 );
+
+UPDATE system_applications sa
+SET syap_ds_detailed = v.menu_name
+FROM (VALUES
+  ('users.html', 'Users'),
+  ('pesquisa.html', 'Users_search'),
+  ('customer.html', 'Customer'),
+  ('warehouse.html', 'Product'),
+  ('special-search-product.html', 'Product_Special_Search'),
+  ('upload-warehouse-map.html', 'Applications_Upload_Warehouse_Map'),
+  ('location.html', 'Location'),
+  ('location-search.html', 'Location_Search'),
+  ('location-product.html', 'Location_Product'),
+  ('log-location-product.html', 'Location'),
+  ('movement.html', 'Movement'),
+  ('movement-situation.html', 'Movement_Situation'),
+  ('picking.html', 'Picking'),
+  ('separation-picking.html', 'Separation_Picking'),
+  ('double-checking.html', 'Double_Checking'),
+  ('last-check-label.html', 'Packing'),
+  ('help.html', 'Help'),
+  ('applications.html', 'Applications'),
+  ('application_users.html', 'Applications_Users'),
+  ('change-password.html', 'Users_Change_Password')
+) AS v(application, menu_name)
+WHERE sa.syap_nm_application = v.application;
 
 UPDATE system_applications
 SET syap_nm_application = 'users.html'

@@ -15,10 +15,42 @@
         .print-location-code-item input { margin-right: 8px; }
         .print-modal-actions .checkbox-label { cursor: pointer; }
         input.input-readonly { background: #e9ecef; color: #495057; cursor: not-allowed; }
+        .new-records-panel { margin-top: 20px; display: none; }
+        .new-records-panel.show { display: block; }
+        .new-records-panel .panel-desc { color: #64748b; margin: 0 0 16px; }
+        .new-records-entry-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 16px;
+            align-items: end;
+            margin-bottom: 16px;
+        }
+        .new-records-entry-meta .filter-group { min-width: 220px; }
+        .new-records-table input,
+        .new-records-table select {
+            width: 100%;
+            min-width: 90px;
+            padding: 8px 10px;
+            border: 1px solid #dbe3ea;
+            border-radius: 6px;
+            font-size: 0.95rem;
+        }
+        .new-records-table td { vertical-align: middle; }
+        .new-records-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 16px;
+        }
+        .btn-remove-row {
+            min-width: 36px;
+            padding: 6px 10px;
+        }
     </style>
 </head>
 <body>
     <script src="auth-check.js"></script>
+    <script src="menu-access.js"></script>
     <script src="double-y-logo-effect.js"></script>
     <script src="dev-environment-badge.js"></script>
     <div class="container">
@@ -57,6 +89,7 @@
                         <div class="users-dropdown-menu" id="usersDropdownMenu" aria-hidden="true">
                             <a href="users.html" class="dropdown-item"><i class="fas fa-user-plus"></i> New User</a>
                             <a href="pesquisa.html" class="dropdown-item"><i class="fas fa-search"></i> Search User</a>
+                            <a href="change-password.html" class="dropdown-item" data-app="change-password.html" data-always-accessible="true"><i class="fas fa-key"></i> Change Password</a>
                         </div>
                     </div>
                     <div class="customer-dropdown">
@@ -73,8 +106,9 @@
                             <i class="fas fa-box"></i> Product <i class="fas fa-chevron-down"></i>
                         </button>
                         <div class="product-dropdown-menu" id="productDropdownMenu" aria-hidden="true">
-                            <button type="button" id="newProductBtn" class="dropdown-item"><i class="fas fa-plus"></i> New Product</button>
-                            <button type="button" id="searchProductBtn" class="dropdown-item"><i class="fas fa-search"></i> Search Product</button>
+                            <button type="button" id="newProductBtn" class="dropdown-item" data-app="warehouse.html"><i class="fas fa-plus"></i> New Product</button>
+                            <button type="button" id="searchProductBtn" class="dropdown-item" data-app="warehouse.html"><i class="fas fa-search"></i> Search Product</button>
+                            <a href="special-search-product.html" class="dropdown-item" data-app="special-search-product.html"><i class="fas fa-map"></i> Special Search Product</a>
                         </div>
                     </div>                    <div class="applications-dropdown">
                         <button type="button" class="btn btn-primary" id="applicationsMenuBtn" aria-haspopup="true" aria-expanded="false">
@@ -84,6 +118,7 @@
                             <a href="applications.html" class="dropdown-item"><i class="fas fa-plus"></i> New Applications</a>
                             <a href="applications.html?mode=search" class="dropdown-item"><i class="fas fa-search"></i> Search Applications</a>
                             <a href="application_users.html" class="dropdown-item"><i class="fas fa-user-cog"></i> Application Users</a>
+                            <a href="upload-warehouse-map.html" class="dropdown-item" data-app="upload-warehouse-map.html"><i class="fas fa-upload"></i> Upload Warehouse Map</a>
                         </div>
                     </div>
 
@@ -183,6 +218,49 @@
                     </div>
                 </div>
 
+                <div id="newRecordsPanel" class="filters-container new-records-panel" aria-hidden="true">
+                    <div class="filters-header">
+                        <h2><i class="fas fa-plus"></i> New Records - Line Entry</h2>
+                    </div>
+                    <div class="filters-content show">
+                        <p class="panel-desc">Add one or more lines below. Type location and product codes directly, then save all lines at once.</p>
+                        <div class="new-records-entry-meta">
+                            <div class="filter-group">
+                                <label for="bulkEntryDatetime"><i class="fas fa-calendar-alt"></i> Entry Date/Time</label>
+                                <input type="datetime-local" id="bulkEntryDatetime" readonly class="input-readonly">
+                            </div>
+                        </div>
+                        <div class="table-container">
+                            <table class="warehouse-table new-records-table">
+                                <thead>
+                                    <tr>
+                                        <th>Location Code *</th>
+                                        <th>Product Code *</th>
+                                        <th>Situation *</th>
+                                        <th>Qty Informed</th>
+                                        <th class="th-actions"></th>
+                                    </tr>
+                                </thead>
+                                <tbody id="newRecordsBody"></tbody>
+                            </table>
+                        </div>
+                        <div class="new-records-actions">
+                            <button type="button" id="addNewRecordLineBtn" class="btn btn-secondary">
+                                <i class="fas fa-plus"></i> Add Line
+                            </button>
+                            <button type="button" id="saveNewRecordsBtn" class="btn btn-primary">
+                                <i class="fas fa-save"></i> Save All Lines
+                            </button>
+                            <button type="button" id="cancelNewRecordsBtn" class="btn btn-secondary">
+                                <i class="fas fa-times"></i> Cancel
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <datalist id="locationCodesList"></datalist>
+                <datalist id="productCodesList"></datalist>
+
                 <div class="results-container" style="margin-top:20px;">
                     <div class="results-header">
                         <h3>Records</h3>
@@ -218,54 +296,6 @@
         <footer class="footer">
             <p>&copy; 2026 Double-Y Warehouse System. All rights reserved.</p>
         </footer>
-    </div>
-
-    <!-- Modal New/Edit Record -->
-    <div id="recordModal" class="modal">
-        <div class="modal-content modal-large">
-            <div class="modal-header success">
-                <h3 id="recordModalTitle"><i class="fas fa-plus"></i> New Record</h3>
-                <button type="button" class="modal-close" id="closeRecordModal">&times;</button>
-            </div>
-            <div class="modal-body">
-                <form id="recordForm">
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="recordLocationCode"><i class="fas fa-map-marker-alt"></i> Location Code *</label>
-                            <select id="recordLocationCode" required></select>
-                        </div>
-                        <div class="form-group">
-                            <label for="recordProductCode"><i class="fas fa-barcode"></i> Product Code *</label>
-                            <select id="recordProductCode" required></select>
-                        </div>
-                    </div>
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="recordEntryDatetime"><i class="fas fa-calendar-alt"></i> Entry Date/Time *</label>
-                            <input type="datetime-local" id="recordEntryDatetime" required readonly class="input-readonly">
-                        </div>
-                        <div class="form-group">
-                            <label for="recordSituation"><i class="fas fa-tag"></i> Situation *</label>
-                            <select id="recordSituation" required></select>
-                        </div>
-                    </div>
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="recordQuantityInformed"><i class="fas fa-list-ol"></i> Quantity Informed</label>
-                            <input type="number" id="recordQuantityInformed" min="0" value="0" step="1">
-                        </div>
-                        <div class="form-group">
-                            <label for="recordQuantityCurrent"><i class="fas fa-boxes"></i> Quantity Current</label>
-                            <input type="number" id="recordQuantityCurrent" min="0" value="0" step="1">
-                        </div>
-                    </div>
-                    <div class="form-actions" style="margin-top:20px;">
-                        <button type="button" class="btn btn-secondary" id="cancelRecordBtn">Cancel</button>
-                        <button type="submit" class="btn btn-primary" id="saveRecordBtn"><i class="fas fa-save"></i> Save</button>
-                    </div>
-                </form>
-            </div>
-        </div>
     </div>
 
     <!-- Modal Print - Seleção de Location Codes (quantity informed > 0) -->

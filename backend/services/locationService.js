@@ -1,5 +1,8 @@
 const { query } = require('../config/database');
 
+const VALID_SECTIONS = ['TAPWARE', 'BATHWARE', 'CENTRAL', 'WAREHOUSE2', 'FURNITUREWARE', 'DOORWARE', 'OTHER'];
+const VALID_ACCESS_TYPES = ['Shelf by Hand', 'Shelf by Wave', 'Shelf By Fork'];
+
 class LocationService {
   constructor() {
     this.tableName = 'warehouse_locations';
@@ -11,7 +14,6 @@ class LocationService {
       throw new Error(`Invalid data: ${erros.join(', ')}`);
     }
 
-    // Verificar se location já existe
     const existente = await this.buscarPorLocation(dados.location);
     if (existente) {
       throw new Error('Location already registered');
@@ -19,15 +21,16 @@ class LocationService {
 
     const insertQuery = `
       INSERT INTO ${this.tableName}
-        (location, status, access_type)
-      VALUES ($1, $2, $3)
+        (location, status, access_type, section)
+      VALUES ($1, $2, $3, $4)
       RETURNING *
     `;
 
     const values = [
       dados.location,
       dados.status,
-      dados.accessType
+      dados.accessType,
+      dados.section
     ];
 
     try {
@@ -57,6 +60,11 @@ class LocationService {
     if (filtros.accessType) {
       whereClauses.push(`access_type = $${idx++}`);
       values.push(filtros.accessType);
+    }
+
+    if (filtros.section) {
+      whereClauses.push(`section = $${idx++}`);
+      values.push(filtros.section);
     }
 
     const where = whereClauses.length ? `WHERE ${whereClauses.join(' AND ')}` : '';
@@ -114,7 +122,6 @@ class LocationService {
       throw new Error(`Invalid data: ${erros.join(', ')}`);
     }
 
-    // Se está alterando o código da location, verificar se já existe em outro registro
     if (dados.location && dados.location.trim() !== existente.location) {
       const outro = await this.buscarPorLocation(dados.location.trim());
       if (outro) {
@@ -127,6 +134,7 @@ class LocationService {
       SET location = COALESCE($2, location),
           status = COALESCE($3, status),
           access_type = COALESCE($4, access_type),
+          section = COALESCE($5, section),
           atualizado_em = CURRENT_TIMESTAMP
       WHERE id = $1::uuid
       RETURNING *
@@ -136,7 +144,8 @@ class LocationService {
       idStr,
       dados.location ? dados.location.trim() : existente.location,
       dados.status || existente.status,
-      dados.accessType || existente.accessType
+      dados.accessType || existente.accessType,
+      dados.section || existente.section
     ];
 
     try {
@@ -176,9 +185,12 @@ class LocationService {
       erros.push('Status must be active or inactive');
     }
 
-    const validAccess = ['Shelf by Hand', 'Shelf by Wave', 'Shelf By Fork'];
-    if (!validAccess.includes(dados.accessType)) {
+    if (!VALID_ACCESS_TYPES.includes(dados.accessType)) {
       erros.push('Access type is invalid');
+    }
+
+    if (!VALID_SECTIONS.includes(dados.section)) {
+      erros.push('Section is invalid');
     }
 
     return erros;
@@ -190,6 +202,7 @@ class LocationService {
       location: row.location,
       status: row.status,
       accessType: row.access_type,
+      section: row.section || 'OTHER',
       criadoEm: row.criado_em,
       atualizadoEm: row.atualizado_em
     };
@@ -197,4 +210,3 @@ class LocationService {
 }
 
 module.exports = new LocationService();
-

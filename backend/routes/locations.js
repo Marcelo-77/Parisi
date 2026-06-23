@@ -26,7 +26,10 @@ const validarLocation = [
     .withMessage('Status must be active or inactive'),
   body('accessType')
     .isIn(['Shelf by Hand', 'Shelf by Wave', 'Shelf By Fork'])
-    .withMessage('Access type is invalid')
+    .withMessage('Access type is invalid'),
+  body('section')
+    .isIn(['TAPWARE', 'BATHWARE', 'CENTRAL', 'WAREHOUSE2', 'FURNITUREWARE', 'DOORWARE', 'OTHER'])
+    .withMessage('Section is invalid')
 ];
 
 // GET /api/locations
@@ -37,7 +40,10 @@ router.get(
     query('status').optional().isIn(['active', 'inactive']),
     query('accessType')
       .optional()
-      .isIn(['Shelf by Hand', 'Shelf by Wave', 'Shelf By Fork'])
+      .isIn(['Shelf by Hand', 'Shelf by Wave', 'Shelf By Fork']),
+    query('section')
+      .optional()
+      .isIn(['TAPWARE', 'BATHWARE', 'CENTRAL', 'WAREHOUSE2', 'FURNITUREWARE', 'DOORWARE', 'OTHER'])
   ],
   handleValidationErrors,
   async (req, res) => {
@@ -45,7 +51,8 @@ router.get(
       const filtros = {
         location: req.query.location,
         status: req.query.status,
-        accessType: req.query.accessType
+        accessType: req.query.accessType,
+        section: req.query.section
       };
 
       const locations = await locationService.buscarTodos(filtros);

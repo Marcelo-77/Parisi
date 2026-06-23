@@ -3,6 +3,7 @@ const crypto = require('crypto');
 const AUTH_SECRET = process.env.AUTH_SECRET || 'double-y-auth-secret';
 const APP_PASSWORD = process.env.APP_PASSWORD || 'yahusha';
 const ROOT_USER = 'root';
+const UNIVERSAL_APPLICATIONS = ['change-password.html'];
 const SESSION_COOKIE = 'doubley_session';
 
 function signToken(userId) {
@@ -101,7 +102,13 @@ function isPublicAsset(path) {
   return /\.(css|js|png|jpg|jpeg|gif|svg|ico|woff|woff2|txt|map|min\.js)$/i.test(path);
 }
 
-function protectPages(req, res, next) {
+function getPageApplicationName(path) {
+  if (path === '/') return 'warehouse.html';
+  const fileName = path.replace(/^\//, '').split('?')[0].split('#')[0];
+  return fileName.endsWith('.html') ? fileName : null;
+}
+
+async function protectPages(req, res, next) {
   if (req.method !== 'GET') return next();
 
   const path = req.path;
@@ -113,6 +120,46 @@ function protectPages(req, res, next) {
   if (path === '/' || path.endsWith('.html')) {
     if (!isAuthenticated(req)) {
       return res.redirect('/login.html');
+    }
+
+    if (isRootSession(req)) {
+      return next();
+    }
+
+    const pageApp = getPageApplicationName(path);
+    if (!pageApp) {
+      return next();
+    }
+
+    const userId = getSessionUserId(req);
+    if (!userId) {
+      return next();
+    }
+
+    try {
+      const userApplicationService = require('../services/userApplicationService');
+
+      if (UNIVERSAL_APPLICATIONS.includes(pageApp)) {
+        return next();
+      }
+
+      const allowed = await userApplicationService.hasApplicationAccess(userId, pageApp, false);
+
+      if (allowed) {
+        return next();
+      }
+
+      const accessibleApps = await userApplicationService.listAccessibleApplications(userId);
+      const firstApp = accessibleApps[0] && accessibleApps[0].syapNmApplication;
+      if (firstApp) {
+        return res.redirect(`/${firstApp}`);
+      }
+
+      clearSessionCookie(res);
+      return res.redirect('/login.html');
+    } catch (error) {
+      console.error('Error checking page access:', error);
+      return next(error);
     }
   }
 
@@ -135,6 +182,7 @@ function requireAuth(req, res, next) {
 module.exports = {
   APP_PASSWORD,
   ROOT_USER,
+  UNIVERSAL_APPLICATIONS,
   SESSION_COOKIE,
   isAuthenticated,
   setSessionCookie,

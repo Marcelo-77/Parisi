@@ -3,18 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Double-Y Warehouse System - Separation and Picking</title>
+    <title>Double-Y Warehouse System - Upload Warehouse Map</title>
     <link rel="stylesheet" href="styles.css">
     <link rel="stylesheet" href="warehouse-styles.css">
     <link rel="stylesheet" href="pesquisa-styles.css">
+    <link rel="stylesheet" href="special-search-product-styles.css">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <style>
-      .separation-product-code-link { color: #667eea; text-decoration: none; cursor: pointer; }
-      .separation-product-code-link:hover { text-decoration: underline; }
-      #separationItemDetailModal .modal-content { margin-top: 2%; max-height: 90vh; display: flex; flex-direction: column; }
-      #separationItemDetailModal .modal-body { overflow-y: auto; max-height: calc(90vh - 80px); flex: 1 1 auto; text-align: left; }
-      #separationItemDetailModal .item-details { min-height: 0; }
-    </style>
 </head>
 <body>
     <script src="auth-check.js"></script>
@@ -48,7 +42,7 @@
             </div>
             <div class="header-content">
                 <h1><i class="fas fa-warehouse"></i> Double-Y Warehouse System</h1>
-                <p class="header-search-users-label" id="pageTitle">Separation and Picking</p>
+                <p class="header-search-users-label">Upload Warehouse Map</p>
                 <div class="header-actions">
                     <div class="users-dropdown">
                         <button type="button" class="btn btn-primary" id="usersMenuBtn" aria-haspopup="true" aria-expanded="false">
@@ -121,8 +115,6 @@
                             <a href="picking.html?mode=search" class="dropdown-item"><i class="fas fa-search"></i> Order Sent for Picking</a>
                             <a href="separation-picking.html" class="dropdown-item"><i class="fas fa-box-open"></i> Separation and Picking</a>
                             <a href="double-checking.html" class="dropdown-item"><i class="fas fa-clipboard-check"></i> Sent for Double Checking</a>
-                            <a href="last-check-label.html" class="dropdown-item"><i class="fas fa-tags"></i> Last check and Label</a>
-                            <a href="movement-situation.html" class="dropdown-item"><i class="fas fa-stream"></i> Situation of the Movement</a>
                         </div>
                     </div>
                     <div class="help-dropdown">
@@ -141,91 +133,71 @@
         </header>
 
         <main class="main-content">
-            <div class="form-container" style="width:100%;max-width:1100px;">
-                <div class="filters-container">
+            <div class="form-container" style="width:100%;max-width:none;">
+                <div class="filters-container special-search-panel">
                     <div class="filters-header">
-                        <h2><i class="fas fa-filter"></i> Separation and Picking</h2>
+                        <h2><i class="fas fa-upload"></i> Upload WareHouseMap.xlsx</h2>
                     </div>
                     <div class="filters-content show">
-                        <div class="filters-grid">
+                        <p style="color:#555;margin:0 0 12px;">
+                            Upload <strong>WareHouseMap.xlsx</strong> with the <strong>Warehouse SECTOR</strong> sheet. The file will replace the server map used by <strong>Special Search Product</strong>.
+                        </p>
+                        <div class="special-search-actions">
                             <div class="filter-group">
-                                <label for="filterMoveId"><i class="fas fa-hashtag"></i> Movement ID</label>
-                                <input type="number" id="filterMoveId" placeholder="Ex: 1001">
-                            </div>
-                            <div class="filter-group">
-                                <label for="filterMoveCode"><i class="fas fa-barcode"></i> Movement Code</label>
-                                <input type="text" id="filterMoveCode" placeholder="Movement code">
-                            </div>
-                            <div class="filter-group">
-                                <label for="filterItemId"><i class="fas fa-list-ol"></i> Item ID (MOIT)</label>
-                                <input type="number" id="filterItemId" placeholder="Ex: 1">
-                            </div>
-                            <div class="filter-group">
-                                <label for="filterProductCode"><i class="fas fa-box"></i> Product Code</label>
-                                <input type="text" id="filterProductCode" placeholder="Product code">
+                                <label for="warehouseMapUploadFile">
+                                    <i class="fas fa-file-excel"></i> Select Excel File
+                                </label>
+                                <input type="file" id="warehouseMapUploadFile" accept=".xlsx,.xls,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel">
+                                <div id="selectedMapFileName" class="special-search-file-name">No file selected</div>
                             </div>
                         </div>
-                        <div class="filters-actions">
-                            <button id="searchSeparationBtn" class="btn btn-primary" type="button">
-                                <i class="fas fa-search"></i> Search
+                        <div class="upload-map-info">
+                            <div>
+                                <strong>Current File</strong>
+                                <span id="currentMapFileName">-</span>
+                            </div>
+                            <div>
+                                <strong>Last Updated</strong>
+                                <span id="currentMapUpdatedAt">-</span>
+                            </div>
+                            <div>
+                                <strong>File Size</strong>
+                                <span id="currentMapSize">-</span>
+                            </div>
+                        </div>
+                        <div class="filters-actions" style="margin-top:12px;">
+                            <button type="button" class="btn btn-primary" id="uploadMapBtn" disabled>
+                                <i class="fas fa-cloud-upload-alt"></i> Upload to Server
                             </button>
-                            <button id="clearSeparationFiltersBtn" class="btn btn-secondary" type="button">
-                                <i class="fas fa-eraser"></i> Clear
+                            <button type="button" class="btn btn-secondary" id="previewMapBtn" disabled>
+                                <i class="fas fa-eye"></i> Preview Selected File
+                            </button>
+                            <button type="button" class="btn btn-secondary" id="openSpecialSearchBtn">
+                                <i class="fas fa-map"></i> Open Special Search Product
                             </button>
                         </div>
+                        <div id="uploadMapStatus" class="upload-map-status"></div>
                     </div>
                 </div>
 
-                <div class="filters-container" style="margin-top: 20px;">
-                    <div class="filters-header">
-                        <h2><i class="fas fa-box-open"></i> Separation and Picking (Phase 3, Type 1)</h2>
+                <div class="results-container">
+                    <div class="results-header">
+                        <h3><i class="fas fa-map"></i> Warehouse SECTOR Preview</h3>
                     </div>
-                    <div class="filters-content show">
-                        <div class="table-container">
-                            <table class="warehouse-table">
-                                <thead>
-                                    <tr>
-                                        <th>Movement ID</th>
-                                        <th>Movement Code</th>
-                                        <th>Item ID</th>
-                                        <th>Product Code</th>
-                                        <th>Product Name</th>
-                                        <th>Qty Movement</th>
-                                        <th>Qty Picked</th>
-                                        <th>Reason</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="separationTableBody">
-                                    <tr>
-                                        <td colspan="8" class="empty-state">Loading...</td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-                        <div class="filters-actions" style="margin-top: 12px;">
-                            <button type="button" id="sentDoubleCheckBtn" class="btn btn-primary">
-                                <i class="fas fa-clipboard-check"></i> Sent for Double Checking
-                            </button>
-                        </div>
+                    <div class="results-content">
+                        <div id="warehouseMapPreviewContainer"></div>
                     </div>
                 </div>
             </div>
         </main>
+
+        <footer class="footer">
+            <p>&copy; 2026 Double-Y Warehouse System. All rights reserved.</p>
+        </footer>
     </div>
 
-    <!-- Modal Item Details (same as picking / warehouse View product) -->
-    <div id="separationItemDetailModal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header success">
-                <h3><i class="fas fa-info-circle"></i> Item Details</h3>
-                <button type="button" class="modal-close" id="closeSeparationItemDetailModal" aria-label="Close">&times;</button>
-            </div>
-            <div class="modal-body">
-                <div id="separationItemDetails" class="item-details"></div>
-            </div>
-        </div>
-    </div>
-
-    <script src="separation-picking-script.js"></script>
+    <script src="vendor/xlsx.full.min.js"></script>
+    <script src="warehouse-map-utils.js"></script>
+    <script src="upload-warehouse-map-script.js"></script>
 </body>
 </html>

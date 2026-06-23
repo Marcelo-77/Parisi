@@ -9,15 +9,11 @@ function escapeHtml(text) {
 
 // Mapeamento categoria (valor no BD) → texto de exibição
 function formatCategory(categoria) {
+    if (typeof SectionOptions !== 'undefined') {
+        return SectionOptions.formatSectionLabel(categoria);
+    }
     if (!categoria) return '-';
-    const map = {
-        'TAPWARE': 'Tapware',
-        'BATHWARE': 'BathWare',
-        'CENTRAL': 'Central',
-        'WAREHOUSE2': 'Warehouse2',
-        'OTHER': 'Other'
-    };
-    return map[String(categoria).toUpperCase()] || categoria;
+    return categoria;
 }
 
 // Estado da aplicação

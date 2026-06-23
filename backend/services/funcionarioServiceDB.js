@@ -190,6 +190,36 @@ class FuncionarioServiceDB {
     }
   }
 
+  async alterarSenha(id, senhaAtual, novaSenha) {
+    const selectQuery = `SELECT id, password FROM ${this.tableName} WHERE id = $1 AND ativo = true`;
+
+    try {
+      const result = await query(selectQuery, [id]);
+      if (result.rows.length === 0) {
+        throw new Error('Employee not found');
+      }
+
+      const row = result.rows[0];
+      if (!verifyStoredPassword(row.password, senhaAtual)) {
+        throw new Error('Current password is incorrect');
+      }
+
+      const updateQuery = `
+        UPDATE ${this.tableName}
+        SET password = $1, atualizado_em = CURRENT_TIMESTAMP
+        WHERE id = $2
+        RETURNING id
+      `;
+
+      await query(updateQuery, [String(novaSenha), id]);
+      console.log(`✅ Password changed for employee: ${id}`);
+      return true;
+    } catch (error) {
+      console.error('❌ Error changing password:', error);
+      throw error;
+    }
+  }
+
   // Update employee
   async atualizar(id, dados) {
     // Check if employee exists

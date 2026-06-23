@@ -1,5 +1,16 @@
-// Usar URL relativa para funcionar quando a página é servida pelo mesmo backend (ex: http://localhost:3000/location.html)
 const LOCATIONS_API_URL = '/api/locations';
+
+const LOCATION_FIELD_IDS = {
+    streetId: 'locationStreet',
+    buildingId: 'locationBuilding',
+    levelId: 'locationLevel',
+    sideId: 'locationSide',
+    sublevelId: 'locationSublevel',
+    codeId: 'locationCode',
+    sideGroupId: 'locationSideGroup',
+    sublevelGroupId: 'locationSublevelGroup',
+    accessTypeId: 'accessType'
+};
 
 function setupHeaderDropdowns() {
     const usersMenuBtn = document.getElementById('usersMenuBtn');
@@ -75,6 +86,8 @@ function setupHeaderDropdowns() {
 
 document.addEventListener('DOMContentLoaded', () => {
     setupHeaderDropdowns();
+    LocationCodeUtils.setupLocationComposition(LOCATION_FIELD_IDS);
+
     const form = document.getElementById('locationForm');
     const clearBtn = document.getElementById('clearLocationBtn');
     const saveBtn = document.getElementById('saveLocationBtn');
@@ -96,14 +109,38 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function validate() {
         clearErrors();
-        let valid = true;
+        LocationCodeUtils.updateComposedLocation(LOCATION_FIELD_IDS);
 
-        const code = document.getElementById('locationCode').value.trim();
+        let valid = true;
+        const validation = LocationCodeUtils.validateLocationParts(
+            LocationCodeUtils.getLocationParts(LOCATION_FIELD_IDS)
+        );
         const status = document.getElementById('locationStatus').value;
         const accessType = document.getElementById('accessType').value;
+        const section = document.getElementById('locationSection').value;
 
-        if (code.length < 2) {
-            showError('locationCode', 'Location code must have at least 2 characters');
+        if (validation.errors.street) {
+            showError('locationStreet', validation.errors.street);
+            valid = false;
+        }
+        if (validation.errors.building) {
+            showError('locationBuilding', validation.errors.building);
+            valid = false;
+        }
+        if (validation.errors.level) {
+            showError('locationLevel', validation.errors.level);
+            valid = false;
+        }
+        if (validation.errors.side) {
+            showError('locationSide', validation.errors.side);
+            valid = false;
+        }
+        if (validation.errors.sublevel) {
+            showError('locationSublevel', validation.errors.sublevel);
+            valid = false;
+        }
+        if (validation.errors.code) {
+            showError('locationCode', validation.errors.code);
             valid = false;
         }
 
@@ -117,6 +154,11 @@ document.addEventListener('DOMContentLoaded', () => {
             valid = false;
         }
 
+        if (!section) {
+            showError('locationSection', 'Select a section');
+            valid = false;
+        }
+
         return valid;
     }
 
@@ -127,7 +169,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const data = {
             location: document.getElementById('locationCode').value.trim(),
             status: document.getElementById('locationStatus').value,
-            accessType: document.getElementById('accessType').value
+            accessType: document.getElementById('accessType').value,
+            section: document.getElementById('locationSection').value
         };
 
         saveBtn.disabled = true;
@@ -149,7 +192,8 @@ document.addEventListener('DOMContentLoaded', () => {
             alert('Location saved successfully.');
             form.reset();
             clearErrors();
-            document.getElementById('locationCode').focus();
+            LocationCodeUtils.updateComposedLocation(LOCATION_FIELD_IDS);
+            document.getElementById('locationStreet').focus();
         })
         .catch((err) => {
             console.error('Error saving location:', err);
@@ -168,8 +212,8 @@ document.addEventListener('DOMContentLoaded', () => {
     clearBtn.addEventListener('click', () => {
         form.reset();
         clearErrors();
-        document.getElementById('locationCode').focus();
+        LocationCodeUtils.updateComposedLocation(LOCATION_FIELD_IDS);
+        document.getElementById('locationStreet').focus();
     });
 
 });
-

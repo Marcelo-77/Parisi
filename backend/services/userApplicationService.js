@@ -90,7 +90,27 @@ async function replaceForFuncionario(funcionarioId, syapCdSeqList) {
   return getAssignmentData(funcionarioId);
 }
 
+async function listAccessibleApplications(funcionarioId) {
+  return listSelectedByFuncionario(funcionarioId);
+}
+
+async function listAllApplications() {
+  return systemApplicationService.list({});
+}
+
+async function hasApplicationAccess(funcionarioId, applicationName, isRoot = false) {
+  if (isRoot) return true;
+  if (!funcionarioId || !applicationName) return false;
+
+  const normalizedApp = String(applicationName).trim().toLowerCase();
+  const apps = await listAccessibleApplications(funcionarioId);
+  return apps.some((app) => String(app.syapNmApplication || '').trim().toLowerCase() === normalizedApp);
+}
+
 module.exports = {
   getAssignmentData,
-  replaceForFuncionario
+  replaceForFuncionario,
+  listAccessibleApplications,
+  listAllApplications,
+  hasApplicationAccess
 };

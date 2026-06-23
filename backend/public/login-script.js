@@ -18,6 +18,21 @@
     loginError.style.display = 'flex';
   }
 
+  async function resolveLandingPage() {
+    try {
+      const res = await fetch('/api/auth/menu-access');
+      const data = await res.json();
+      if (!res.ok || !data.success) return '/warehouse.html';
+
+      const apps = data.applications || [];
+      if (apps.includes('warehouse.html')) return '/warehouse.html';
+      if (apps.length > 0) return `/${apps[0]}`;
+      return '/warehouse.html';
+    } catch {
+      return '/warehouse.html';
+    }
+  }
+
   async function checkExistingSession() {
     if (!sessionStorage.getItem(TAB_SESSION_KEY)) return;
 
@@ -25,7 +40,7 @@
       const res = await fetch('/api/auth/check');
       const data = await res.json();
       if (data.authenticated) {
-        window.location.href = '/warehouse.html';
+        window.location.href = await resolveLandingPage();
         return;
       }
       sessionStorage.removeItem(TAB_SESSION_KEY);
@@ -54,7 +69,7 @@
 
       if (res.ok) {
         sessionStorage.setItem(TAB_SESSION_KEY, '1');
-        window.location.href = '/warehouse.html';
+        window.location.href = await resolveLandingPage();
         return;
       }
 

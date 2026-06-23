@@ -619,6 +619,20 @@
 }
 
 /* Modal Edit Location (Search Locations page) */
+#editLocationModal.show {
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding: 24px 16px 16px;
+    overflow-y: auto;
+}
+
+#editLocationModal .modal-content {
+    margin: 0 auto;
+    max-width: 640px;
+    width: 95%;
+}
+
 .modal.show {
     display: block;
 }

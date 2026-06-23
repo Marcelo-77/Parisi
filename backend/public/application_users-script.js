@@ -14,16 +14,14 @@ function escapeHtml(text) {
 }
 
 function formatApplicationLabel(app) {
-  const name = app.syapNmApplication || '-';
-  const desc = app.syapDsDetailed ? ` — ${app.syapDsDetailed}` : '';
-  return `${name}${desc}`;
+  return app.syapDsDetailed || app.syapNmApplication || '-';
 }
 
 function sortApps(list) {
   return [...list].sort((a, b) => {
-    const nameA = (a.syapNmApplication || '').toLowerCase();
-    const nameB = (b.syapNmApplication || '').toLowerCase();
-    if (nameA !== nameB) return nameA.localeCompare(nameB);
+    const labelA = formatApplicationLabel(a).toLowerCase();
+    const labelB = formatApplicationLabel(b).toLowerCase();
+    if (labelA !== labelB) return labelA.localeCompare(labelB);
     return (a.syapCdSeq || 0) - (b.syapCdSeq || 0);
   });
 }

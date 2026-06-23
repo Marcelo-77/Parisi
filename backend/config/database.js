@@ -1,78 +1,30 @@
-// =============================================================================
-// EXEMPLO: conexao PostgreSQL no Neon
-// Valores alinhados com backend/exemplo.env
-//
-// Como usar:
-//   1) Copie backend/exemplo.env -> backend/config.env
-//   2) Copie este arquivo -> backend/config/database.js  (so se quiser este modelo)
-//   3) Rode na pasta backend: node server.js
-//
-// Nao commitar senhas reais no Git.
-// =============================================================================
-
 const { Pool } = require('pg');
 
-// Connection string (opcional; prioridade se DATABASE_URL estiver definida)
-const NEON_DATABASE_URL =
-  'postgresql://neondb_owner:npg_1pO6RgmPxFzb@ep-nameless-forest-apd4r0pi-pooler.c-7.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require';
+// Configurações do banco de dados (lidas de backend/config.env)
+const host = process.env.DB_HOST || 'localhost';
+const useSsl =
+  process.env.DB_SSL === 'true' ||
+  (host && host.includes('neon.tech'));
 
-// Variaveis separadas (mesmos valores de exemplo.env)
-const NEON_DEFAULTS = {
-  host: 'ep-nameless-forest-apd4r0pi-pooler.c-7.us-east-1.aws.neon.tech',
-  port: 5432,
-  database: 'neondb',
-  user: 'neondb_owner',
-  password: 'npg_1pO6RgmPxFzb',
-  ssl: true,
+const dbConfig = {
+  host,
+  port: Number(process.env.DB_PORT) || 5432,
+  database: process.env.DB_NAME || 'funcionarios_db',
+  user: process.env.DB_USER || 'postgres',
+  password: process.env.DB_PASSWORD || 'postgres',
+  max: 20,
+  idleTimeoutMillis: 30000,
+  connectionTimeoutMillis: useSsl ? 10000 : 2000,
 };
 
-function buildPoolConfig() {
-  const databaseUrl = process.env.DATABASE_URL || NEON_DATABASE_URL;
-
-  if (databaseUrl && databaseUrl.startsWith('postgres')) {
-    const parsed = new URL(databaseUrl);
-    const config = {
-      host: parsed.hostname,
-      port: parsed.port ? Number(parsed.port) : NEON_DEFAULTS.port,
-      database: decodeURIComponent(parsed.pathname.replace(/^\//, '') || NEON_DEFAULTS.database),
-      user: decodeURIComponent(parsed.username || NEON_DEFAULTS.user),
-      password: decodeURIComponent(parsed.password || NEON_DEFAULTS.password),
-      max: 20,
-      idleTimeoutMillis: 30000,
-      connectionTimeoutMillis: 10000,
-      ssl: { rejectUnauthorized: false },
-    };
-    return config;
-  }
-
-  const host = process.env.DB_HOST || NEON_DEFAULTS.host;
-  const useSsl =
-    process.env.DB_SSL === 'true' ||
-    NEON_DEFAULTS.ssl ||
-    (host && host.includes('neon.tech'));
-
-  const config = {
-    host,
-    port: Number(process.env.DB_PORT) || NEON_DEFAULTS.port,
-    database: process.env.DB_NAME || NEON_DEFAULTS.database,
-    user: process.env.DB_USER || NEON_DEFAULTS.user,
-    password: process.env.DB_PASSWORD || NEON_DEFAULTS.password,
-    max: 20,
-    idleTimeoutMillis: 30000,
-    connectionTimeoutMillis: useSsl ? 10000 : 2000,
-  };
-
-  if (useSsl) {
-    config.ssl = { rejectUnauthorized: false };
-  }
-
-  return config;
+if (useSsl) {
+  dbConfig.ssl = { rejectUnauthorized: false };
 }
 
-const pool = new Pool(buildPoolConfig());
+const pool = new Pool(dbConfig);
 
 pool.on('connect', () => {
-  console.log('✅ Conectado ao banco de dados PostgreSQL (Neon)');
+  console.log('✅ Conectado ao banco de dados PostgreSQL');
 });
 
 pool.on('error', (err) => {

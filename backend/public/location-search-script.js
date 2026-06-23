@@ -1,5 +1,182 @@
 const LOCATIONS_API_URL = '/api/locations';
 let locations = [];
+let filteredLocations = [];
+
+function escapeXml(value) {
+    return String(value == null ? '' : value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+}
+
+function formatExportFileDate(date) {
+    const pad = (n) => String(n).padStart(2, '0');
+    return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}_${pad(date.getHours())}${pad(date.getMinutes())}`;
+}
+
+let loggedUserExportPrefix = null;
+
+function sanitizeFileNamePart(value) {
+    return String(value == null ? '' : value)
+        .trim()
+        .toLowerCase()
+        .replace(/@/g, '_at_')
+        .replace(/[^a-z0-9._-]+/g, '_')
+        .replace(/^_+|_+$/g, '') || 'user';
+}
+
+async function getLoggedUserExportPrefix() {
+    if (loggedUserExportPrefix) return loggedUserExportPrefix;
+
+    try {
+        const res = await fetch('/api/auth/check');
+        const data = await res.json();
+        if (data.authenticated && data.user) {
+            if (data.user.isRoot) {
+                loggedUserExportPrefix = 'root';
+            } else if (data.user.email) {
+                loggedUserExportPrefix = sanitizeFileNamePart(data.user.email);
+            } else {
+                loggedUserExportPrefix = 'user';
+            }
+        } else {
+            loggedUserExportPrefix = 'user';
+        }
+    } catch {
+        loggedUserExportPrefix = 'user';
+    }
+
+    return loggedUserExportPrefix;
+}
+
+function getLocationSection(loc) {
+    if (!loc) return 'OTHER';
+    const value = loc.section != null ? loc.section : loc.Section;
+    const normalized = value != null ? String(value).trim() : '';
+    return normalized || 'OTHER';
+}
+
+function formatSection(section) {
+    const normalized = section != null ? String(section).trim() : '';
+    if (!normalized) return '-';
+    const map = {
+        TAPWARE: 'Tapware',
+        BATHWARE: 'BathWare',
+        CENTRAL: 'Central',
+        WAREHOUSE2: 'Warehouse2',
+        FURNITUREWARE: 'Furnitureware',
+        DOORWARE: 'DOORWARE',
+        OTHER: 'Other'
+    };
+    return map[normalized.toUpperCase()] || normalized;
+}
+
+function getLocationPartsForExport(loc) {
+    const parsed = LocationCodeUtils.parseLocationCode(loc.location || '');
+    return {
+        street: parsed.street || '',
+        building: parsed.building || '',
+        level: parsed.level || '',
+        sublevel: parsed.sublevel || '',
+        side: parsed.side || ''
+    };
+}
+
+function buildLocationsExcelXml(list) {
+    const headers = ['Street', 'Building', 'Level', 'Sublevel', 'Side', 'Location', 'Status', 'Access Type', 'Section'];
+    const headerRow = headers.map((header) =>
+        `<Cell><Data ss:Type="String">${escapeXml(header)}</Data></Cell>`
+    ).join('');
+
+    const dataRows = list.map((loc) => {
+        const parts = getLocationPartsForExport(loc);
+        const statusLabel = loc.status === 'active' ? 'Active' : 'Inactive';
+        const sectionLabel = formatSection(getLocationSection(loc));
+        const cells = [
+            parts.street,
+            parts.building,
+            parts.level,
+            parts.sublevel,
+            parts.side,
+            loc.location || '',
+            statusLabel,
+            loc.accessType || loc.access_type || '',
+            sectionLabel
+        ].map((value) => `<Cell><Data ss:Type="String">${escapeXml(value)}</Data></Cell>`).join('');
+        return `<Row>${cells}</Row>`;
+    }).join('');
+
+    const rowCount = list.length + 1;
+    const columnCount = headers.length;
+
+    return `<?xml version="1.0" encoding="UTF-8"?>
+<?mso-application progid="Excel.Sheet"?>
+<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet"
+ xmlns:o="urn:schemas-microsoft-com:office:office"
+ xmlns:x="urn:schemas-microsoft-com:office:excel"
+ xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet">
+<Worksheet ss:Name="Locations">
+<Table ss:ExpandedColumnCount="${columnCount}" ss:ExpandedRowCount="${rowCount}">
+<Column ss:Width="60"/>
+<Column ss:Width="70"/>
+<Column ss:Width="50"/>
+<Column ss:Width="70"/>
+<Column ss:Width="50"/>
+<Column ss:Width="120"/>
+<Column ss:Width="80"/>
+<Column ss:Width="140"/>
+<Column ss:Width="120"/>
+<Row>${headerRow}</Row>
+${dataRows}
+</Table>
+</Worksheet>
+</Workbook>`;
+}
+
+async function downloadLocationsExcel(list) {
+    if (!list.length) {
+        alert('No locations to export. Adjust filters or run Search first.');
+        return;
+    }
+
+    const userPrefix = await getLoggedUserExportPrefix();
+    const xml = buildLocationsExcelXml(list);
+    const blob = new Blob(['\ufeff', xml], {
+        type: 'application/vnd.ms-excel;charset=utf-8;'
+    });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `${userPrefix}-locations-search-${formatExportFileDate(new Date())}.xls`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+}
+
+const SEARCH_FIELD_IDS = {
+    streetId: 'searchLocationStreet',
+    buildingId: 'searchLocationBuilding',
+    levelId: 'searchLocationLevel',
+    sideId: 'searchLocationSide',
+    sublevelId: 'searchLocationSublevel',
+    codeId: 'searchLocation',
+    sideGroupId: 'searchLocationSideGroup',
+    sublevelGroupId: 'searchLocationSublevelGroup'
+};
+
+const EDIT_FIELD_IDS = {
+    streetId: 'editLocationStreet',
+    buildingId: 'editLocationBuilding',
+    levelId: 'editLocationLevel',
+    sideId: 'editLocationSide',
+    sublevelId: 'editLocationSublevel',
+    codeId: 'editLocationCode',
+    sideGroupId: 'editLocationSideGroup',
+    sublevelGroupId: 'editLocationSublevelGroup',
+    accessTypeId: 'editAccessType'
+};
 
 function setupHeaderDropdowns() {
     const usersMenuBtn = document.getElementById('usersMenuBtn');
@@ -119,6 +296,12 @@ function setupHeaderDropdowns() {
 
 document.addEventListener('DOMContentLoaded', () => {
     setupHeaderDropdowns();
+    LocationCodeUtils.setupLocationComposition(SEARCH_FIELD_IDS, {
+      allowPartial: true,
+      allowDirectCodeEntry: true
+    });
+    LocationCodeUtils.setupLocationComposition(EDIT_FIELD_IDS);
+
     const searchLocationInput = document.getElementById('searchLocation');
     const filterStatusSelect = document.getElementById('filterLocationStatus');
     const filterAccessSelect = document.getElementById('filterAccessType');
@@ -137,7 +320,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!list.length) {
             tbody.innerHTML = `
                 <tr>
-                    <td colspan="4" class="empty-state">
+                    <td colspan="5" class="empty-state">
                         <i class="fas fa-search-location"></i>
                         <p>No locations found.</p>
                     </td>
@@ -152,6 +335,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 <td>${escapeHtml(loc.location)}</td>
                 <td>${loc.status === 'active' ? 'Active' : 'Inactive'}</td>
                 <td>${escapeHtml(loc.accessType || '-')}</td>
+                <td>${escapeHtml(formatSection(getLocationSection(loc)))}</td>
                 <td class="td-actions">
                     <button type="button" class="btn btn-edit" data-id="${escapeHtml(loc.id || '')}" title="Edit">
                         <i class="fas fa-edit"></i> Edit
@@ -211,13 +395,19 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
                 const loc = result.data;
                 document.getElementById('editLocationId').value = loc.id;
-                document.getElementById('editLocationCode').value = loc.location || '';
                 document.getElementById('editLocationStatus').value = loc.status || 'active';
                 document.getElementById('editAccessType').value = loc.accessType || '';
+                document.getElementById('editLocationSection').value = getLocationSection(loc);
+                LocationCodeUtils.setLocationParts(
+                    EDIT_FIELD_IDS,
+                    LocationCodeUtils.parseLocationCode(loc.location || '')
+                );
+                LocationCodeUtils.updateComposedLocation(EDIT_FIELD_IDS);
 
                 if (editModal) {
                     editModal.classList.add('show');
                     editModal.setAttribute('aria-hidden', 'false');
+                    editModal.scrollTop = 0;
                 }
             })
             .catch(err => {
@@ -234,7 +424,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function loadLocations() {
-        fetch(LOCATIONS_API_URL)
+        return fetch(LOCATIONS_API_URL)
             .then(res => res.json())
             .then(result => {
                 if (result.success && Array.isArray(result.data)) {
@@ -242,17 +432,23 @@ document.addEventListener('DOMContentLoaded', () => {
                     filterLocations();
                 } else {
                     locations = [];
+                    filteredLocations = [];
                     renderLocations([]);
                 }
             })
             .catch(err => {
                 console.error('Error loading locations:', err);
                 locations = [];
+                filteredLocations = [];
                 renderLocations([]);
             });
     }
 
     function filterLocations() {
+        LocationCodeUtils.updateComposedLocation(SEARCH_FIELD_IDS, {
+            allowPartial: true,
+            allowDirectCodeEntry: true
+        });
         const term = searchLocationInput.value.trim().toLowerCase();
         const status = filterStatusSelect.value;
         const access = filterAccessSelect.value;
@@ -264,6 +460,7 @@ document.addEventListener('DOMContentLoaded', () => {
             return matchesTerm && matchesStatus && matchesAccess;
         });
 
+        filteredLocations = filtered;
         renderLocations(filtered);
     }
 
@@ -276,10 +473,22 @@ document.addEventListener('DOMContentLoaded', () => {
                 alert('Error: location id is missing. Please close and try Edit again.');
                 return;
             }
+
+            LocationCodeUtils.updateComposedLocation(EDIT_FIELD_IDS);
+            const validation = LocationCodeUtils.validateLocationParts(
+                LocationCodeUtils.getLocationParts(EDIT_FIELD_IDS)
+            );
+            if (!validation.valid) {
+                const firstError = Object.values(validation.errors)[0];
+                alert(firstError || 'Please complete all location fields.');
+                return;
+            }
+
             const data = {
-                location: document.getElementById('editLocationCode').value.trim(),
+                location: validation.composed,
                 status: document.getElementById('editLocationStatus').value,
-                accessType: document.getElementById('editAccessType').value
+                accessType: document.getElementById('editAccessType').value,
+                section: document.getElementById('editLocationSection').value
             };
 
             const saveBtn = document.getElementById('saveEditLocationBtn');
@@ -340,11 +549,34 @@ document.addEventListener('DOMContentLoaded', () => {
     // Initial load
     loadLocations();
 
-    searchLocationInput.addEventListener('input', filterLocations);
+    ['searchLocationStreet', 'searchLocationBuilding', 'searchLocationLevel', 'searchLocationSide', 'searchLocationSublevel'].forEach((fieldId) => {
+        const field = document.getElementById(fieldId);
+        if (field) {
+            field.addEventListener('input', filterLocations);
+            field.addEventListener('change', filterLocations);
+        }
+    });
+
+    if (searchLocationInput) {
+        searchLocationInput.addEventListener('input', () => {
+            searchLocationInput.value = searchLocationInput.value.toUpperCase();
+            filterLocations();
+        });
+    }
+
     filterStatusSelect.addEventListener('change', filterLocations);
     filterAccessSelect.addEventListener('change', filterLocations);
     clearSearchBtn.addEventListener('click', () => {
+        document.getElementById('searchLocationStreet').value = '';
+        document.getElementById('searchLocationBuilding').value = '';
+        document.getElementById('searchLocationLevel').value = '';
+        document.getElementById('searchLocationSide').value = '';
+        document.getElementById('searchLocationSublevel').value = '';
         searchLocationInput.value = '';
+        LocationCodeUtils.updateComposedLocation(SEARCH_FIELD_IDS, {
+            allowPartial: true,
+            allowDirectCodeEntry: true
+        });
         filterStatusSelect.value = '';
         filterAccessSelect.value = '';
         filterLocations();
@@ -353,4 +585,18 @@ document.addEventListener('DOMContentLoaded', () => {
     if (applySearchBtn) {
         applySearchBtn.addEventListener('click', filterLocations);
     }
+
+    const downloadExcelBtn = document.getElementById('downloadLocationsExcel');
+    if (downloadExcelBtn) {
+        downloadExcelBtn.addEventListener('click', async () => {
+            LocationCodeUtils.updateComposedLocation(SEARCH_FIELD_IDS, {
+                allowPartial: true,
+                allowDirectCodeEntry: true
+            });
+            await loadLocations();
+            await downloadLocationsExcel(filteredLocations);
+        });
+    }
+
+    getLoggedUserExportPrefix();
 });

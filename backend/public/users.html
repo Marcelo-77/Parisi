@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -9,6 +9,7 @@
 </head>
 <body>
     <script src="auth-check.js"></script>
+    <script src="menu-access.js"></script>
     <script src="double-y-logo-effect.js"></script>
     <div class="container">
                 <header class="header">
@@ -17,7 +18,10 @@
                 <h1><i class="fas fa-users"></i> User Registration</h1>
                 <p>Manage your company's employee data</p>
                 <div class="header-actions">
-                    <a href="warehouse.html" class="btn btn-primary">
+                    <a href="change-password.html" class="btn btn-primary" data-app="change-password.html" data-always-accessible="true">
+                        <i class="fas fa-key"></i> Change Password
+                    </a>
+                    <a href="warehouse.html" class="btn btn-primary" data-app="warehouse.html">
                         <i class="fas fa-warehouse"></i> Warehouse
                     </a>
                 </div>

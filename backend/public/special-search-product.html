@@ -3,18 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Double-Y Warehouse System - Separation and Picking</title>
+    <title>Double-Y Warehouse System - Special Search Product</title>
     <link rel="stylesheet" href="styles.css">
     <link rel="stylesheet" href="warehouse-styles.css">
     <link rel="stylesheet" href="pesquisa-styles.css">
+    <link rel="stylesheet" href="special-search-product-styles.css">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <style>
-      .separation-product-code-link { color: #667eea; text-decoration: none; cursor: pointer; }
-      .separation-product-code-link:hover { text-decoration: underline; }
-      #separationItemDetailModal .modal-content { margin-top: 2%; max-height: 90vh; display: flex; flex-direction: column; }
-      #separationItemDetailModal .modal-body { overflow-y: auto; max-height: calc(90vh - 80px); flex: 1 1 auto; text-align: left; }
-      #separationItemDetailModal .item-details { min-height: 0; }
-    </style>
 </head>
 <body>
     <script src="auth-check.js"></script>
@@ -48,7 +42,7 @@
             </div>
             <div class="header-content">
                 <h1><i class="fas fa-warehouse"></i> Double-Y Warehouse System</h1>
-                <p class="header-search-users-label" id="pageTitle">Separation and Picking</p>
+                <p class="header-search-users-label">Special Search Product</p>
                 <div class="header-actions">
                     <div class="users-dropdown">
                         <button type="button" class="btn btn-primary" id="usersMenuBtn" aria-haspopup="true" aria-expanded="false">
@@ -121,8 +115,6 @@
                             <a href="picking.html?mode=search" class="dropdown-item"><i class="fas fa-search"></i> Order Sent for Picking</a>
                             <a href="separation-picking.html" class="dropdown-item"><i class="fas fa-box-open"></i> Separation and Picking</a>
                             <a href="double-checking.html" class="dropdown-item"><i class="fas fa-clipboard-check"></i> Sent for Double Checking</a>
-                            <a href="last-check-label.html" class="dropdown-item"><i class="fas fa-tags"></i> Last check and Label</a>
-                            <a href="movement-situation.html" class="dropdown-item"><i class="fas fa-stream"></i> Situation of the Movement</a>
                         </div>
                     </div>
                     <div class="help-dropdown">
@@ -141,91 +133,117 @@
         </header>
 
         <main class="main-content">
-            <div class="form-container" style="width:100%;max-width:1100px;">
-                <div class="filters-container">
+            <div class="form-container" style="width:100%;max-width:none;">
+                <div class="filters-container special-search-panel">
                     <div class="filters-header">
-                        <h2><i class="fas fa-filter"></i> Separation and Picking</h2>
+                        <h2><i class="fas fa-box"></i> Search Product</h2>
                     </div>
                     <div class="filters-content show">
-                        <div class="filters-grid">
+                        <p style="color:#555;margin:0 0 12px;">
+                            Select a category (optional) and/or enter a product term, then click <strong>Search Product</strong>. After you select one, available locations will appear and be highlighted on the map when found.
+                        </p>
+                        <div class="special-search-actions">
                             <div class="filter-group">
-                                <label for="filterMoveId"><i class="fas fa-hashtag"></i> Movement ID</label>
-                                <input type="number" id="filterMoveId" placeholder="Ex: 1001">
+                                <label for="productSearchCategory">
+                                    <i class="fas fa-folder"></i> Category
+                                </label>
+                                <select id="productSearchCategory">
+                                    <option value="">All Categories</option>
+                                    <option value="TAPWARE">Tapware</option>
+                                    <option value="BATHWARE">BathWare</option>
+                                    <option value="CENTRAL">Central</option>
+                                    <option value="WAREHOUSE2">Warehouse2</option>
+                                    <option value="FURNITUREWARE">Furnitureware</option>
+                                    <option value="DOORWARE">DOORWARE</option>
+                                    <option value="OTHER">Other</option>
+                                </select>
                             </div>
                             <div class="filter-group">
-                                <label for="filterMoveCode"><i class="fas fa-barcode"></i> Movement Code</label>
-                                <input type="text" id="filterMoveCode" placeholder="Movement code">
+                                <label for="productSearchBy">
+                                    <i class="fas fa-filter"></i> Search By
+                                </label>
+                                <select id="productSearchBy">
+                                    <option value="codigo">Product Code</option>
+                                    <option value="nome">Product Name</option>
+                                    <option value="barcode">Barcode</option>
+                                </select>
                             </div>
                             <div class="filter-group">
-                                <label for="filterItemId"><i class="fas fa-list-ol"></i> Item ID (MOIT)</label>
-                                <input type="number" id="filterItemId" placeholder="Ex: 1">
-                            </div>
-                            <div class="filter-group">
-                                <label for="filterProductCode"><i class="fas fa-box"></i> Product Code</label>
-                                <input type="text" id="filterProductCode" placeholder="Product code">
+                                <label for="productSearchInput">
+                                    <i class="fas fa-search"></i> Product
+                                </label>
+                                <input type="text" id="productSearchInput" placeholder="Optional: code, name or barcode" autocomplete="off">
                             </div>
                         </div>
-                        <div class="filters-actions">
-                            <button id="searchSeparationBtn" class="btn btn-primary" type="button">
-                                <i class="fas fa-search"></i> Search
+                        <div class="filters-actions" style="margin-top:12px;">
+                            <button type="button" class="btn btn-primary" id="searchProductBtnAction">
+                                <i class="fas fa-search"></i> Search Product
                             </button>
-                            <button id="clearSeparationFiltersBtn" class="btn btn-secondary" type="button">
-                                <i class="fas fa-eraser"></i> Clear
+                            <button type="button" class="btn btn-secondary" id="clearProductSearchBtn">
+                                <i class="fas fa-eraser"></i> Clear Product Search
+                            </button>
+                        </div>
+                        <div id="productSearchResults" class="product-search-results"></div>
+                    </div>
+                </div>
+
+                <div class="results-container product-location-panel" id="productLocationPanel" style="display:none;">
+                    <div class="results-header">
+                        <h3><i class="fas fa-map-marker-alt"></i> Product Location</h3>
+                    </div>
+                    <div class="results-content">
+                        <div id="selectedProductSummary" class="selected-product-summary"></div>
+                        <p class="product-location-desc">Locations with situation Full and stat_cd_id = A</p>
+                        <div id="productLocationContent"></div>
+                    </div>
+                </div>
+
+                <div id="warehouseMapPanel" style="display:none;">
+                <div class="filters-container special-search-panel">
+                    <div class="filters-header">
+                        <h2><i class="fas fa-map"></i> Warehouse SECTOR Map</h2>
+                    </div>
+                    <div class="filters-content show">
+                        <div class="special-search-actions">
+                            <div class="filter-group">
+                                <label for="mapLocationSearch">
+                                    <i class="fas fa-search"></i> Search Location on Map
+                                </label>
+                                <input type="text" id="mapLocationSearch" placeholder="Ex: H1, B12, G5" style="text-transform: uppercase;" autocomplete="off">
+                            </div>
+                        </div>
+                        <div class="filters-actions" style="margin-top:12px;">
+                            <button type="button" class="btn btn-secondary" id="refreshMapBtn">
+                                <i class="fas fa-sync-alt"></i> Refresh Map
+                            </button>
+                            <button type="button" class="btn btn-secondary" id="clearMapSearchBtn">
+                                <i class="fas fa-eraser"></i> Clear Map Search
                             </button>
                         </div>
                     </div>
                 </div>
 
-                <div class="filters-container" style="margin-top: 20px;">
-                    <div class="filters-header">
-                        <h2><i class="fas fa-box-open"></i> Separation and Picking (Phase 3, Type 1)</h2>
+                <div class="results-container">
+                    <div class="results-header">
+                        <h3><i class="fas fa-map"></i> Warehouse SECTOR Map</h3>
                     </div>
-                    <div class="filters-content show">
-                        <div class="table-container">
-                            <table class="warehouse-table">
-                                <thead>
-                                    <tr>
-                                        <th>Movement ID</th>
-                                        <th>Movement Code</th>
-                                        <th>Item ID</th>
-                                        <th>Product Code</th>
-                                        <th>Product Name</th>
-                                        <th>Qty Movement</th>
-                                        <th>Qty Picked</th>
-                                        <th>Reason</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="separationTableBody">
-                                    <tr>
-                                        <td colspan="8" class="empty-state">Loading...</td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-                        <div class="filters-actions" style="margin-top: 12px;">
-                            <button type="button" id="sentDoubleCheckBtn" class="btn btn-primary">
-                                <i class="fas fa-clipboard-check"></i> Sent for Double Checking
-                            </button>
-                        </div>
+                    <div class="results-content">
+                        <div id="warehouseMapContainer"></div>
                     </div>
+                </div>
                 </div>
             </div>
         </main>
+
+        <footer class="footer">
+            <p>&copy; 2026 Double-Y Warehouse System. All rights reserved.</p>
+        </footer>
     </div>
 
-    <!-- Modal Item Details (same as picking / warehouse View product) -->
-    <div id="separationItemDetailModal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header success">
-                <h3><i class="fas fa-info-circle"></i> Item Details</h3>
-                <button type="button" class="modal-close" id="closeSeparationItemDetailModal" aria-label="Close">&times;</button>
-            </div>
-            <div class="modal-body">
-                <div id="separationItemDetails" class="item-details"></div>
-            </div>
-        </div>
-    </div>
-
-    <script src="separation-picking-script.js"></script>
+    <script src="section-options.js"></script>
+    <script src="location-code-utils.js"></script>
+    <script src="vendor/xlsx.full.min.js"></script>
+    <script src="warehouse-map-utils.js"></script>
+    <script src="special-search-product-script.js"></script>
 </body>
 </html>

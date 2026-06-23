@@ -128,8 +128,9 @@ function setupHeaderDropdowns() {
 document.addEventListener('DOMContentLoaded', () => {
   setupHeaderDropdowns();
   const tableBody = document.getElementById('tableBody');
-  const recordModal = document.getElementById('recordModal');
-  const recordForm = document.getElementById('recordForm');
+  const newRecordsPanel = document.getElementById('newRecordsPanel');
+  const newRecordsBody = document.getElementById('newRecordsBody');
+  const bulkEntryDatetime = document.getElementById('bulkEntryDatetime');
   const filterLocationCode = document.getElementById('filterLocationCode');
   const filterProductCode = document.getElementById('filterProductCode');
   const filterSituation = document.getElementById('filterSituation');
@@ -194,24 +195,98 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  function fillRecordModalDropdowns() {
-    const locSelect = document.getElementById('recordLocationCode');
-    const prodSelect = document.getElementById('recordProductCode');
-    const sitSelect = document.getElementById('recordSituation');
+  function getSituationOptionsHtml(selectedValue) {
+    if (!situations.length) {
+      return '<option value="">No situations loaded</option>';
+    }
+    return situations.map((s) => {
+      const value = Number(s.siprSqNumber);
+      const label = (s.siprNmDescription && String(s.siprNmDescription).trim()) || (`Situation #${s.siprSqNumber}`);
+      const selected = String(selectedValue) === String(value) ? ' selected' : '';
+      return `<option value="${value}"${selected}>${escapeHtml(label)}</option>`;
+    }).join('');
+  }
 
-    locSelect.innerHTML = '<option value="">Select location</option>' +
-      locations.map(l => `<option value="${escapeHtml(l.location)}">${escapeHtml(l.location)}</option>`).join('');
+  function getDefaultSituationValue() {
+    if (!situations.length) return '';
+    const full = situations.find((s) => String(s.siprNmDescription || '').trim().toLowerCase() === 'full');
+    return full ? Number(full.siprSqNumber) : Number(situations[0].siprSqNumber);
+  }
 
-    prodSelect.innerHTML = '<option value="">Select product</option>' +
-      products.map(p => `<option value="${escapeHtml(p.codigo)}">${escapeHtml(p.codigo)} - ${escapeHtml(p.nome || '')}</option>`).join('');
+  function fillEntryDatalists() {
+    const locList = document.getElementById('locationCodesList');
+    const prodList = document.getElementById('productCodesList');
+    if (locList) {
+      locList.innerHTML = locations
+        .map((l) => `<option value="${escapeHtml(l.location)}"></option>`)
+        .join('');
+    }
+    if (prodList) {
+      prodList.innerHTML = products
+        .map((p) => `<option value="${escapeHtml(p.codigo)}">${escapeHtml(p.nome || '')}</option>`)
+        .join('');
+    }
+  }
 
-    const situationOptions = situations.length
-      ? situations.map(s => {
-          const label = (s.siprNmDescription && String(s.siprNmDescription).trim()) || ('Situation #' + s.siprSqNumber);
-          return `<option value="${Number(s.siprSqNumber)}">${escapeHtml(label)}</option>`;
-        }).join('')
-      : '<option value="">No situations loaded</option>';
-    sitSelect.innerHTML = '<option value="">Select situation</option>' + situationOptions;
+  function createNewRecordRow(defaults = {}) {
+    const tr = document.createElement('tr');
+    tr.className = 'new-record-row';
+    tr.innerHTML = `
+      <td>
+        <input type="text" class="new-row-location" list="locationCodesList" placeholder="Ex: B11M" value="${escapeHtml(defaults.locationCode || '')}" style="text-transform:uppercase;" autocomplete="off">
+      </td>
+      <td>
+        <input type="text" class="new-row-product" list="productCodesList" placeholder="Product code" value="${escapeHtml(defaults.productCode || '')}" style="text-transform:uppercase;" autocomplete="off">
+      </td>
+      <td>
+        <select class="new-row-situation" required>${getSituationOptionsHtml(defaults.siprSqNumber ?? getDefaultSituationValue())}</select>
+      </td>
+      <td>
+        <input type="number" class="new-row-qty-informed" min="0" step="1" value="${Number(defaults.quantityInformed ?? 0)}">
+      </td>
+      <td class="td-actions">
+        <button type="button" class="btn btn-delete btn-remove-row" title="Remove line"><i class="fas fa-times"></i></button>
+      </td>
+    `;
+
+    const locationInput = tr.querySelector('.new-row-location');
+    const productInput = tr.querySelector('.new-row-product');
+    [locationInput, productInput].forEach((input) => {
+      if (!input) return;
+      input.addEventListener('input', () => {
+        input.value = input.value.toUpperCase();
+      });
+    });
+
+    tr.querySelector('.btn-remove-row')?.addEventListener('click', () => {
+      if (newRecordsBody.querySelectorAll('.new-record-row').length <= 1) {
+        alert('At least one line is required.');
+        return;
+      }
+      tr.remove();
+    });
+
+    return tr;
+  }
+
+  function addNewRecordLine(defaults = {}) {
+    if (!newRecordsBody) return;
+    newRecordsBody.appendChild(createNewRecordRow(defaults));
+  }
+
+  function clearNewRecordLines() {
+    if (newRecordsBody) newRecordsBody.innerHTML = '';
+  }
+
+  function readNewRecordRows() {
+    return Array.from(newRecordsBody?.querySelectorAll('.new-record-row') || []).map((row, index) => ({
+      lineNumber: index + 1,
+      locationCode: row.querySelector('.new-row-location')?.value.trim().toUpperCase() || '',
+      productCode: row.querySelector('.new-row-product')?.value.trim().toUpperCase() || '',
+      siprSqNumber: parseInt(row.querySelector('.new-row-situation')?.value, 10),
+      quantityInformed: parseInt(row.querySelector('.new-row-qty-informed')?.value, 10) || 0,
+      quantityCurrent: parseInt(row.querySelector('.new-row-qty-informed')?.value, 10) || 0
+    }));
   }
 
   function fillFilterSituation() {
@@ -365,71 +440,105 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  async function openRecordModal() {
-    document.getElementById('recordModalTitle').innerHTML = '<i class="fas fa-plus"></i> New Record';
-    recordForm.reset();
-    document.getElementById('recordQuantityInformed').value = 0;
-    document.getElementById('recordQuantityCurrent').value = 0;
-    document.getElementById('recordEntryDatetime').value = toISODateTimeLocal(new Date());
-    recordModal.classList.add('show');
+  async function openNewRecordsPanel() {
+    if (!newRecordsPanel) return;
     await Promise.all([loadLocations(), loadProducts(), loadSituations()]);
-    fillRecordModalDropdowns();
+    fillEntryDatalists();
+    clearNewRecordLines();
+    addNewRecordLine();
+    if (bulkEntryDatetime) {
+      bulkEntryDatetime.value = toISODateTimeLocal(new Date());
+    }
+    newRecordsPanel.classList.add('show');
+    newRecordsPanel.setAttribute('aria-hidden', 'false');
+    newRecordsPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    newRecordsBody?.querySelector('.new-row-location')?.focus();
   }
 
-  function closeRecordModal() {
-    recordModal.classList.remove('show');
+  function closeNewRecordsPanel() {
+    if (!newRecordsPanel) return;
+    newRecordsPanel.classList.remove('show');
+    newRecordsPanel.setAttribute('aria-hidden', 'true');
+    clearNewRecordLines();
   }
 
-  recordForm.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const locationCode = document.getElementById('recordLocationCode').value.trim();
-    const productCode = document.getElementById('recordProductCode').value.trim();
-    let entryDatetime = document.getElementById('recordEntryDatetime').value;
+  async function saveAllNewRecords() {
+    let entryDatetime = bulkEntryDatetime?.value || '';
     if (!entryDatetime) {
       alert('Entry date/time is required.');
       return;
     }
     if (entryDatetime.length === 16) entryDatetime += ':00';
-    const siprSqNumber = parseInt(document.getElementById('recordSituation').value, 10);
-    const quantityInformed = parseInt(document.getElementById('recordQuantityInformed').value, 10) || 0;
-    const quantityCurrent = parseInt(document.getElementById('recordQuantityCurrent').value, 10) || 0;
 
-    const payload = {
-      locationCode,
-      productCode,
-      entryDatetime: new Date(entryDatetime).toISOString(),
-      siprSqNumber,
-      quantityInformed,
-      quantityCurrent,
-      statCdId: 'A'
-    };
-
-    try {
-      const res = await fetch(API_LOCATION_PRODUCT, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-      const data = await res.json();
-      if (data.success) {
-        alert('Record created.');
-        closeRecordModal();
-        loadRecords();
-      } else {
-        alert('Error: ' + (data.message || data.error || 'Failed to create'));
-      }
-    } catch (err) {
-      console.error(err);
-      alert('Error: ' + err.message);
+    const rows = readNewRecordRows();
+    if (!rows.length) {
+      alert('Add at least one line.');
+      return;
     }
-  });
+
+    const invalidRow = rows.find((row) => !row.locationCode || !row.productCode || !row.siprSqNumber);
+    if (invalidRow) {
+      alert(`Line ${invalidRow.lineNumber}: location, product and situation are required.`);
+      return;
+    }
+
+    const saveBtn = document.getElementById('saveNewRecordsBtn');
+    if (saveBtn) saveBtn.disabled = true;
+
+    const entryIso = new Date(entryDatetime).toISOString();
+    let saved = 0;
+    const errors = [];
+
+    for (const row of rows) {
+      const payload = {
+        locationCode: row.locationCode,
+        productCode: row.productCode,
+        entryDatetime: entryIso,
+        siprSqNumber: row.siprSqNumber,
+        quantityInformed: row.quantityInformed,
+        quantityCurrent: row.quantityCurrent,
+        statCdId: 'A'
+      };
+
+      try {
+        const res = await fetch(API_LOCATION_PRODUCT, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (!data.success) {
+          errors.push(`Line ${row.lineNumber}: ${data.message || data.error || 'Failed to create'}`);
+        } else {
+          saved += 1;
+        }
+      } catch (err) {
+        errors.push(`Line ${row.lineNumber}: ${err.message}`);
+      }
+    }
+
+    if (saveBtn) saveBtn.disabled = false;
+
+    if (errors.length) {
+      alert(`${saved} record(s) saved.\n\nErrors:\n${errors.join('\n')}`);
+      if (saved > 0) {
+        hasSearched = true;
+        loadRecords();
+      }
+      return;
+    }
+
+    alert(`${saved} record(s) created.`);
+    closeNewRecordsPanel();
+    hasSearched = true;
+    loadRecords();
+  }
 
   function confirmDelete(dataset) {
     const loc = dataset.location || '';
     const prod = dataset.product || '';
     if (!confirm(`Delete record: ${loc} / ${prod}?`)) return;
 
-    const entryEnc = encodeURIComponent(dataset.entry || '');
     const params = new URLSearchParams({
       locationCode: loc,
       productCode: prod,
@@ -453,9 +562,10 @@ document.addEventListener('DOMContentLoaded', () => {
       });
   }
 
-  document.getElementById('newRecordBtn').addEventListener('click', openRecordModal);
-  document.getElementById('closeRecordModal').addEventListener('click', closeRecordModal);
-  document.getElementById('cancelRecordBtn').addEventListener('click', closeRecordModal);
+  document.getElementById('newRecordBtn').addEventListener('click', openNewRecordsPanel);
+  document.getElementById('addNewRecordLineBtn')?.addEventListener('click', () => addNewRecordLine());
+  document.getElementById('saveNewRecordsBtn')?.addEventListener('click', saveAllNewRecords);
+  document.getElementById('cancelNewRecordsBtn')?.addEventListener('click', closeNewRecordsPanel);
   document.getElementById('closeEditQuantityCurrentModal').addEventListener('click', closeEditQuantityCurrentModal);
   document.getElementById('cancelEditQuantityCurrentBtn').addEventListener('click', closeEditQuantityCurrentModal);
   document.getElementById('applyFiltersBtn').addEventListener('click', loadRecords);
