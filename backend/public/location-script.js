@@ -23,12 +23,20 @@ function setupHeaderDropdowns() {
     const locationDropdownMenu = document.getElementById('locationDropdownMenu');
     const locationProductMenuBtn = document.getElementById('locationProductMenuBtn');
     const locationProductDropdownMenu = document.getElementById('locationProductDropdownMenu');
+    const movementMenuBtn = document.getElementById('movementMenuBtn');
+    const movementDropdownMenu = document.getElementById('movementDropdownMenu');
+    const pickingMenuBtn = document.getElementById('pickingMenuBtn');
+    const pickingDropdownMenu = document.getElementById('pickingDropdownMenu');
+    const customerMenuBtn = document.getElementById('customerMenuBtn');
+    const customerDropdownMenu = document.getElementById('customerDropdownMenu');
+    const helpMenuBtn = document.getElementById('helpMenuBtn');
+    const helpDropdownMenu = document.getElementById('helpDropdownMenu');
 
     function closeAll() {
-        [usersDropdownMenu, productDropdownMenu, applicationsDropdownMenu, locationDropdownMenu, locationProductDropdownMenu].forEach(el => {
+        [usersDropdownMenu, productDropdownMenu, applicationsDropdownMenu, locationDropdownMenu, locationProductDropdownMenu, movementDropdownMenu, pickingDropdownMenu, customerDropdownMenu, helpDropdownMenu].forEach(el => {
             if (el) el.setAttribute('aria-hidden', 'true');
         });
-        [usersMenuBtn, productMenuBtn, applicationsMenuBtn, locationMenuBtn, locationProductMenuBtn].forEach(el => {
+        [usersMenuBtn, productMenuBtn, applicationsMenuBtn, locationMenuBtn, locationProductMenuBtn, movementMenuBtn, pickingMenuBtn, customerMenuBtn, helpMenuBtn].forEach(el => {
             if (el) el.setAttribute('aria-expanded', 'false');
         });
     }
@@ -77,10 +85,46 @@ function setupHeaderDropdowns() {
             locationProductMenuBtn.setAttribute('aria-expanded', !open);
         });
     }
+    if (movementMenuBtn && movementDropdownMenu) {
+        movementMenuBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            closeAll();
+            const open = movementDropdownMenu.getAttribute('aria-hidden') !== 'true';
+            movementDropdownMenu.setAttribute('aria-hidden', open ? 'true' : 'false');
+            movementMenuBtn.setAttribute('aria-expanded', !open);
+        });
+    }
+    if (pickingMenuBtn && pickingDropdownMenu) {
+        pickingMenuBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            closeAll();
+            const open = pickingDropdownMenu.getAttribute('aria-hidden') !== 'true';
+            pickingDropdownMenu.setAttribute('aria-hidden', open ? 'true' : 'false');
+            pickingMenuBtn.setAttribute('aria-expanded', !open);
+        });
+    }
+    if (customerMenuBtn && customerDropdownMenu) {
+        customerMenuBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            closeAll();
+            const open = customerDropdownMenu.getAttribute('aria-hidden') !== 'true';
+            customerDropdownMenu.setAttribute('aria-hidden', open ? 'true' : 'false');
+            customerMenuBtn.setAttribute('aria-expanded', !open);
+        });
+    }
+    if (helpMenuBtn && helpDropdownMenu) {
+        helpMenuBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            closeAll();
+            const open = helpDropdownMenu.getAttribute('aria-hidden') !== 'true';
+            helpDropdownMenu.setAttribute('aria-hidden', open ? 'true' : 'false');
+            helpMenuBtn.setAttribute('aria-expanded', !open);
+        });
+    }
     const newProductBtn = document.getElementById('newProductBtn');
     const searchProductBtn = document.getElementById('searchProductBtn');
-    if (newProductBtn) newProductBtn.addEventListener('click', () => { window.location.href = 'warehouse.html'; });
-    if (searchProductBtn) searchProductBtn.addEventListener('click', () => { window.location.href = 'warehouse.html'; });
+    if (newProductBtn) newProductBtn.addEventListener('click', () => { window.location.href = 'warehouse.html?action=new'; });
+    if (searchProductBtn) searchProductBtn.addEventListener('click', () => { window.location.href = 'warehouse.html?action=search'; });
     document.addEventListener('click', closeAll);
 }
 

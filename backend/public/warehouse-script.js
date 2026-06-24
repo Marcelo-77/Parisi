@@ -274,20 +274,51 @@ document.addEventListener('DOMContentLoaded', () => {
     // Não carrega todos os itens na abertura; usuário deve usar Search
 });
 
+function handleWarehouseLandingAction() {
+    const params = new URLSearchParams(window.location.search);
+    const action = params.get('action');
+    if (action === 'new') {
+        openItemModal();
+    } else if (action === 'search') {
+        const section = document.getElementById('productSearchSection');
+        if (section) {
+            section.style.display = 'flex';
+            section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+    } else {
+        return;
+    }
+
+    if (window.history && window.history.replaceState) {
+        window.history.replaceState({}, '', window.location.pathname);
+    }
+}
+
 function setupEventListeners() {
     // Product: New Product e Search Product
+    function openSearchProductSection() {
+        closeProductDropdown();
+        if (productSearchSection) {
+            productSearchSection.style.display = 'flex';
+            productSearchSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+    }
     function openNewProductModal() {
         closeProductDropdown();
         openItemModal();
     }
-    function showSearchProduct() {
-        closeProductDropdown();
-        if (productSearchSection) productSearchSection.style.display = 'flex';
+    function bindDropdownAction(btn, handler) {
+        if (!btn) return;
+        btn.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            handler();
+        });
     }
     const newProductBtn = document.getElementById('newProductBtn');
-    if (newProductBtn) newProductBtn.addEventListener('click', openNewProductModal);
     const searchProductBtn = document.getElementById('searchProductBtn');
-    if (searchProductBtn) searchProductBtn.addEventListener('click', showSearchProduct);
+    bindDropdownAction(newProductBtn, openNewProductModal);
+    bindDropdownAction(searchProductBtn, openSearchProductSection);
     if (productMenuBtn && productDropdownMenu) {
         productMenuBtn.addEventListener('click', (e) => {
             e.stopPropagation();
@@ -475,7 +506,10 @@ function setupEventListeners() {
             customerMenuBtn.setAttribute('aria-expanded', !open);
         });
     }
-    document.addEventListener('click', () => {
+    document.addEventListener('click', (e) => {
+        if (e.target.closest('.users-dropdown, .product-dropdown, .applications-dropdown, .location-dropdown, .location-product-dropdown, .movement-dropdown, .picking-dropdown, .help-dropdown, .customer-dropdown')) {
+            return;
+        }
         closeProductDropdown();
         closeApplicationsDropdown();
         closeUsersDropdown();
@@ -486,6 +520,8 @@ function setupEventListeners() {
         closePickingDropdown();
         closeHelpDropdown();
     });
+
+    handleWarehouseLandingAction();
 
     // Modal de Item
     document.getElementById('closeModal').addEventListener('click', () => closeItemModal());

@@ -18,6 +18,17 @@
             .trim();
     }
 
+    function formatSectorDisplay(value) {
+        const normalized = normalizeCellText(value);
+        if (global.SectionOptions && typeof global.SectionOptions.formatSectionLabel === 'function') {
+            return global.SectionOptions.formatSectionLabel(normalized);
+        }
+        const upper = normalized.toUpperCase();
+        if (upper === 'DOORWARE') return 'Doorware';
+        if (upper === 'FURNITURE') return 'Furniture';
+        return upper;
+    }
+
     function classifyCell(value) {
         const text = normalizeCellText(value);
         if (!text) return 'empty';
@@ -117,7 +128,7 @@
 
                 const cellClass = classifyCell(value);
                 const displayValue = cellClass === 'sector'
-                    ? normalizeCellText(value).toUpperCase()
+                    ? formatSectorDisplay(value)
                     : value;
                 const attrs = [];
                 if (meta.rowspan > 1) attrs.push(`rowspan="${meta.rowspan}"`);

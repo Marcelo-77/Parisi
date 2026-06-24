@@ -52,11 +52,40 @@
     return null;
   }
 
+  function clearCachedMenuAccess() {
+    try {
+      sessionStorage.removeItem(MENU_ACCESS_KEY);
+    } catch {
+      // ignore storage errors
+    }
+  }
+
+  function resetMenuVisibility() {
+    document.querySelectorAll('.header-actions [data-app], .header-actions a[href*=".html"], .header-actions .dropdown-item').forEach((item) => {
+      item.style.display = '';
+      item.setAttribute('aria-hidden', 'false');
+    });
+
+    document.querySelectorAll('.header-actions .users-dropdown, .header-actions .customer-dropdown, .header-actions .product-dropdown, .header-actions .applications-dropdown, .header-actions .location-dropdown, .header-actions .movement-dropdown, .header-actions .picking-dropdown, .header-actions .help-dropdown').forEach((group) => {
+      group.style.display = '';
+    });
+  }
+
   function applyMenuAccess(accessData) {
+    const headerActions = document.querySelector('.header-actions');
+    if (!headerActions) return;
+
+    const isRoot = Boolean(accessData.isRoot);
+
+    if (isRoot) {
+      resetMenuVisibility();
+      headerActions.setAttribute('data-menu-access-ready', 'true');
+      return;
+    }
+
     const allowed = new Set(
       (accessData.applications || []).map((app) => normalizeAppName(app))
     );
-    const isRoot = Boolean(accessData.isRoot);
 
     document.querySelectorAll('.header-actions [data-app], .header-actions a[href*=".html"]').forEach((item) => {
       const appName = getItemApplication(item);
@@ -73,10 +102,7 @@
       group.style.display = visibleItems.length > 0 ? '' : 'none';
     });
 
-    const headerActions = document.querySelector('.header-actions');
-    if (headerActions) {
-      headerActions.setAttribute('data-menu-access-ready', 'true');
-    }
+    headerActions.setAttribute('data-menu-access-ready', 'true');
   }
 
   async function initMenuAccess() {
@@ -91,7 +117,7 @@
     } catch (error) {
       console.error('Menu access error:', error);
       const cached = readCachedMenuAccess();
-      if (cached) {
+      if (cached && !cached.isRoot) {
         applyMenuAccess(cached);
       }
     }
@@ -105,6 +131,7 @@
 
   window.DoubleYMenuAccess = {
     refresh: initMenuAccess,
-    getCurrentPageApp
+    getCurrentPageApp,
+    clearCache: clearCachedMenuAccess
   };
 })();

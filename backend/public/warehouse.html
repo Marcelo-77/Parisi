@@ -176,7 +176,7 @@
                         <option value="CENTRAL">Central</option>
                         <option value="WAREHOUSE2">Warehouse2</option>
                         <option value="FURNITUREWARE">Furnitureware</option>
-                        <option value="DOORWARE">DOORWARE</option>
+                        <option value="DOORWARE">Doorware</option>
                         <option value="OTHER">Other</option>
                     </select>
                     <select id="filterStatus" class="filter-select">
@@ -223,13 +223,13 @@
 
         <!-- Modal de Adicionar/Editar Item -->
         <div id="itemModal" class="modal">
-            <div class="modal-content modal-large">
+            <div class="modal-content modal-large item-modal-content">
                 <div class="modal-header success">
                     <h3 id="modalTitle"><i class="fas fa-box"></i> New Item</h3>
                     <button class="modal-close" id="closeModal">&times;</button>
                 </div>
-                <div class="modal-body">
-                    <form id="itemForm" class="warehouse-form">
+                <form id="itemForm" class="warehouse-form item-modal-form">
+                    <div class="modal-body item-modal-body">
                         <div class="form-row">
                             <div class="form-group">
                                 <label for="codigo">
@@ -263,7 +263,7 @@
                                     <option value="CENTRAL">Central</option>
                                     <option value="WAREHOUSE2">Warehouse2</option>
                                     <option value="FURNITUREWARE">Furnitureware</option>
-                                    <option value="DOORWARE">DOORWARE</option>
+                                    <option value="DOORWARE">Doorware</option>
                                     <option value="OTHER">Other</option>
                                 </select>
                                 <span class="error-message" id="categoria-error"></span>
@@ -314,22 +314,21 @@
                                 <label for="descricao">
                                     <i class="fas fa-align-left"></i> Description
                                 </label>
-                                <textarea id="descricao" name="descricao" rows="3" 
+                                <textarea id="descricao" name="descricao" rows="2" 
                                           placeholder="Detailed item description" 
                                           maxlength="500"></textarea>
                             </div>
                         </div>
-
-                        <div class="form-actions">
-                            <button type="button" id="cancelBtn" class="btn btn-secondary">
-                                <i class="fas fa-times"></i> Cancel
-                            </button>
-                            <button type="submit" id="saveItemBtn" class="btn btn-primary">
-                                <i class="fas fa-save"></i> Save
-                            </button>
-                        </div>
-                    </form>
-                </div>
+                    </div>
+                    <div class="modal-footer item-modal-footer form-actions">
+                        <button type="button" id="cancelBtn" class="btn btn-secondary">
+                            <i class="fas fa-times"></i> Cancel
+                        </button>
+                        <button type="submit" id="saveItemBtn" class="btn btn-primary">
+                            <i class="fas fa-save"></i> Save
+                        </button>
+                    </div>
+                </form>
             </div>
         </div>
 

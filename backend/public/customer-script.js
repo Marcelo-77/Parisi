@@ -65,8 +65,8 @@ function setupHeaderDropdowns() {
 
   const newProductBtn = document.getElementById('newProductBtn');
   const searchProductBtn = document.getElementById('searchProductBtn');
-  if (newProductBtn) newProductBtn.addEventListener('click', () => { window.location.href = 'warehouse.html'; });
-  if (searchProductBtn) searchProductBtn.addEventListener('click', () => { window.location.href = 'warehouse.html'; });
+  if (newProductBtn) newProductBtn.addEventListener('click', () => { window.location.href = 'warehouse.html?action=new'; });
+  if (searchProductBtn) searchProductBtn.addEventListener('click', () => { window.location.href = 'warehouse.html?action=search'; });
 }
 
 function escapeHtml(text) {

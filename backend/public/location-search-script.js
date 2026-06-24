@@ -66,7 +66,7 @@ function formatSection(section) {
         CENTRAL: 'Central',
         WAREHOUSE2: 'Warehouse2',
         FURNITUREWARE: 'Furnitureware',
-        DOORWARE: 'DOORWARE',
+        DOORWARE: 'Doorware',
         OTHER: 'Other'
     };
     return map[normalized.toUpperCase()] || normalized;
@@ -312,8 +312,8 @@ function setupHeaderDropdowns() {
     }
     const newProductBtn = document.getElementById('newProductBtn');
     const searchProductBtn = document.getElementById('searchProductBtn');
-    if (newProductBtn) newProductBtn.addEventListener('click', () => { window.location.href = 'warehouse.html'; });
-    if (searchProductBtn) searchProductBtn.addEventListener('click', () => { window.location.href = 'warehouse.html'; });
+    if (newProductBtn) newProductBtn.addEventListener('click', () => { window.location.href = 'warehouse.html?action=new'; });
+    if (searchProductBtn) searchProductBtn.addEventListener('click', () => { window.location.href = 'warehouse.html?action=search'; });
     document.addEventListener('click', closeAll);
 }
 

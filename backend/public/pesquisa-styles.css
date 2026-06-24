@@ -164,6 +164,29 @@
     border-top: 2px solid #f0f0f0;
 }
 
+.filters-actions .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.btn-excel-download {
+    padding: 8px 14px;
+    font-size: 0.88rem;
+    gap: 6px;
+}
+
+.btn-excel-icon {
+    display: inline-flex;
+    align-items: center;
+    line-height: 0;
+}
+
+.btn-excel-icon svg {
+    width: 1em;
+    height: 1em;
+}
+
 /* Controles */
 .controls-container {
     background: white;

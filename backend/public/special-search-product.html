@@ -10,7 +10,7 @@
     <link rel="stylesheet" href="special-search-product-styles.css">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
 </head>
-<body>
+<body class="special-search-page">
     <script src="auth-check.js"></script>
     <script src="menu-access.js"></script>
     <script src="double-y-logo-effect.js"></script>
@@ -154,7 +154,7 @@
                                     <option value="CENTRAL">Central</option>
                                     <option value="WAREHOUSE2">Warehouse2</option>
                                     <option value="FURNITUREWARE">Furnitureware</option>
-                                    <option value="DOORWARE">DOORWARE</option>
+                                    <option value="DOORWARE">Doorware</option>
                                     <option value="OTHER">Other</option>
                                 </select>
                             </div>
@@ -199,35 +199,35 @@
                 </div>
 
                 <div id="warehouseMapPanel" style="display:none;">
-                <div class="filters-container special-search-panel">
-                    <div class="filters-header">
-                        <h2><i class="fas fa-map"></i> Warehouse SECTOR Map</h2>
-                    </div>
-                    <div class="filters-content show">
-                        <div class="special-search-actions">
-                            <div class="filter-group">
-                                <label for="mapLocationSearch">
-                                    <i class="fas fa-search"></i> Search Location on Map
-                                </label>
-                                <input type="text" id="mapLocationSearch" placeholder="Ex: H1, B12, G5" style="text-transform: uppercase;" autocomplete="off">
+                <div class="results-container warehouse-map-results">
+                    <div class="results-header warehouse-map-results-header">
+                        <h3><i class="fas fa-map"></i> Warehouse SECTOR Map</h3>
+                        <div class="warehouse-map-toolbar-row">
+                            <div class="warehouse-map-search-inline">
+                                <label for="mapLocationSearch" class="sr-only">Search Location on Map</label>
+                                <input type="text" id="mapLocationSearch" placeholder="Search location (Ex: H1, B12)" style="text-transform: uppercase;" autocomplete="off">
+                            </div>
+                            <button type="button" class="btn btn-secondary btn-map-tool" id="refreshMapBtn" title="Refresh map">
+                                <i class="fas fa-sync-alt"></i>
+                            </button>
+                            <button type="button" class="btn btn-secondary btn-map-tool" id="clearMapSearchBtn" title="Clear map search">
+                                <i class="fas fa-eraser"></i>
+                            </button>
+                            <div class="warehouse-map-zoom-toolbar">
+                                <button type="button" class="btn btn-secondary btn-map-zoom" id="mapZoomOutBtn" title="Zoom out" aria-label="Zoom out">
+                                    <i class="fas fa-search-minus"></i>
+                                </button>
+                                <span id="mapZoomLevelLabel" class="warehouse-map-zoom-level" aria-live="polite">100%</span>
+                                <button type="button" class="btn btn-secondary btn-map-zoom" id="mapZoomInBtn" title="Zoom in" aria-label="Zoom in">
+                                    <i class="fas fa-search-plus"></i>
+                                </button>
+                                <button type="button" class="btn btn-secondary btn-map-zoom" id="mapZoomResetBtn" title="Reset zoom">
+                                    <i class="fas fa-compress"></i>
+                                </button>
                             </div>
                         </div>
-                        <div class="filters-actions" style="margin-top:12px;">
-                            <button type="button" class="btn btn-secondary" id="refreshMapBtn">
-                                <i class="fas fa-sync-alt"></i> Refresh Map
-                            </button>
-                            <button type="button" class="btn btn-secondary" id="clearMapSearchBtn">
-                                <i class="fas fa-eraser"></i> Clear Map Search
-                            </button>
-                        </div>
                     </div>
-                </div>
-
-                <div class="results-container">
-                    <div class="results-header">
-                        <h3><i class="fas fa-map"></i> Warehouse SECTOR Map</h3>
-                    </div>
-                    <div class="results-content">
+                    <div class="results-content warehouse-map-results-content">
                         <div id="warehouseMapContainer"></div>
                     </div>
                 </div>

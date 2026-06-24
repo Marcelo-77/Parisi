@@ -53,6 +53,15 @@
                             <a href="change-password.html" class="dropdown-item" data-app="change-password.html" data-always-accessible="true"><i class="fas fa-key"></i> Change Password</a>
                         </div>
                     </div>
+                    <div class="customer-dropdown">
+                        <button type="button" class="btn btn-primary" id="customerMenuBtn" aria-haspopup="true" aria-expanded="false">
+                            <i class="fas fa-user"></i> Customer <i class="fas fa-chevron-down"></i>
+                        </button>
+                        <div class="customer-dropdown-menu" id="customerDropdownMenu" aria-hidden="true">
+                            <a href="customer.html" class="dropdown-item"><i class="fas fa-plus"></i> New Customer</a>
+                            <a href="customer.html?mode=search" class="dropdown-item"><i class="fas fa-search"></i> Search Customer</a>
+                        </div>
+                    </div>
                     <div class="product-dropdown">
                         <button type="button" class="btn btn-primary" id="productMenuBtn" aria-haspopup="true" aria-expanded="false">
                             <i class="fas fa-box"></i> Product <i class="fas fa-chevron-down"></i>
@@ -84,6 +93,38 @@
                             <a href="location-search.html" class="dropdown-item"><i class="fas fa-search"></i> Search Location</a>
                             <a href="location-product.html" class="dropdown-item"><i class="fas fa-boxes-stacked"></i> Location Product</a>
                             <a href="log-location-product.html" class="dropdown-item"><i class="fas fa-history"></i> Log Location Product</a>
+                        </div>
+                    </div>
+                    <div class="movement-dropdown">
+                        <button type="button" class="btn btn-primary" id="movementMenuBtn" aria-haspopup="true" aria-expanded="false">
+                            <i class="fas fa-exchange-alt"></i> Movement <i class="fas fa-chevron-down"></i>
+                        </button>
+                        <div class="movement-dropdown-menu" id="movementDropdownMenu" aria-hidden="true">
+                            <a href="movement.html" class="dropdown-item"><i class="fas fa-plus"></i> New Movement</a>
+                            <a href="movement.html?mode=search" class="dropdown-item"><i class="fas fa-search"></i> Search Movement</a>
+                            <a href="movement-situation.html" class="dropdown-item"><i class="fas fa-stream"></i> Situation of the Movement</a>
+                        </div>
+                    </div>
+                    <div class="picking-dropdown">
+                        <button type="button" class="btn btn-primary" id="pickingMenuBtn" aria-haspopup="true" aria-expanded="false">
+                            <i class="fas fa-dolly"></i> Picking <i class="fas fa-chevron-down"></i>
+                        </button>
+                        <div class="picking-dropdown-menu" id="pickingDropdownMenu" aria-hidden="true">
+                            <a href="picking.html" class="dropdown-item"><i class="fas fa-list"></i> Picking List</a>
+                            <a href="picking.html?mode=search" class="dropdown-item"><i class="fas fa-search"></i> Order Sent for Picking</a>
+                            <a href="separation-picking.html" class="dropdown-item"><i class="fas fa-box-open"></i> Separation and Picking</a>
+                            <a href="double-checking.html" class="dropdown-item"><i class="fas fa-clipboard-check"></i> Sent for Double Checking</a>
+                        </div>
+                    </div>
+                    <div class="help-dropdown">
+                        <button type="button" class="btn btn-primary" id="helpMenuBtn" aria-haspopup="true" aria-expanded="false">
+                            <i class="fas fa-circle-question"></i> Help <i class="fas fa-chevron-down"></i>
+                        </button>
+                        <div class="help-dropdown-menu" id="helpDropdownMenu" aria-hidden="true">
+                            <a href="help.html" class="dropdown-item"><i class="fas fa-book"></i> Help Center</a>
+                            <a href="help.html#modules" class="dropdown-item"><i class="fas fa-th-large"></i> System Modules</a>
+                            <a href="help.html#picking" class="dropdown-item"><i class="fas fa-dolly"></i> Picking Workflow</a>
+                            <a href="help.html#qrcode" class="dropdown-item"><i class="fas fa-qrcode"></i> Generate QR Code</a>
                         </div>
                     </div>
                 </div>
@@ -171,7 +212,7 @@
                                 <option value="CENTRAL">Central</option>
                                 <option value="WAREHOUSE2">Warehouse2</option>
                                 <option value="FURNITUREWARE">Furnitureware</option>
-                                <option value="DOORWARE">DOORWARE</option>
+                                <option value="DOORWARE">Doorware</option>
                                 <option value="OTHER">Other</option>
                             </select>
                             <span class="error-message" id="locationSection-error"></span>

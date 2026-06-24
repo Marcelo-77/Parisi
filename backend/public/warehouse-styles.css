@@ -884,6 +884,68 @@
     overflow-y: auto;
 }
 
+#itemModal .item-modal-content {
+    display: flex;
+    flex-direction: column;
+    max-height: 92vh;
+    overflow: hidden;
+}
+
+#itemModal .item-modal-form {
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 auto;
+    min-height: 0;
+    gap: 0;
+}
+
+#itemModal .item-modal-body {
+    overflow-y: auto;
+    flex: 1 1 auto;
+    min-height: 0;
+    text-align: left;
+    padding: 18px 24px;
+}
+
+#itemModal .item-modal-body .warehouse-form,
+#itemModal .item-modal-form.warehouse-form {
+    gap: 14px;
+}
+
+#itemModal .item-modal-footer {
+    flex-shrink: 0;
+    margin-top: 0;
+    padding: 14px 24px 18px;
+}
+
+#itemModal .item-modal-footer.form-actions {
+    border-top: 2px solid #f0f0f0;
+}
+
+#itemModal .form-row {
+    gap: 12px;
+}
+
+#itemModal .form-group label {
+    margin-bottom: 4px;
+    font-size: 0.9rem;
+}
+
+#itemModal .form-group input,
+#itemModal .form-group select,
+#itemModal .warehouse-form textarea {
+    padding: 8px 12px;
+    font-size: 0.95rem;
+}
+
+#itemModal .modal-header {
+    padding: 14px 24px;
+}
+
+#itemModal .modal-header h3 {
+    font-size: 1.15rem;
+}
+
 .modal-close {
     position: absolute;
     top: 15px;

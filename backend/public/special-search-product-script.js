@@ -2,7 +2,14 @@
     const WAREHOUSE_API = '/api/warehouse';
     const LOCATION_PRODUCT_API = '/api/location-product';
 
+    const MAP_ZOOM_MIN = 0.5;
+    const MAP_ZOOM_MAX = 2;
+    const MAP_ZOOM_STEP = 0.25;
+
     let currentGrid = null;
+    let mapZoomLevel = 1;
+    let mapFitScale = 1;
+    let mapResizeTimer = null;
     let products = [];
     let selectedProduct = null;
     let productLocations = [];
@@ -30,6 +37,10 @@
     function setMapPanelVisible(visible) {
         const panel = document.getElementById('warehouseMapPanel');
         if (panel) panel.style.display = visible ? '' : 'none';
+        if (visible && panel) {
+            panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            scheduleMapScaleRefresh();
+        }
     }
 
     function setLocationPanelVisible(visible) {
@@ -51,6 +62,100 @@
         if (mapSearchInput) mapSearchInput.value = '';
     }
 
+    function getMapWrapElements() {
+        const container = document.getElementById('warehouseMapContainer');
+        if (!container) return {};
+        return {
+            container,
+            wrap: container.querySelector('.warehouse-map-wrap'),
+            table: container.querySelector('.warehouse-map-table')
+        };
+    }
+
+    function clearMapWrapScale(wrap) {
+        if (!wrap) return;
+        wrap.style.zoom = '';
+        wrap.style.transform = '';
+        wrap.style.transformOrigin = '';
+        wrap.style.width = '';
+        wrap.style.height = '';
+    }
+
+    function updateMapFitScale() {
+        const { wrap, table } = getMapWrapElements();
+        if (!wrap || !table) {
+            mapFitScale = 1;
+            return;
+        }
+
+        clearMapWrapScale(wrap);
+
+        const available = Math.max(wrap.clientWidth - 8, 1);
+        const needed = table.scrollWidth;
+        mapFitScale = needed > available ? Math.max(0.25, available / needed) : 1;
+    }
+
+    function applyMapZoom() {
+        const { wrap, table } = getMapWrapElements();
+        if (!wrap) return;
+
+        const effectiveScale = mapFitScale * mapZoomLevel;
+
+        if (typeof CSS !== 'undefined' && CSS.supports('zoom', '1')) {
+            wrap.style.zoom = effectiveScale === 1 ? '' : String(effectiveScale);
+            wrap.style.transform = '';
+            wrap.style.transformOrigin = '';
+            wrap.style.width = '';
+            wrap.style.height = '';
+            wrap.style.overflowX = effectiveScale > 1 ? 'auto' : 'hidden';
+        } else {
+            wrap.style.zoom = '';
+            wrap.style.transform = effectiveScale === 1 ? '' : `scale(${effectiveScale})`;
+            wrap.style.transformOrigin = 'top left';
+            if (effectiveScale !== 1 && table) {
+                wrap.style.width = `${Math.ceil(table.scrollWidth * effectiveScale)}px`;
+                wrap.style.height = `${Math.ceil(table.scrollHeight * effectiveScale)}px`;
+            } else {
+                wrap.style.width = '';
+                wrap.style.height = '';
+            }
+            wrap.style.overflowX = 'auto';
+        }
+
+        const zoomLabel = document.getElementById('mapZoomLevelLabel');
+        if (zoomLabel) zoomLabel.textContent = `${Math.round(effectiveScale * 100)}%`;
+
+        const zoomOutBtn = document.getElementById('mapZoomOutBtn');
+        const zoomInBtn = document.getElementById('mapZoomInBtn');
+        if (zoomOutBtn) zoomOutBtn.disabled = mapZoomLevel <= MAP_ZOOM_MIN;
+        if (zoomInBtn) zoomInBtn.disabled = mapZoomLevel >= MAP_ZOOM_MAX;
+    }
+
+    function refreshMapScale() {
+        requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+                updateMapFitScale();
+                applyMapZoom();
+            });
+        });
+    }
+
+    function scheduleMapScaleRefresh() {
+        if (mapResizeTimer) clearTimeout(mapResizeTimer);
+        mapResizeTimer = setTimeout(refreshMapScale, 120);
+    }
+
+    function changeMapZoom(delta) {
+        const next = Math.round((mapZoomLevel + delta) * 100) / 100;
+        mapZoomLevel = Math.min(MAP_ZOOM_MAX, Math.max(MAP_ZOOM_MIN, next));
+        applyMapZoom();
+    }
+
+    function resetMapZoom() {
+        mapZoomLevel = 1;
+        refreshMapScale();
+    }
+
     function renderMapWithHighlights(blinkMatches) {
         const searchInput = document.getElementById('mapLocationSearch');
         const searchTerm = searchInput ? searchInput.value : '';
@@ -60,6 +165,7 @@
             mapOptions.blinkProductMatches = true;
         }
         WarehouseMapUtils.renderWarehouseMap('warehouseMapContainer', currentGrid, searchTerm, mapOptions);
+        refreshMapScale();
     }
 
     async function ensureMapLoaded() {
@@ -344,8 +450,8 @@
 
         const newProductBtn = document.getElementById('newProductBtn');
         const searchProductBtn = document.getElementById('searchProductBtn');
-        if (newProductBtn) newProductBtn.addEventListener('click', () => { window.location.href = 'warehouse.html'; });
-        if (searchProductBtn) searchProductBtn.addEventListener('click', () => { window.location.href = 'warehouse.html'; });
+        if (newProductBtn) newProductBtn.addEventListener('click', () => { window.location.href = 'warehouse.html?action=new'; });
+        if (searchProductBtn) searchProductBtn.addEventListener('click', () => { window.location.href = 'warehouse.html?action=search'; });
     }
 
     async function loadAndRenderMap() {
@@ -368,6 +474,9 @@
         const refreshBtn = document.getElementById('refreshMapBtn');
         const searchInput = document.getElementById('mapLocationSearch');
         const clearSearchBtn = document.getElementById('clearMapSearchBtn');
+        const zoomOutBtn = document.getElementById('mapZoomOutBtn');
+        const zoomInBtn = document.getElementById('mapZoomInBtn');
+        const zoomResetBtn = document.getElementById('mapZoomResetBtn');
 
         if (searchProductBtnAction) {
             searchProductBtnAction.addEventListener('click', runProductSearch);
@@ -406,6 +515,22 @@
                 renderMapWithHighlights();
             });
         }
+
+        if (zoomOutBtn) {
+            zoomOutBtn.addEventListener('click', () => changeMapZoom(-MAP_ZOOM_STEP));
+        }
+
+        if (zoomInBtn) {
+            zoomInBtn.addEventListener('click', () => changeMapZoom(MAP_ZOOM_STEP));
+        }
+
+        if (zoomResetBtn) {
+            zoomResetBtn.addEventListener('click', resetMapZoom);
+        }
+
+        window.addEventListener('resize', scheduleMapScaleRefresh);
+
+        refreshMapScale();
 
         loadProducts().catch((error) => {
             console.error('Load products error:', error);
