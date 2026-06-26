@@ -157,6 +157,126 @@
         applyLocationSearch(searchTerm || '', productLocations, options);
     }
 
+    function getLocationCodeFromProductItem(item) {
+        if (item == null) return '';
+        if (typeof item === 'string') return item;
+        return item.locationCode != null ? item.locationCode : (item.location_code || '');
+    }
+
+    function normalizeProductLocationList(list) {
+        if (!Array.isArray(list)) return [];
+        return list.map((item) => {
+            if (typeof item === 'string') {
+                return {
+                    locationCode: item,
+                    accessType: '',
+                    quantityCurrent: ''
+                };
+            }
+            return {
+                locationCode: getLocationCodeFromProductItem(item),
+                accessType: item.accessType != null ? item.accessType : (item.access_type ?? ''),
+                quantityCurrent: item.quantityCurrent != null
+                    ? item.quantityCurrent
+                    : (item.quantity_current ?? '')
+            };
+        }).filter((row) => row.locationCode);
+    }
+
+    function getProductLocationsForMapCell(mapLoc, productList) {
+        return productList.filter((row) => locationMatchesMapCell(row.locationCode, mapLoc));
+    }
+
+    let mapTooltipEl = null;
+
+    function ensureMapTooltip() {
+        if (!mapTooltipEl) {
+            mapTooltipEl = document.createElement('div');
+            mapTooltipEl.className = 'warehouse-map-location-tooltip';
+            mapTooltipEl.setAttribute('role', 'tooltip');
+            mapTooltipEl.hidden = true;
+            document.body.appendChild(mapTooltipEl);
+        }
+        return mapTooltipEl;
+    }
+
+    function hideMapTooltip() {
+        if (!mapTooltipEl) return;
+        mapTooltipEl.hidden = true;
+    }
+
+    function positionMapTooltip(event) {
+        const tooltip = ensureMapTooltip();
+        const pad = 14;
+        let x = event.clientX + pad;
+        let y = event.clientY + pad;
+        tooltip.style.left = `${x}px`;
+        tooltip.style.top = `${y}px`;
+        tooltip.hidden = false;
+
+        const rect = tooltip.getBoundingClientRect();
+        if (rect.right > window.innerWidth - 8) {
+            x = event.clientX - rect.width - pad;
+            tooltip.style.left = `${Math.max(8, x)}px`;
+        }
+        if (rect.bottom > window.innerHeight - 8) {
+            y = event.clientY - rect.height - pad;
+            tooltip.style.top = `${Math.max(8, y)}px`;
+        }
+    }
+
+    function buildMapTooltipHtml(matches) {
+        return matches.map((row) => `
+            <div class="warehouse-map-tooltip-block">
+                <div><span class="warehouse-map-tooltip-label">Location Code</span> ${escapeHtml(row.locationCode || '-')}</div>
+                <div><span class="warehouse-map-tooltip-label">Access Type</span> ${escapeHtml(row.accessType || '-')}</div>
+                <div><span class="warehouse-map-tooltip-label">Quantity Current</span> ${escapeHtml(row.quantityCurrent)}</div>
+            </div>
+        `).join('');
+    }
+
+    function setupProductLocationTooltips(table, productList) {
+        const normalized = normalizeProductLocationList(productList);
+        hideMapTooltip();
+        if (!table) return;
+
+        table._productLocationDetails = normalized;
+
+        if (table._mapTooltipHandlersAttached) return;
+        table._mapTooltipHandlersAttached = true;
+
+        const tooltip = ensureMapTooltip();
+
+        table.addEventListener('pointerover', (event) => {
+            const cell = event.target.closest('td.map-location.is-product-match');
+            if (!cell || !table.contains(cell)) return;
+
+            const details = table._productLocationDetails || [];
+            const mapLoc = cell.getAttribute('data-location') || '';
+            const matches = getProductLocationsForMapCell(mapLoc, details);
+            if (!matches.length) return;
+
+            tooltip.innerHTML = buildMapTooltipHtml(matches);
+            positionMapTooltip(event);
+        });
+
+        table.addEventListener('pointermove', (event) => {
+            const cell = event.target.closest('td.map-location.is-product-match');
+            if (!cell || !table.contains(cell) || tooltip.hidden) return;
+            positionMapTooltip(event);
+        });
+
+        table.addEventListener('pointerout', (event) => {
+            const cell = event.target.closest('td.map-location.is-product-match');
+            if (!cell || !table.contains(cell)) return;
+            const related = event.relatedTarget;
+            if (related && cell.contains(related)) return;
+            hideMapTooltip();
+        });
+
+        table.addEventListener('pointerleave', () => hideMapTooltip());
+    }
+
     function getMapMatchKeys(productLocation) {
         const keys = new Set();
         const prod = String(productLocation || '').trim().toUpperCase();
@@ -223,7 +343,9 @@
 
         cells.forEach((cell) => {
             const mapLoc = (cell.getAttribute('data-location') || '').toUpperCase();
-            const isProductMatch = productLocations.some((loc) => locationMatchesMapCell(loc, mapLoc));
+            const isProductMatch = productLocations.some((loc) =>
+                locationMatchesMapCell(getLocationCodeFromProductItem(loc), mapLoc)
+            );
             const isSingleMatch = Boolean(normalizedSingle) && mapLoc === normalizedSingle;
 
             cell.classList.toggle('is-product-match', isProductMatch);
@@ -241,6 +363,8 @@
         if (options && options.blinkProductMatches && productLocations.length > 0 && productMatchCells.length > 0) {
             blinkMapLocationCells(productMatchCells);
         }
+
+        setupProductLocationTooltips(table, productLocations);
 
         if (options && options.scrollToTop) {
             scrollMapToTop();

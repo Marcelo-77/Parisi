@@ -32,7 +32,7 @@
         const searchInput = document.getElementById('mapLocationSearch');
         const searchTerm = searchInput ? searchInput.value.trim() : '';
         return {
-            productLocations: productLocations.map((row) => row.locationCode),
+            productLocations,
             scrollToTop: !searchTerm,
             autoScrollToMatch: Boolean(searchTerm),
             ...(extra || {})
