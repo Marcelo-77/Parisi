@@ -1202,6 +1202,17 @@ input.input-readonly {
         left: auto;
         right: 0;
     }
+
+    .header-stats-left,
+    .header-stats-right {
+        display: none;
+    }
+
+    .header-stats-row {
+        justify-content: center;
+        margin-bottom: 10px;
+        gap: 0;
+    }
 }
 
 @media (max-width: 480px) {
