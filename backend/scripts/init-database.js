@@ -78,10 +78,10 @@ async function initDatabase() {
 
     await query(`
       INSERT INTO company (name)
-      VALUES ('Parisi Bathware Sydney')
+      VALUES ('Parisi Bathware Sydney'), ('Double-Y Warehouse System')
       ON CONFLICT (name) DO NOTHING
     `);
-    console.log('✅ Company seed Parisi Bathware Sydney verificada');
+    console.log('✅ Company seeds Parisi Bathware Sydney e Double-Y Warehouse System verificadas');
 
     // Criar tabela de itens do warehouse
     await query(`
