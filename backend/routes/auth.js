@@ -21,6 +21,7 @@ async function getSessionUserProfile(req) {
       id: ROOT_USER,
       nome: 'Root',
       email: ROOT_USER,
+      cargo: 'System Administrator',
       isRoot: true,
       companyName: 'All Companies'
     };
@@ -35,6 +36,7 @@ async function getSessionUserProfile(req) {
     id: profile.id,
     nome: profile.nome,
     email: profile.email,
+    cargo: profile.cargo || null,
     isRoot: false,
     companyId: profile.companyId || null,
     companyName: profile.companyName || null
@@ -132,6 +134,7 @@ router.post('/login', async (req, res) => {
           id: ROOT_USER,
           nome: 'Root',
           email: ROOT_USER,
+          cargo: 'System Administrator',
           isRoot: true,
           companyName: 'All Companies'
         }
@@ -157,6 +160,7 @@ router.post('/login', async (req, res) => {
         id: profile.id,
         nome: profile.nome,
         email: profile.email,
+        cargo: profile.cargo || null,
         isRoot: false,
         companyId: profile.companyId || null,
         companyName: profile.companyName || null

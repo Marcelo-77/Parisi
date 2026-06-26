@@ -105,8 +105,9 @@ async function loadLoggedUser() {
     if (emailInput) emailInput.value = data.user.email || '';
 
     if (infoEl) {
-      const company = data.user.companyName ? ` · Company: ${data.user.companyName}` : '';
-      infoEl.textContent = `Signed in as ${data.user.nome}${company}`;
+      const position = data.user.cargo ? ` · ${data.user.cargo}` : '';
+      const company = data.user.companyName ? ` · ${data.user.companyName}` : '';
+      infoEl.textContent = `Signed in as ${data.user.nome}${position}${company}`;
     }
   } catch (error) {
     console.error(error);

@@ -87,8 +87,15 @@
     }
 
     const name = user.nome || user.email || 'User';
+    const position = user.cargo || (user.isRoot ? 'System Administrator' : '—');
     const company = user.companyName || (user.isRoot ? 'All Companies' : '—');
-    el.innerHTML = `<i class="fas fa-user" aria-hidden="true"></i> ${escapeHtml(name)} <span class="logged-session-separator" aria-hidden="true">·</span> <i class="fas fa-industry" aria-hidden="true"></i> ${escapeHtml(company)}`;
+    el.innerHTML = [
+      `<i class="fas fa-user" aria-hidden="true"></i> ${escapeHtml(name)}`,
+      `<span class="logged-session-separator" aria-hidden="true">·</span>`,
+      `<i class="fas fa-briefcase" aria-hidden="true"></i> ${escapeHtml(position)}`,
+      `<span class="logged-session-separator" aria-hidden="true">·</span>`,
+      `<i class="fas fa-industry" aria-hidden="true"></i> ${escapeHtml(company)}`
+    ].join(' ');
   }
 
   async function fetchLoggedUserFallback() {
