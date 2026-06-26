@@ -125,9 +125,21 @@
         max-height: calc(100dvh - 240px);
     }
 
+    #warehouseMapPanel .warehouse-map-results-header {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    #warehouseMapPanel .warehouse-map-results-header h3 {
+        text-align: center;
+        font-size: 1.05rem;
+        line-height: 1.35;
+    }
+
     #warehouseMapPanel .warehouse-map-toolbar-row {
         width: 100%;
         margin-left: 0;
+        justify-content: center;
     }
 
     .warehouse-map-search-inline {
@@ -135,6 +147,16 @@
     }
 
     .warehouse-map-search-inline input {
+        width: 100%;
+    }
+
+    .special-search-actions {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .special-search-actions .filter-group {
+        min-width: 0;
         width: 100%;
     }
 }

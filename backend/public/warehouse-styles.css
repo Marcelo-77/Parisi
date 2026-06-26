@@ -1166,6 +1166,42 @@ input.input-readonly {
         width: 95%;
         margin: 5% auto;
     }
+
+    .header-actions {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 10px 8px;
+        justify-content: stretch;
+        align-items: stretch;
+        overflow: visible;
+    }
+
+    .header-actions > .users-dropdown,
+    .header-actions > .customer-dropdown,
+    .header-actions > .product-dropdown,
+    .header-actions > .applications-dropdown,
+    .header-actions > .location-dropdown,
+    .header-actions > .movement-dropdown,
+    .header-actions > .picking-dropdown,
+    .header-actions > .help-dropdown {
+        flex: none;
+        width: 100%;
+        min-width: 0;
+        display: block;
+    }
+
+    .header-actions .btn {
+        width: 100%;
+        min-width: 0;
+        justify-content: center;
+        font-size: 0.82rem;
+        padding: 10px 8px;
+    }
+
+    .header-actions > *:nth-child(even) [class*="-dropdown-menu"] {
+        left: auto;
+        right: 0;
+    }
 }
 
 @media (max-width: 480px) {
@@ -1181,6 +1217,16 @@ input.input-readonly {
     .warehouse-table th,
     .warehouse-table td {
         padding: 8px 5px;
+    }
+
+    .header-actions {
+        gap: 8px 6px;
+    }
+
+    .header-actions .btn {
+        font-size: 0.76rem;
+        padding: 9px 6px;
+        gap: 6px;
     }
 }
 
