@@ -15,37 +15,46 @@ const systemApplicationService = require('../services/systemApplicationService')
 
 const router = express.Router();
 
+async function getSessionUserProfile(req) {
+  if (isRootSession(req)) {
+    return {
+      id: ROOT_USER,
+      nome: 'Root',
+      email: ROOT_USER,
+      isRoot: true,
+      companyName: 'All Companies'
+    };
+  }
+
+  const userId = getSessionUserId(req);
+  if (!userId) return null;
+
+  const funcionario = await funcionarioServiceDB.buscarPorId(userId);
+  const profile = typeof funcionario.toJSON === 'function' ? funcionario.toJSON() : funcionario;
+  return {
+    id: profile.id,
+    nome: profile.nome,
+    email: profile.email,
+    isRoot: false,
+    companyId: profile.companyId || null,
+    companyName: profile.companyName || null
+  };
+}
+
 router.get('/check', async (req, res) => {
   if (!isAuthenticated(req)) {
     return res.json({ authenticated: false });
   }
 
-  if (isRootSession(req)) {
-    return res.json({
-      authenticated: true,
-      user: {
-        id: ROOT_USER,
-        nome: 'Root',
-        email: ROOT_USER,
-        isRoot: true
-      }
-    });
-  }
-
-  const userId = getSessionUserId(req);
-  if (!userId) {
-    return res.json({ authenticated: true });
-  }
-
   try {
-    const user = await funcionarioServiceDB.buscarPorId(userId);
+    const user = await getSessionUserProfile(req);
+    if (!user) {
+      return res.json({ authenticated: true });
+    }
+
     return res.json({
       authenticated: true,
-      user: {
-        id: user.id,
-        nome: user.nome,
-        email: user.email
-      }
+      user
     });
   } catch {
     clearSessionCookie(res);
@@ -65,16 +74,18 @@ router.get('/menu-access', async (req, res) => {
   try {
     if (isRootSession(req)) {
       const allApps = await systemApplicationService.list({});
+      const user = await getSessionUserProfile(req);
       return res.json({
         success: true,
         isRoot: true,
+        user,
         applications: allApps.map((app) => app.syapNmApplication).filter(Boolean)
       });
     }
 
     const userId = getSessionUserId(req);
     if (!userId) {
-      return res.json({ success: true, isRoot: false, applications: [] });
+      return res.json({ success: true, isRoot: false, user: null, applications: [] });
     }
 
     const apps = await userApplicationService.listAccessibleApplications(userId);
@@ -83,9 +94,12 @@ router.get('/menu-access', async (req, res) => {
       if (!applicationNames.includes(app)) applicationNames.push(app);
     });
 
+    const user = await getSessionUserProfile(req);
+
     return res.json({
       success: true,
       isRoot: false,
+      user,
       applications: applicationNames
     });
   } catch (error) {
@@ -118,7 +132,8 @@ router.post('/login', async (req, res) => {
           id: ROOT_USER,
           nome: 'Root',
           email: ROOT_USER,
-          isRoot: true
+          isRoot: true,
+          companyName: 'All Companies'
         }
       });
     }
@@ -133,13 +148,18 @@ router.post('/login', async (req, res) => {
     }
 
     setSessionCookie(res, user.id);
+    const fullUser = await funcionarioServiceDB.buscarPorId(user.id);
+    const profile = typeof fullUser.toJSON === 'function' ? fullUser.toJSON() : fullUser;
     return res.json({
       success: true,
       message: 'Login successful',
       user: {
-        id: user.id,
-        nome: user.nome,
-        email: user.email
+        id: profile.id,
+        nome: profile.nome,
+        email: profile.email,
+        isRoot: false,
+        companyId: profile.companyId || null,
+        companyName: profile.companyName || null
       }
     });
   } catch (error) {
@@ -177,44 +197,118 @@ router.post('/change-password', async (req, res) => {
     });
   }
 
-  const { currentPassword, newPassword, confirmPassword } = req.body || {};
+  const { currentPassword, newPassword, confirmPassword, email } = req.body || {};
 
-  if (!currentPassword || !newPassword || !confirmPassword) {
+  if (!currentPassword) {
     return res.status(400).json({
       success: false,
       error: 'Invalid data',
-      message: 'Current password, new password and confirmation are required.'
+      message: 'Current password is required.'
     });
   }
 
-  if (String(newPassword) !== String(confirmPassword)) {
+  const wantsPasswordChange = Boolean(newPassword || confirmPassword);
+  const wantsEmailChange = email !== undefined && email !== null && String(email).trim();
+
+  if (!wantsPasswordChange && !wantsEmailChange) {
     return res.status(400).json({
       success: false,
-      error: 'Password mismatch',
-      message: 'New password and confirmation do not match.'
+      error: 'Invalid data',
+      message: 'Provide a new email and/or a new password to update.'
     });
   }
 
-  if (String(newPassword).length < 6) {
-    return res.status(400).json({
-      success: false,
-      error: 'Invalid password',
-      message: 'New password must have at least 6 characters.'
-    });
+  if (wantsPasswordChange) {
+    if (!newPassword || !confirmPassword) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid data',
+        message: 'New password and confirmation are required when changing password.'
+      });
+    }
+
+    if (String(newPassword) !== String(confirmPassword)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Password mismatch',
+        message: 'New password and confirmation do not match.'
+      });
+    }
+
+    if (String(newPassword).length < 6) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid password',
+        message: 'New password must have at least 6 characters.'
+      });
+    }
+  }
+
+  if (wantsEmailChange) {
+    const normalizedEmail = String(email).trim().toLowerCase();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid email',
+        message: 'Email must have a valid format.'
+      });
+    }
   }
 
   try {
-    await funcionarioServiceDB.alterarSenha(userId, currentPassword, newPassword);
+    let updatedUser = null;
+    let emailChanged = false;
+    let passwordChanged = false;
+
+    if (wantsEmailChange) {
+      const before = await funcionarioServiceDB.buscarPorId(userId);
+      updatedUser = await funcionarioServiceDB.alterarEmail(userId, currentPassword, email);
+      const afterEmail = updatedUser.email ? String(updatedUser.email).trim().toLowerCase() : '';
+      const beforeEmail = before.email ? String(before.email).trim().toLowerCase() : '';
+      emailChanged = afterEmail !== beforeEmail;
+    }
+
+    if (wantsPasswordChange) {
+      await funcionarioServiceDB.alterarSenha(userId, currentPassword, newPassword);
+      passwordChanged = true;
+      if (!updatedUser) {
+        updatedUser = await funcionarioServiceDB.buscarPorId(userId);
+      }
+    }
+
+    if (!emailChanged && !passwordChanged) {
+      return res.status(400).json({
+        success: false,
+        error: 'No changes',
+        message: 'No changes were made to your account.'
+      });
+    }
+
+    const profile = updatedUser && typeof updatedUser.toJSON === 'function'
+      ? updatedUser.toJSON()
+      : await getSessionUserProfile(req);
+
+    const messages = [];
+    if (emailChanged) messages.push('email updated');
+    if (passwordChanged) messages.push('password changed');
+
     return res.json({
       success: true,
-      message: 'Password changed successfully.'
+      message: `Account updated successfully (${messages.join(' and ')}).`,
+      emailChanged,
+      passwordChanged,
+      user: profile
     });
   } catch (error) {
-    const status = error.message === 'Current password is incorrect' ? 401 : 400;
+    const status = error.message === 'Current password is incorrect'
+      ? 401
+      : error.message.includes('already registered')
+        ? 409
+        : 400;
     return res.status(status).json({
       success: false,
-      error: error.message || 'Error changing password',
-      message: error.message || 'Unable to change password.'
+      error: error.message || 'Error updating account',
+      message: error.message || 'Unable to update account.'
     });
   }
 });

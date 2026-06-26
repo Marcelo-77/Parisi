@@ -160,7 +160,6 @@ function clearCustomerFilters() {
 
 document.addEventListener('DOMContentLoaded', () => {
   showSection();
-  setupHeaderDropdowns();
 
   document.getElementById('newCustomerForm').addEventListener('submit', submitNewCustomer);
   document.getElementById('applyCustomerFiltersBtn').addEventListener('click', searchCustomers);

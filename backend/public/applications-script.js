@@ -156,7 +156,6 @@ function clearApplicationsFilters() {
 
 document.addEventListener('DOMContentLoaded', () => {
   showSection();
-  setupHeaderDropdowns();
 
   document.getElementById('newApplicationsForm').addEventListener('submit', submitNewApplication);
   document.getElementById('applyApplicationsFiltersBtn').addEventListener('click', searchApplications);

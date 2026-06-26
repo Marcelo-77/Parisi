@@ -205,7 +205,6 @@ async function loadDoubleChecking() {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-  setupHeaderDropdowns();
   loadDoubleChecking();
 
   const searchBtn = document.getElementById('searchDoubleCheckBtn');

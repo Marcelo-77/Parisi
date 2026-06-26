@@ -194,6 +194,35 @@
     width: 20px;
 }
 
+.header-actions {
+    display: flex;
+    flex-wrap: nowrap;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin-top: 15px;
+    width: 100%;
+    overflow: visible;
+}
+
+.header-actions > .users-dropdown,
+.header-actions > .customer-dropdown,
+.header-actions > .product-dropdown,
+.header-actions > .applications-dropdown,
+.header-actions > .location-dropdown,
+.header-actions > .movement-dropdown,
+.header-actions > .picking-dropdown,
+.header-actions > .help-dropdown {
+    flex: 0 0 auto;
+}
+
+.header-actions .btn {
+    margin: 0;
+    width: auto;
+    min-width: 150px;
+    white-space: nowrap;
+}
+
 /* Users dropdown no header (igual ao Product) */
 .users-dropdown {
     position: relative;

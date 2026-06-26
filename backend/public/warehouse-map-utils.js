@@ -242,16 +242,35 @@
             blinkMapLocationCells(productMatchCells);
         }
 
-        if (firstScrollTarget) {
+        if (options && options.scrollToTop) {
+            scrollMapToTop();
+        } else if (firstScrollTarget && (!options || options.autoScrollToMatch !== false)) {
             firstScrollTarget.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' });
         }
+    }
+
+    function scrollMapToTop() {
+        const wrap = getMapWrapElement();
+        if (wrap) {
+            wrap.scrollTop = 0;
+            wrap.scrollLeft = 0;
+        }
+    }
+
+    function getMapWrapElement() {
+        const table = document.getElementById('warehouseMapTable');
+        return table ? table.closest('.warehouse-map-wrap') : null;
     }
 
     function applyLocationSearch(term, productLocations, mapOptions) {
         applyMapHighlights({
             singleTerm: term,
             productLocations: productLocations || [],
-            blinkProductMatches: Boolean(mapOptions && mapOptions.blinkProductMatches)
+            blinkProductMatches: Boolean(mapOptions && mapOptions.blinkProductMatches),
+            scrollToTop: Boolean(mapOptions && mapOptions.scrollToTop),
+            autoScrollToMatch: mapOptions && mapOptions.autoScrollToMatch != null
+                ? Boolean(mapOptions.autoScrollToMatch)
+                : true
         });
     }
 
@@ -300,6 +319,7 @@
         applyLocationSearch,
         highlightProductLocations,
         scrollToProductLocation,
+        scrollMapToTop,
         locationMatchesMapCell,
         getMapMatchKeys,
         loadServerMap

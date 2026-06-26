@@ -28,19 +28,43 @@
         return String(categoria);
     }
 
-    function getMapOptions() {
+    function getMapOptions(extra) {
+        const searchInput = document.getElementById('mapLocationSearch');
+        const searchTerm = searchInput ? searchInput.value.trim() : '';
         return {
-            productLocations: productLocations.map((row) => row.locationCode)
+            productLocations: productLocations.map((row) => row.locationCode),
+            scrollToTop: !searchTerm,
+            autoScrollToMatch: Boolean(searchTerm),
+            ...(extra || {})
         };
     }
 
-    function setMapPanelVisible(visible) {
+    function setMapPanelVisible(visible, options) {
         const panel = document.getElementById('warehouseMapPanel');
+        const opts = options || {};
         if (panel) panel.style.display = visible ? '' : 'none';
-        if (visible && panel) {
+        if (visible && panel && opts.scrollToMap !== false) {
             panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
             scheduleMapScaleRefresh();
         }
+    }
+
+    function focusMapAtTop() {
+        const panel = document.getElementById('warehouseMapPanel');
+        if (panel) {
+            panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+
+        const applyTop = () => {
+            if (typeof WarehouseMapUtils !== 'undefined') {
+                WarehouseMapUtils.scrollMapToTop();
+            }
+        };
+
+        requestAnimationFrame(() => {
+            requestAnimationFrame(applyTop);
+        });
+        setTimeout(applyTop, 200);
     }
 
     function setLocationPanelVisible(visible) {
@@ -136,6 +160,11 @@
             requestAnimationFrame(() => {
                 updateMapFitScale();
                 applyMapZoom();
+                const searchInput = document.getElementById('mapLocationSearch');
+                const hasSearchTerm = searchInput ? searchInput.value.trim() : '';
+                if (!hasSearchTerm && typeof WarehouseMapUtils !== 'undefined') {
+                    WarehouseMapUtils.scrollMapToTop();
+                }
             });
         });
     }
@@ -372,11 +401,26 @@
         productLocations = [];
 
         clearProductSearchResults();
+
+        const mapSearchInput = document.getElementById('mapLocationSearch');
+        if (mapSearchInput) mapSearchInput.value = '';
+
         setLocationPanelVisible(true);
-        setMapPanelVisible(false);
+        setMapPanelVisible(true, { scrollToMap: false });
 
         const content = document.getElementById('productLocationContent');
         if (content) content.innerHTML = '<span class="loading-text">Loading locations...</span>';
+
+        const mapContainer = document.getElementById('warehouseMapContainer');
+        if (mapContainer) {
+            mapContainer.innerHTML = `
+                <div class="warehouse-map-placeholder">
+                    <i class="fas fa-spinner fa-spin"></i>
+                    <p>Loading map...</p>
+                </div>`;
+        }
+
+        focusMapAtTop();
 
         try {
             productLocations = await loadProductLocations(product.codigo);
@@ -384,14 +428,17 @@
 
             if (productLocations.length > 0) {
                 await ensureMapLoaded();
-                setMapPanelVisible(true);
                 renderMapWithHighlights(true);
+                focusMapAtTop();
+            } else {
+                setMapPanelVisible(false);
             }
         } catch (error) {
             console.error('Product location load error:', error);
             if (content) {
                 content.innerHTML = `<p class="error-state">${escapeHtml(error.message || 'Error loading locations.')}</p>`;
             }
+            setMapPanelVisible(false);
         }
     }
 
@@ -466,7 +513,6 @@
     }
 
     function initPage() {
-        setupHeaderDropdowns();
 
         const searchProductBtnAction = document.getElementById('searchProductBtnAction');
         const clearProductSearchBtn = document.getElementById('clearProductSearchBtn');

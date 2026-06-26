@@ -129,7 +129,6 @@ function setupHeaderDropdowns() {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-    setupHeaderDropdowns();
     LocationCodeUtils.setupLocationComposition(LOCATION_FIELD_IDS);
 
     const form = document.getElementById('locationForm');

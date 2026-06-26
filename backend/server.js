@@ -17,6 +17,7 @@ const situationsRoutes = require('./routes/situations');
 const pickingRoutes = require('./routes/picking');
 const warehouseMapRoutes = require('./routes/warehouseMap');
 const authRoutes = require('./routes/auth');
+const companiesRoutes = require('./routes/companies');
 const { isAuthenticated, protectPages, requireAuth } = require('./middleware/auth');
 const funcionarioServiceDB = require('./services/funcionarioServiceDB');
 const { initDatabase } = require('./scripts/init-database');
@@ -65,6 +66,7 @@ app.use('/api', requireAuth);
 
 // API Routes
 app.use('/api/funcionarios', funcionariosRoutes);
+app.use('/api/companies', companiesRoutes);
 app.use('/api/warehouse', warehouseRoutes);
 app.use('/api/locations', locationsRoutes);
 app.use('/api/location-product', locationProductRoutes);

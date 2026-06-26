@@ -14,7 +14,7 @@ body {
 }
 
 .container {
-    max-width: 1200px;
+    max-width: min(100%, 1680px);
     margin: 0 auto;
     padding: 20px;
     min-height: 100vh;
@@ -302,15 +302,40 @@ body {
     }
 }
 
-.header-content h1 {
+.header-content > h1 {
+    display: none;
+}
+
+.header-content > p.header-page-title,
+.header-content > p.header-search-users-label,
+.header-content > p:not(.logged-session-info):first-of-type {
     font-size: 1.6rem;
-    margin-bottom: 10px;
+    font-weight: 700;
+    margin-bottom: 6px;
     text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+    opacity: 1;
 }
 
 .header-content p {
     font-size: 1.1rem;
     opacity: 0.9;
+}
+
+.logged-session-info {
+    font-size: 0.98rem;
+    font-weight: 600;
+    opacity: 0.95;
+    margin: 0 0 10px;
+}
+
+.logged-session-info i {
+    margin-right: 4px;
+    opacity: 0.88;
+}
+
+.logged-session-separator {
+    margin: 0 8px;
+    opacity: 0.75;
 }
 
 .header-actions {
@@ -682,8 +707,10 @@ body {
         padding: 10px;
     }
     
-    .header-content h1 {
-        font-size: 2rem;
+    .header-content > p.header-page-title,
+    .header-content > p.header-search-users-label,
+    .header-content > p:not(.logged-session-info):first-of-type {
+        font-size: 1.4rem;
     }
     
     .form-container {
@@ -703,6 +730,15 @@ body {
     .btn {
         width: 100%;
     }
+
+    .header-actions {
+        justify-content: flex-start;
+    }
+
+    .header-actions .btn {
+        width: auto;
+        min-width: 150px;
+    }
     
     .modal-content {
         margin: 20% auto;
@@ -717,8 +753,10 @@ body {
 }
 
 @media (max-width: 480px) {
-    .header-content h1 {
-        font-size: 1.5rem;
+    .header-content > p.header-page-title,
+    .header-content > p.header-search-users-label,
+    .header-content > p:not(.logged-session-info):first-of-type {
+        font-size: 1.25rem;
     }
     
     .form-container {

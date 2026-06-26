@@ -271,6 +271,5 @@ function setupQrCodeGenerator() {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-  setupHeaderDropdowns();
   setupQrCodeGenerator();
 });

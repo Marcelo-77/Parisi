@@ -9,6 +9,8 @@ class Funcionario {
     this.telefone = dados.telefone;
     this.cargo = dados.cargo;
     this.departamento = dados.departamento;
+    this.companyId = dados.companyId || null;
+    this.companyName = dados.companyName || null;
     this.dataAdmissao = dados.dataAdmissao || new Date().toISOString().split('T')[0];
     this.photo = dados.photo || null;
     this.ativo = dados.ativo !== undefined ? dados.ativo : true;
@@ -44,6 +46,10 @@ class Funcionario {
       erros.push('Department must have at least 2 characters');
     }
 
+    if (!this.companyId) {
+      erros.push('Company is required');
+    }
+
     if (this.dataAdmissao && !this.validarData(this.dataAdmissao)) {
       erros.push('Admission date must be in YYYY-MM-DD format');
     }
@@ -66,7 +72,7 @@ class Funcionario {
 
   // Update employee data
   atualizar(dados) {
-    const camposPermitidos = ['nome', 'email', 'telefone', 'cargo', 'departamento', 'dataAdmissao', 'photo', 'ativo'];
+    const camposPermitidos = ['nome', 'email', 'telefone', 'cargo', 'departamento', 'dataAdmissao', 'photo', 'ativo', 'companyId'];
     
     camposPermitidos.forEach(campo => {
       if (dados[campo] !== undefined) {
@@ -86,6 +92,8 @@ class Funcionario {
       telefone: this.telefone,
       cargo: this.cargo,
       departamento: this.departamento,
+      companyId: this.companyId,
+      companyName: this.companyName,
       dataAdmissao: this.dataAdmissao,
       photo: this.photo,
       ativo: this.ativo,

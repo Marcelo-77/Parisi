@@ -2,6 +2,7 @@
 const { query } = require('../config/database');
 const Funcionario = require('../models/Funcionario');
 const { verifyStoredPassword } = require('../middleware/auth');
+const companyService = require('./companyService');
 
 class FuncionarioServiceDB {
   constructor() {
@@ -11,6 +12,7 @@ class FuncionarioServiceDB {
   // Create new employee
   async criar(dados) {
     const funcionario = new Funcionario(dados);
+    funcionario.email = String(funcionario.email).trim().toLowerCase();
     const erros = funcionario.validar();
     
     if (erros.length > 0) {
@@ -23,11 +25,18 @@ class FuncionarioServiceDB {
       throw new Error('Email already registered for another employee');
     }
 
+    if (dados.companyId) {
+      const company = await companyService.findById(dados.companyId);
+      if (!company) {
+        throw new Error('Company not found');
+      }
+    }
+
     const insertQuery = `
       INSERT INTO ${this.tableName} 
-      (nome, email, telefone, cargo, departamento, data_admissao, photo, ativo, password)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-      RETURNING *
+      (nome, email, telefone, cargo, departamento, data_admissao, photo, ativo, password, company_id)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+      RETURNING id
     `;
 
     const values = [
@@ -39,12 +48,13 @@ class FuncionarioServiceDB {
       funcionario.dataAdmissao,
       funcionario.photo || null,
       funcionario.ativo,
-      funcionario.password || null
+      funcionario.password || null,
+      funcionario.companyId || dados.companyId || null
     ];
 
     try {
       const result = await query(insertQuery, values);
-      const funcionarioCriado = this.mapRowToFuncionario(result.rows[0]);
+      const funcionarioCriado = await this.buscarPorId(result.rows[0].id);
       console.log(`✅ Employee created: ${funcionarioCriado.nome}`);
       return funcionarioCriado;
     } catch (error) {
@@ -64,25 +74,25 @@ class FuncionarioServiceDB {
 
     if (filtros.ativo !== undefined) {
       paramCount++;
-      conditions.push(`ativo = $${paramCount}`);
+      conditions.push(`f.ativo = $${paramCount}`);
       values.push(filtros.ativo);
     }
 
     if (filtros.departamento) {
       paramCount++;
-      conditions.push(`departamento ILIKE $${paramCount}`);
+      conditions.push(`f.departamento ILIKE $${paramCount}`);
       values.push(`%${filtros.departamento}%`);
     }
 
     if (filtros.cargo) {
       paramCount++;
-      conditions.push(`cargo ILIKE $${paramCount}`);
+      conditions.push(`f.cargo ILIKE $${paramCount}`);
       values.push(`%${filtros.cargo}%`);
     }
 
     if (filtros.nome) {
       paramCount++;
-      conditions.push(`nome ILIKE $${paramCount}`);
+      conditions.push(`f.nome ILIKE $${paramCount}`);
       values.push(`%${filtros.nome}%`);
     }
 
@@ -98,21 +108,23 @@ class FuncionarioServiceDB {
       
       // Map fields to column names
       const campoMap = {
-        'nome': 'nome',
-        'cargo': 'cargo',
-        'departamento': 'departamento',
-        'dataAdmissao': 'data_admissao',
-        'criadoEm': 'criado_em'
+        'nome': 'f.nome',
+        'cargo': 'f.cargo',
+        'departamento': 'f.departamento',
+        'dataAdmissao': 'f.data_admissao',
+        'criadoEm': 'f.criado_em'
       };
       
-      const campoDB = campoMap[campo] || 'nome';
+      const campoDB = campoMap[campo] || 'f.nome';
       orderClause = `ORDER BY ${campoDB} ${direcao.toUpperCase()}`;
     } else {
-      orderClause = 'ORDER BY nome ASC';
+      orderClause = 'ORDER BY f.nome ASC';
     }
 
     const selectQuery = `
-      SELECT * FROM ${this.tableName}
+      SELECT f.*, c.name AS company_name
+      FROM ${this.tableName} f
+      LEFT JOIN company c ON c.id = f.company_id
       ${whereClause}
       ${orderClause}
     `;
@@ -130,7 +142,12 @@ class FuncionarioServiceDB {
 
   // Find employee by ID
   async buscarPorId(id) {
-    const selectQuery = `SELECT * FROM ${this.tableName} WHERE id = $1`;
+    const selectQuery = `
+      SELECT f.*, c.name AS company_name
+      FROM ${this.tableName} f
+      LEFT JOIN company c ON c.id = f.company_id
+      WHERE f.id = $1
+    `;
     
     try {
       const result = await query(selectQuery, [id]);
@@ -148,10 +165,13 @@ class FuncionarioServiceDB {
 
   // Find employee by email
   async buscarPorEmail(email) {
-    const selectQuery = `SELECT * FROM ${this.tableName} WHERE email = $1`;
+    const normalizedEmail = email != null ? String(email).trim().toLowerCase() : '';
+    if (!normalizedEmail) return null;
+
+    const selectQuery = `SELECT * FROM ${this.tableName} WHERE LOWER(email) = $1`;
     
     try {
-      const result = await query(selectQuery, [email]);
+      const result = await query(selectQuery, [normalizedEmail]);
       return result.rows.length > 0 ? this.mapRowToFuncionario(result.rows[0]) : null;
     } catch (error) {
       console.error('❌ Error fetching employee by email:', error);
@@ -190,6 +210,38 @@ class FuncionarioServiceDB {
     }
   }
 
+  async verificarSenhaAtual(id, senhaAtual) {
+    const selectQuery = `SELECT id, password FROM ${this.tableName} WHERE id = $1 AND ativo = true`;
+
+    const result = await query(selectQuery, [id]);
+    if (result.rows.length === 0) {
+      throw new Error('Employee not found');
+    }
+
+    if (!verifyStoredPassword(result.rows[0].password, senhaAtual)) {
+      throw new Error('Current password is incorrect');
+    }
+
+    return true;
+  }
+
+  async alterarEmail(id, senhaAtual, novoEmail) {
+    await this.verificarSenhaAtual(id, senhaAtual);
+
+    const email = novoEmail != null ? String(novoEmail).trim().toLowerCase() : '';
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      throw new Error('Email must have a valid format');
+    }
+
+    const current = await this.buscarPorId(id);
+    const currentEmail = current.email ? String(current.email).trim().toLowerCase() : '';
+    if (email === currentEmail) {
+      return current;
+    }
+
+    return this.atualizar(id, { email });
+  }
+
   async alterarSenha(id, senhaAtual, novaSenha) {
     const selectQuery = `SELECT id, password FROM ${this.tableName} WHERE id = $1 AND ativo = true`;
 
@@ -225,6 +277,10 @@ class FuncionarioServiceDB {
     // Check if employee exists
     await this.buscarPorId(id);
     
+    if (dados.email) {
+      dados.email = String(dados.email).trim().toLowerCase();
+    }
+
     // Check if email already exists in another employee
     if (dados.email) {
       const emailExistente = await this.buscarPorEmail(dados.email);
@@ -233,17 +289,24 @@ class FuncionarioServiceDB {
       }
     }
 
+    if (dados.companyId) {
+      const company = await companyService.findById(dados.companyId);
+      if (!company) {
+        throw new Error('Company not found');
+      }
+    }
+
     // Build update query dynamically
     const updateFields = [];
     const values = [];
     let paramCount = 0;
 
-    const allowedFields = ['nome', 'email', 'telefone', 'cargo', 'departamento', 'dataAdmissao', 'photo', 'ativo', 'password'];
+    const allowedFields = ['nome', 'email', 'telefone', 'cargo', 'departamento', 'dataAdmissao', 'photo', 'ativo', 'password', 'companyId'];
     
     allowedFields.forEach(field => {
       if (dados[field] !== undefined) {
         paramCount++;
-        const dbField = field === 'dataAdmissao' ? 'data_admissao' : field;
+        const dbField = field === 'dataAdmissao' ? 'data_admissao' : field === 'companyId' ? 'company_id' : field;
         updateFields.push(`${dbField} = $${paramCount}`);
         values.push(dados[field]);
       }
@@ -264,8 +327,8 @@ class FuncionarioServiceDB {
     `;
 
     try {
-      const result = await query(updateQuery, values);
-      const funcionarioAtualizado = this.mapRowToFuncionario(result.rows[0]);
+      await query(updateQuery, values);
+      const funcionarioAtualizado = await this.buscarPorId(id);
       console.log(`✅ Employee updated: ${funcionarioAtualizado.nome}`);
       return funcionarioAtualizado;
     } catch (error) {
@@ -386,6 +449,8 @@ class FuncionarioServiceDB {
       telefone: row.telefone,
       cargo: row.cargo,
       departamento: row.departamento,
+      companyId: row.company_id || null,
+      companyName: row.company_name || null,
       dataAdmissao: row.data_admissao,
       photo: row.photo,
       ativo: row.ativo,

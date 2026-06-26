@@ -115,7 +115,6 @@
     }
 
     function initPage() {
-        setupHeaderDropdowns();
 
         const fileInput = document.getElementById('warehouseMapUploadFile');
         const uploadBtn = document.getElementById('uploadMapBtn');

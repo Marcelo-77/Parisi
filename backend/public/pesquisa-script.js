@@ -46,7 +46,6 @@ function escapeHtml(text) {
 // Initialization
 document.addEventListener('DOMContentLoaded', function() {
     setupEventListeners();
-    setupHeaderDropdowns();
     loadFuncionarios();
 });
 

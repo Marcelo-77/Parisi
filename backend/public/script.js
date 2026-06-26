@@ -52,6 +52,10 @@ const validacoes = {
         required: true,
         message: 'Selecione um departamento'
     },
+    companyId: {
+        required: true,
+        message: 'Select a company'
+    },
     dataAdmissao: {
         required: false,
         message: 'Data de admissão deve ser válida'
@@ -59,12 +63,34 @@ const validacoes = {
 };
 
 // Inicialização
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', async function() {
     setupEventListeners();
     setupFormValidation();
-    initializePageMode();
+    await loadCompanies();
+    await initializePageMode();
     checkAPIHealth();
 });
+
+async function loadCompanies() {
+    const select = document.getElementById('companyId');
+    if (!select) return;
+
+    try {
+        const response = await fetch('/api/companies');
+        const result = await response.json();
+        const companies = result.success && Array.isArray(result.data) ? result.data : [];
+
+        select.innerHTML = '<option value="">Select company</option>';
+        companies.forEach((company) => {
+            const option = document.createElement('option');
+            option.value = company.id;
+            option.textContent = company.name;
+            select.appendChild(option);
+        });
+    } catch (error) {
+        console.error('Error loading companies:', error);
+    }
+}
 
 function getEditUserIdFromUrl() {
     const params = new URLSearchParams(window.location.search);
@@ -94,7 +120,9 @@ function setCreateMode() {
     const formSubtitle = document.getElementById('formSubtitle');
     if (formTitle) formTitle.innerHTML = '<i class="fas fa-user-plus"></i> New User';
     if (formSubtitle) formSubtitle.textContent = 'Fill in the data below to register a new user';
-    document.title = 'User Registration';
+    const headerPageLabel = document.getElementById('headerPageLabel');
+    if (headerPageLabel) headerPageLabel.textContent = 'User Registration';
+    document.title = 'Double-Y Warehouse System - User Registration';
     setDefaultDate();
     updateSubmitButton(false);
 }
@@ -115,13 +143,17 @@ function setEditMode(user) {
     const formSubtitle = document.getElementById('formSubtitle');
     if (formTitle) formTitle.innerHTML = '<i class="fas fa-user-edit"></i> Edit User';
     if (formSubtitle) formSubtitle.textContent = 'Update the user data below and click Save Changes';
-    document.title = 'Edit User';
+    const headerPageLabel = document.getElementById('headerPageLabel');
+    if (headerPageLabel) headerPageLabel.textContent = 'Edit User';
+    document.title = 'Double-Y Warehouse System - Edit User';
 
     document.getElementById('nome').value = user.nome || '';
     document.getElementById('email').value = user.email || '';
     document.getElementById('telefone').value = user.telefone || '';
     document.getElementById('cargo').value = user.cargo || '';
     document.getElementById('departamento').value = user.departamento || '';
+    const companySelect = document.getElementById('companyId');
+    if (companySelect) companySelect.value = user.companyId || '';
     document.getElementById('dataAdmissao').value = toDateInputValue(user.dataAdmissao);
     document.getElementById('ativo').checked = user.ativo !== false;
 
@@ -206,6 +238,7 @@ function setupFormValidation() {
             // Validação em tempo real
             input.addEventListener('blur', () => validateField(campo));
             input.addEventListener('input', () => clearFieldError(campo));
+            input.addEventListener('change', () => clearFieldError(campo));
             
             // Formatação especial para telefone
             if (campo === 'telefone') {
@@ -344,6 +377,7 @@ function getFieldLabel(campo) {
         telefone: 'Telefone',
         cargo: 'Cargo',
         departamento: 'Departamento',
+        companyId: 'Company of the User',
         dataAdmissao: 'Data de Admissão'
     };
     return labels[campo] || campo;
@@ -388,6 +422,7 @@ async function handleFormSubmit(e) {
         telefone: formData.get('telefone').trim(),
         cargo: formData.get('cargo').trim(),
         departamento: formData.get('departamento'),
+        companyId: formData.get('companyId'),
         dataAdmissao: formData.get('dataAdmissao') || null,
         ativo: formData.get('ativo') === 'on'
     };
@@ -456,6 +491,7 @@ function showSuccess(funcionario, isEdit) {
         <p><strong>Telefone:</strong> ${funcionario.telefone}</p>
         <p><strong>Cargo:</strong> ${funcionario.cargo}</p>
         <p><strong>Departamento:</strong> ${funcionario.departamento}</p>
+        <p><strong>Company:</strong> ${funcionario.companyName || '—'}</p>
         ${funcionario.dataAdmissao ? `<p><strong>Data de Admissão:</strong> ${new Date(funcionario.dataAdmissao).toLocaleDateString('pt-BR')}</p>` : ''}
         <p><strong>Status:</strong> ${funcionario.ativo ? 'Ativo' : 'Inativo'}</p>
         <p><strong>ID:</strong> ${funcionario.id}</p>

@@ -256,7 +256,6 @@ async function loadPicking() {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-  setupHeaderDropdowns();
   loadPicking();
 
   document.addEventListener('click', (e) => {

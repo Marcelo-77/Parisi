@@ -318,7 +318,6 @@ function setupHeaderDropdowns() {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-    setupHeaderDropdowns();
     LocationCodeUtils.setupLocationComposition(SEARCH_FIELD_IDS, {
       allowPartial: true,
       allowDirectCodeEntry: true

@@ -42,6 +42,11 @@
 
 #warehouseMapPanel .warehouse-map-results {
     margin-top: 16px;
+    margin-bottom: 16px;
+}
+
+#productLocationPanel.product-location-panel {
+    margin-top: 0;
 }
 
 #warehouseMapPanel .warehouse-map-results-header {

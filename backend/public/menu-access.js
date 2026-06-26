@@ -52,6 +52,53 @@
     return null;
   }
 
+  function escapeHtml(value) {
+    return String(value)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
+
+  function renderLoggedUserInfo(user) {
+    if (!user) return;
+
+    const headerContent = document.querySelector('.header-content');
+    if (!headerContent) return;
+
+    let el = document.getElementById('loggedSessionInfo');
+    if (!el) {
+      el = document.createElement('p');
+      el.id = 'loggedSessionInfo';
+      el.className = 'logged-session-info';
+
+      const headerActions = headerContent.querySelector('.header-actions');
+      const subtitle = headerContent.querySelector('p:not(.logged-session-info)');
+      if (subtitle && !subtitle.classList.contains('header-page-title') && !subtitle.classList.contains('header-search-users-label')) {
+        subtitle.classList.add('header-page-title');
+      }
+      if (subtitle) {
+        subtitle.insertAdjacentElement('afterend', el);
+      } else if (headerActions) {
+        headerContent.insertBefore(el, headerActions);
+      } else {
+        headerContent.appendChild(el);
+      }
+    }
+
+    const name = user.nome || user.email || 'User';
+    const company = user.companyName || (user.isRoot ? 'All Companies' : '—');
+    el.innerHTML = `<i class="fas fa-user" aria-hidden="true"></i> ${escapeHtml(name)} <span class="logged-session-separator" aria-hidden="true">·</span> <i class="fas fa-industry" aria-hidden="true"></i> ${escapeHtml(company)}`;
+  }
+
+  async function fetchLoggedUserFallback() {
+    const res = await fetch('/api/auth/check');
+    const data = await res.json().catch(() => ({}));
+    if (res.ok && data.authenticated && data.user) {
+      renderLoggedUserInfo(data.user);
+    }
+  }
+
   function clearCachedMenuAccess() {
     try {
       sessionStorage.removeItem(MENU_ACCESS_KEY);
@@ -63,7 +110,7 @@
   function resetMenuVisibility() {
     document.querySelectorAll('.header-actions [data-app], .header-actions a[href*=".html"], .header-actions .dropdown-item').forEach((item) => {
       item.style.display = '';
-      item.setAttribute('aria-hidden', 'false');
+      item.removeAttribute('aria-hidden');
     });
 
     document.querySelectorAll('.header-actions .users-dropdown, .header-actions .customer-dropdown, .header-actions .product-dropdown, .header-actions .applications-dropdown, .header-actions .location-dropdown, .header-actions .movement-dropdown, .header-actions .picking-dropdown, .header-actions .help-dropdown').forEach((group) => {
@@ -94,7 +141,9 @@
       const alwaysAccessible = item.getAttribute('data-always-accessible') === 'true';
       const allowedItem = isRoot || alwaysAccessible || allowed.has(normalizeAppName(appName));
       item.style.display = allowedItem ? '' : 'none';
-      item.setAttribute('aria-hidden', allowedItem ? 'false' : 'true');
+      if (allowedItem) {
+        item.removeAttribute('aria-hidden');
+      }
     });
 
     document.querySelectorAll('.header-actions .users-dropdown, .header-actions .customer-dropdown, .header-actions .product-dropdown, .header-actions .applications-dropdown, .header-actions .location-dropdown, .header-actions .movement-dropdown, .header-actions .picking-dropdown, .header-actions .help-dropdown').forEach((group) => {
@@ -108,17 +157,30 @@
   async function initMenuAccess() {
     if (window.location.pathname.endsWith('/login.html')) return;
 
-    const headerActions = document.querySelector('.header-actions');
-    if (!headerActions) return;
+    if (window.DoubleYHeaderMenu) {
+      window.DoubleYHeaderMenu.ensure();
+      window.DoubleYHeaderMenu.setupDropdowns();
+    }
 
     try {
       const accessData = await fetchMenuAccess();
-      applyMenuAccess(accessData);
+      if (document.querySelector('.header-actions')) {
+        applyMenuAccess(accessData);
+      }
+      renderLoggedUserInfo(accessData.user);
+      if (window.DoubleYHeaderMenu) {
+        window.DoubleYHeaderMenu.setupDropdowns();
+      }
     } catch (error) {
       console.error('Menu access error:', error);
       const cached = readCachedMenuAccess();
-      if (cached && !cached.isRoot) {
-        applyMenuAccess(cached);
+      if (cached) {
+        if (document.querySelector('.header-actions')) {
+          applyMenuAccess(cached);
+        }
+        renderLoggedUserInfo(cached.user);
+      } else {
+        await fetchLoggedUserFallback();
       }
     }
   }
@@ -132,6 +194,7 @@
   window.DoubleYMenuAccess = {
     refresh: initMenuAccess,
     getCurrentPageApp,
-    clearCache: clearCachedMenuAccess
+    clearCache: clearCachedMenuAccess,
+    renderLoggedUserInfo
   };
 })();

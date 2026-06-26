@@ -149,7 +149,6 @@ async function loadLastCheckAndLabel() {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-  setupHeaderDropdowns();
   loadLastCheckAndLabel();
 
   const searchBtn = document.getElementById('searchLastCheckBtn');

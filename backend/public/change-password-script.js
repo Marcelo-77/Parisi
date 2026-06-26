@@ -76,10 +76,13 @@ function hideMessage() {
   el.className = 'change-password-message';
 }
 
+let originalEmail = '';
+
 async function loadLoggedUser() {
   const infoEl = document.getElementById('loggedUserInfo');
   const form = document.getElementById('changePasswordForm');
   const saveBtn = document.getElementById('savePasswordBtn');
+  const emailInput = document.getElementById('accountEmail');
 
   try {
     const res = await fetch('/api/auth/check');
@@ -92,14 +95,18 @@ async function loadLoggedUser() {
 
     if (data.user.isRoot) {
       if (infoEl) {
-        infoEl.textContent = 'Signed in as root. Root password is managed by system configuration and cannot be changed here.';
+        infoEl.textContent = 'Signed in as root. Root account settings cannot be changed here.';
       }
       if (form) form.style.display = 'none';
       return;
     }
 
+    originalEmail = data.user.email ? String(data.user.email).trim().toLowerCase() : '';
+    if (emailInput) emailInput.value = data.user.email || '';
+
     if (infoEl) {
-      infoEl.textContent = `Signed in as ${data.user.nome} (${data.user.email})`;
+      const company = data.user.companyName ? ` · Company: ${data.user.companyName}` : '';
+      infoEl.textContent = `Signed in as ${data.user.nome}${company}`;
     }
   } catch (error) {
     console.error(error);
@@ -108,8 +115,10 @@ async function loadLoggedUser() {
   }
 }
 
-function showPasswordSavedModal() {
+function showPasswordSavedModal(message) {
   const modal = document.getElementById('passwordSavedModal');
+  const messageEl = document.getElementById('passwordSavedMessage');
+  if (messageEl && message) messageEl.textContent = message;
   if (!modal) return;
   modal.classList.add('show');
   modal.setAttribute('aria-hidden', 'false');
@@ -146,13 +155,43 @@ async function handleSubmit(event) {
   hideMessage();
 
   const currentPassword = document.getElementById('currentPassword').value;
+  const accountEmail = document.getElementById('accountEmail').value.trim();
   const newPassword = document.getElementById('newPassword').value;
   const confirmPassword = document.getElementById('confirmPassword').value;
   const saveBtn = document.getElementById('savePasswordBtn');
 
-  if (newPassword !== confirmPassword) {
-    showMessage('New password and confirmation do not match.', 'error');
+  if (!accountEmail) {
+    showMessage('Registered email is required.', 'error');
     return;
+  }
+
+  const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailPattern.test(accountEmail)) {
+    showMessage('Please enter a valid email address.', 'error');
+    return;
+  }
+
+  const wantsPasswordChange = Boolean(newPassword || confirmPassword);
+  const wantsEmailChange = accountEmail.toLowerCase() !== originalEmail;
+
+  if (!wantsPasswordChange && !wantsEmailChange) {
+    showMessage('Change your email and/or enter a new password before saving.', 'error');
+    return;
+  }
+
+  if (wantsPasswordChange) {
+    if (!newPassword || !confirmPassword) {
+      showMessage('Enter and confirm the new password.', 'error');
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      showMessage('New password and confirmation do not match.', 'error');
+      return;
+    }
+    if (newPassword.length < 6) {
+      showMessage('New password must have at least 6 characters.', 'error');
+      return;
+    }
   }
 
   if (saveBtn) saveBtn.disabled = true;
@@ -161,25 +200,48 @@ async function handleSubmit(event) {
     const res = await fetch('/api/auth/change-password', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ currentPassword, newPassword, confirmPassword })
+      body: JSON.stringify({
+        currentPassword,
+        email: accountEmail,
+        newPassword: wantsPasswordChange ? newPassword : undefined,
+        confirmPassword: wantsPasswordChange ? confirmPassword : undefined
+      })
     });
     const data = await res.json().catch(() => ({}));
 
     if (!res.ok || !data.success) {
-      throw new Error(data.message || data.error || 'Unable to change password.');
+      throw new Error(data.message || data.error || 'Unable to update account.');
     }
 
-    document.getElementById('changePasswordForm').reset();
-    showPasswordSavedModal();
+    if (!data.emailChanged && !data.passwordChanged) {
+      throw new Error('No changes were saved. Check your current password and try again.');
+    }
+
+    if (data.emailChanged && data.user && data.user.email) {
+      originalEmail = String(data.user.email).trim().toLowerCase();
+      document.getElementById('accountEmail').value = data.user.email;
+    } else if (data.user && data.user.email) {
+      document.getElementById('accountEmail').value = data.user.email;
+    }
+
+    document.getElementById('currentPassword').value = '';
+    document.getElementById('newPassword').value = '';
+    document.getElementById('confirmPassword').value = '';
+
+    if (window.DoubleYMenuAccess && data.user) {
+      window.DoubleYMenuAccess.renderLoggedUserInfo(data.user);
+    }
+
+    showPasswordSavedModal(data.message || 'Your account has been updated successfully.');
+    if (saveBtn) saveBtn.disabled = false;
     return;
   } catch (error) {
-    showMessage(error.message || 'Unable to change password.', 'error');
+    showMessage(error.message || 'Unable to update account.', 'error');
     if (saveBtn) saveBtn.disabled = false;
   }
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-  setupHeaderDropdowns();
   setupPasswordToggles();
   setupPasswordSavedModal();
   loadLoggedUser();

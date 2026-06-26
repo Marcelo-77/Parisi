@@ -1,4 +1,4 @@
-Ôªø// Configura√ß√£o da API
+// ConfiguraÁ„o da API
 const API_BASE_URL = '/api/warehouse';
 
 function escapeHtml(text) {
@@ -7,7 +7,7 @@ function escapeHtml(text) {
     return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
-// Mapeamento categoria (valor no BD) ‚Üí texto de exibi√ß√£o
+// Mapeamento categoria (valor no BD) ? texto de exibiÁ„o
 function formatCategory(categoria) {
     if (typeof SectionOptions !== 'undefined') {
         return SectionOptions.formatSectionLabel(categoria);
@@ -16,11 +16,11 @@ function formatCategory(categoria) {
     return categoria;
 }
 
-// Estado da aplica√ß√£o
+// Estado da aplicaÁ„o
 let items = [];
 let currentItemId = null;
 let currentItem = null;
-let hasSearched = false; // true ap√≥s o usu√°rio clicar em Search
+let hasSearched = false; // true apÛs o usu·rio clicar em Search
 
 // Elementos do DOM
 const itemModal = document.getElementById('itemModal');
@@ -57,16 +57,16 @@ const sortBy = document.getElementById('sortBy');
 const clearSearch = document.getElementById('clearSearch');
 const searchBtn = document.getElementById('searchBtn');
 
-// Estat√≠sticas
+// EstatÌsticas
 const totalItemsEl = document.getElementById('totalItems');
 const lowStockItemsEl = document.getElementById('lowStockItems');
 const totalEntradasEl = document.getElementById('totalEntradas');
 const totalSaidasEl = document.getElementById('totalSaidas');
 
-// Definir fun√ß√£o printReport globalmente ANTES do DOMContentLoaded
+// Definir funÁ„o printReport globalmente ANTES do DOMContentLoaded
 window.printReport = function(itemId) {
     console.log('========================================');
-    console.log('üìÑ PRINT REPORT FUNCTION CALLED');
+    console.log('?? PRINT REPORT FUNCTION CALLED');
     console.log('========================================');
     console.log('Item ID:', itemId);
     console.log('Items array length:', items.length);
@@ -74,13 +74,13 @@ window.printReport = function(itemId) {
     
     const item = items.find(i => i.id === itemId || i.id === String(itemId));
     if (!item) {
-        console.error('‚ùå Item not found for ID:', itemId);
+        console.error('? Item not found for ID:', itemId);
         console.log('Available item IDs:', items.map(i => i.id));
         alert('Item not found: ' + itemId);
         return;
     }
     
-    console.log('‚úÖ Item found:', item);
+    console.log('? Item found:', item);
     console.log('Item code:', item.codigo);
     console.log('Item barcode:', item.barcode);
     console.log('Item name:', item.nome);
@@ -89,18 +89,18 @@ window.printReport = function(itemId) {
     const printContent = document.getElementById('printContent');
     
     if (!printModal) {
-        console.error('‚ùå printModal element not found in DOM');
+        console.error('? printModal element not found in DOM');
         alert('Print modal not available');
         return;
     }
-    console.log('‚úÖ printModal found');
+    console.log('? printModal found');
     
     if (!printContent) {
-        console.error('‚ùå printContent element not found in DOM');
+        console.error('? printContent element not found in DOM');
         alert('Print content not available');
         return;
     }
-    console.log('‚úÖ printContent found');
+    console.log('? printContent found');
     
     const uniqueId = `barcode-${itemId}-${Date.now()}`;
     const qrId = `qrcode-${itemId}-${Date.now()}`;
@@ -135,45 +135,45 @@ window.printReport = function(itemId) {
         </div>
     `;
     
-    // Para impress√£o, usar barcode do produto para Barcode e QRCode
+    // Para impress„o, usar barcode do produto para Barcode e QRCode
     const barcodeValue = String(item.barcode || '').trim();
-    console.log('üìù Barcode to generate:', barcodeValue);
+    console.log('?? Barcode to generate:', barcodeValue);
     console.log('Barcode type:', typeof barcodeValue);
     console.log('Barcode length:', barcodeValue.length);
     
     if (!barcodeValue) {
-        console.error('‚ùå Item barcode is empty or undefined');
+        console.error('? Item barcode is empty or undefined');
         alert('Item barcode is missing. Cannot generate barcode and QR code.');
         return;
     }
     
     // Verificar bibliotecas antes de continuar
-    console.log('üîç Checking libraries...');
+    console.log('?? Checking libraries...');
     console.log('JsBarcode available:', typeof JsBarcode !== 'undefined');
     console.log('QRCode available:', typeof QRCode !== 'undefined');
     
     // Exibir modal primeiro
-    console.log('üì± Displaying print modal...');
+    console.log('?? Displaying print modal...');
     printModal.style.display = 'block';
-    console.log('‚úÖ Modal displayed');
+    console.log('? Modal displayed');
     
-    // Fun√ß√£o para gerar c√≥digos com retry
+    // FunÁ„o para gerar cÛdigos com retry
     function generateCodes() {
         const svgElement = document.getElementById(uniqueId);
         const qrContainer = document.getElementById(qrId);
         const barcodeReady = typeof JsBarcode !== 'undefined';
         const qrcodeReady = typeof QRCode !== 'undefined';
         
-        console.log('üîç Checking conditions...');
-        console.log('  - SVG element:', svgElement ? '‚úÖ Found' : '‚ùå Not found');
-        console.log('  - QR Container element:', qrContainer ? '‚úÖ Found' : '‚ùå Not found');
-        console.log('  - JsBarcode:', barcodeReady ? '‚úÖ Available' : '‚ùå Not available');
-        console.log('  - QRCode:', qrcodeReady ? '‚úÖ Available' : '‚ùå Not available');
+        console.log('?? Checking conditions...');
+        console.log('  - SVG element:', svgElement ? '? Found' : '? Not found');
+        console.log('  - QR Container element:', qrContainer ? '? Found' : '? Not found');
+        console.log('  - JsBarcode:', barcodeReady ? '? Available' : '? Not available');
+        console.log('  - QRCode:', qrcodeReady ? '? Available' : '? Not available');
         
         // Gerar Barcode
         if (barcodeReady && svgElement) {
             try {
-                console.log('üé® Generating barcode for:', barcodeValue);
+                console.log('?? Generating barcode for:', barcodeValue);
                 JsBarcode(`#${uniqueId}`, barcodeValue, {
                     format: "CODE128",
                     width: 2,
@@ -182,21 +182,21 @@ window.printReport = function(itemId) {
                     fontSize: 16,
                     margin: 10
                 });
-                console.log('‚úÖ Barcode generated successfully');
+                console.log('? Barcode generated successfully');
             } catch (error) {
-                console.error('‚ùå Error generating barcode:', error);
+                console.error('? Error generating barcode:', error);
                 console.error('Error details:', error.message, error.stack);
             }
         } else {
-            if (!barcodeReady) console.error('‚ùå Cannot generate barcode: JsBarcode not available');
-            if (!svgElement) console.error('‚ùå Cannot generate barcode: SVG element not found');
+            if (!barcodeReady) console.error('? Cannot generate barcode: JsBarcode not available');
+            if (!svgElement) console.error('? Cannot generate barcode: SVG element not found');
         }
         
         // Gerar QR Code - usando qrcodejs (API diferente)
         if (qrcodeReady && qrContainer) {
             try {
-                console.log('üé® Generating QR code for:', barcodeValue);
-                // Limpar conte√∫do anterior
+                console.log('?? Generating QR code for:', barcodeValue);
+                // Limpar conte˙do anterior
                 qrContainer.innerHTML = '';
                 
                 // Usar a API do qrcodejs
@@ -208,18 +208,18 @@ window.printReport = function(itemId) {
                     colorLight: '#FFFFFF',
                     correctLevel: QRCode.CorrectLevel.H
                 });
-                console.log('‚úÖ QR code generated successfully');
+                console.log('? QR code generated successfully');
             } catch (error) {
-                console.error('‚ùå Error generating QR code:', error);
+                console.error('? Error generating QR code:', error);
                 console.error('Error details:', error.message, error.stack);
             }
         } else {
-            if (!qrcodeReady) console.error('‚ùå Cannot generate QR code: QRCode not available');
-            if (!qrContainer) console.error('‚ùå Cannot generate QR code: QR Container element not found');
+            if (!qrcodeReady) console.error('? Cannot generate QR code: QRCode not available');
+            if (!qrContainer) console.error('? Cannot generate QR code: QR Container element not found');
         }
     }
     
-    // Aguardar e tentar gerar c√≥digos
+    // Aguardar e tentar gerar cÛdigos
     let attempts = 0;
     const maxAttempts = 10;
     
@@ -233,26 +233,26 @@ window.printReport = function(itemId) {
         const qrcodeReady = typeof QRCode !== 'undefined';
         
         if (svgElement && qrContainer && barcodeReady && qrcodeReady) {
-            console.log('‚úÖ All conditions met! Generating codes...');
+            console.log('? All conditions met! Generating codes...');
             generateCodes();
         } else if (attempts < maxAttempts) {
-            console.log('‚è≥ Waiting for conditions...');
+            console.log('? Waiting for conditions...');
             setTimeout(tryGenerateCodes, 300);
         } else {
-            console.error('‚ùå Timeout: Could not generate codes after', maxAttempts, 'attempts');
+            console.error('? Timeout: Could not generate codes after', maxAttempts, 'attempts');
             generateCodes(); // Tentar mesmo assim
         }
     }
     
-    // Come√ßar tentativas ap√≥s um pequeno delay
+    // ComeÁar tentativas apÛs um pequeno delay
     setTimeout(tryGenerateCodes, 300);
     
     console.log('========================================');
-    console.log('‚úÖ PRINT REPORT FUNCTION COMPLETED');
+    console.log('? PRINT REPORT FUNCTION COMPLETED');
     console.log('========================================');
 };
 
-// Definir fun√ß√£o closePrintModal globalmente
+// Definir funÁ„o closePrintModal globalmente
 window.closePrintModal = function() {
     const printModal = document.getElementById('printModal');
     const printContent = document.getElementById('printContent');
@@ -271,7 +271,7 @@ document.addEventListener('DOMContentLoaded', () => {
     setupEventListeners();
     attachActionButtonListeners();
     loadStatistics();
-    // N√£o carrega todos os itens na abertura; usu√°rio deve usar Search
+    // N„o carrega todos os itens na abertura; usu·rio deve usar Search
 });
 
 function handleWarehouseLandingAction() {
@@ -528,7 +528,7 @@ function setupEventListeners() {
     document.getElementById('cancelBtn').addEventListener('click', () => closeItemModal());
     itemForm.addEventListener('submit', handleItemSubmit);
     
-    // Modal de Movimenta√ß√£o
+    // Modal de MovimentaÁ„o
     document.getElementById('closeMovementModal').addEventListener('click', () => closeMovementModal());
     document.getElementById('cancelMovementBtn').addEventListener('click', () => closeMovementModal());
     movementForm.addEventListener('submit', handleMovementSubmit);
@@ -536,7 +536,7 @@ function setupEventListeners() {
     // Modal de Detalhes
     document.getElementById('closeDetailsModal').addEventListener('click', () => closeDetailsModal());
     
-    // Modal de Impress√£o
+    // Modal de Impress„o
     const closePrintModalBtn = document.getElementById('closePrintModal');
     const closePrintBtn = document.getElementById('closePrintBtn');
     const printBtn = document.getElementById('printBtn');
@@ -551,14 +551,14 @@ function setupEventListeners() {
         printBtn.addEventListener('click', () => window.print());
     }
     
-    // Bot√£o Search - carrega itens da API com filtros
+    // Bot„o Search - carrega itens da API com filtros
     if (searchBtn) {
         searchBtn.addEventListener('click', handleSearchClick);
     }
     searchInput.addEventListener('keypress', (e) => {
         if (e.key === 'Enter') handleSearchClick();
     });
-    // Filtros aplicados nos itens j√° carregados (client-side)
+    // Filtros aplicados nos itens j· carregados (client-side)
     searchInput.addEventListener('input', filterItems);
     if (searchByField) searchByField.addEventListener('change', filterItems);
     filterCategoria.addEventListener('change', filterItems);
@@ -580,7 +580,7 @@ function setupEventListeners() {
     });
 }
 
-// Retorna os filtros atuais da tela (para Search e para refresh ap√≥s save/delete/move)
+// Retorna os filtros atuais da tela (para Search e para refresh apÛs save/delete/move)
 function getCurrentFilters() {
     const term = searchInput.value.trim();
     const searchBy = searchByField ? searchByField.value : 'codigo';
@@ -611,7 +611,7 @@ function showEmptyStateInitial() {
     `;
 }
 
-// Clique no bot√£o Search: valida filtros e chama loadItems com par√¢metros
+// Clique no bot„o Search: valida filtros e chama loadItems com par‚metros
 function handleSearchClick() {
     const term = searchInput.value.trim();
     const categoria = filterCategoria.value;
@@ -622,7 +622,7 @@ function handleSearchClick() {
     loadItems(getCurrentFilters());
 }
 
-// Carregar estat√≠sticas do servidor (sem carregar a lista de itens)
+// Carregar estatÌsticas do servidor (sem carregar a lista de itens)
 async function loadStatistics() {
     try {
         const response = await fetch(API_BASE_URL + '/estatisticas');
@@ -643,7 +643,7 @@ async function loadStatistics() {
     }
 }
 
-// Carregar itens do servidor (com filtros opcionais; sem filtros n√£o carrega todos)
+// Carregar itens do servidor (com filtros opcionais; sem filtros n„o carrega todos)
 async function loadItems(filtros) {
     const params = filtros && (filtros.nome || filtros.codigo || filtros.barcode || filtros.categoria)
         ? filtros
@@ -749,7 +749,7 @@ function displayItems(itemsToDisplay) {
         `;
     }).join('');
     
-    // Event listeners j√° est√£o configurados via event delegation, n√£o precisa chamar novamente
+    // Event listeners j· est„o configurados via event delegation, n„o precisa chamar novamente
 }
 
 // Attach event listeners to action buttons using event delegation
@@ -757,7 +757,7 @@ let actionButtonHandler = null;
 let listenersAttached = false;
 
 function attachActionButtonListeners() {
-    // Evitar adicionar m√∫ltiplos listeners
+    // Evitar adicionar m˙ltiplos listeners
     if (listenersAttached) return;
     
     actionButtonHandler = (e) => {
@@ -857,7 +857,7 @@ function filterItems() {
     displayItems(filtered);
 }
 
-// Atualizar estat√≠sticas
+// Atualizar estatÌsticas
 function updateStatistics() {
     const total = items.length;
     const lowStock = items.filter(item => {
@@ -865,7 +865,7 @@ function updateStatistics() {
         return status === 'Low Stock' || status === 'Out of Stock';
     }).length;
     
-    // Simular movimenta√ß√µes do dia (em produ√ß√£o, viria do backend)
+    // Simular movimentaÁıes do dia (em produÁ„o, viria do backend)
     const today = new Date().toISOString().split('T')[0];
     const entradas = items.filter(item => item.ultimaEntrada === today).length || 0;
     const saidas = items.filter(item => item.ultimaSaida === today).length || 0;
@@ -888,7 +888,7 @@ function openItemModal(itemId = null) {
         if (item) {
             fillItemForm(item);
         }
-        // Quantity s√≥ exibi√ß√£o ao editar ‚Äì n√£o pode ser alterada
+        // Quantity sÛ exibiÁ„o ao editar ñ n„o pode ser alterada
         quantidadeInput.readOnly = true;
         quantidadeInput.classList.add('input-readonly');
     } else {
@@ -912,7 +912,7 @@ function closeItemModal() {
     quantidadeInput.classList.remove('input-readonly');
 }
 
-// Preencher formul√°rio com dados do item
+// Preencher formul·rio com dados do item
 function fillItemForm(item) {
     document.getElementById('codigo').value = item.codigo || '';
     document.getElementById('nome').value = item.nome || '';
@@ -924,7 +924,7 @@ function fillItemForm(item) {
     document.getElementById('descricao').value = item.descricao || '';
 }
 
-// Submeter formul√°rio de item
+// Submeter formul·rio de item
 async function handleItemSubmit(e) {
     e.preventDefault();
     
@@ -939,7 +939,7 @@ async function handleItemSubmit(e) {
         descricao: document.getElementById('descricao').value.trim()
     };
     
-    // Valida√ß√£o b√°sica
+    // ValidaÁ„o b·sica
     if (!validateItemForm(formData)) {
         return;
     }
@@ -969,7 +969,7 @@ async function handleItemSubmit(e) {
     } catch (error) {
         console.error('Error saving item:', error);
         showError('Error connecting to server');
-        // Simular sucesso para demonstra√ß√£o
+        // Simular sucesso para demonstraÁ„o
         if (!currentItemId) {
             formData.id = Date.now().toString();
             items.push(formData);
@@ -988,7 +988,7 @@ async function handleItemSubmit(e) {
     }
 }
 
-// Validar formul√°rio
+// Validar formul·rio
 function validateItemForm(data) {
     clearFormErrors();
     let isValid = true;
@@ -1041,7 +1041,7 @@ function showFieldError(fieldName, message) {
     }
 }
 
-// Limpar erros do formul√°rio
+// Limpar erros do formul·rio
 function clearFormErrors() {
     document.querySelectorAll('.error-message').forEach(el => {
         el.classList.remove('show');
@@ -1135,7 +1135,7 @@ function editItem(itemId) {
     openItemModal(itemId);
 }
 
-// Abrir modal de movimenta√ß√£o
+// Abrir modal de movimentaÁ„o
 function openMovementModal(itemId) {
     currentItemId = itemId;
     const item = items.find(i => i.id === itemId);
@@ -1147,7 +1147,7 @@ function openMovementModal(itemId) {
     }
 }
 
-// Fechar modal de movimenta√ß√£o
+// Fechar modal de movimentaÁ„o
 function closeMovementModal() {
     movementModal.style.display = 'none';
     movementForm.reset();
@@ -1155,7 +1155,7 @@ function closeMovementModal() {
     currentItem = null;
 }
 
-// Submeter movimenta√ß√£o
+// Submeter movimentaÁ„o
 async function handleMovementSubmit(e) {
     e.preventDefault();
     
@@ -1207,7 +1207,7 @@ async function handleMovementSubmit(e) {
         }
     } catch (error) {
         console.error('Error registering movement:', error);
-        // Simular sucesso para demonstra√ß√£o
+        // Simular sucesso para demonstraÁ„o
         const index = items.findIndex(i => i.id === currentItemId);
         if (index !== -1) {
             items[index].quantidade = novaQuantidade;
@@ -1261,13 +1261,13 @@ async function deleteItem(itemId) {
     }
 }
 
-// Fun√ß√µes auxiliares
+// FunÁıes auxiliares
 function showLoading() {
-    // Implementar loading se necess√°rio
+    // Implementar loading se necess·rio
 }
 
 function hideLoading() {
-    // Implementar hide loading se necess√°rio
+    // Implementar hide loading se necess·rio
 }
 
 function showSuccess(message) {

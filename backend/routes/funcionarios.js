@@ -38,6 +38,9 @@ const validarFuncionario = [
     .isLength({ min: 2, max: 50 })
     .withMessage('Department must be between 2 and 50 characters')
     .trim(),
+  body('companyId')
+    .isUUID()
+    .withMessage('Company must be a valid ID'),
   body('password')
     .isLength({ min: 6, max: 100 })
     .withMessage('Password must be between 6 and 100 characters'),

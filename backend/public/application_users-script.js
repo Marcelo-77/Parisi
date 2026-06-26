@@ -215,7 +215,6 @@ async function saveUserApplications() {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-  setupHeaderDropdowns();
   loadUsers();
 
   const userSelect = document.getElementById('userSelect');

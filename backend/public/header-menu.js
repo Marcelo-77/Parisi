@@ -1,0 +1,176 @@
+(function () {
+  const STANDARD_HEADER_MENU_HTML = `
+                    <div class="users-dropdown">
+                        <button type="button" class="btn btn-primary" id="usersMenuBtn" aria-haspopup="true" aria-expanded="false">
+                            <i class="fas fa-users"></i> Users <i class="fas fa-chevron-down"></i>
+                        </button>
+                        <div class="users-dropdown-menu" id="usersDropdownMenu" aria-hidden="true">
+                            <a href="users.html" class="dropdown-item" data-app="users.html"><i class="fas fa-user-plus"></i> New User</a>
+                            <a href="pesquisa.html" class="dropdown-item" data-app="pesquisa.html"><i class="fas fa-search"></i> Search User</a>
+                            <a href="change-password.html" class="dropdown-item" data-app="change-password.html" data-always-accessible="true"><i class="fas fa-key"></i> Change Password</a>
+                        </div>
+                    </div>
+                    <div class="customer-dropdown">
+                        <button type="button" class="btn btn-primary" id="customerMenuBtn" aria-haspopup="true" aria-expanded="false">
+                            <i class="fas fa-user"></i> Customer <i class="fas fa-chevron-down"></i>
+                        </button>
+                        <div class="customer-dropdown-menu" id="customerDropdownMenu" aria-hidden="true">
+                            <a href="customer.html" class="dropdown-item" data-app="customer.html"><i class="fas fa-plus"></i> New Customer</a>
+                            <a href="customer.html?mode=search" class="dropdown-item" data-app="customer.html"><i class="fas fa-search"></i> Search Customer</a>
+                        </div>
+                    </div>
+                    <div class="product-dropdown">
+                        <button type="button" class="btn btn-primary" id="productMenuBtn" aria-haspopup="true" aria-expanded="false">
+                            <i class="fas fa-box"></i> Product <i class="fas fa-chevron-down"></i>
+                        </button>
+                        <div class="product-dropdown-menu" id="productDropdownMenu" aria-hidden="true">
+                            <button type="button" id="newProductBtn" class="dropdown-item" data-app="warehouse.html"><i class="fas fa-plus"></i> New Product</button>
+                            <button type="button" id="searchProductBtn" class="dropdown-item" data-app="warehouse.html"><i class="fas fa-search"></i> Search Product</button>
+                            <a href="special-search-product.html" class="dropdown-item" data-app="special-search-product.html"><i class="fas fa-map"></i> Special Search Product</a>
+                        </div>
+                    </div>
+                    <div class="applications-dropdown">
+                        <button type="button" class="btn btn-primary" id="applicationsMenuBtn" aria-haspopup="true" aria-expanded="false">
+                            <i class="fas fa-window-restore"></i> Applications <i class="fas fa-chevron-down"></i>
+                        </button>
+                        <div class="applications-dropdown-menu" id="applicationsDropdownMenu" aria-hidden="true">
+                            <a href="applications.html" class="dropdown-item" data-app="applications.html"><i class="fas fa-plus"></i> New Applications</a>
+                            <a href="applications.html?mode=search" class="dropdown-item" data-app="applications.html"><i class="fas fa-search"></i> Search Applications</a>
+                            <a href="application_users.html" class="dropdown-item" data-app="application_users.html"><i class="fas fa-user-cog"></i> Application Users</a>
+                            <a href="upload-warehouse-map.html" class="dropdown-item" data-app="upload-warehouse-map.html"><i class="fas fa-upload"></i> Upload Warehouse Map</a>
+                        </div>
+                    </div>
+                    <div class="location-dropdown">
+                        <button type="button" class="btn btn-primary" id="locationMenuBtn" aria-haspopup="true" aria-expanded="false">
+                            <i class="fas fa-map-marker-alt"></i> Location <i class="fas fa-chevron-down"></i>
+                        </button>
+                        <div class="location-dropdown-menu" id="locationDropdownMenu" aria-hidden="true">
+                            <a href="location.html" class="dropdown-item" data-app="location.html"><i class="fas fa-plus"></i> New Location</a>
+                            <a href="location-search.html" class="dropdown-item" data-app="location-search.html"><i class="fas fa-search"></i> Search Location</a>
+                            <a href="location-product.html" class="dropdown-item" data-app="location-product.html"><i class="fas fa-boxes-stacked"></i> Location Product</a>
+                            <a href="log-location-product.html" class="dropdown-item" data-app="log-location-product.html"><i class="fas fa-history"></i> Log Location Product</a>
+                        </div>
+                    </div>
+                    <div class="movement-dropdown">
+                        <button type="button" class="btn btn-primary" id="movementMenuBtn" aria-haspopup="true" aria-expanded="false">
+                            <i class="fas fa-exchange-alt"></i> Movement <i class="fas fa-chevron-down"></i>
+                        </button>
+                        <div class="movement-dropdown-menu" id="movementDropdownMenu" aria-hidden="true">
+                            <a href="movement.html" class="dropdown-item" data-app="movement.html"><i class="fas fa-plus"></i> New Movement</a>
+                            <a href="movement.html?mode=search" class="dropdown-item" data-app="movement.html"><i class="fas fa-search"></i> Search Movement</a>
+                            <a href="movement-situation.html" class="dropdown-item" data-app="movement-situation.html"><i class="fas fa-stream"></i> Situation of the Movement</a>
+                        </div>
+                    </div>
+                    <div class="picking-dropdown">
+                        <button type="button" class="btn btn-primary" id="pickingMenuBtn" aria-haspopup="true" aria-expanded="false">
+                            <i class="fas fa-dolly"></i> Picking <i class="fas fa-chevron-down"></i>
+                        </button>
+                        <div class="picking-dropdown-menu" id="pickingDropdownMenu" aria-hidden="true">
+                            <a href="picking.html" class="dropdown-item" data-app="picking.html"><i class="fas fa-list"></i> Picking List</a>
+                            <a href="picking.html?mode=search" class="dropdown-item" data-app="picking.html"><i class="fas fa-search"></i> Order Sent for Picking</a>
+                            <a href="separation-picking.html" class="dropdown-item" data-app="separation-picking.html"><i class="fas fa-box-open"></i> Separation and Picking</a>
+                            <a href="double-checking.html" class="dropdown-item" data-app="double-checking.html"><i class="fas fa-clipboard-check"></i> Sent for Double Checking</a>
+                        </div>
+                    </div>
+                    <div class="help-dropdown">
+                        <button type="button" class="btn btn-primary" id="helpMenuBtn" aria-haspopup="true" aria-expanded="false">
+                            <i class="fas fa-circle-question"></i> Help <i class="fas fa-chevron-down"></i>
+                        </button>
+                        <div class="help-dropdown-menu" id="helpDropdownMenu" aria-hidden="true">
+                            <a href="help.html" class="dropdown-item" data-app="help.html"><i class="fas fa-book"></i> Help Center</a>
+                            <a href="help.html#modules" class="dropdown-item" data-app="help.html"><i class="fas fa-th-large"></i> System Modules</a>
+                            <a href="help.html#picking" class="dropdown-item" data-app="help.html"><i class="fas fa-dolly"></i> Picking Workflow</a>
+                            <a href="help.html#qrcode" class="dropdown-item" data-app="help.html"><i class="fas fa-qrcode"></i> Generate QR Code</a>
+                        </div>
+                    </div>`;
+
+  const MENU_BUTTON_IDS = [
+    'usersMenuBtn',
+    'customerMenuBtn',
+    'productMenuBtn',
+    'applicationsMenuBtn',
+    'locationMenuBtn',
+    'movementMenuBtn',
+    'pickingMenuBtn',
+    'helpMenuBtn'
+  ];
+
+  function closeAllHeaderMenus() {
+    const headerActions = document.querySelector('.header-actions');
+    if (!headerActions) return;
+
+    MENU_BUTTON_IDS.forEach((btnId) => {
+      const btn = document.getElementById(btnId);
+      const menuId = btnId.replace('MenuBtn', 'DropdownMenu');
+      const menu = document.getElementById(menuId);
+      if (menu) menu.setAttribute('aria-hidden', 'true');
+      if (btn) btn.setAttribute('aria-expanded', 'false');
+    });
+  }
+
+  function ensureStandardHeaderMenu() {
+    const headerActions = document.querySelector('.header-actions');
+    if (!headerActions) return null;
+    headerActions.innerHTML = STANDARD_HEADER_MENU_HTML;
+    headerActions.setAttribute('data-standard-menu', 'true');
+    headerActions.removeAttribute('data-dropdowns-ready');
+    return headerActions;
+  }
+
+  function setupHeaderDropdowns() {
+    const headerActions = document.querySelector('.header-actions');
+    if (!headerActions) return;
+    if (headerActions.getAttribute('data-dropdowns-ready') === 'true') return;
+
+    if (headerActions._doubleyMenuClickHandler) {
+      headerActions.removeEventListener('click', headerActions._doubleyMenuClickHandler);
+    }
+
+    const clickHandler = (event) => {
+      const menuBtn = event.target.closest('.header-actions [id$="MenuBtn"]');
+      if (menuBtn) {
+        event.stopPropagation();
+        const menuId = menuBtn.id.replace('MenuBtn', 'DropdownMenu');
+        const menu = document.getElementById(menuId);
+        if (!menu) return;
+
+        const isOpen = menu.getAttribute('aria-hidden') !== 'true';
+        closeAllHeaderMenus();
+        menu.setAttribute('aria-hidden', isOpen ? 'true' : 'false');
+        menuBtn.setAttribute('aria-expanded', isOpen ? 'false' : 'true');
+        return;
+      }
+
+      const newProductBtn = event.target.closest('#newProductBtn');
+      if (newProductBtn) {
+        event.stopPropagation();
+        window.location.href = 'warehouse.html?action=new';
+        return;
+      }
+
+      const searchProductBtn = event.target.closest('#searchProductBtn');
+      if (searchProductBtn) {
+        event.stopPropagation();
+        window.location.href = 'warehouse.html?action=search';
+      }
+    };
+
+    headerActions.addEventListener('click', clickHandler);
+    headerActions._doubleyMenuClickHandler = clickHandler;
+
+    if (!window.__doubleyHeaderMenuDocClick) {
+      document.addEventListener('click', closeAllHeaderMenus);
+      window.__doubleyHeaderMenuDocClick = true;
+    }
+
+    headerActions.setAttribute('data-dropdowns-ready', 'true');
+  }
+
+  window.DoubleYHeaderMenu = {
+    ensure: ensureStandardHeaderMenu,
+    setupDropdowns: setupHeaderDropdowns,
+    closeAll: closeAllHeaderMenus
+  };
+
+  window.setupHeaderDropdowns = setupHeaderDropdowns;
+})();

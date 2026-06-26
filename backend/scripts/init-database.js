@@ -56,6 +56,33 @@ async function initDatabase() {
       // Ignorar erro se coluna não existir
     }
 
+    await query(`
+      CREATE TABLE IF NOT EXISTS company (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        name VARCHAR(150) NOT NULL UNIQUE,
+        criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        atualizado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+    console.log('✅ Tabela company criada/verificada');
+
+    try {
+      await query(`
+        ALTER TABLE funcionarios
+        ADD COLUMN IF NOT EXISTS company_id UUID REFERENCES company(id)
+      `);
+      console.log('✅ Coluna company_id adicionada/verificada em funcionarios');
+    } catch (error) {
+      // Coluna pode já existir
+    }
+
+    await query(`
+      INSERT INTO company (name)
+      VALUES ('Parisi Bathware Sydney')
+      ON CONFLICT (name) DO NOTHING
+    `);
+    console.log('✅ Company seed Parisi Bathware Sydney verificada');
+
     // Criar tabela de itens do warehouse
     await query(`
       CREATE TABLE IF NOT EXISTS warehouse_items (

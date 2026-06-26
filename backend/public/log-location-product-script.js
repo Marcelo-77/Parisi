@@ -196,6 +196,5 @@
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', setupHeaderDropdowns);
   } else {
-    setupHeaderDropdowns();
   }
 })();

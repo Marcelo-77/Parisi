@@ -296,7 +296,6 @@ async function loadSeparationPicking() {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-  setupHeaderDropdowns();
   loadSeparationPicking();
 
   document.addEventListener('click', (e) => {

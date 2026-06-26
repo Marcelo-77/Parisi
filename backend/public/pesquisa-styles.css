@@ -1,12 +1,13 @@
 ﻿/* Estilos específicos para a tela de pesquisa */
 
-/* Cabeçalho "Search Users" - fonte maior e negrito */
-.header-search-users-label {
-    font-size: 1.5rem;
+/* Cabeçalho da página atual (substitui o título fixo do sistema) */
+.header-search-users-label,
+.header-page-title {
+    font-size: 1.6rem;
     font-weight: bold;
 }
 
-/* Header com ações */
+/* Header com ações — layout alinhado ao special-search-product (menu em uma linha) */
 .header-actions {
     margin-top: 15px;
 }

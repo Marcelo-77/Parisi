@@ -126,7 +126,6 @@ function setupHeaderDropdowns() {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-  setupHeaderDropdowns();
   const tableBody = document.getElementById('tableBody');
   const newRecordsPanel = document.getElementById('newRecordsPanel');
   const newRecordsBody = document.getElementById('newRecordsBody');

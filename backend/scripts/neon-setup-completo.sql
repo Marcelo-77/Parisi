@@ -34,6 +34,22 @@ ALTER TABLE funcionarios ADD COLUMN IF NOT EXISTS password TEXT;
 ALTER TABLE funcionarios DROP COLUMN IF EXISTS salario;
 
 -- =============================================================================
+-- 1b) COMPANY
+-- =============================================================================
+CREATE TABLE IF NOT EXISTS company (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  name VARCHAR(150) NOT NULL UNIQUE,
+  criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  atualizado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+ALTER TABLE funcionarios ADD COLUMN IF NOT EXISTS company_id UUID REFERENCES company(id);
+
+INSERT INTO company (name)
+VALUES ('Parisi Bathware Sydney')
+ON CONFLICT (name) DO NOTHING;
+
+-- =============================================================================
 -- 2) WAREHOUSE (produtos e movimentacoes simples)
 -- =============================================================================
 CREATE TABLE IF NOT EXISTS warehouse_items (

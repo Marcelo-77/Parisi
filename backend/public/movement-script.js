@@ -407,7 +407,6 @@ function clearMovementFilters() {
 
 document.addEventListener('DOMContentLoaded', async () => {
   showSection();
-  setupHeaderDropdowns();
 
   await Promise.all([loadTypeMovements(), loadProducts(), loadCustomers()]);
 

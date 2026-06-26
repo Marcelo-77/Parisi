@@ -162,7 +162,6 @@ function clearSituationFilters() {
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
-  setupHeaderDropdowns();
   await loadTypeMovements();
   fillTypeMovementSelect(document.getElementById('filterTypeMovement'));
 
