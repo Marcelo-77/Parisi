@@ -46,7 +46,7 @@ CREATE TABLE IF NOT EXISTS company (
 ALTER TABLE funcionarios ADD COLUMN IF NOT EXISTS company_id UUID REFERENCES company(id);
 
 INSERT INTO company (name)
-VALUES ('Parisi Bathware Sydney'), ('Double-Y Warehouse System')
+VALUES ('Parisi Bathware Sydney'), ('Double-Y Warehouse System'), ('Alpha & Omega Church')
 ON CONFLICT (name) DO NOTHING;
 
 CREATE TABLE IF NOT EXISTS church_service_order (

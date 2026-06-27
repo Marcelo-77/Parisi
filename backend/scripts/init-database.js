@@ -78,10 +78,10 @@ async function initDatabase() {
 
     await query(`
       INSERT INTO company (name)
-      VALUES ('Parisi Bathware Sydney'), ('Double-Y Warehouse System')
+      VALUES ('Parisi Bathware Sydney'), ('Double-Y Warehouse System'), ('Alpha & Omega Church')
       ON CONFLICT (name) DO NOTHING
     `);
-    console.log('✅ Company seeds Parisi Bathware Sydney e Double-Y Warehouse System verificadas');
+    console.log('✅ Company seeds Parisi Bathware Sydney, Double-Y Warehouse System e Alpha & Omega Church verificadas');
 
     await query(`
       CREATE TABLE IF NOT EXISTS church_service_order (
