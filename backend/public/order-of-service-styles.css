@@ -51,6 +51,66 @@
     margin-top: 8px;
 }
 
+.order-print-language-panel {
+    margin-top: 28px;
+    margin-bottom: 8px;
+    padding: 18px 20px;
+    border: 1px solid #e1e5e9;
+    border-radius: 12px;
+    background: #f8f9fc;
+}
+
+.order-print-language-panel h3 {
+    color: #333;
+    margin-bottom: 6px;
+    font-size: 1.05rem;
+}
+
+.order-print-language-help {
+    margin: 0 0 14px;
+    color: #666;
+    font-size: 0.92rem;
+}
+
+.order-print-language-options {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.order-print-language-option {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 16px;
+    border: 2px solid #d8dde6;
+    border-radius: 10px;
+    background: #fff;
+    cursor: pointer;
+    font-weight: 600;
+    color: #333;
+    transition: border-color 0.15s ease, background 0.15s ease, color 0.15s ease;
+}
+
+.order-print-language-option:hover {
+    border-color: #667eea;
+}
+
+.order-print-language-option input {
+    accent-color: #667eea;
+}
+
+.order-print-language-option:has(input:checked) {
+    border-color: #667eea;
+    background: #eef1ff;
+    color: #4a5fc1;
+}
+
+.order-print-download-btn {
+    align-self: center;
+    white-space: nowrap;
+}
+
 .order-preview-panel h3 {
     color: #333;
     margin-bottom: 12px;
@@ -63,8 +123,8 @@
     padding: 32px 36px;
     color: #111;
     font-family: Arial, Helvetica, sans-serif;
-    font-size: 16px;
-    line-height: 1.55;
+    font-size: 18px;
+    line-height: 1.6;
     max-width: 720px;
     margin: 0 auto;
 }
@@ -139,14 +199,14 @@
 
 .order-print-title {
     text-align: center;
-    font-size: 1.35rem;
+    font-size: 1.65rem;
     font-weight: 700;
-    margin-bottom: 6px;
+    margin-bottom: 8px;
 }
 
 .order-print-date {
     text-align: center;
-    font-size: 0.95rem;
+    font-size: 1.1rem;
     color: #555;
     margin-bottom: 24px;
 }
@@ -160,8 +220,8 @@
 
 .order-print-list > li {
     counter-increment: order-step;
-    margin-bottom: 14px;
-    padding-left: 2rem;
+    margin-bottom: 16px;
+    padding-left: 2.2rem;
     position: relative;
 }
 
@@ -178,7 +238,7 @@
 }
 
 .order-print-list ol li {
-    margin-bottom: 6px;
+    margin-bottom: 8px;
 }
 
 .order-print-label {
@@ -191,7 +251,7 @@
 
 .order-print-note {
     margin-top: 6px;
-    font-size: 0.95rem;
+    font-size: 1.05rem;
     color: #333;
 }
 
@@ -203,7 +263,19 @@
 @media (max-width: 768px) {
     .order-print-document {
         padding: 20px 16px;
-        font-size: 15px;
+        font-size: 17px;
+    }
+
+    .order-print-language-options {
+        flex-direction: column;
+    }
+
+    .order-print-language-option {
+        width: 100%;
+    }
+
+    .order-print-download-btn {
+        width: 100%;
     }
 
     .worship-song-row {
@@ -213,43 +285,70 @@
 }
 
 @media print {
-    body {
+    body.order-service-page {
         background: #fff !important;
     }
 
-    .container > .header,
-    .form-header,
-    .order-service-form-panel,
-    .order-preview-panel > h3,
-    .order-service-actions,
-    .no-print {
+    body.order-service-page .container,
+    body.order-service-page .main-content,
+    body.order-service-page .form-container,
+    body.order-service-page .order-preview-panel {
+        display: block !important;
+        visibility: visible !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        box-shadow: none !important;
+        max-width: none !important;
+        width: 100% !important;
+    }
+
+    body.order-service-page .container > .header,
+    body.order-service-page .form-header,
+    body.order-service-page .order-service-form-panel,
+    body.order-service-page .order-preview-panel > h3,
+    body.order-service-page .order-print-language-panel,
+    body.order-service-page .order-service-actions,
+    body.order-service-page .no-print {
         display: none !important;
     }
 
-    .container {
-        max-width: none;
-        padding: 0;
+    body.order-service-page .order-print-document,
+    body.order-service-page .order-print-document * {
+        visibility: visible !important;
     }
 
-    .main-content,
-    .form-container,
-    .order-preview-panel {
-        margin: 0;
-        padding: 0;
-        box-shadow: none;
-        max-width: none;
-    }
-
-    .order-print-document {
+    body.order-service-page .order-print-document {
+        display: block !important;
         border: none;
         border-radius: 0;
         max-width: none;
-        padding: 0;
+        padding: 12mm 10mm;
         margin: 0;
+        font-size: 20px;
+        line-height: 1.65;
+        color: #000 !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
     }
 
-    .order-print-logo {
-        max-width: 150px;
-        max-height: 100px;
+    body.order-service-page .order-print-title {
+        font-size: 1.85rem;
+    }
+
+    body.order-service-page .order-print-date {
+        font-size: 1.2rem;
+    }
+
+    body.order-service-page .order-print-note {
+        font-size: 1.1rem;
+    }
+
+    body.order-service-page .order-print-list > li {
+        margin-bottom: 18px;
+    }
+
+    body.order-service-page .order-print-logo {
+        max-width: 180px;
+        max-height: 120px;
     }
 }

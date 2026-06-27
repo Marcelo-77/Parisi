@@ -1421,13 +1421,13 @@ input.input-readonly {
         padding: 0;
     }
 
-    /* Esconde toda a página para evitar folha extra */
-    .container,
-    .header,
-    .main-content,
-    .footer,
-    .form-actions,
-    .modal-close {
+    /* Warehouse print modal only (do not hide Church order-of-service pages) */
+    body:not(.order-service-page) .container,
+    body:not(.order-service-page) .header,
+    body:not(.order-service-page) .main-content,
+    body:not(.order-service-page) .footer,
+    body:not(.order-service-page) .form-actions,
+    body:not(.order-service-page) .modal-close {
         display: none !important;
     }
 

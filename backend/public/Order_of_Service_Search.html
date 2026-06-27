@@ -93,6 +93,28 @@
                 <div id="orderSearchMessage" class="order-service-message" aria-live="polite"></div>
                 <div id="orderSearchResults" class="no-print"></div>
 
+                <div class="order-print-language-panel no-print">
+                    <h3><i class="fas fa-language"></i> Idioma da impressão</h3>
+                    <p class="order-print-language-help">Escolha o idioma dos rótulos e da data na pré-visualização e na impressão.</p>
+                    <div class="order-print-language-options" role="radiogroup" aria-label="Idioma da impressão">
+                        <label class="order-print-language-option">
+                            <input type="radio" name="printLanguage" value="pt" checked>
+                            <span>Português</span>
+                        </label>
+                        <label class="order-print-language-option">
+                            <input type="radio" name="printLanguage" value="en">
+                            <span>English</span>
+                        </label>
+                        <label class="order-print-language-option">
+                            <input type="radio" name="printLanguage" value="es">
+                            <span>Español</span>
+                        </label>
+                        <button type="button" class="btn btn-secondary order-print-download-btn" id="downloadOrderPreviewBtn" title="Download da pré-visualização em HTML">
+                            <i class="fas fa-download"></i> Download HTML
+                        </button>
+                    </div>
+                </div>
+
                 <div id="orderSearchPreviewPanel" class="order-preview-panel">
                     <h3 class="no-print"><i class="fas fa-eye"></i> Pré-visualização para impressão</h3>
                     <div id="orderPrintDocument" class="order-print-document" aria-live="polite"></div>

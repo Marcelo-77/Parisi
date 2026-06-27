@@ -8,8 +8,8 @@
       .filter(Boolean);
   }
 
-  function collectFormData() {
-    return OrderOfServiceUtils.normalizeOrderData({
+  function getRawFormData() {
+    return {
       title: document.getElementById('serviceTitle')?.value.trim(),
       serviceDate: document.getElementById('serviceDate')?.value || '',
       churchName: document.getElementById('churchName')?.value.trim(),
@@ -23,7 +23,11 @@
       messageSpeaker: document.getElementById('messageSpeaker')?.value.trim(),
       closingPrayerLeader: document.getElementById('closingPrayerLeader')?.value.trim(),
       priestlyBlessingLeader: document.getElementById('priestlyBlessingLeader')?.value.trim()
-    });
+    };
+  }
+
+  function collectFormData() {
+    return OrderOfServiceUtils.normalizeOrderData(getRawFormData());
   }
 
   function showMessage(text, type) {
@@ -43,7 +47,8 @@
   function updatePreview() {
     OrderOfServiceUtils.renderIntoElement(
       document.getElementById('orderPrintDocument'),
-      collectFormData()
+      getRawFormData(),
+      OrderOfServiceUtils.getPrintLanguage()
     );
   }
 
@@ -163,7 +168,13 @@
 
   function printOrder() {
     updatePreview();
-    window.print();
+    const host = document.getElementById('orderPrintDocument');
+    if (host) {
+      host.scrollIntoView({ behavior: 'instant', block: 'start' });
+    }
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => window.print());
+    });
   }
 
   function initPage() {
@@ -187,6 +198,15 @@
     if (addSongBtn) addSongBtn.addEventListener('click', () => addWorshipSongRow(''));
     if (saveBtn) saveBtn.addEventListener('click', saveOrder);
     if (resetBtn) resetBtn.addEventListener('click', resetForm);
+
+    OrderOfServiceUtils.initPrintLanguageSelector(updatePreview);
+
+    OrderOfServiceUtils.initDownloadPreviewButton(
+      'downloadOrderPreviewBtn',
+      () => getRawFormData(),
+      (filename) => showMessage(`Download iniciado: ${filename}`, 'success'),
+      (error) => showMessage(error.message || 'Erro ao gerar download HTML.', 'error')
+    );
   }
 
   if (document.readyState === 'loading') {

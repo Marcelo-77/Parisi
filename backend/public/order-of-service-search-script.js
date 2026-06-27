@@ -1,6 +1,7 @@
 (function () {
   const API_BASE = '/api/church-service-orders';
   let searchResults = [];
+  let lastPreviewOrder = null;
 
   function escapeHtml(value) {
     return OrderOfServiceUtils.escapeHtml(value);
@@ -136,7 +137,14 @@
   async function previewOrder(id) {
     try {
       const order = await fetchOrderById(id);
-      OrderOfServiceUtils.renderIntoElement(document.getElementById('orderPrintDocument'), order);
+      lastPreviewOrder = order;
+      const host = document.getElementById('orderPrintDocument');
+      OrderOfServiceUtils.renderIntoElement(
+        host,
+        order,
+        OrderOfServiceUtils.getPrintLanguage()
+      );
+      if (host) host.setAttribute('data-order-id', String(id));
       const panel = document.getElementById('orderSearchPreviewPanel');
       if (panel) panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
     } catch (error) {
@@ -147,7 +155,7 @@
   async function printOrderById(id) {
     try {
       const order = await fetchOrderById(id);
-      OrderOfServiceUtils.printData(order);
+      OrderOfServiceUtils.printData(order, OrderOfServiceUtils.getPrintLanguage());
     } catch (error) {
       showMessage(error.message || 'Error printing order.', 'error');
     }
@@ -160,10 +168,14 @@
     document.getElementById('searchChurchName').value = '';
     document.getElementById('searchDirigente').value = '';
     searchResults = [];
+    lastPreviewOrder = null;
     const container = document.getElementById('orderSearchResults');
     if (container) container.innerHTML = '';
     const preview = document.getElementById('orderPrintDocument');
-    if (preview) preview.innerHTML = '';
+    if (preview) {
+      preview.innerHTML = '';
+      preview.removeAttribute('data-order-id');
+    }
     showMessage('', 'info');
     const message = document.getElementById('orderSearchMessage');
     if (message) {
@@ -178,6 +190,32 @@
 
     if (searchBtn) searchBtn.addEventListener('click', runSearch);
     if (clearBtn) clearBtn.addEventListener('click', clearSearch);
+
+    OrderOfServiceUtils.initPrintLanguageSelector(() => {
+      const preview = document.getElementById('orderPrintDocument');
+      if (preview && preview.innerHTML.trim()) {
+        const currentId = preview.getAttribute('data-order-id');
+        if (currentId) {
+          previewOrder(currentId);
+          return;
+        }
+      }
+    });
+
+    OrderOfServiceUtils.initDownloadPreviewButton(
+      'downloadOrderPreviewBtn',
+      async () => {
+        if (lastPreviewOrder) return lastPreviewOrder;
+        const currentId = document.getElementById('orderPrintDocument')?.getAttribute('data-order-id');
+        if (!currentId) {
+          throw new Error('Selecione uma ordem e clique em Ver antes do download.');
+        }
+        lastPreviewOrder = await fetchOrderById(currentId);
+        return lastPreviewOrder;
+      },
+      (filename) => showMessage(`Download iniciado: ${filename}`, 'info'),
+      (error) => showMessage(error.message || 'Erro ao gerar download HTML.', 'error')
+    );
 
     runSearch();
   }
