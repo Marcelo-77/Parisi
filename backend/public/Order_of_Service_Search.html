@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Double-Y Warehouse System - Search Order of Service</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="warehouse-styles.css">
+    <link rel="stylesheet" href="pesquisa-styles.css">
+    <link rel="stylesheet" href="order-of-service-styles.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body class="order-service-page">
+    <script src="auth-check.js"></script>
+    <script src="header-menu.js"></script>
+    <script src="menu-access.js"></script>
+    <script src="double-y-logo-effect.js"></script>
+    <script src="dev-environment-badge.js"></script>
+    <div class="container">
+        <header class="header">
+            <div class="header-stats-row">
+                <div class="header-stats-left">
+                    <div class="header-stat header-stat-total">
+                        <span class="header-stat-value" id="totalItems">0</span>
+                        <span class="header-stat-label">Total Items</span>
+                    </div>
+                    <div class="header-stat header-stat-low">
+                        <span class="header-stat-value" id="lowStockItems">0</span>
+                        <span class="header-stat-label">Low Stock</span>
+                    </div>
+                </div>
+                <div class="double-y-wordmark" aria-label="Double Y"><img src="doubley-glyph.png" alt="" class="double-y-glyph" aria-hidden="true"><span class="double-y-name">Double Y</span><img src="doubley-glyph-bottom.png" alt="" class="double-y-glyph double-y-glyph-bottom" aria-hidden="true"></div>
+                <div class="header-stats-right">
+                    <div class="header-stat header-stat-entries">
+                        <span class="header-stat-value" id="totalEntradas">0</span>
+                        <span class="header-stat-label">Entries Today</span>
+                    </div>
+                    <div class="header-stat header-stat-exits">
+                        <span class="header-stat-value" id="totalSaidas">0</span>
+                        <span class="header-stat-label">Exits Today</span>
+                    </div>
+                </div>
+            </div>
+            <div class="header-content">
+                <h1><i class="fas fa-warehouse"></i> Double-Y Warehouse System</h1>
+                <p class="header-search-users-label">Search Order of Service</p>
+                <div class="header-actions"></div>
+            </div>
+        </header>
+
+        <main class="main-content">
+            <div class="form-container">
+                <div class="form-header">
+                    <h2><i class="fas fa-search"></i> Buscar ordens de culto gravadas</h2>
+                    <p>Localize ordens salvas anteriormente, visualize e imprima com o logotipo da igreja.</p>
+                </div>
+
+                <div class="order-search-filters no-print">
+                    <div class="form-group">
+                        <label for="searchDateFrom"><i class="fas fa-calendar-day"></i> Data inicial</label>
+                        <input type="date" id="searchDateFrom">
+                    </div>
+                    <div class="form-group">
+                        <label for="searchDateTo"><i class="fas fa-calendar-day"></i> Data final</label>
+                        <input type="date" id="searchDateTo">
+                    </div>
+                    <div class="form-group">
+                        <label for="searchTitle"><i class="fas fa-heading"></i> Título</label>
+                        <input type="text" id="searchTitle" placeholder="Ordem de Culto">
+                    </div>
+                    <div class="form-group">
+                        <label for="searchChurchName"><i class="fas fa-church"></i> Igreja</label>
+                        <input type="text" id="searchChurchName">
+                    </div>
+                    <div class="form-group">
+                        <label for="searchDirigente"><i class="fas fa-user-tie"></i> Dirigente</label>
+                        <input type="text" id="searchDirigente">
+                    </div>
+                </div>
+
+                <div class="order-search-actions no-print">
+                    <button type="button" class="btn btn-primary" id="searchOrdersBtn">
+                        <i class="fas fa-search"></i> Buscar
+                    </button>
+                    <button type="button" class="btn btn-secondary" id="clearSearchBtn">
+                        <i class="fas fa-eraser"></i> Limpar
+                    </button>
+                    <a href="Order_of_Service.html" class="btn btn-secondary">
+                        <i class="fas fa-plus"></i> Nova ordem de culto
+                    </a>
+                </div>
+
+                <div id="orderSearchMessage" class="order-service-message" aria-live="polite"></div>
+                <div id="orderSearchResults" class="no-print"></div>
+
+                <div id="orderSearchPreviewPanel" class="order-preview-panel">
+                    <h3 class="no-print"><i class="fas fa-eye"></i> Pré-visualização para impressão</h3>
+                    <div id="orderPrintDocument" class="order-print-document" aria-live="polite"></div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="order-of-service-utils.js"></script>
+    <script src="order-of-service-search-script.js"></script>
+</body>
+</html>

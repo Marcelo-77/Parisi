@@ -49,6 +49,26 @@ INSERT INTO company (name)
 VALUES ('Parisi Bathware Sydney'), ('Double-Y Warehouse System')
 ON CONFLICT (name) DO NOTHING;
 
+CREATE TABLE IF NOT EXISTS church_service_order (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  title VARCHAR(150) NOT NULL DEFAULT 'Ordem de Culto',
+  service_date DATE,
+  church_name VARCHAR(150),
+  dirigente VARCHAR(150),
+  opening_act VARCHAR(300),
+  worship_songs JSONB NOT NULL DEFAULT '[]'::jsonb,
+  scripture_reader VARCHAR(150),
+  praise_leader VARCHAR(150),
+  praise_status VARCHAR(150),
+  offerings_instruction VARCHAR(500),
+  message_speaker VARCHAR(150),
+  closing_prayer_leader VARCHAR(150),
+  priestly_blessing_leader VARCHAR(150),
+  created_by UUID REFERENCES funcionarios(id) ON DELETE SET NULL,
+  criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  atualizado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
 -- =============================================================================
 -- 2) WAREHOUSE (produtos e movimentacoes simples)
 -- =============================================================================
@@ -244,6 +264,8 @@ FROM (VALUES
   ('double-checking.html', 'Double_Checking'),
   ('last-check-label.html', 'Packing'),
   ('help.html', 'Help'),
+  ('Order_of_Service.html', 'Church_Order_of_Service'),
+  ('Order_of_Service_Search.html', 'Church_Order_of_Service_Search'),
   ('applications.html', 'Applications'),
   ('application_users.html', 'Applications_Users'),
   ('change-password.html', 'Users_Change_Password')
@@ -272,6 +294,8 @@ FROM (VALUES
   ('double-checking.html', 'Double_Checking'),
   ('last-check-label.html', 'Packing'),
   ('help.html', 'Help'),
+  ('Order_of_Service.html', 'Church_Order_of_Service'),
+  ('Order_of_Service_Search.html', 'Church_Order_of_Service_Search'),
   ('applications.html', 'Applications'),
   ('application_users.html', 'Applications_Users'),
   ('change-password.html', 'Users_Change_Password')

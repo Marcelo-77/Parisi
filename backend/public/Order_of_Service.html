@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Double-Y Warehouse System - Order of Service</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="warehouse-styles.css">
+    <link rel="stylesheet" href="pesquisa-styles.css">
+    <link rel="stylesheet" href="order-of-service-styles.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body class="order-service-page">
+    <script src="auth-check.js"></script>
+    <script src="header-menu.js"></script>
+    <script src="menu-access.js"></script>
+    <script src="double-y-logo-effect.js"></script>
+    <script src="dev-environment-badge.js"></script>
+    <div class="container">
+        <header class="header">
+            <div class="header-stats-row">
+                <div class="header-stats-left">
+                    <div class="header-stat header-stat-total">
+                        <span class="header-stat-value" id="totalItems">0</span>
+                        <span class="header-stat-label">Total Items</span>
+                    </div>
+                    <div class="header-stat header-stat-low">
+                        <span class="header-stat-value" id="lowStockItems">0</span>
+                        <span class="header-stat-label">Low Stock</span>
+                    </div>
+                </div>
+                <div class="double-y-wordmark" aria-label="Double Y"><img src="doubley-glyph.png" alt="" class="double-y-glyph" aria-hidden="true"><span class="double-y-name">Double Y</span><img src="doubley-glyph-bottom.png" alt="" class="double-y-glyph double-y-glyph-bottom" aria-hidden="true"></div>
+                <div class="header-stats-right">
+                    <div class="header-stat header-stat-entries">
+                        <span class="header-stat-value" id="totalEntradas">0</span>
+                        <span class="header-stat-label">Entries Today</span>
+                    </div>
+                    <div class="header-stat header-stat-exits">
+                        <span class="header-stat-value" id="totalSaidas">0</span>
+                        <span class="header-stat-label">Exits Today</span>
+                    </div>
+                </div>
+            </div>
+            <div class="header-content">
+                <h1><i class="fas fa-warehouse"></i> Double-Y Warehouse System</h1>
+                <p class="header-search-users-label">Order of Service</p>
+                <div class="header-actions"></div>
+            </div>
+        </header>
+
+        <main class="main-content">
+            <div class="form-container">
+                <div class="form-header">
+                    <h2><i class="fas fa-church"></i> Ordem de Culto</h2>
+                    <p>Preencha os dados abaixo para gerar a impressão no formato do modelo <strong>OrdemCulto</strong>.</p>
+                </div>
+
+                <form id="orderServiceForm" class="order-service-form-panel funcionario-form" novalidate>
+                    <div class="order-service-section">
+                        <h3>Informações gerais</h3>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="serviceTitle"><i class="fas fa-heading"></i> Título</label>
+                                <input type="text" id="serviceTitle" name="serviceTitle" value="Ordem de Culto" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="serviceDate"><i class="fas fa-calendar-day"></i> Data do culto</label>
+                                <input type="date" id="serviceDate" name="serviceDate">
+                            </div>
+                        </div>
+                        <div class="form-group full-width">
+                            <label for="churchName"><i class="fas fa-church"></i> Igreja / Congregação</label>
+                            <input type="text" id="churchName" name="churchName" placeholder="Opcional">
+                        </div>
+                    </div>
+
+                    <div class="order-service-section">
+                        <h3>Condução do culto</h3>
+                        <div class="form-group">
+                            <label for="dirigente"><i class="fas fa-user-tie"></i> Dirigente</label>
+                            <input type="text" id="dirigente" name="dirigente" placeholder="Ex: Pr Nautilio">
+                        </div>
+                        <div class="form-group">
+                            <label for="openingAct"><i class="fas fa-hands-praying"></i> Abertura</label>
+                            <input type="text" id="openingAct" name="openingAct" value="Abrir o Culto e fazer a oração Inicial">
+                        </div>
+                    </div>
+
+                    <div class="order-service-section">
+                        <h3>Louvores no Laptop</h3>
+                        <div id="worshipSongsList" class="worship-songs-list"></div>
+                        <button type="button" class="btn btn-secondary no-print" id="addWorshipSongBtn" style="margin-top: 10px;">
+                            <i class="fas fa-plus"></i> Adicionar louvor
+                        </button>
+                    </div>
+
+                    <div class="order-service-section">
+                        <h3>Programação</h3>
+                        <div class="form-group">
+                            <label for="scriptureReader"><i class="fas fa-book-bible"></i> Leitura da palavra</label>
+                            <input type="text" id="scriptureReader" name="scriptureReader" placeholder="Ex: Irmão Antônio">
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="praiseLeader"><i class="fas fa-music"></i> Louvor</label>
+                                <input type="text" id="praiseLeader" name="praiseLeader" placeholder="Ex: Irmão Apolo">
+                            </div>
+                            <div class="form-group">
+                                <label for="praiseStatus"><i class="fas fa-circle-info"></i> Observação do louvor</label>
+                                <input type="text" id="praiseStatus" name="praiseStatus" placeholder="Ex: A Confirmar">
+                            </div>
+                        </div>
+                        <div class="form-group full-width">
+                            <label for="offeringsInstruction"><i class="fas fa-hand-holding-heart"></i> Ofertas e oração</label>
+                            <textarea id="offeringsInstruction" name="offeringsInstruction" rows="2" placeholder="Ex: Ao término de Apolo, convidar Antônio para reconhecer as ofertas e fazer a oração.">Ao término de Apolo. Convidar Antônio para reconhecer as ofertas e fazer a oração.</textarea>
+                        </div>
+                        <div class="form-group">
+                            <label for="messageSpeaker"><i class="fas fa-microphone"></i> Mensagem</label>
+                            <input type="text" id="messageSpeaker" name="messageSpeaker" placeholder="Ex: Pb. Marcelo">
+                        </div>
+                        <div class="form-group">
+                            <label for="closingPrayerLeader"><i class="fas fa-bullhorn"></i> Terminar o Culto — Oração &amp; Anúncios finais</label>
+                            <input type="text" id="closingPrayerLeader" name="closingPrayerLeader" placeholder="Ex: Miss Norma">
+                        </div>
+                        <div class="form-group">
+                            <label for="priestlyBlessingLeader"><i class="fas fa-hands-praying"></i> Benção Sacerdotal</label>
+                            <input type="text" id="priestlyBlessingLeader" name="priestlyBlessingLeader" placeholder="Ex: Pr Nautilio">
+                        </div>
+                    </div>
+
+                    <div class="order-service-actions no-print">
+                        <button type="button" class="btn btn-secondary" id="resetOrderBtn">
+                            <i class="fas fa-rotate-left"></i> Restaurar modelo
+                        </button>
+                        <button type="button" class="btn btn-secondary" id="saveOrderBtn">
+                            <i class="fas fa-save"></i> Gravar ordem de culto
+                        </button>
+                        <button type="submit" class="btn btn-primary" id="printOrderBtn">
+                            <i class="fas fa-print"></i> Imprimir ordem de culto
+                        </button>
+                    </div>
+                    <div id="orderServiceMessage" class="order-service-message" aria-live="polite"></div>
+                </form>
+
+                <div class="order-preview-panel">
+                    <h3 class="no-print"><i class="fas fa-eye"></i> Pré-visualização da impressão</h3>
+                    <div id="orderPrintDocument" class="order-print-document" aria-live="polite"></div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="order-of-service-utils.js"></script>
+    <script src="order-of-service-script.js"></script>
+</body>
+</html>

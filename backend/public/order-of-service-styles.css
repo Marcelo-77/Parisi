@@ -1,0 +1,255 @@
+.order-service-page .form-container {
+    max-width: 960px;
+}
+
+.order-service-form-panel {
+    margin-bottom: 24px;
+}
+
+.order-service-section {
+    margin-bottom: 22px;
+    padding-bottom: 18px;
+    border-bottom: 1px solid #eef1f4;
+}
+
+.order-service-section:last-of-type {
+    border-bottom: none;
+    margin-bottom: 0;
+    padding-bottom: 0;
+}
+
+.order-service-section h3 {
+    color: #667eea;
+    font-size: 1.05rem;
+    margin-bottom: 12px;
+}
+
+.worship-songs-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.worship-song-row {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+.worship-song-row input {
+    flex: 1;
+}
+
+.order-service-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-top: 20px;
+}
+
+.order-preview-panel {
+    margin-top: 8px;
+}
+
+.order-preview-panel h3 {
+    color: #333;
+    margin-bottom: 12px;
+}
+
+.order-print-document {
+    background: #fff;
+    border: 1px solid #e1e5e9;
+    border-radius: 12px;
+    padding: 32px 36px;
+    color: #111;
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 16px;
+    line-height: 1.55;
+    max-width: 720px;
+    margin: 0 auto;
+}
+
+.order-print-logo-wrap {
+    text-align: center;
+    margin-bottom: 18px;
+}
+
+.order-print-logo {
+    max-width: 180px;
+    max-height: 120px;
+    width: auto;
+    height: auto;
+    object-fit: contain;
+}
+
+.order-service-message {
+    margin-top: 12px;
+    font-size: 0.92rem;
+    display: none;
+}
+
+.order-service-message.show {
+    display: block;
+    padding: 10px 12px;
+    border-radius: 8px;
+}
+
+.order-service-message.show.success {
+    background: #e8f8ef;
+    color: #1b5e3d;
+    border: 1px solid #b7e4c7;
+}
+
+.order-service-message.show.error {
+    background: #fdecea;
+    color: #922b21;
+    border: 1px solid #f5b7b1;
+}
+
+.order-service-message.show.info {
+    background: #eef3ff;
+    color: #2c3f8f;
+    border: 1px solid #c7d4ff;
+}
+
+.order-search-filters {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 14px;
+    margin-bottom: 16px;
+}
+
+.order-search-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 16px;
+}
+
+.order-search-table .td-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.order-search-table .btn-sm {
+    padding: 6px 10px;
+    font-size: 0.82rem;
+}
+
+.order-print-title {
+    text-align: center;
+    font-size: 1.35rem;
+    font-weight: 700;
+    margin-bottom: 6px;
+}
+
+.order-print-date {
+    text-align: center;
+    font-size: 0.95rem;
+    color: #555;
+    margin-bottom: 24px;
+}
+
+.order-print-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    counter-reset: order-step;
+}
+
+.order-print-list > li {
+    counter-increment: order-step;
+    margin-bottom: 14px;
+    padding-left: 2rem;
+    position: relative;
+}
+
+.order-print-list > li::before {
+    content: counter(order-step) ".";
+    position: absolute;
+    left: 0;
+    font-weight: 700;
+}
+
+.order-print-list ol {
+    margin: 8px 0 0;
+    padding-left: 1.4rem;
+}
+
+.order-print-list ol li {
+    margin-bottom: 6px;
+}
+
+.order-print-label {
+    font-weight: 400;
+}
+
+.order-print-person {
+    font-weight: 700;
+}
+
+.order-print-note {
+    margin-top: 6px;
+    font-size: 0.95rem;
+    color: #333;
+}
+
+.order-print-subitem {
+    margin-top: 8px;
+    padding-left: 1rem;
+}
+
+@media (max-width: 768px) {
+    .order-print-document {
+        padding: 20px 16px;
+        font-size: 15px;
+    }
+
+    .worship-song-row {
+        flex-direction: column;
+        align-items: stretch;
+    }
+}
+
+@media print {
+    body {
+        background: #fff !important;
+    }
+
+    .container > .header,
+    .form-header,
+    .order-service-form-panel,
+    .order-preview-panel > h3,
+    .order-service-actions,
+    .no-print {
+        display: none !important;
+    }
+
+    .container {
+        max-width: none;
+        padding: 0;
+    }
+
+    .main-content,
+    .form-container,
+    .order-preview-panel {
+        margin: 0;
+        padding: 0;
+        box-shadow: none;
+        max-width: none;
+    }
+
+    .order-print-document {
+        border: none;
+        border-radius: 0;
+        max-width: none;
+        padding: 0;
+        margin: 0;
+    }
+
+    .order-print-logo {
+        max-width: 150px;
+        max-height: 100px;
+    }
+}

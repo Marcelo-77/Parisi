@@ -72,6 +72,15 @@
                             <a href="double-checking.html" class="dropdown-item" data-app="double-checking.html"><i class="fas fa-clipboard-check"></i> Sent for Double Checking</a>
                         </div>
                     </div>
+                    <div class="church-dropdown">
+                        <button type="button" class="btn btn-primary" id="churchMenuBtn" aria-haspopup="true" aria-expanded="false">
+                            <i class="fas fa-church"></i> Church <i class="fas fa-chevron-down"></i>
+                        </button>
+                        <div class="church-dropdown-menu" id="churchDropdownMenu" aria-hidden="true">
+                            <a href="Order_of_Service.html" class="dropdown-item" data-app="Order_of_Service.html"><i class="fas fa-file-lines"></i> Order of Service</a>
+                            <a href="Order_of_Service_Search.html" class="dropdown-item" data-app="Order_of_Service_Search.html"><i class="fas fa-search"></i> Search Order of Service</a>
+                        </div>
+                    </div>
                     <div class="help-dropdown">
                         <button type="button" class="btn btn-primary" id="helpMenuBtn" aria-haspopup="true" aria-expanded="false">
                             <i class="fas fa-circle-question"></i> Help <i class="fas fa-chevron-down"></i>
@@ -92,6 +101,7 @@
     'locationMenuBtn',
     'movementMenuBtn',
     'pickingMenuBtn',
+    'churchMenuBtn',
     'helpMenuBtn'
   ];
 

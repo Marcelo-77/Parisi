@@ -83,6 +83,29 @@ async function initDatabase() {
     `);
     console.log('✅ Company seeds Parisi Bathware Sydney e Double-Y Warehouse System verificadas');
 
+    await query(`
+      CREATE TABLE IF NOT EXISTS church_service_order (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        title VARCHAR(150) NOT NULL DEFAULT 'Ordem de Culto',
+        service_date DATE,
+        church_name VARCHAR(150),
+        dirigente VARCHAR(150),
+        opening_act VARCHAR(300),
+        worship_songs JSONB NOT NULL DEFAULT '[]'::jsonb,
+        scripture_reader VARCHAR(150),
+        praise_leader VARCHAR(150),
+        praise_status VARCHAR(150),
+        offerings_instruction VARCHAR(500),
+        message_speaker VARCHAR(150),
+        closing_prayer_leader VARCHAR(150),
+        priestly_blessing_leader VARCHAR(150),
+        created_by UUID REFERENCES funcionarios(id) ON DELETE SET NULL,
+        criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        atualizado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+    console.log('✅ Tabela church_service_order criada/verificada');
+
     // Criar tabela de itens do warehouse
     await query(`
       CREATE TABLE IF NOT EXISTS warehouse_items (
@@ -348,6 +371,8 @@ async function initDatabase() {
       { application: 'double-checking.html', menuName: 'Double_Checking' },
       { application: 'last-check-label.html', menuName: 'Packing' },
       { application: 'help.html', menuName: 'Help' },
+      { application: 'Order_of_Service.html', menuName: 'Church_Order_of_Service' },
+      { application: 'Order_of_Service_Search.html', menuName: 'Church_Order_of_Service_Search' },
       { application: 'applications.html', menuName: 'Applications' },
       { application: 'application_users.html', menuName: 'Applications_Users' },
       { application: 'change-password.html', menuName: 'Users_Change_Password' }

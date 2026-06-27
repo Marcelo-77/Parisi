@@ -120,7 +120,7 @@
       item.removeAttribute('aria-hidden');
     });
 
-    document.querySelectorAll('.header-actions .users-dropdown, .header-actions .customer-dropdown, .header-actions .product-dropdown, .header-actions .applications-dropdown, .header-actions .location-dropdown, .header-actions .movement-dropdown, .header-actions .picking-dropdown, .header-actions .help-dropdown').forEach((group) => {
+    document.querySelectorAll('.header-actions .users-dropdown, .header-actions .customer-dropdown, .header-actions .product-dropdown, .header-actions .applications-dropdown, .header-actions .location-dropdown, .header-actions .movement-dropdown, .header-actions .picking-dropdown, .header-actions .church-dropdown, .header-actions .help-dropdown').forEach((group) => {
       group.style.display = '';
     });
   }
@@ -153,7 +153,7 @@
       }
     });
 
-    document.querySelectorAll('.header-actions .users-dropdown, .header-actions .customer-dropdown, .header-actions .product-dropdown, .header-actions .applications-dropdown, .header-actions .location-dropdown, .header-actions .movement-dropdown, .header-actions .picking-dropdown, .header-actions .help-dropdown').forEach((group) => {
+    document.querySelectorAll('.header-actions .users-dropdown, .header-actions .customer-dropdown, .header-actions .product-dropdown, .header-actions .applications-dropdown, .header-actions .location-dropdown, .header-actions .movement-dropdown, .header-actions .picking-dropdown, .header-actions .church-dropdown, .header-actions .help-dropdown').forEach((group) => {
       const visibleItems = Array.from(group.querySelectorAll('.dropdown-item')).filter((item) => item.style.display !== 'none');
       group.style.display = visibleItems.length > 0 ? '' : 'none';
     });
