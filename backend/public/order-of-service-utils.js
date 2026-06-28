@@ -261,9 +261,23 @@
     return div.innerHTML;
   }
 
+  function formatDateOnly(value) {
+    if (value == null || value === '') return '';
+    const raw = String(value).slice(0, 10);
+    return /^\d{4}-\d{2}-\d{2}$/.test(raw) ? raw : '';
+  }
+
+  function getLocalDateInputValue(date = new Date()) {
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, '0');
+    const d = String(date.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+  }
+
   function formatDate(value, lang) {
     if (!value) return '';
-    const raw = String(value).slice(0, 10);
+    const raw = formatDateOnly(value);
+    if (!raw) return String(value);
     const date = new Date(`${raw}T12:00:00`);
     if (Number.isNaN(date.getTime())) return value;
 
@@ -443,8 +457,8 @@
   }
 
   function formatServiceDateForFile(serviceDate) {
-    const raw = String(serviceDate || '').slice(0, 10);
-    return /^\d{4}-\d{2}-\d{2}$/.test(raw) ? raw : 'sem-data';
+    const raw = formatDateOnly(serviceDate);
+    return raw || 'sem-data';
   }
 
   async function getLoggedUserDisplayName() {
@@ -594,6 +608,8 @@
     DEFAULT_ANNOUNCEMENTS_POSITION,
     escapeHtml,
     formatDate,
+    formatDateOnly,
+    getLocalDateInputValue,
     normalizeLanguage,
     normalizeScripturePosition,
     normalizeAnnouncementsPosition,

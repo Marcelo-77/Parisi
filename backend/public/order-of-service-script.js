@@ -94,7 +94,7 @@
   function setFormData(data) {
     const order = OrderOfServiceUtils.normalizeOrderData(data);
     document.getElementById('serviceTitle').value = order.title;
-    document.getElementById('serviceDate').value = order.serviceDate ? String(order.serviceDate).slice(0, 10) : '';
+    document.getElementById('serviceDate').value = OrderOfServiceUtils.formatDateOnly(order.serviceDate);
     document.getElementById('churchName').value = order.churchName;
     document.getElementById('openingAct').value = order.openingAct;
     document.getElementById('scriptureReader').value = order.scriptureReader;
@@ -142,7 +142,7 @@
     ].forEach((song) => addWorshipSongRow(song));
 
     const dateInput = document.getElementById('serviceDate');
-    if (dateInput) dateInput.value = new Date().toISOString().slice(0, 10);
+    if (dateInput) dateInput.value = OrderOfServiceUtils.getLocalDateInputValue();
 
     clearMessage();
     updatePreview();

@@ -15,9 +15,18 @@
   }
 
   function collectFilters() {
+    let serviceDateFrom = document.getElementById('searchDateFrom')?.value || '';
+    let serviceDateTo = document.getElementById('searchDateTo')?.value || '';
+
+    if (serviceDateFrom && serviceDateTo && serviceDateFrom > serviceDateTo) {
+      [serviceDateFrom, serviceDateTo] = [serviceDateTo, serviceDateFrom];
+      document.getElementById('searchDateFrom').value = serviceDateFrom;
+      document.getElementById('searchDateTo').value = serviceDateTo;
+    }
+
     return {
-      serviceDateFrom: document.getElementById('searchDateFrom')?.value || '',
-      serviceDateTo: document.getElementById('searchDateTo')?.value || '',
+      serviceDateFrom,
+      serviceDateTo,
       title: document.getElementById('searchTitle')?.value.trim() || '',
       churchName: document.getElementById('searchChurchName')?.value.trim() || '',
       dirigente: document.getElementById('searchDirigente')?.value.trim() || ''
@@ -87,7 +96,7 @@
           <tbody>
             ${list.map((item) => `
               <tr>
-                <td>${escapeHtml(item.serviceDate ? String(item.serviceDate).slice(0, 10) : '—')}</td>
+                <td>${escapeHtml(OrderOfServiceUtils.formatDateOnly(item.serviceDate) || '—')}</td>
                 <td>${escapeHtml(item.title || '—')}</td>
                 <td>${escapeHtml(item.churchName || '—')}</td>
                 <td>${escapeHtml(item.dirigente || '—')}</td>

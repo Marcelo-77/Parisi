@@ -16,7 +16,7 @@ function mapRow(row) {
   return {
     id: row.id,
     title: row.title,
-    serviceDate: row.service_date,
+    serviceDate: row.service_date || null,
     churchName: row.church_name,
     dirigente: row.dirigente,
     openingAct: row.opening_act,
@@ -76,16 +76,22 @@ async function list(filters = {}) {
   const values = [];
   let param = 0;
 
-  if (filters.serviceDateFrom) {
-    param += 1;
-    conditions.push(`service_date >= $${param}::date`);
-    values.push(filters.serviceDateFrom);
+  let serviceDateFrom = filters.serviceDateFrom || null;
+  let serviceDateTo = filters.serviceDateTo || null;
+  if (serviceDateFrom && serviceDateTo && serviceDateFrom > serviceDateTo) {
+    [serviceDateFrom, serviceDateTo] = [serviceDateTo, serviceDateFrom];
   }
 
-  if (filters.serviceDateTo) {
+  if (serviceDateFrom) {
+    param += 1;
+    conditions.push(`service_date >= $${param}::date`);
+    values.push(serviceDateFrom);
+  }
+
+  if (serviceDateTo) {
     param += 1;
     conditions.push(`service_date <= $${param}::date`);
-    values.push(filters.serviceDateTo);
+    values.push(serviceDateTo);
   }
 
   if (filters.dirigente) {

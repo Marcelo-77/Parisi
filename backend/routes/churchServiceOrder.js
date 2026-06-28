@@ -16,8 +16,8 @@ const handleValidationErrors = (req, res, next) => {
 router.get(
   '/',
   [
-    queryValidator('serviceDateFrom').optional().isISO8601(),
-    queryValidator('serviceDateTo').optional().isISO8601(),
+    queryValidator('serviceDateFrom').optional({ values: 'falsy' }).matches(/^\d{4}-\d{2}-\d{2}$/),
+    queryValidator('serviceDateTo').optional({ values: 'falsy' }).matches(/^\d{4}-\d{2}-\d{2}$/),
     queryValidator('dirigente').optional().trim(),
     queryValidator('churchName').optional().trim(),
     queryValidator('title').optional().trim()

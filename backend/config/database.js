@@ -1,4 +1,7 @@
-const { Pool } = require('pg');
+const { Pool, types } = require('pg');
+
+// Keep PostgreSQL DATE values as YYYY-MM-DD strings (avoid timezone day shifts).
+types.setTypeParser(1082, (value) => value);
 
 // Configurações do banco de dados (lidas de backend/config.env)
 const host = process.env.DB_HOST || 'localhost';
