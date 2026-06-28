@@ -76,6 +76,21 @@
     updatePreview();
   }
 
+  function getOrderIdFromUrl() {
+    const params = new URLSearchParams(window.location.search);
+    const id = params.get('id');
+    return id ? String(id).trim() : null;
+  }
+
+  function setSelectValue(selectEl, value, normalizeFn, fallback) {
+    if (!selectEl) return;
+    const normalized = normalizeFn(value != null && value !== '' ? value : fallback);
+    selectEl.value = String(normalized);
+    if (selectEl.value !== String(normalized)) {
+      selectEl.value = String(fallback);
+    }
+  }
+
   function setFormData(data) {
     const order = OrderOfServiceUtils.normalizeOrderData(data);
     document.getElementById('serviceTitle').value = order.title;
@@ -83,8 +98,11 @@
     document.getElementById('churchName').value = order.churchName;
     document.getElementById('openingAct').value = order.openingAct;
     document.getElementById('scriptureReader').value = order.scriptureReader;
-    document.getElementById('scripturePosition').value = String(
-      OrderOfServiceUtils.normalizeScripturePosition(order.scripturePosition || 4)
+    setSelectValue(
+      document.getElementById('scripturePosition'),
+      order.scripturePosition,
+      OrderOfServiceUtils.normalizeScripturePosition,
+      4
     );
     document.getElementById('praiseLeader').value = order.praiseLeader;
     document.getElementById('praiseStatus').value = order.praiseStatus;
@@ -92,8 +110,11 @@
     document.getElementById('messageSpeaker').value = order.messageSpeaker;
     document.getElementById('closingPrayerLeader').value = order.closingPrayerLeader;
     document.getElementById('priestlyBlessingLeader').value = order.priestlyBlessingLeader;
-    document.getElementById('announcementsPosition').value = String(
-      OrderOfServiceUtils.normalizeAnnouncementsPosition(order.announcementsPosition || 8)
+    setSelectValue(
+      document.getElementById('announcementsPosition'),
+      order.announcementsPosition,
+      OrderOfServiceUtils.normalizeAnnouncementsPosition,
+      8
     );
 
     const list = document.getElementById('worshipSongsList');
@@ -135,6 +156,11 @@
   }
 
   async function saveOrder() {
+    const urlOrderId = getOrderIdFromUrl();
+    if (!currentOrderId && urlOrderId) {
+      currentOrderId = urlOrderId;
+    }
+
     const payload = collectFormData();
     const isUpdate = Boolean(currentOrderId);
     const url = isUpdate ? `${API_BASE}/${encodeURIComponent(currentOrderId)}` : API_BASE;
@@ -164,9 +190,10 @@
   }
 
   async function loadOrderFromQuery() {
-    const params = new URLSearchParams(window.location.search);
-    const id = params.get('id');
-    if (!id) return;
+    const id = getOrderIdFromUrl();
+    if (!id) return false;
+
+    currentOrderId = id;
 
     try {
       const response = await fetch(`${API_BASE}/${encodeURIComponent(id)}`);
@@ -177,9 +204,11 @@
       currentOrderId = data.data.id;
       setFormData(data.data);
       showMessage('Ordem de culto carregada para edição.', 'info');
+      return true;
     } catch (error) {
       console.error('Load order error:', error);
       showMessage(error.message || 'Error loading order.', 'error');
+      return false;
     }
   }
 
@@ -194,14 +223,19 @@
     });
   }
 
-  function initPage() {
+  async function initPage() {
     const form = document.getElementById('orderServiceForm');
     const addSongBtn = document.getElementById('addWorshipSongBtn');
     const saveBtn = document.getElementById('saveOrderBtn');
     const resetBtn = document.getElementById('resetOrderBtn');
 
-    resetForm();
-    loadOrderFromQuery();
+    const urlOrderId = getOrderIdFromUrl();
+    if (urlOrderId) {
+      currentOrderId = urlOrderId;
+      await loadOrderFromQuery();
+    } else {
+      resetForm();
+    }
 
     if (form) {
       form.addEventListener('input', updatePreview);

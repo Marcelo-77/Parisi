@@ -28,12 +28,23 @@ function mapRow(row) {
     messageSpeaker: row.message_speaker,
     closingPrayerLeader: row.closing_prayer_leader,
     priestlyBlessingLeader: row.priestly_blessing_leader,
-    announcementsPosition: row.announcements_position != null ? row.announcements_position : 8,
-    scripturePosition: row.scripture_position != null ? row.scripture_position : 4,
+    announcementsPosition: normalizePositionSelectValue(row.announcements_position, 8),
+    scripturePosition: normalizePositionSelectValue(row.scripture_position, 4),
     createdBy: row.created_by,
     criadoEm: row.criado_em,
     atualizadoEm: row.atualizado_em
   };
+}
+
+const POSITION_SELECT_VALUES = [1, 3, 4, 5, 6, 8, 9];
+
+function normalizePositionSelectValue(value, fallback) {
+  const parsed = parseInt(value, 10);
+  const normalized = Number.isNaN(parsed) ? fallback : parsed;
+  if (normalized === 2) return 3;
+  if (normalized === 7) return 8;
+  if (POSITION_SELECT_VALUES.includes(normalized)) return normalized;
+  return fallback;
 }
 
 function normalizePayload(data) {
@@ -55,16 +66,8 @@ function normalizePayload(data) {
     messageSpeaker: data.messageSpeaker ? String(data.messageSpeaker).trim() : null,
     closingPrayerLeader: data.closingPrayerLeader ? String(data.closingPrayerLeader).trim() : null,
     priestlyBlessingLeader: data.priestlyBlessingLeader ? String(data.priestlyBlessingLeader).trim() : null,
-    announcementsPosition: (() => {
-      const parsed = parseInt(data.announcementsPosition, 10);
-      if (Number.isNaN(parsed)) return 8;
-      return Math.min(9, Math.max(1, parsed));
-    })(),
-    scripturePosition: (() => {
-      const parsed = parseInt(data.scripturePosition, 10);
-      if (Number.isNaN(parsed)) return 4;
-      return Math.min(9, Math.max(1, parsed));
-    })()
+    announcementsPosition: normalizePositionSelectValue(data.announcementsPosition, 8),
+    scripturePosition: normalizePositionSelectValue(data.scripturePosition, 4)
   };
 }
 

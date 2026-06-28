@@ -122,21 +122,30 @@
     return searchResults.find((item) => String(item.id) === String(id));
   }
 
-  async function fetchOrderById(id) {
-    const cached = findOrderById(id);
-    if (cached) return cached;
+  async function fetchOrderById(id, options = {}) {
+    const useCache = options.fresh !== true;
+    if (useCache) {
+      const cached = findOrderById(id);
+      if (cached) return cached;
+    }
 
     const response = await fetch(`${API_BASE}/${encodeURIComponent(id)}`);
     const data = await response.json().catch(() => ({}));
     if (!response.ok || !data.success || !data.data) {
       throw new Error(data.message || 'Unable to load order.');
     }
+
+    const index = searchResults.findIndex((item) => String(item.id) === String(id));
+    if (index >= 0) {
+      searchResults[index] = data.data;
+    }
+
     return data.data;
   }
 
   async function previewOrder(id) {
     try {
-      const order = await fetchOrderById(id);
+      const order = await fetchOrderById(id, { fresh: true });
       lastPreviewOrder = order;
       const host = document.getElementById('orderPrintDocument');
       OrderOfServiceUtils.renderIntoElement(
@@ -154,7 +163,7 @@
 
   async function printOrderById(id) {
     try {
-      const order = await fetchOrderById(id);
+      const order = await fetchOrderById(id, { fresh: true });
       OrderOfServiceUtils.printData(order, OrderOfServiceUtils.getPrintLanguage());
     } catch (error) {
       showMessage(error.message || 'Error printing order.', 'error');
@@ -210,7 +219,7 @@
         if (!currentId) {
           throw new Error('Selecione uma ordem e clique em Ver antes do download.');
         }
-        lastPreviewOrder = await fetchOrderById(currentId);
+        lastPreviewOrder = await fetchOrderById(currentId, { fresh: true });
         return lastPreviewOrder;
       },
       (filename) => showMessage(`Download iniciado: ${filename}`, 'info'),
