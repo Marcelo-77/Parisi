@@ -1,6 +1,6 @@
 const { query, pool } = require('../config/database');
 
-async function main() {
+async function ensureChurchServiceOrderSchema() {
   await query(`
     CREATE TABLE IF NOT EXISTS church_service_order (
       id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -50,14 +50,21 @@ async function main() {
       SELECT 1 FROM system_applications WHERE syap_nm_application = 'Order_of_Service_Search.html'
     )
   `);
+}
 
+async function main() {
+  await ensureChurchServiceOrderSchema();
   console.log('church_service_order table and applications are ready.');
 }
 
-main()
-  .then(() => pool.end())
-  .catch((error) => {
-    console.error(error.message);
-    pool.end();
-    process.exit(1);
-  });
+if (require.main === module) {
+  main()
+    .then(() => pool.end())
+    .catch((error) => {
+      console.error(error.message);
+      pool.end();
+      process.exit(1);
+    });
+}
+
+module.exports = { ensureChurchServiceOrderSchema };

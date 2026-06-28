@@ -127,6 +127,13 @@
     updatePreview();
   }
 
+  function formatSaveError(data) {
+    if (Array.isArray(data.details) && data.details.length) {
+      return data.details.map((item) => item.msg || item.message).filter(Boolean).join(' ');
+    }
+    return data.message || data.error || 'Unable to save order of service.';
+  }
+
   async function saveOrder() {
     const payload = collectFormData();
     const isUpdate = Boolean(currentOrderId);
@@ -141,10 +148,14 @@
       });
       const data = await response.json().catch(() => ({}));
       if (!response.ok || !data.success) {
-        throw new Error(data.message || data.error || 'Unable to save order of service.');
+        throw new Error(formatSaveError(data));
       }
 
       currentOrderId = data.data?.id || currentOrderId;
+      if (data.data) {
+        setFormData(data.data);
+      }
+      updatePreview();
       showMessage(data.message || 'Order of service saved successfully.', 'success');
     } catch (error) {
       console.error('Save order error:', error);
