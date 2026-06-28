@@ -50,30 +50,39 @@
 
   const DEFAULT_SCRIPTURE_POSITION = 4;
   const DEFAULT_ANNOUNCEMENTS_POSITION = 8;
-  const BASE_ORDER_ITEM_KEYS = ['dirigente', 'opening', 'worship', 'praise', 'offerings', 'message', 'priestly'];
-  const MAX_ORDER_POSITION = BASE_ORDER_ITEM_KEYS.length + 2;
+  const BASE_ORDER_ITEM_KEYS = ['opening', 'worship', 'praise', 'offerings', 'message', 'priestly'];
+  const MAX_ORDER_POSITION = 9;
 
   const ORDER_POSITION_LABELS = {
     1: '1 — Primeiro item',
-    2: '2 — Após Dirigente',
-    3: '3 — Após Abertura',
-    4: '4 — Após Louvores',
-    5: '5 — Após Louvor',
-    6: '6 — Após Ofertas e oração',
-    7: '7 — Após Mensagem',
-    8: '8 — Após Mensagem',
-    9: '9 — Último item'
+    3: '2 — Após Abertura',
+    4: '3 — Após Louvores',
+    5: '4 — Após Louvor',
+    6: '5 — Após Ofertas e oração',
+    8: '6 — Após Mensagem',
+    9: '7 — Último item'
   };
 
   const SCRIPTURE_POSITION_LABELS = {
     ...ORDER_POSITION_LABELS,
-    4: '4 — Após Louvores (padrão)'
+    4: '3 — Após Louvores (padrão)'
   };
 
   const ANNOUNCEMENTS_POSITION_LABELS = {
     ...ORDER_POSITION_LABELS,
-    8: '8 — Após Mensagem (padrão)'
+    8: '6 — Após Mensagem (padrão)'
   };
+
+  const POSITION_SELECT_VALUES = [1, 3, 4, 5, 6, 8, 9];
+
+  function normalizePositionSelectValue(value, fallback) {
+    const parsed = parseInt(value, 10);
+    const normalized = Number.isNaN(parsed) ? fallback : parsed;
+    if (normalized === 2) return 3;
+    if (normalized === 7) return 8;
+    if (POSITION_SELECT_VALUES.includes(normalized)) return normalized;
+    return fallback;
+  }
 
   // Tradução apenas dos campos 2 (abertura) e 6 (ofertas/oração)
   const FIELD_PHRASES = [
@@ -102,18 +111,18 @@
   }
 
   function normalizeScripturePosition(value) {
-    return normalizeOrderPosition(value, DEFAULT_SCRIPTURE_POSITION);
+    return normalizePositionSelectValue(value, DEFAULT_SCRIPTURE_POSITION);
   }
 
   function normalizeAnnouncementsPosition(value) {
-    return normalizeOrderPosition(value, DEFAULT_ANNOUNCEMENTS_POSITION);
+    return normalizePositionSelectValue(value, DEFAULT_ANNOUNCEMENTS_POSITION);
   }
 
   function positionToAnchor(position, defaultPosition) {
     const normalized = normalizeOrderPosition(position, defaultPosition);
     const anchorByPosition = {
       1: 'start',
-      2: 'dirigente',
+      2: 'opening',
       3: 'opening',
       4: 'worship',
       5: 'praise',
@@ -330,7 +339,6 @@
       : escapeHtml(empty);
 
     const itemBuilders = {
-      dirigente: () => renderPersonLine(t.dirigente, order.dirigente),
       opening: () => `<li>${escapeHtml(order.openingAct)}</li>`,
       worship: () => `<li><strong>${escapeHtml(t.worshipSongs)}</strong>${songsHtml}</li>`,
       scripture: () => renderPersonLine(t.scriptureReading, order.scriptureReader),
@@ -589,6 +597,8 @@
     normalizeLanguage,
     normalizeScripturePosition,
     normalizeAnnouncementsPosition,
+    normalizePositionSelectValue,
+    POSITION_SELECT_VALUES,
     buildOrderedItemKeys,
     getTranslations,
     getPrintLanguage,

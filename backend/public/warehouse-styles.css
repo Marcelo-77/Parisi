@@ -205,6 +205,10 @@
     overflow: visible;
 }
 
+.header-actions:not([data-menu-access-ready="true"]) {
+    visibility: hidden;
+}
+
 .header-actions > .users-dropdown,
 .header-actions > .customer-dropdown,
 .header-actions > .product-dropdown,

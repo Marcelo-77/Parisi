@@ -13,7 +13,6 @@
       title: document.getElementById('serviceTitle')?.value.trim(),
       serviceDate: document.getElementById('serviceDate')?.value || '',
       churchName: document.getElementById('churchName')?.value.trim(),
-      dirigente: document.getElementById('dirigente')?.value.trim(),
       openingAct: document.getElementById('openingAct')?.value.trim(),
       worshipSongs: getWorshipSongs(),
       scriptureReader: document.getElementById('scriptureReader')?.value.trim(),
@@ -82,17 +81,20 @@
     document.getElementById('serviceTitle').value = order.title;
     document.getElementById('serviceDate').value = order.serviceDate ? String(order.serviceDate).slice(0, 10) : '';
     document.getElementById('churchName').value = order.churchName;
-    document.getElementById('dirigente').value = order.dirigente;
     document.getElementById('openingAct').value = order.openingAct;
     document.getElementById('scriptureReader').value = order.scriptureReader;
-    document.getElementById('scripturePosition').value = String(order.scripturePosition || 4);
+    document.getElementById('scripturePosition').value = String(
+      OrderOfServiceUtils.normalizeScripturePosition(order.scripturePosition || 4)
+    );
     document.getElementById('praiseLeader').value = order.praiseLeader;
     document.getElementById('praiseStatus').value = order.praiseStatus;
     document.getElementById('offeringsInstruction').value = order.offeringsInstruction;
     document.getElementById('messageSpeaker').value = order.messageSpeaker;
     document.getElementById('closingPrayerLeader').value = order.closingPrayerLeader;
     document.getElementById('priestlyBlessingLeader').value = order.priestlyBlessingLeader;
-    document.getElementById('announcementsPosition').value = String(order.announcementsPosition || 8);
+    document.getElementById('announcementsPosition').value = String(
+      OrderOfServiceUtils.normalizeAnnouncementsPosition(order.announcementsPosition || 8)
+    );
 
     const list = document.getElementById('worshipSongsList');
     if (list) list.innerHTML = '';

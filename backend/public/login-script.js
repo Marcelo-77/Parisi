@@ -24,6 +24,12 @@
       const data = await res.json();
       if (!res.ok || !data.success) return '/warehouse.html';
 
+      try {
+        sessionStorage.setItem('doubley_menu_access', JSON.stringify(data));
+      } catch {
+        // ignore storage errors
+      }
+
       const apps = data.applications || [];
       if (apps.includes('warehouse.html')) return '/warehouse.html';
       if (apps.length > 0) return `/${apps[0]}`;

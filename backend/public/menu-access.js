@@ -161,12 +161,35 @@
     headerActions.setAttribute('data-menu-access-ready', 'true');
   }
 
+  function markMenuAccessPending() {
+    const headerActions = document.querySelector('.header-actions');
+    if (headerActions) {
+      headerActions.removeAttribute('data-menu-access-ready');
+    }
+  }
+
+  function revealMenuWithoutFilter() {
+    const headerActions = document.querySelector('.header-actions');
+    if (headerActions) {
+      resetMenuVisibility();
+      headerActions.setAttribute('data-menu-access-ready', 'true');
+    }
+  }
+
   async function initMenuAccess() {
     if (window.location.pathname.endsWith('/login.html')) return;
 
     if (window.DoubleYHeaderMenu) {
       window.DoubleYHeaderMenu.ensure();
       window.DoubleYHeaderMenu.setupDropdowns();
+    }
+
+    markMenuAccessPending();
+
+    const cached = readCachedMenuAccess();
+    if (cached && document.querySelector('.header-actions')) {
+      applyMenuAccess(cached);
+      renderLoggedUserInfo(cached.user);
     }
 
     try {
@@ -180,7 +203,6 @@
       }
     } catch (error) {
       console.error('Menu access error:', error);
-      const cached = readCachedMenuAccess();
       if (cached) {
         if (document.querySelector('.header-actions')) {
           applyMenuAccess(cached);
@@ -188,6 +210,7 @@
         renderLoggedUserInfo(cached.user);
       } else {
         await fetchLoggedUserFallback();
+        revealMenuWithoutFilter();
       }
     }
   }
