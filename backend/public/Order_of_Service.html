@@ -118,9 +118,25 @@
                             <label for="messageSpeaker"><i class="fas fa-microphone"></i> Mensagem</label>
                             <input type="text" id="messageSpeaker" name="messageSpeaker" placeholder="Ex: Pb. Marcelo">
                         </div>
-                        <div class="form-group">
-                            <label for="closingPrayerLeader"><i class="fas fa-bullhorn"></i> Terminar o Culto — Oração &amp; Anúncios finais</label>
-                            <input type="text" id="closingPrayerLeader" name="closingPrayerLeader" placeholder="Ex: Miss Norma">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="closingPrayerLeader"><i class="fas fa-bullhorn"></i> Anúncios</label>
+                                <input type="text" id="closingPrayerLeader" name="closingPrayerLeader" placeholder="Ex: Miss Norma">
+                            </div>
+                            <div class="form-group">
+                                <label for="announcementsPosition"><i class="fas fa-sort-numeric-down"></i> Posição do item Anúncios</label>
+                                <select id="announcementsPosition" name="announcementsPosition">
+                                    <option value="1">1 — Primeiro item</option>
+                                    <option value="2">2 — Após Dirigente</option>
+                                    <option value="3">3 — Após Abertura</option>
+                                    <option value="4">4 — Após Louvores</option>
+                                    <option value="5">5 — Após Leitura da palavra</option>
+                                    <option value="6">6 — Após Louvor</option>
+                                    <option value="7">7 — Após Ofertas e oração</option>
+                                    <option value="8" selected>8 — Após Mensagem (padrão)</option>
+                                    <option value="9">9 — Último item</option>
+                                </select>
+                            </div>
                         </div>
                         <div class="form-group">
                             <label for="priestlyBlessingLeader"><i class="fas fa-hands-praying"></i> Benção Sacerdotal</label>

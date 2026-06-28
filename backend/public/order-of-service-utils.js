@@ -12,7 +12,7 @@
       scriptureReading: 'Leitura da palavra:',
       praise: 'Louvor',
       message: 'Mensagem:',
-      closing: 'Terminar o Culto Oração & Anúncios finais',
+      closing: 'Anúncios',
       closingFollowedBy: 'seguidamente',
       priestlyBlessing: 'Benção Sacerdotal',
       empty: '—',
@@ -26,7 +26,7 @@
       scriptureReading: 'Scripture Reading:',
       praise: 'Praise',
       message: 'Message:',
-      closing: 'Close Service — Prayer & Final Announcements',
+      closing: 'Announcements',
       closingFollowedBy: 'followed by',
       priestlyBlessing: 'Priestly Blessing',
       empty: '—',
@@ -40,11 +40,28 @@
       scriptureReading: 'Lectura de la Palabra:',
       praise: 'Alabanza',
       message: 'Mensaje:',
-      closing: 'Terminar el Culto — Oración y Anuncios Finales',
+      closing: 'Anuncios',
       closingFollowedBy: 'seguidamente',
       priestlyBlessing: 'Bendición Sacerdotal',
       empty: '—',
       logoAlt: 'Alfa y Omega'
+    }
+  };
+
+  const DEFAULT_ANNOUNCEMENTS_POSITION = 8;
+  const ORDER_ITEM_KEYS = ['dirigente', 'opening', 'worship', 'scripture', 'praise', 'offerings', 'message', 'priestly'];
+
+  const ANNOUNCEMENTS_POSITION_LABELS = {
+    pt: {
+      1: '1 — Primeiro item',
+      2: '2 — Após Dirigente',
+      3: '3 — Após Abertura',
+      4: '4 — Após Louvores',
+      5: '5 — Após Leitura da palavra',
+      6: '6 — Após Louvor',
+      7: '7 — Após Ofertas e oração',
+      8: '8 — Após Mensagem (padrão)',
+      9: '9 — Último item'
     }
   };
 
@@ -67,6 +84,19 @@
     { pt: 'para reconhecer as ofertas e fazer a oração', en: 'to receive the offerings and offer prayer', es: 'para recibir las ofrendas y hacer la oración' },
     { pt: 'para reconhecer as ofertas e fazer a oração.', en: 'to receive the offerings and offer prayer.', es: 'para recibir las ofrendas y hacer la oración.' }
   ];
+
+  function normalizeAnnouncementsPosition(value) {
+    const parsed = parseInt(value, 10);
+    if (Number.isNaN(parsed)) return DEFAULT_ANNOUNCEMENTS_POSITION;
+    return Math.min(ORDER_ITEM_KEYS.length + 1, Math.max(1, parsed));
+  }
+
+  function buildOrderedItemKeys(announcementsPosition) {
+    const position = normalizeAnnouncementsPosition(announcementsPosition);
+    const keys = [...ORDER_ITEM_KEYS];
+    keys.splice(position - 1, 0, 'announcements');
+    return keys;
+  }
 
   function normalizeLanguage(lang) {
     const value = String(lang || 'pt').toLowerCase();
@@ -192,7 +222,8 @@
       offeringsInstruction: source.offeringsInstruction || '',
       messageSpeaker: source.messageSpeaker || '',
       closingPrayerLeader: source.closingPrayerLeader || '',
-      priestlyBlessingLeader: source.priestlyBlessingLeader || ''
+      priestlyBlessingLeader: source.priestlyBlessingLeader || '',
+      announcementsPosition: normalizeAnnouncementsPosition(source.announcementsPosition)
     };
   }
 
@@ -218,12 +249,8 @@
     return `<li><span class="order-print-label">${escapeHtml(label)}</span> <span class="order-print-person">${escapeHtml(person)}</span></li>`;
   }
 
-  function renderPrintHtml(data, lang) {
-    const language = normalizeLanguage(lang);
-    const t = getTranslations(language);
-    const order = prepareOrderForPrint(data, language);
+  function buildOrderListHtml(order, t, language) {
     const empty = t.empty;
-
     const songsHtml = order.worshipSongs.length
       ? `<ol>${order.worshipSongs.map((song) => `<li>${escapeHtml(song)}</li>`).join('')}</ol>`
       : `<div class="order-print-note">${escapeHtml(empty)}</div>`;
@@ -231,6 +258,29 @@
     const praiseLine = order.praiseLeader
       ? `${escapeHtml(order.praiseLeader)}${order.praiseStatus ? ` ---- ${escapeHtml(order.praiseStatus)}` : ''}`
       : escapeHtml(empty);
+
+    const itemBuilders = {
+      dirigente: () => renderPersonLine(t.dirigente, order.dirigente),
+      opening: () => `<li>${escapeHtml(order.openingAct)}</li>`,
+      worship: () => `<li><strong>${escapeHtml(t.worshipSongs)}</strong>${songsHtml}</li>`,
+      scripture: () => renderPersonLine(t.scriptureReading, order.scriptureReader),
+      praise: () => `<li><span class="order-print-label">${escapeHtml(t.praise)}</span> <span class="order-print-person">${praiseLine}</span></li>`,
+      offerings: () => (order.offeringsInstruction ? `<li>${escapeHtml(order.offeringsInstruction)}</li>` : ''),
+      message: () => renderPersonLine(t.message, order.messageSpeaker),
+      announcements: () => `<li><span class="order-print-label">${escapeHtml(t.closing)}</span>${order.closingPrayerLeader ? ` <span class="order-print-person">${escapeHtml(order.closingPrayerLeader)}</span>` : ''}${order.closingPrayerLeader ? `<span class="order-print-note"> ${escapeHtml(t.closingFollowedBy)}</span>` : ''}</li>`,
+      priestly: () => renderPersonLine(t.priestlyBlessing, order.priestlyBlessingLeader)
+    };
+
+    return buildOrderedItemKeys(order.announcementsPosition)
+      .map((key) => itemBuilders[key]?.() || '')
+      .filter(Boolean)
+      .join('');
+  }
+
+  function renderPrintHtml(data, lang) {
+    const language = normalizeLanguage(lang);
+    const t = getTranslations(language);
+    const order = prepareOrderForPrint(data, language);
 
     const churchLine = order.churchName
       ? `<div class="order-print-date">${escapeHtml(order.churchName)}</div>`
@@ -248,22 +298,7 @@
       ${churchLine}
       ${dateLine}
       <ol class="order-print-list">
-        ${renderPersonLine(t.dirigente, order.dirigente)}
-        <li>${escapeHtml(order.openingAct)}</li>
-        <li>
-          <strong>${escapeHtml(t.worshipSongs)}</strong>
-          ${songsHtml}
-        </li>
-        ${renderPersonLine(t.scriptureReading, order.scriptureReader)}
-        <li><span class="order-print-label">${escapeHtml(t.praise)}</span> <span class="order-print-person">${praiseLine}</span></li>
-        ${order.offeringsInstruction ? `<li>${escapeHtml(order.offeringsInstruction)}</li>` : ''}
-        ${renderPersonLine(t.message, order.messageSpeaker)}
-        <li>
-          <span class="order-print-label">${escapeHtml(t.closing)}</span>
-          ${order.closingPrayerLeader ? `<span class="order-print-person">${escapeHtml(order.closingPrayerLeader)}</span>` : ''}
-          ${order.closingPrayerLeader ? `<span class="order-print-note"> ${escapeHtml(t.closingFollowedBy)}</span>` : ''}
-        </li>
-        ${renderPersonLine(t.priestlyBlessing, order.priestlyBlessingLeader)}
+        ${buildOrderListHtml(order, t, language)}
       </ol>
     `;
   }
@@ -474,9 +509,13 @@
     SUPPORTED_LANGUAGES,
     TRANSLATIONS,
     FIELD_PHRASES,
+    ANNOUNCEMENTS_POSITION_LABELS,
+    DEFAULT_ANNOUNCEMENTS_POSITION,
     escapeHtml,
     formatDate,
     normalizeLanguage,
+    normalizeAnnouncementsPosition,
+    buildOrderedItemKeys,
     getTranslations,
     getPrintLanguage,
     setPrintLanguage,

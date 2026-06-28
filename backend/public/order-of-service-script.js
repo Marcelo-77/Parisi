@@ -22,7 +22,8 @@
       offeringsInstruction: document.getElementById('offeringsInstruction')?.value.trim(),
       messageSpeaker: document.getElementById('messageSpeaker')?.value.trim(),
       closingPrayerLeader: document.getElementById('closingPrayerLeader')?.value.trim(),
-      priestlyBlessingLeader: document.getElementById('priestlyBlessingLeader')?.value.trim()
+      priestlyBlessingLeader: document.getElementById('priestlyBlessingLeader')?.value.trim(),
+      announcementsPosition: document.getElementById('announcementsPosition')?.value || '8'
     };
   }
 
@@ -89,6 +90,7 @@
     document.getElementById('messageSpeaker').value = order.messageSpeaker;
     document.getElementById('closingPrayerLeader').value = order.closingPrayerLeader;
     document.getElementById('priestlyBlessingLeader').value = order.priestlyBlessingLeader;
+    document.getElementById('announcementsPosition').value = String(order.announcementsPosition || 8);
 
     const list = document.getElementById('worshipSongsList');
     if (list) list.innerHTML = '';
