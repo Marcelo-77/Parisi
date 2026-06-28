@@ -17,6 +17,7 @@
       openingAct: document.getElementById('openingAct')?.value.trim(),
       worshipSongs: getWorshipSongs(),
       scriptureReader: document.getElementById('scriptureReader')?.value.trim(),
+      scripturePosition: document.getElementById('scripturePosition')?.value || '4',
       praiseLeader: document.getElementById('praiseLeader')?.value.trim(),
       praiseStatus: document.getElementById('praiseStatus')?.value.trim(),
       offeringsInstruction: document.getElementById('offeringsInstruction')?.value.trim(),
@@ -84,6 +85,7 @@
     document.getElementById('dirigente').value = order.dirigente;
     document.getElementById('openingAct').value = order.openingAct;
     document.getElementById('scriptureReader').value = order.scriptureReader;
+    document.getElementById('scripturePosition').value = String(order.scripturePosition || 4);
     document.getElementById('praiseLeader').value = order.praiseLeader;
     document.getElementById('praiseStatus').value = order.praiseStatus;
     document.getElementById('offeringsInstruction').value = order.offeringsInstruction;

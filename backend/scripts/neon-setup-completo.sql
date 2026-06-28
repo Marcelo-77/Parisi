@@ -65,6 +65,7 @@ CREATE TABLE IF NOT EXISTS church_service_order (
   closing_prayer_leader VARCHAR(150),
   priestly_blessing_leader VARCHAR(150),
   announcements_position INTEGER NOT NULL DEFAULT 8,
+  scripture_position INTEGER NOT NULL DEFAULT 4,
   created_by UUID REFERENCES funcionarios(id) ON DELETE SET NULL,
   criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   atualizado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -72,6 +73,9 @@ CREATE TABLE IF NOT EXISTS church_service_order (
 
 ALTER TABLE church_service_order
 ADD COLUMN IF NOT EXISTS announcements_position INTEGER NOT NULL DEFAULT 8;
+
+ALTER TABLE church_service_order
+ADD COLUMN IF NOT EXISTS scripture_position INTEGER NOT NULL DEFAULT 4;
 
 -- =============================================================================
 -- 2) WAREHOUSE (produtos e movimentacoes simples)

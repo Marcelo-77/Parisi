@@ -75,7 +75,8 @@ const orderBodyValidators = [
   body('messageSpeaker').optional({ nullable: true }).isLength({ max: 150 }).trim(),
   body('closingPrayerLeader').optional({ nullable: true }).isLength({ max: 150 }).trim(),
   body('priestlyBlessingLeader').optional({ nullable: true }).isLength({ max: 150 }).trim(),
-  body('announcementsPosition').optional({ nullable: true }).isInt({ min: 1, max: 9 })
+  body('announcementsPosition').optional({ nullable: true }).isInt({ min: 1, max: 9 }),
+  body('scripturePosition').optional({ nullable: true }).isInt({ min: 1, max: 9 })
 ];
 
 router.post('/', orderBodyValidators, handleValidationErrors, async (req, res) => {

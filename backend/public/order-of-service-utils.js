@@ -48,21 +48,31 @@
     }
   };
 
+  const DEFAULT_SCRIPTURE_POSITION = 4;
   const DEFAULT_ANNOUNCEMENTS_POSITION = 8;
-  const ORDER_ITEM_KEYS = ['dirigente', 'opening', 'worship', 'scripture', 'praise', 'offerings', 'message', 'priestly'];
+  const BASE_ORDER_ITEM_KEYS = ['dirigente', 'opening', 'worship', 'praise', 'offerings', 'message', 'priestly'];
+  const MAX_ORDER_POSITION = BASE_ORDER_ITEM_KEYS.length + 2;
+
+  const ORDER_POSITION_LABELS = {
+    1: '1 — Primeiro item',
+    2: '2 — Após Dirigente',
+    3: '3 — Após Abertura',
+    4: '4 — Após Louvores',
+    5: '5 — Após Louvor',
+    6: '6 — Após Ofertas e oração',
+    7: '7 — Após Mensagem',
+    8: '8 — Após Mensagem',
+    9: '9 — Último item'
+  };
+
+  const SCRIPTURE_POSITION_LABELS = {
+    ...ORDER_POSITION_LABELS,
+    4: '4 — Após Louvores (padrão)'
+  };
 
   const ANNOUNCEMENTS_POSITION_LABELS = {
-    pt: {
-      1: '1 — Primeiro item',
-      2: '2 — Após Dirigente',
-      3: '3 — Após Abertura',
-      4: '4 — Após Louvores',
-      5: '5 — Após Leitura da palavra',
-      6: '6 — Após Louvor',
-      7: '7 — Após Ofertas e oração',
-      8: '8 — Após Mensagem (padrão)',
-      9: '9 — Último item'
-    }
+    ...ORDER_POSITION_LABELS,
+    8: '8 — Após Mensagem (padrão)'
   };
 
   // Tradução apenas dos campos 2 (abertura) e 6 (ofertas/oração)
@@ -85,16 +95,75 @@
     { pt: 'para reconhecer as ofertas e fazer a oração.', en: 'to receive the offerings and offer prayer.', es: 'para recibir las ofrendas y hacer la oración.' }
   ];
 
-  function normalizeAnnouncementsPosition(value) {
+  function normalizeOrderPosition(value, fallback) {
     const parsed = parseInt(value, 10);
-    if (Number.isNaN(parsed)) return DEFAULT_ANNOUNCEMENTS_POSITION;
-    return Math.min(ORDER_ITEM_KEYS.length + 1, Math.max(1, parsed));
+    if (Number.isNaN(parsed)) return fallback;
+    return Math.min(MAX_ORDER_POSITION, Math.max(1, parsed));
   }
 
-  function buildOrderedItemKeys(announcementsPosition) {
-    const position = normalizeAnnouncementsPosition(announcementsPosition);
-    const keys = [...ORDER_ITEM_KEYS];
-    keys.splice(position - 1, 0, 'announcements');
+  function normalizeScripturePosition(value) {
+    return normalizeOrderPosition(value, DEFAULT_SCRIPTURE_POSITION);
+  }
+
+  function normalizeAnnouncementsPosition(value) {
+    return normalizeOrderPosition(value, DEFAULT_ANNOUNCEMENTS_POSITION);
+  }
+
+  function positionToAnchor(position, defaultPosition) {
+    const normalized = normalizeOrderPosition(position, defaultPosition);
+    const anchorByPosition = {
+      1: 'start',
+      2: 'dirigente',
+      3: 'opening',
+      4: 'worship',
+      5: 'praise',
+      6: 'offerings',
+      7: 'message',
+      8: 'message',
+      9: 'priestly'
+    };
+    return anchorByPosition[normalized] || anchorByPosition[defaultPosition] || 'worship';
+  }
+
+  function anchorIndex(anchor) {
+    if (anchor === 'start') return -1;
+    return BASE_ORDER_ITEM_KEYS.indexOf(anchor);
+  }
+
+  function insertAfterAnchor(keys, anchor, itemKey) {
+    if (anchor === 'start') {
+      keys.splice(0, 0, itemKey);
+      return keys;
+    }
+
+    const index = keys.lastIndexOf(anchor);
+    if (index === -1) {
+      keys.push(itemKey);
+      return keys;
+    }
+
+    keys.splice(index + 1, 0, itemKey);
+    return keys;
+  }
+
+  function buildOrderedItemKeys(scripturePosition, announcementsPosition) {
+    const scriptureAnchor = positionToAnchor(scripturePosition, DEFAULT_SCRIPTURE_POSITION);
+    const announcementsAnchor = positionToAnchor(announcementsPosition, DEFAULT_ANNOUNCEMENTS_POSITION);
+
+    let keys = [...BASE_ORDER_ITEM_KEYS];
+    const toInsert = [
+      { key: 'scripture', anchor: scriptureAnchor },
+      { key: 'announcements', anchor: announcementsAnchor }
+    ].sort((a, b) => {
+      const diff = anchorIndex(a.anchor) - anchorIndex(b.anchor);
+      if (diff !== 0) return diff;
+      return a.key === 'scripture' ? -1 : 1;
+    });
+
+    toInsert.forEach((item) => {
+      keys = insertAfterAnchor(keys, item.anchor, item.key);
+    });
+
     return keys;
   }
 
@@ -223,6 +292,7 @@
       messageSpeaker: source.messageSpeaker || '',
       closingPrayerLeader: source.closingPrayerLeader || '',
       priestlyBlessingLeader: source.priestlyBlessingLeader || '',
+      scripturePosition: normalizeScripturePosition(source.scripturePosition),
       announcementsPosition: normalizeAnnouncementsPosition(source.announcementsPosition)
     };
   }
@@ -271,7 +341,7 @@
       priestly: () => renderPersonLine(t.priestlyBlessing, order.priestlyBlessingLeader)
     };
 
-    return buildOrderedItemKeys(order.announcementsPosition)
+    return buildOrderedItemKeys(order.scripturePosition, order.announcementsPosition)
       .map((key) => itemBuilders[key]?.() || '')
       .filter(Boolean)
       .join('');
@@ -510,10 +580,14 @@
     TRANSLATIONS,
     FIELD_PHRASES,
     ANNOUNCEMENTS_POSITION_LABELS,
+    SCRIPTURE_POSITION_LABELS,
+    ORDER_POSITION_LABELS,
+    DEFAULT_SCRIPTURE_POSITION,
     DEFAULT_ANNOUNCEMENTS_POSITION,
     escapeHtml,
     formatDate,
     normalizeLanguage,
+    normalizeScripturePosition,
     normalizeAnnouncementsPosition,
     buildOrderedItemKeys,
     getTranslations,

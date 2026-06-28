@@ -29,6 +29,7 @@ function mapRow(row) {
     closingPrayerLeader: row.closing_prayer_leader,
     priestlyBlessingLeader: row.priestly_blessing_leader,
     announcementsPosition: row.announcements_position != null ? row.announcements_position : 8,
+    scripturePosition: row.scripture_position != null ? row.scripture_position : 4,
     createdBy: row.created_by,
     criadoEm: row.criado_em,
     atualizadoEm: row.atualizado_em
@@ -57,6 +58,11 @@ function normalizePayload(data) {
     announcementsPosition: (() => {
       const parsed = parseInt(data.announcementsPosition, 10);
       if (Number.isNaN(parsed)) return 8;
+      return Math.min(9, Math.max(1, parsed));
+    })(),
+    scripturePosition: (() => {
+      const parsed = parseInt(data.scripturePosition, 10);
+      if (Number.isNaN(parsed)) return 4;
       return Math.min(9, Math.max(1, parsed));
     })()
   };
@@ -120,11 +126,11 @@ async function create(data, createdBy) {
     `INSERT INTO ${TABLE} (
       title, service_date, church_name, dirigente, opening_act, worship_songs,
       scripture_reader, praise_leader, praise_status, offerings_instruction,
-      message_speaker, closing_prayer_leader, priestly_blessing_leader, announcements_position, created_by
+      message_speaker, closing_prayer_leader, priestly_blessing_leader, announcements_position, scripture_position, created_by
     ) VALUES (
       $1, $2, $3, $4, $5, $6::jsonb,
       $7, $8, $9, $10,
-      $11, $12, $13, $14, $15
+      $11, $12, $13, $14, $15, $16
     )
     RETURNING *`,
     [
@@ -142,6 +148,7 @@ async function create(data, createdBy) {
       payload.closingPrayerLeader,
       payload.priestlyBlessingLeader,
       payload.announcementsPosition,
+      payload.scripturePosition,
       createdBy || null
     ]
   );
@@ -167,6 +174,7 @@ async function update(id, data) {
          closing_prayer_leader = $13,
          priestly_blessing_leader = $14,
          announcements_position = $15,
+         scripture_position = $16,
          atualizado_em = CURRENT_TIMESTAMP
      WHERE id = $1
      RETURNING *`,
@@ -185,7 +193,8 @@ async function update(id, data) {
       payload.messageSpeaker,
       payload.closingPrayerLeader,
       payload.priestlyBlessingLeader,
-      payload.announcementsPosition
+      payload.announcementsPosition,
+      payload.scripturePosition
     ]
   );
 
