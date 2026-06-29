@@ -141,15 +141,35 @@
     }
   }
 
+  function updateMasterDataVisibility(headerActions) {
+    const masterData = headerActions.querySelector('.master-data-dropdown');
+    if (!masterData) return;
+
+    masterData.querySelectorAll('.dropdown-submenu-group').forEach((group) => {
+      const visibleItems = Array.from(group.querySelectorAll('.dropdown-item')).filter((item) => item.style.display !== 'none');
+      group.style.display = visibleItems.length > 0 ? '' : 'none';
+    });
+
+    const visibleGroups = Array.from(masterData.querySelectorAll('.dropdown-submenu-group')).filter((group) => group.style.display !== 'none');
+    masterData.style.display = visibleGroups.length > 0 ? '' : 'none';
+  }
+
   function resetMenuVisibility() {
     document.querySelectorAll('.header-actions [data-app], .header-actions a[href*=".html"], .header-actions .dropdown-item').forEach((item) => {
       item.style.display = '';
       item.removeAttribute('aria-hidden');
     });
 
-    document.querySelectorAll('.header-actions .users-dropdown, .header-actions .customer-dropdown, .header-actions .product-dropdown, .header-actions .applications-dropdown, .header-actions .location-dropdown, .header-actions .movement-dropdown, .header-actions .picking-dropdown, .header-actions .church-dropdown, .header-actions .help-dropdown').forEach((group) => {
+    document.querySelectorAll('.header-actions .users-dropdown, .header-actions .master-data-dropdown, .header-actions .applications-dropdown, .header-actions .movement-dropdown, .header-actions .picking-dropdown, .header-actions .church-dropdown, .header-actions .help-dropdown').forEach((group) => {
       group.style.display = '';
     });
+
+    const headerActions = document.querySelector('.header-actions');
+    if (headerActions) {
+      headerActions.querySelectorAll('.dropdown-submenu-group').forEach((group) => {
+        group.style.display = '';
+      });
+    }
   }
 
   function applyMenuAccess(accessData) {
@@ -180,10 +200,12 @@
       }
     });
 
-    document.querySelectorAll('.header-actions .users-dropdown, .header-actions .customer-dropdown, .header-actions .product-dropdown, .header-actions .applications-dropdown, .header-actions .location-dropdown, .header-actions .movement-dropdown, .header-actions .picking-dropdown, .header-actions .church-dropdown, .header-actions .help-dropdown').forEach((group) => {
+    document.querySelectorAll('.header-actions .users-dropdown, .header-actions .applications-dropdown, .header-actions .movement-dropdown, .header-actions .picking-dropdown, .header-actions .church-dropdown, .header-actions .help-dropdown').forEach((group) => {
       const visibleItems = Array.from(group.querySelectorAll('.dropdown-item')).filter((item) => item.style.display !== 'none');
       group.style.display = visibleItems.length > 0 ? '' : 'none';
     });
+
+    updateMasterDataVisibility(headerActions);
 
     headerActions.setAttribute('data-menu-access-ready', 'true');
   }

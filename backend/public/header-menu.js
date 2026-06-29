@@ -10,23 +10,44 @@
                             <a href="change-password.html" class="dropdown-item" data-app="change-password.html" data-always-accessible="true"><i class="fas fa-key"></i> Change Password</a>
                         </div>
                     </div>
-                    <div class="customer-dropdown">
-                        <button type="button" class="btn btn-primary" id="customerMenuBtn" aria-haspopup="true" aria-expanded="false">
-                            <i class="fas fa-user"></i> Customer <i class="fas fa-chevron-down"></i>
+                    <div class="master-data-dropdown">
+                        <button type="button" class="btn btn-primary" id="masterDataMenuBtn" aria-haspopup="true" aria-expanded="false">
+                            <i class="fas fa-database"></i> Master Data <i class="fas fa-chevron-down"></i>
                         </button>
-                        <div class="customer-dropdown-menu" id="customerDropdownMenu" aria-hidden="true">
-                            <a href="customer.html" class="dropdown-item" data-app="customer.html"><i class="fas fa-plus"></i> New Customer</a>
-                            <a href="customer.html?mode=search" class="dropdown-item" data-app="customer.html"><i class="fas fa-search"></i> Search Customer</a>
-                        </div>
-                    </div>
-                    <div class="product-dropdown">
-                        <button type="button" class="btn btn-primary" id="productMenuBtn" aria-haspopup="true" aria-expanded="false">
-                            <i class="fas fa-box"></i> Product <i class="fas fa-chevron-down"></i>
-                        </button>
-                        <div class="product-dropdown-menu" id="productDropdownMenu" aria-hidden="true">
-                            <button type="button" id="newProductBtn" class="dropdown-item" data-app="warehouse.html"><i class="fas fa-plus"></i> New Product</button>
-                            <button type="button" id="searchProductBtn" class="dropdown-item" data-app="warehouse.html"><i class="fas fa-search"></i> Search Product</button>
-                            <a href="special-search-product.html" class="dropdown-item" data-app="special-search-product.html"><i class="fas fa-map"></i> Special Search Product</a>
+                        <div class="master-data-dropdown-menu" id="masterDataDropdownMenu" aria-hidden="true">
+                            <div class="dropdown-submenu-group" data-submenu="customer">
+                                <button type="button" class="dropdown-submenu-trigger" aria-haspopup="true" aria-expanded="false">
+                                    <span><i class="fas fa-user"></i> Customer</span>
+                                    <i class="fas fa-chevron-right submenu-chevron" aria-hidden="true"></i>
+                                </button>
+                                <div class="dropdown-submenu" aria-hidden="true">
+                                    <a href="customer.html" class="dropdown-item" data-app="customer.html"><i class="fas fa-plus"></i> New Customer</a>
+                                    <a href="customer.html?mode=search" class="dropdown-item" data-app="customer.html"><i class="fas fa-search"></i> Search Customer</a>
+                                </div>
+                            </div>
+                            <div class="dropdown-submenu-group" data-submenu="product">
+                                <button type="button" class="dropdown-submenu-trigger" aria-haspopup="true" aria-expanded="false">
+                                    <span><i class="fas fa-box"></i> Product</span>
+                                    <i class="fas fa-chevron-right submenu-chevron" aria-hidden="true"></i>
+                                </button>
+                                <div class="dropdown-submenu" aria-hidden="true">
+                                    <button type="button" id="newProductBtn" class="dropdown-item" data-app="warehouse.html"><i class="fas fa-plus"></i> New Product</button>
+                                    <button type="button" id="searchProductBtn" class="dropdown-item" data-app="warehouse.html"><i class="fas fa-search"></i> Search Product</button>
+                                    <a href="special-search-product.html" class="dropdown-item" data-app="special-search-product.html"><i class="fas fa-map"></i> Special Search Product</a>
+                                </div>
+                            </div>
+                            <div class="dropdown-submenu-group" data-submenu="location">
+                                <button type="button" class="dropdown-submenu-trigger" aria-haspopup="true" aria-expanded="false">
+                                    <span><i class="fas fa-map-marker-alt"></i> Location</span>
+                                    <i class="fas fa-chevron-right submenu-chevron" aria-hidden="true"></i>
+                                </button>
+                                <div class="dropdown-submenu" aria-hidden="true">
+                                    <a href="location.html" class="dropdown-item" data-app="location.html"><i class="fas fa-plus"></i> New Location</a>
+                                    <a href="location-search.html" class="dropdown-item" data-app="location-search.html"><i class="fas fa-search"></i> Search Location</a>
+                                    <a href="location-product.html" class="dropdown-item" data-app="location-product.html"><i class="fas fa-boxes-stacked"></i> Location Product</a>
+                                    <a href="log-location-product.html" class="dropdown-item" data-app="log-location-product.html"><i class="fas fa-history"></i> Log Location Product</a>
+                                </div>
+                            </div>
                         </div>
                     </div>
                     <div class="applications-dropdown">
@@ -38,17 +59,6 @@
                             <a href="applications.html?mode=search" class="dropdown-item" data-app="applications.html"><i class="fas fa-search"></i> Search Applications</a>
                             <a href="application_users.html" class="dropdown-item" data-app="application_users.html"><i class="fas fa-user-cog"></i> Application Users</a>
                             <a href="upload-warehouse-map.html" class="dropdown-item" data-app="upload-warehouse-map.html"><i class="fas fa-upload"></i> Upload Warehouse Map</a>
-                        </div>
-                    </div>
-                    <div class="location-dropdown">
-                        <button type="button" class="btn btn-primary" id="locationMenuBtn" aria-haspopup="true" aria-expanded="false">
-                            <i class="fas fa-map-marker-alt"></i> Location <i class="fas fa-chevron-down"></i>
-                        </button>
-                        <div class="location-dropdown-menu" id="locationDropdownMenu" aria-hidden="true">
-                            <a href="location.html" class="dropdown-item" data-app="location.html"><i class="fas fa-plus"></i> New Location</a>
-                            <a href="location-search.html" class="dropdown-item" data-app="location-search.html"><i class="fas fa-search"></i> Search Location</a>
-                            <a href="location-product.html" class="dropdown-item" data-app="location-product.html"><i class="fas fa-boxes-stacked"></i> Location Product</a>
-                            <a href="log-location-product.html" class="dropdown-item" data-app="log-location-product.html"><i class="fas fa-history"></i> Log Location Product</a>
                         </div>
                     </div>
                     <div class="movement-dropdown">
@@ -95,19 +105,29 @@
 
   const MENU_BUTTON_IDS = [
     'usersMenuBtn',
-    'customerMenuBtn',
-    'productMenuBtn',
+    'masterDataMenuBtn',
     'applicationsMenuBtn',
-    'locationMenuBtn',
     'movementMenuBtn',
     'pickingMenuBtn',
     'churchMenuBtn',
     'helpMenuBtn'
   ];
 
+  function closeAllSubmenus() {
+    document.querySelectorAll('.dropdown-submenu-group.is-open').forEach((group) => {
+      group.classList.remove('is-open');
+      const trigger = group.querySelector('.dropdown-submenu-trigger');
+      const submenu = group.querySelector('.dropdown-submenu');
+      if (trigger) trigger.setAttribute('aria-expanded', 'false');
+      if (submenu) submenu.setAttribute('aria-hidden', 'true');
+    });
+  }
+
   function closeAllHeaderMenus() {
     const headerActions = document.querySelector('.header-actions');
     if (!headerActions) return;
+
+    closeAllSubmenus();
 
     MENU_BUTTON_IDS.forEach((btnId) => {
       const btn = document.getElementById(btnId);
@@ -137,6 +157,31 @@
     }
 
     const clickHandler = (event) => {
+      const submenuTrigger = event.target.closest('.dropdown-submenu-trigger');
+      if (submenuTrigger) {
+        event.stopPropagation();
+        const group = submenuTrigger.closest('.dropdown-submenu-group');
+        if (!group) return;
+
+        const submenu = group.querySelector('.dropdown-submenu');
+        const isOpen = group.classList.contains('is-open');
+
+        document.querySelectorAll('.dropdown-submenu-group.is-open').forEach((openGroup) => {
+          if (openGroup !== group) {
+            openGroup.classList.remove('is-open');
+            const openTrigger = openGroup.querySelector('.dropdown-submenu-trigger');
+            const openSubmenu = openGroup.querySelector('.dropdown-submenu');
+            if (openTrigger) openTrigger.setAttribute('aria-expanded', 'false');
+            if (openSubmenu) openSubmenu.setAttribute('aria-hidden', 'true');
+          }
+        });
+
+        group.classList.toggle('is-open', !isOpen);
+        submenuTrigger.setAttribute('aria-expanded', isOpen ? 'false' : 'true');
+        if (submenu) submenu.setAttribute('aria-hidden', isOpen ? 'true' : 'false');
+        return;
+      }
+
       const menuBtn = event.target.closest('.header-actions [id$="MenuBtn"]');
       if (menuBtn) {
         event.stopPropagation();

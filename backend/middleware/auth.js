@@ -106,7 +106,7 @@ function verifyStoredPassword(storedPassword, providedPassword) {
 }
 
 function isPublicAsset(path) {
-  return /\.(css|js|png|jpg|jpeg|gif|svg|ico|woff|woff2|txt|map|min\.js)$/i.test(path);
+  return /\.(css|js|png|jpg|jpeg|gif|svg|ico|woff|woff2|txt|map|min\.js|pdf)$/i.test(path);
 }
 
 function getPageApplicationName(path) {
