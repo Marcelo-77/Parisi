@@ -251,6 +251,27 @@ async function listarLocationCodesComQuantidadeInformed() {
   }
 }
 
+/** Distinct product_code with quantity_current > 0, active status and valid entry date */
+async function listarProductCodesComQuantidadeAtiva() {
+  const sql = `
+    SELECT DISTINCT TRIM(lp.product_code) AS product_code
+    FROM ${TABLE} lp
+    WHERE lp.quantity_current > 0
+      AND TRIM(COALESCE(lp.stat_cd_id, '')) = 'A'
+      AND lp.entry_datetime IS NOT NULL
+    ORDER BY product_code
+  `;
+  try {
+    const result = await query(sql);
+    return (result.rows || [])
+      .map((row) => (row.product_code != null ? String(row.product_code).trim() : ''))
+      .filter(Boolean);
+  } catch (error) {
+    console.error('❌ Error fetching product codes with location:', error);
+    throw new Error(`Error fetching product codes with location: ${error.message}`);
+  }
+}
+
 /** location_code, quantity_current e access_type por product_code onde situation = Full e stat_cd_id = 'A' */
 async function buscarPorProdutoFullStatus(productCode) {
   if (!productCode || String(productCode).trim() === '') return [];
@@ -263,6 +284,8 @@ async function buscarPorProdutoFullStatus(productCode) {
     WHERE (TRIM(LOWER(lp.product_code)) = TRIM(LOWER($1)) OR lp.product_code = $1)
       AND LOWER(TRIM(COALESCE(sp.sipr_nm_description, ''))) = 'full'
       AND TRIM(COALESCE(lp.stat_cd_id, '')) = 'A'
+      AND lp.quantity_current > 0
+      AND lp.entry_datetime IS NOT NULL
     ORDER BY lp.location_code
   `;
   try {
@@ -336,6 +359,7 @@ module.exports = {
   atualizarQuantidades,
   deletar,
   listarLocationCodesComQuantidadeInformed,
+  listarProductCodesComQuantidadeAtiva,
   buscarPorProdutoFullStatus,
   buscarLog
 };

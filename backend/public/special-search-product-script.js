@@ -11,8 +11,65 @@
     let mapFitScale = 1;
     let mapResizeTimer = null;
     let products = [];
+    let searchResults = [];
     let selectedProduct = null;
     let productLocations = [];
+    let productsLoadPromise = null;
+
+    function normalizeProductCode(value) {
+        return String(value || '').trim().toLowerCase();
+    }
+
+    async function ensureProductsLoaded() {
+        if (products.length) return products;
+        if (!productsLoadPromise) {
+            productsLoadPromise = loadProducts()
+                .then(() => products)
+                .finally(() => {
+                    productsLoadPromise = null;
+                });
+        }
+        return productsLoadPromise;
+    }
+
+    function buildWarehouseSearchQuery(filters) {
+        const params = new URLSearchParams();
+        if (filters.category) params.set('categoria', filters.category);
+        if (filters.withLocation) params.set('withLocation', 'true');
+        if (filters.term) {
+            if (filters.field === 'nome') params.set('nome', filters.term);
+            else if (filters.field === 'barcode') params.set('barcode', filters.term.replace(/\D/g, ''));
+            else params.set('codigo', filters.term);
+        }
+        const query = params.toString();
+        return query ? `?${query}` : '';
+    }
+
+    async function fetchSearchProducts(filters) {
+        const response = await fetch(`${WAREHOUSE_API}${buildWarehouseSearchQuery(filters)}`);
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok || !data.success || !Array.isArray(data.data)) {
+            throw new Error(data.message || data.error || 'Unable to search products.');
+        }
+
+        let results = data.data;
+        const term = filters.term ? String(filters.term).trim().toLowerCase() : '';
+        const field = filters.field || 'codigo';
+
+        if (term && field === 'codigo') {
+            results = results.filter((item) => normalizeProductCode(item.codigo) === normalizeProductCode(term));
+        } else if (term && field === 'barcode') {
+            const barcodeTerm = term.replace(/\D/g, '');
+            results = results.filter((item) => {
+                const barcode = String(item.barcode || '').replace(/\D/g, '');
+                return barcode && barcodeTerm && barcode.includes(barcodeTerm);
+            });
+        } else if (term && field === 'nome') {
+            results = results.filter((item) => String(item.nome || '').toLowerCase().includes(term));
+        }
+
+        return results;
+    }
 
     function escapeHtml(value) {
         const div = document.createElement('div');
@@ -212,69 +269,70 @@
         products = data.data;
     }
 
-    function filterProducts() {
+    async function runProductSearch() {
         const searchInput = document.getElementById('productSearchInput');
         const searchBy = document.getElementById('productSearchBy');
         const categorySelect = document.getElementById('productSearchCategory');
-        const term = searchInput ? searchInput.value.trim().toLowerCase() : '';
-        const field = searchBy ? searchBy.value : 'codigo';
-        const category = categorySelect ? categorySelect.value.trim().toUpperCase() : '';
-
-        let filtered = products;
-
-        if (category) {
-            filtered = filtered.filter((item) => String(item.categoria || '').trim().toUpperCase() === category);
-        }
-
-        if (!term) return filtered;
-
-        return filtered.filter((item) => {
-            const code = String(item.codigo || '').toLowerCase();
-            const name = String(item.nome || '').toLowerCase();
-            const barcode = String(item.barcode || '').replace(/\D/g, '');
-            const barcodeTerm = term.replace(/\D/g, '');
-
-            if (field === 'nome') return name.includes(term);
-            if (field === 'barcode') return barcode && barcodeTerm && barcode.includes(barcodeTerm);
-            return code === term;
-        });
-    }
-
-    function runProductSearch() {
-        const searchInput = document.getElementById('productSearchInput');
-        const categorySelect = document.getElementById('productSearchCategory');
+        const withLocationOnly = document.getElementById('productWithLocationOnly');
         const term = searchInput ? searchInput.value.trim() : '';
         const category = categorySelect ? categorySelect.value.trim() : '';
+        const onlyWithLocation = Boolean(withLocationOnly && withLocationOnly.checked);
+        const field = searchBy ? searchBy.value : 'codigo';
 
         resetSelectionState();
 
-        if (!category && !term) {
+        if (!category && !term && !onlyWithLocation) {
             const container = document.getElementById('productSearchResults');
             if (container) {
                 container.innerHTML = `
                     <div class="empty-state" style="padding:20px;text-align:center;color:#888;">
                         <i class="fas fa-search"></i>
-                        <p>Select a <strong>Category</strong> and/or enter a product code, name or barcode, then click <strong>Search Product</strong>.</p>
+                        <p>Select a <strong>Category</strong>, tick <strong>Product with Location</strong>, and/or enter a product code, name or barcode, then click <strong>Search Product</strong>.</p>
                     </div>`;
             }
             return;
         }
 
-        const results = filterProducts();
-        if (!results.length) {
-            const container = document.getElementById('productSearchResults');
+        const searchBtn = document.getElementById('searchProductBtnAction');
+        const container = document.getElementById('productSearchResults');
+        if (searchBtn) searchBtn.disabled = true;
+        if (container) {
+            container.innerHTML = '<p class="loading-text">Searching products...</p>';
+        }
+
+        try {
+            searchResults = await fetchSearchProducts({
+                category,
+                withLocation: onlyWithLocation,
+                term,
+                field
+            });
+
+            if (!searchResults.length) {
+                if (container) {
+                    const scopeLabel = category ? formatCategory(category) : 'all categories';
+                    const locationHint = onlyWithLocation
+                        ? ' with <strong>Current &gt; 0</strong> in Location Product'
+                        : '';
+                    container.innerHTML = `
+                        <div class="empty-state" style="padding:20px;text-align:center;color:#888;">
+                            <i class="fas fa-box-open"></i>
+                            <p>No products found${category ? ` in category <strong>${escapeHtml(scopeLabel)}</strong>` : ''}${locationHint}.</p>
+                        </div>`;
+                }
+                return;
+            }
+
+            renderProductSearchResults(searchResults);
+        } catch (error) {
+            console.error('Product search error:', error);
+            searchResults = [];
             if (container) {
-                const scopeLabel = category ? formatCategory(category) : 'all categories';
-                container.innerHTML = `
-                    <div class="empty-state" style="padding:20px;text-align:center;color:#888;">
-                        <i class="fas fa-box-open"></i>
-                        <p>No products found${category ? ` in category <strong>${escapeHtml(scopeLabel)}</strong>` : ''}.</p>
-                    </div>`;
+                container.innerHTML = `<p class="error-state">${escapeHtml(error.message || 'Error searching products.')}</p>`;
             }
-            return;
+        } finally {
+            if (searchBtn) searchBtn.disabled = false;
         }
-
-        renderProductSearchResults(results);
     }
 
     function renderProductSearchResults(list) {
@@ -323,7 +381,8 @@
         container.querySelectorAll('.btn-select-product').forEach((btn) => {
             btn.addEventListener('click', () => {
                 const code = btn.getAttribute('data-code');
-                const product = products.find((item) => String(item.codigo) === String(code));
+                const product = searchResults.find((item) => String(item.codigo) === String(code))
+                    || products.find((item) => String(item.codigo) === String(code));
                 if (product) selectProduct(product);
             });
         });
@@ -356,7 +415,7 @@
         `;
 
         if (!list.length) {
-            content.innerHTML = '<p class="empty-state">No locations (situation Full, stat_cd_id A) for this product.</p>';
+            content.innerHTML = '<p class="empty-state">No locations (situation Full, stat A, Current &gt; 0, valid entry date) for this product.</p>';
             return;
         }
 
@@ -445,12 +504,15 @@
     function clearProductSelection() {
         resetSelectionState();
         clearProductSearchResults();
+        searchResults = [];
 
         const searchInput = document.getElementById('productSearchInput');
         const categorySelect = document.getElementById('productSearchCategory');
+        const withLocationOnly = document.getElementById('productWithLocationOnly');
 
         if (searchInput) searchInput.value = '';
         if (categorySelect) categorySelect.value = '';
+        if (withLocationOnly) withLocationOnly.checked = false;
     }
 
     function setupHeaderDropdowns() {
@@ -578,8 +640,8 @@
 
         refreshMapScale();
 
-        loadProducts().catch((error) => {
-            console.error('Load products error:', error);
+        ensureProductsLoaded().catch((error) => {
+            console.error('Preload products error:', error);
         });
     }
 

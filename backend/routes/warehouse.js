@@ -71,6 +71,7 @@ router.get('/', [
   query('nome').optional().isLength({ min: 1 }).trim(),
   query('barcode').optional().isLength({ min: 1 }).trim(),
   query('localizacao').optional().isLength({ min: 1 }).trim(),
+  query('withLocation').optional().isIn(['true', '1', 'yes']),
   query('ordenarPor').optional().isIn(['nome', 'codigo', 'categoria', 'quantidade']),
   query('direcao').optional().isIn(['asc', 'desc'])
 ], handleValidationErrors, async (req, res) => {
@@ -80,6 +81,7 @@ router.get('/', [
       codigo: req.query.codigo,
       nome: req.query.nome,
       barcode: req.query.barcode,
+      withLocation: ['true', '1', 'yes'].includes(String(req.query.withLocation || '').toLowerCase()),
       ordenarPor: req.query.ordenarPor,
       direcao: req.query.direcao
     };

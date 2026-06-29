@@ -82,6 +82,16 @@ class WarehouseService {
       queryParams.push(`%${filtros.localizacao}%`);
     }
 
+    if (filtros.withLocation) {
+      whereClauses.push(`EXISTS (
+        SELECT 1 FROM location_product lp
+        WHERE TRIM(LOWER(lp.product_code)) = TRIM(LOWER(${this.tableName}.codigo))
+          AND lp.quantity_current > 0
+          AND TRIM(COALESCE(lp.stat_cd_id, '')) = 'A'
+          AND lp.entry_datetime IS NOT NULL
+      )`);
+    }
+
     let orderBy = 'nome ASC';
     if (filtros.ordenarPor) {
       const direcao = filtros.direcao === 'desc' ? 'DESC' : 'ASC';

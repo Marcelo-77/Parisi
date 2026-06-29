@@ -73,6 +73,21 @@ router.get(
   }
 );
 
+// GET /api/location-product/product-codes-with-location - product codes with quantity_current > 0
+router.get('/product-codes-with-location', async (req, res) => {
+  try {
+    const codes = await locationProductService.listarProductCodesComQuantidadeAtiva();
+    res.json({ success: true, data: codes, total: codes.length });
+  } catch (error) {
+    console.error('Error fetching product codes with location:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Error fetching product codes with location',
+      message: error.message
+    });
+  }
+});
+
 // GET /api/location-product/by-product-full/:productCode - location_code e quantity_current onde situation=Full e stat_cd_id='A'
 router.get('/by-product-full/:productCode', async (req, res) => {
   try {
