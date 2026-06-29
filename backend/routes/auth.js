@@ -39,7 +39,8 @@ async function getSessionUserProfile(req) {
     cargo: profile.cargo || null,
     isRoot: false,
     companyId: profile.companyId || null,
-    companyName: profile.companyName || null
+    companyName: profile.companyName || null,
+    photo: profile.photo || null
   };
 }
 
@@ -163,7 +164,8 @@ router.post('/login', async (req, res) => {
         cargo: profile.cargo || null,
         isRoot: false,
         companyId: profile.companyId || null,
-        companyName: profile.companyName || null
+        companyName: profile.companyName || null,
+        photo: profile.photo || null
       }
     });
   } catch (error) {

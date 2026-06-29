@@ -396,72 +396,8 @@ function updateResultsInfo() {
 
 // View employee details
 function verDetalhes(id) {
-    const funcionario = funcionarios.find(f => f.id === id);
-    if (!funcionario) return;
-    
-    funcionarioSelecionado = funcionario;
-    
-    const iniciais = funcionario.nome.split(' ').map(n => n[0]).join('').toUpperCase();
-    const statusClass = funcionario.ativo ? 'ativo' : 'inativo';
-    const statusText = funcionario.ativo ? 'Active' : 'Inactive';
-    
-    elements.funcionarioDetails.innerHTML = `
-        <div class="funcionario-details-modal">
-            <div>
-                <div class="funcionario-avatar-large">${iniciais}</div>
-            </div>
-            <div class="funcionario-info-large">
-                <div class="info-group">
-                    <div class="info-label">Full Name</div>
-                    <div class="info-value">${funcionario.nome}</div>
-                </div>
-                <div class="info-group">
-                    <div class="info-label">Email</div>
-                    <div class="info-value">${funcionario.email}</div>
-                </div>
-                <div class="info-group">
-                    <div class="info-label">Phone</div>
-                    <div class="info-value">${funcionario.telefone}</div>
-                </div>
-                <div class="info-group">
-                    <div class="info-label">Position</div>
-                    <div class="info-value">${funcionario.cargo}</div>
-                </div>
-                <div class="info-group">
-                    <div class="info-label">Department</div>
-                    <div class="info-value">${funcionario.departamento}</div>
-                </div>
-                ${funcionario.dataAdmissao ? `
-                <div class="info-group">
-                    <div class="info-label">Hire Date</div>
-                    <div class="info-value">${new Date(funcionario.dataAdmissao).toLocaleDateString('pt-BR')}</div>
-                </div>
-                ` : ''}
-                <div class="info-group">
-                    <div class="info-label">Status</div>
-                    <div class="info-value">
-                        <span class="status-badge ${statusClass}">
-                            <i class="fas fa-circle"></i> ${statusText}
-                        </span>
-                    </div>
-                </div>
-                <div class="info-group">
-                    <div class="info-label">ID</div>
-                    <div class="info-value" style="font-family: monospace; font-size: 0.9rem;">${funcionario.id}</div>
-                </div>
-                <div class="info-group">
-                    <div class="info-label">Created at</div>
-                    <div class="info-value">${new Date(funcionario.criadoEm).toLocaleString('pt-BR')}</div>
-                </div>
-                <div class="info-group">
-                    <div class="info-label">Last update</div>
-                    <div class="info-value">${new Date(funcionario.atualizadoEm).toLocaleString('pt-BR')}</div>
-                </div>
-            </div>
-        </div>
-    `;
-    
-    openModal('funcionarioModal');
+    if (!id) return;
+    window.location.href = `users.html?view=${encodeURIComponent(id)}`;
 }
 
 // Edit employee

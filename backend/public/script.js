@@ -2,6 +2,7 @@
 const API_BASE_URL = '/api/funcionarios';
 
 let editingUserId = null;
+let viewingUserId = null;
 let existingPhoto = null;
 
 // Elementos do DOM
@@ -98,6 +99,181 @@ function getEditUserIdFromUrl() {
     return id && String(id).trim() ? String(id).trim() : null;
 }
 
+function getViewUserIdFromUrl() {
+    const params = new URLSearchParams(window.location.search);
+    const id = params.get('view');
+    return id && String(id).trim() ? String(id).trim() : null;
+}
+
+function getInitials(name) {
+    return String(name || '').trim().split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part[0]).join('').toUpperCase() || '?';
+}
+
+function hasValidPhoto(photo) {
+    const value = String(photo || '').trim();
+    return value.length > 0 && value !== 'null' && value !== 'undefined';
+}
+
+function showPhotoInitials(img, initialsEl, name) {
+    if (img) {
+        img.hidden = true;
+        img.removeAttribute('src');
+        img.onerror = null;
+    }
+    if (initialsEl) {
+        initialsEl.textContent = getInitials(name);
+        initialsEl.hidden = false;
+    }
+}
+
+function setPhotoInContainer(wrap, img, initialsEl, photo, name) {
+    if (!wrap) return;
+
+    const displayName = String(name || '').trim();
+    const validPhoto = hasValidPhoto(photo);
+
+    if (!validPhoto && !displayName) {
+        hidePhotoInContainer(wrap, img, initialsEl);
+        return;
+    }
+
+    wrap.hidden = false;
+    wrap.setAttribute('aria-hidden', 'false');
+
+    if (validPhoto && img) {
+        img.onerror = () => showPhotoInitials(img, initialsEl, displayName);
+        img.onload = () => {
+            img.onerror = null;
+        };
+        img.src = photo;
+        img.alt = displayName ? `Photo of ${displayName}` : 'User photo';
+        img.hidden = false;
+        if (initialsEl) initialsEl.hidden = true;
+    } else {
+        showPhotoInitials(img, initialsEl, displayName);
+    }
+}
+
+function hidePhotoInContainer(wrap, img, initialsEl) {
+    if (!wrap) return;
+    wrap.hidden = true;
+    wrap.setAttribute('aria-hidden', 'true');
+    if (img) {
+        img.onerror = null;
+        img.onload = null;
+        img.removeAttribute('src');
+        img.hidden = true;
+    }
+    if (initialsEl) {
+        initialsEl.textContent = '';
+        initialsEl.hidden = true;
+    }
+}
+
+function updateUserHeaderPhoto(photo, name) {
+    setPhotoInContainer(
+        document.getElementById('userHeaderPhotoWrap'),
+        document.getElementById('userHeaderPhotoImg'),
+        document.getElementById('userHeaderPhotoInitials'),
+        photo,
+        name
+    );
+}
+
+function hideUserHeaderPhoto() {
+    hidePhotoInContainer(
+        document.getElementById('userHeaderPhotoWrap'),
+        document.getElementById('userHeaderPhotoImg'),
+        document.getElementById('userHeaderPhotoInitials')
+    );
+}
+
+function updateUserFieldPhoto(photo, name) {
+    setPhotoInContainer(
+        document.getElementById('userFieldPhotoWrap'),
+        document.getElementById('userFieldPhotoImg'),
+        document.getElementById('userFieldPhotoInitials'),
+        photo,
+        name
+    );
+}
+
+function hideUserFieldPhoto() {
+    hidePhotoInContainer(
+        document.getElementById('userFieldPhotoWrap'),
+        document.getElementById('userFieldPhotoImg'),
+        document.getElementById('userFieldPhotoInitials')
+    );
+}
+
+function setFormActionsMode(mode) {
+    const editActions = document.getElementById('formActionsEdit');
+    const viewActions = document.getElementById('formActionsView');
+    if (editActions) editActions.style.display = mode === 'view' ? 'none' : '';
+    if (viewActions) viewActions.style.display = mode === 'view' ? '' : 'none';
+}
+
+function setFormReadonly(readonly) {
+    if (!form) return;
+
+    const fields = form.querySelectorAll('input, select, textarea');
+    fields.forEach((el) => {
+        if (el.id === 'photo') {
+            el.disabled = readonly;
+            return;
+        }
+        if (readonly) {
+            if (el.type === 'checkbox') {
+                el.disabled = true;
+            } else if (el.tagName === 'SELECT') {
+                el.disabled = true;
+            } else {
+                el.readOnly = true;
+            }
+        } else {
+            if (el.type === 'checkbox') {
+                el.disabled = false;
+            } else if (el.tagName === 'SELECT') {
+                el.disabled = false;
+            } else {
+                el.readOnly = false;
+            }
+        }
+    });
+
+    const photoFieldGroup = document.getElementById('photoFieldGroup');
+    if (photoFieldGroup) photoFieldGroup.style.display = readonly ? 'none' : '';
+
+    const passwordFieldGroup = document.getElementById('passwordFieldGroup');
+    if (passwordFieldGroup) passwordFieldGroup.style.display = readonly ? 'none' : '';
+
+    if (form) {
+        form.classList.toggle('is-view-mode', readonly);
+    }
+}
+
+function populateFormFromUser(user) {
+    document.getElementById('nome').value = user.nome || '';
+    document.getElementById('email').value = user.email || '';
+    document.getElementById('telefone').value = user.telefone || '';
+    document.getElementById('cargo').value = user.cargo || '';
+    document.getElementById('departamento').value = user.departamento || '';
+    const companySelect = document.getElementById('companyId');
+    if (companySelect) companySelect.value = user.companyId || '';
+    document.getElementById('dataAdmissao').value = toDateInputValue(user.dataAdmissao);
+    document.getElementById('ativo').checked = user.ativo !== false;
+
+    const photoPreview = document.getElementById('photoPreview');
+    const photoPreviewImg = document.getElementById('photoPreviewImg');
+    if (existingPhoto && photoPreview && photoPreviewImg) {
+        photoPreviewImg.src = existingPhoto;
+        photoPreview.style.display = 'block';
+    } else if (photoPreview && photoPreviewImg) {
+        photoPreview.style.display = 'none';
+        photoPreviewImg.src = '';
+    }
+}
+
 function toDateInputValue(value) {
     if (!value) return '';
     const d = new Date(value);
@@ -107,6 +283,7 @@ function toDateInputValue(value) {
 
 function setCreateMode() {
     editingUserId = null;
+    viewingUserId = null;
     existingPhoto = null;
     validacoes.password.required = true;
     const passwordInput = document.getElementById('password');
@@ -123,12 +300,17 @@ function setCreateMode() {
     const headerPageLabel = document.getElementById('headerPageLabel');
     if (headerPageLabel) headerPageLabel.textContent = 'User Registration';
     document.title = 'Double-Y Warehouse System - User Registration';
+    hideUserHeaderPhoto();
+    hideUserFieldPhoto();
+    setFormReadonly(false);
+    setFormActionsMode('create');
     setDefaultDate();
     updateSubmitButton(false);
 }
 
 function setEditMode(user) {
     editingUserId = user.id;
+    viewingUserId = null;
     existingPhoto = user.photo || null;
     validacoes.password.required = false;
     const passwordInput = document.getElementById('password');
@@ -142,49 +324,76 @@ function setEditMode(user) {
     const formTitle = document.getElementById('formTitle');
     const formSubtitle = document.getElementById('formSubtitle');
     if (formTitle) formTitle.innerHTML = '<i class="fas fa-user-edit"></i> Edit User';
-    if (formSubtitle) formSubtitle.textContent = 'Update the user data below and click Save Changes';
+    if (formSubtitle) formSubtitle.textContent = user.nome ? `Updating ${user.nome}` : 'Update the user data below and click Save Changes';
     const headerPageLabel = document.getElementById('headerPageLabel');
     if (headerPageLabel) headerPageLabel.textContent = 'Edit User';
     document.title = 'Double-Y Warehouse System - Edit User';
 
-    document.getElementById('nome').value = user.nome || '';
-    document.getElementById('email').value = user.email || '';
-    document.getElementById('telefone').value = user.telefone || '';
-    document.getElementById('cargo').value = user.cargo || '';
-    document.getElementById('departamento').value = user.departamento || '';
-    const companySelect = document.getElementById('companyId');
-    if (companySelect) companySelect.value = user.companyId || '';
-    document.getElementById('dataAdmissao').value = toDateInputValue(user.dataAdmissao);
-    document.getElementById('ativo').checked = user.ativo !== false;
-
-    const photoPreview = document.getElementById('photoPreview');
-    const photoPreviewImg = document.getElementById('photoPreviewImg');
-    if (existingPhoto && photoPreview && photoPreviewImg) {
-        photoPreviewImg.src = existingPhoto;
-        photoPreview.style.display = 'block';
-    }
-
+    populateFormFromUser(user);
+    updateUserHeaderPhoto(existingPhoto, user.nome);
+    hideUserFieldPhoto();
+    setFormReadonly(false);
+    setFormActionsMode('edit');
     updateSubmitButton(true);
 }
 
+function setViewMode(user) {
+    editingUserId = null;
+    viewingUserId = user.id;
+    existingPhoto = user.photo || null;
+    validacoes.password.required = false;
+    const passwordInput = document.getElementById('password');
+    const passwordLabel = document.getElementById('passwordLabel');
+    if (passwordInput) {
+        passwordInput.required = false;
+        passwordInput.value = '';
+    }
+    if (passwordLabel) passwordLabel.innerHTML = '<i class="fas fa-lock"></i> Password';
+    const formTitle = document.getElementById('formTitle');
+    const formSubtitle = document.getElementById('formSubtitle');
+    if (formTitle) formTitle.innerHTML = '<i class="fas fa-eye"></i> View User';
+    if (formSubtitle) formSubtitle.textContent = user.nome || 'Employee details (view only)';
+    const headerPageLabel = document.getElementById('headerPageLabel');
+    if (headerPageLabel) headerPageLabel.textContent = 'View User';
+    document.title = 'Double-Y Warehouse System - View User';
+
+    populateFormFromUser(user);
+    hideUserHeaderPhoto();
+    updateUserFieldPhoto(existingPhoto, user.nome);
+    setFormReadonly(true);
+    setFormActionsMode('view');
+
+    const viewEditBtn = document.getElementById('viewEditBtn');
+    if (viewEditBtn) {
+        viewEditBtn.href = `users.html?edit=${encodeURIComponent(user.id)}`;
+    }
+}
+
 async function initializePageMode() {
+    const viewId = getViewUserIdFromUrl();
     const editId = getEditUserIdFromUrl();
-    if (!editId) {
+    const userId = viewId || editId;
+
+    if (!userId) {
         setCreateMode();
         return;
     }
 
     try {
         setLoading(true);
-        const response = await fetch(`${API_BASE_URL}/${encodeURIComponent(editId)}`);
+        const response = await fetch(`${API_BASE_URL}/${encodeURIComponent(userId)}`);
         const result = await response.json();
         if (!response.ok || !result.success || !result.data) {
             throw new Error(result.error || 'User not found');
         }
-        setEditMode(result.data);
+        if (viewId) {
+            setViewMode(result.data);
+        } else {
+            setEditMode(result.data);
+        }
     } catch (error) {
-        console.error('Error loading user for edit:', error);
-        showError(error.message || 'Could not load user for editing.');
+        console.error('Error loading user:', error);
+        showError(error.message || 'Could not load user.');
         setCreateMode();
     } finally {
         setLoading(false);
@@ -399,6 +608,10 @@ function validateForm() {
 // Manipular envio do formulário
 async function handleFormSubmit(e) {
     e.preventDefault();
+
+    if (viewingUserId) {
+        return;
+    }
     
     // Validar formulário
     if (!validateForm()) {
@@ -520,7 +733,9 @@ function closeModal(modal) {
 
 // Definir estado de carregamento
 function setLoading(loading) {
-    salvarBtn.disabled = loading;
+    if (salvarBtn) salvarBtn.disabled = loading;
+
+    if (!salvarBtn || viewingUserId) return;
     
     if (loading) {
         salvarBtn.classList.add('loading');
@@ -535,6 +750,11 @@ function setLoading(loading) {
 
 // Limpar formulário
 function limparFormulario() {
+    if (viewingUserId) {
+        window.location.href = 'pesquisa.html';
+        return;
+    }
+
     if (editingUserId) {
         window.location.href = 'users.html';
         return;
@@ -587,6 +807,10 @@ function previewPhoto(event) {
         reader.onload = function(e) {
             previewImg.src = e.target.result;
             preview.style.display = 'block';
+            if (editingUserId) {
+                const nome = document.getElementById('nome')?.value || '';
+                updateUserHeaderPhoto(e.target.result, nome);
+            }
         };
         reader.readAsDataURL(file);
         clearFieldError('photo');

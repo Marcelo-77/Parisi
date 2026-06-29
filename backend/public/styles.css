@@ -326,6 +326,8 @@ body {
     font-weight: 600;
     opacity: 0.95;
     margin: 0 0 10px;
+    position: relative;
+    overflow: visible;
 }
 
 .logged-session-info i {
@@ -336,6 +338,44 @@ body {
 .logged-session-separator {
     margin: 0 8px;
     opacity: 0.75;
+}
+
+.logged-session-name {
+    position: relative;
+    display: inline-block;
+}
+
+.logged-session-name.has-photo {
+    cursor: pointer;
+}
+
+.logged-session-photo-preview {
+    position: absolute;
+    left: 50%;
+    bottom: calc(100% + 10px);
+    transform: translateX(-50%);
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transition: opacity 0.2s ease, visibility 0.2s ease;
+    z-index: 1200;
+}
+
+.logged-session-name.has-photo:hover .logged-session-photo-preview,
+.logged-session-name.has-photo:focus-within .logged-session-photo-preview {
+    opacity: 1;
+    visibility: visible;
+}
+
+.logged-session-photo-preview img {
+    display: block;
+    width: 112px;
+    height: 112px;
+    object-fit: cover;
+    border-radius: 50%;
+    border: 3px solid rgba(255, 255, 255, 0.95);
+    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.28);
+    background: #f4f6f8;
 }
 
 .header-actions {
@@ -380,6 +420,115 @@ body {
 .form-header p {
     color: #666;
     font-size: 1rem;
+}
+
+.users-page .user-form-header {
+    text-align: left;
+}
+
+.user-form-header-main {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.user-form-header-text {
+    min-width: 0;
+}
+
+.user-header-photo-wrap {
+    flex: 0 0 auto;
+}
+
+.user-header-photo-wrap[hidden],
+.user-profile-photo-wrap[hidden],
+.user-header-photo[hidden],
+.user-field-photo[hidden],
+.user-header-photo-initials[hidden],
+.user-field-photo-initials[hidden] {
+    display: none !important;
+}
+
+.user-header-photo,
+.user-field-photo {
+    object-fit: cover;
+    border-radius: 50%;
+    border: 2px solid #e1e5e9;
+    background: #f4f6f8;
+}
+
+.user-header-photo-img,
+.user-field-photo-img {
+    display: block;
+}
+
+.user-header-photo,
+.user-header-photo-initials {
+    width: 72px;
+    height: 72px;
+}
+
+.user-header-photo-initials,
+.user-field-photo-initials {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    color: #667eea;
+    background: linear-gradient(135deg, #eef1ff 0%, #f7f8ff 100%);
+}
+
+.user-header-photo-initials {
+    font-size: 1.35rem;
+}
+
+.user-profile-photo-wrap {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 4px;
+}
+
+.user-profile-photo-wrap[hidden] {
+    display: none !important;
+}
+
+.user-profile-photo-wrap .user-field-photo,
+.user-profile-photo-wrap .user-field-photo-initials {
+    width: 96px;
+    height: 96px;
+}
+
+.user-profile-photo-wrap .user-field-photo-initials {
+    font-size: 1.5rem;
+}
+
+.user-field-photo,
+.user-field-photo-initials {
+    object-fit: cover;
+    border-radius: 50%;
+    border: 2px solid #e1e5e9;
+    background: #f4f6f8;
+}
+
+.user-field-photo-initials {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    color: #667eea;
+    background: linear-gradient(135deg, #eef1ff 0%, #f7f8ff 100%);
+}
+
+@media (max-width: 600px) {
+    .user-form-header-main {
+        align-items: flex-start;
+    }
+
+    .user-header-photo,
+    .user-header-photo-initials {
+        width: 60px;
+        height: 60px;
+    }
 }
 
 /* Form Styles */

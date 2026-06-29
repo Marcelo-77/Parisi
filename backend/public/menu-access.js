@@ -60,6 +60,34 @@
       .replace(/"/g, '&quot;');
   }
 
+  function escapeAttr(value) {
+    return escapeHtml(value);
+  }
+
+  function hasValidPhoto(photo) {
+    const value = String(photo || '').trim();
+    return value.length > 0 && value !== 'null' && value !== 'undefined';
+  }
+
+  function buildLoggedUserNameHtml(user) {
+    const name = user.nome || user.email || 'User';
+    const safeName = escapeHtml(name);
+
+    if (!hasValidPhoto(user.photo)) {
+      return safeName;
+    }
+
+    const safePhoto = escapeAttr(user.photo);
+    return [
+      `<span class="logged-session-name has-photo">`,
+      safeName,
+      `<span class="logged-session-photo-preview" aria-hidden="true">`,
+      `<img src="${safePhoto}" alt="${safeName}">`,
+      `</span>`,
+      `</span>`
+    ].join('');
+  }
+
   function renderLoggedUserInfo(user) {
     if (!user) return;
 
@@ -86,11 +114,10 @@
       }
     }
 
-    const name = user.nome || user.email || 'User';
     const position = user.cargo || (user.isRoot ? 'System Administrator' : '—');
     const company = user.companyName || (user.isRoot ? 'All Companies' : '—');
     el.innerHTML = [
-      `<i class="fas fa-user" aria-hidden="true"></i> ${escapeHtml(name)}`,
+      `<i class="fas fa-user" aria-hidden="true"></i> ${buildLoggedUserNameHtml(user)}`,
       `<span class="logged-session-separator" aria-hidden="true">·</span>`,
       `<i class="fas fa-briefcase" aria-hidden="true"></i> ${escapeHtml(position)}`,
       `<span class="logged-session-separator" aria-hidden="true">·</span>`,
