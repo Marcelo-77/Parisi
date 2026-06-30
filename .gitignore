@@ -3,4 +3,5 @@ node_modules/
 config.env
 exemplo.env
 backend/config/database.js.exemplo
+backend/uploads/
 *.log
