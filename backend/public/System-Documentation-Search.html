@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Double-Y Warehouse System - Search System Documentation</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="warehouse-styles.css">
+    <link rel="stylesheet" href="pesquisa-styles.css">
+    <link rel="stylesheet" href="system-documentation-styles.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body class="system-doc-search-page">
+    <script src="auth-check.js"></script>
+    <script src="header-menu.js"></script>
+    <script src="menu-access.js"></script>
+    <script src="double-y-logo-effect.js"></script>
+    <script src="dev-environment-badge.js"></script>
+    <div class="container">
+        <header class="header">
+            <div class="header-stats-row">
+                <div class="header-stats-left">
+                    <div class="header-stat header-stat-total">
+                        <span class="header-stat-value" id="totalItems">0</span>
+                        <span class="header-stat-label">Total Items</span>
+                    </div>
+                    <div class="header-stat header-stat-low">
+                        <span class="header-stat-value" id="lowStockItems">0</span>
+                        <span class="header-stat-label">Low Stock</span>
+                    </div>
+                </div>
+                <div class="double-y-wordmark" aria-label="Double Y"><img src="doubley-glyph.png" alt="" class="double-y-glyph" aria-hidden="true"><span class="double-y-name">Double Y</span><img src="doubley-glyph-bottom.png" alt="" class="double-y-glyph double-y-glyph-bottom" aria-hidden="true"></div>
+                <div class="header-stats-right">
+                    <div class="header-stat header-stat-entries">
+                        <span class="header-stat-value" id="totalEntradas">0</span>
+                        <span class="header-stat-label">Entries Today</span>
+                    </div>
+                    <div class="header-stat header-stat-exits">
+                        <span class="header-stat-value" id="totalSaidas">0</span>
+                        <span class="header-stat-label">Exits Today</span>
+                    </div>
+                </div>
+            </div>
+            <div class="header-content">
+                <h1><i class="fas fa-warehouse"></i> Double-Y Warehouse System</h1>
+                <p class="header-search-users-label">Search System Documentation</p>
+                <div class="header-actions"></div>
+            </div>
+        </header>
+
+        <main class="main-content system-doc-search-main">
+            <div id="systemDocSearchSection" class="product-search-section system-doc-search-section">
+                <div class="filters-section">
+                    <div class="filters-row system-doc-filters-row">
+                        <div class="system-doc-filter-group">
+                            <label for="searchTitle"><i class="fas fa-heading"></i> Title / file / description</label>
+                            <input type="text" id="searchTitle" class="system-doc-filter-input" placeholder="Search text">
+                        </div>
+                        <div class="system-doc-filter-group">
+                            <label for="searchUploadedBy"><i class="fas fa-user"></i> Uploaded by</label>
+                            <input type="text" id="searchUploadedBy" class="system-doc-filter-input" placeholder="User name">
+                        </div>
+                        <div class="system-doc-filter-group">
+                            <label for="searchDateFrom"><i class="fas fa-calendar-day"></i> Date from</label>
+                            <input type="date" id="searchDateFrom" class="system-doc-filter-input">
+                        </div>
+                        <div class="system-doc-filter-group">
+                            <label for="searchDateTo"><i class="fas fa-calendar-day"></i> Date to</label>
+                            <input type="date" id="searchDateTo" class="system-doc-filter-input">
+                        </div>
+                    </div>
+                    <div class="system-doc-search-actions">
+                        <button type="button" class="btn btn-primary" id="searchDocsBtn">
+                            <i class="fas fa-search"></i> Search
+                        </button>
+                        <button type="button" class="btn btn-secondary" id="clearSearchBtn">
+                            <i class="fas fa-eraser"></i> Clear
+                        </button>
+                        <a href="System-Documentation.html" class="btn btn-secondary" data-app="System-Documentation.html">
+                            <i class="fas fa-plus"></i> New document
+                        </a>
+                        <span id="systemDocResultsMeta" class="system-doc-results-meta" aria-live="polite"></span>
+                    </div>
+                    <div id="systemDocMessage" class="system-doc-message" aria-live="polite"></div>
+                </div>
+
+                <div class="table-container system-doc-table-container">
+                    <table class="warehouse-table system-doc-table">
+                        <thead>
+                            <tr>
+                                <th><i class="fas fa-heading"></i> Title</th>
+                                <th><i class="fas fa-file"></i> File</th>
+                                <th class="th-hide-mobile"><i class="fas fa-user"></i> Uploaded by</th>
+                                <th><i class="fas fa-calendar-alt"></i> Date / time</th>
+                                <th class="th-hide-mobile"><i class="fas fa-weight-hanging"></i> Size</th>
+                                <th class="th-actions"><i class="fas fa-download"></i> Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="systemDocResults">
+                            <tr>
+                                <td colspan="6" class="empty-state">
+                                    <i class="fas fa-search"></i>
+                                    <p>Use filters and click <strong>Search</strong> to load documents.</p>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="system-documentation-search-script.js"></script>
+</body>
+</html>

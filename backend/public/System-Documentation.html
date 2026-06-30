@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Double-Y Warehouse System - New System Documentation</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="warehouse-styles.css">
+    <link rel="stylesheet" href="pesquisa-styles.css">
+    <link rel="stylesheet" href="system-documentation-styles.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body class="system-doc-upload-page">
+    <script src="auth-check.js"></script>
+    <script src="header-menu.js"></script>
+    <script src="menu-access.js"></script>
+    <script src="double-y-logo-effect.js"></script>
+    <script src="dev-environment-badge.js"></script>
+    <div class="container">
+        <header class="header">
+            <div class="header-stats-row">
+                <div class="header-stats-left">
+                    <div class="header-stat header-stat-total">
+                        <span class="header-stat-value" id="totalItems">0</span>
+                        <span class="header-stat-label">Total Items</span>
+                    </div>
+                    <div class="header-stat header-stat-low">
+                        <span class="header-stat-value" id="lowStockItems">0</span>
+                        <span class="header-stat-label">Low Stock</span>
+                    </div>
+                </div>
+                <div class="double-y-wordmark" aria-label="Double Y"><img src="doubley-glyph.png" alt="" class="double-y-glyph" aria-hidden="true"><span class="double-y-name">Double Y</span><img src="doubley-glyph-bottom.png" alt="" class="double-y-glyph double-y-glyph-bottom" aria-hidden="true"></div>
+                <div class="header-stats-right">
+                    <div class="header-stat header-stat-entries">
+                        <span class="header-stat-value" id="totalEntradas">0</span>
+                        <span class="header-stat-label">Entries Today</span>
+                    </div>
+                    <div class="header-stat header-stat-exits">
+                        <span class="header-stat-value" id="totalSaidas">0</span>
+                        <span class="header-stat-label">Exits Today</span>
+                    </div>
+                </div>
+            </div>
+            <div class="header-content">
+                <h1><i class="fas fa-warehouse"></i> Double-Y Warehouse System</h1>
+                <p class="header-search-users-label">New System Documentation</p>
+                <div class="header-actions"></div>
+            </div>
+        </header>
+
+        <main class="main-content system-doc-search-main">
+            <div id="systemDocUploadSection" class="product-search-section system-doc-search-section">
+                <div class="filters-section">
+                    <div class="system-doc-page-intro">
+                        <h2><i class="fas fa-book"></i> Include document</h2>
+                        <p>Upload a system document. The logged-in user and date/time are recorded automatically.</p>
+                    </div>
+
+                    <form id="uploadDocForm" class="system-doc-upload-form" novalidate>
+                        <div class="filters-row system-doc-upload-fields-row">
+                            <div class="system-doc-filter-group">
+                                <label for="docTitle"><i class="fas fa-heading"></i> Title</label>
+                                <input type="text" id="docTitle" name="docTitle" class="system-doc-filter-input" maxlength="200" required placeholder="Document title">
+                            </div>
+                            <div class="system-doc-filter-group">
+                                <label for="docFile"><i class="fas fa-file"></i> File</label>
+                                <input type="file" id="docFile" name="docFile" class="system-doc-filter-input system-doc-file-input" required accept=".pdf,.doc,.docx,.xls,.xlsx,.txt,.png,.jpg,.jpeg,.gif,.csv,.zip">
+                                <p class="system-doc-upload-hint"><i class="fas fa-info-circle"></i> Maximum file size: 7 MB. Supported: PDF, Office, images, text, CSV, ZIP.</p>
+                            </div>
+                        </div>
+
+                        <div class="system-doc-search-actions">
+                            <button type="submit" class="btn btn-primary" id="uploadDocBtn">
+                                <i class="fas fa-save"></i> Save document
+                            </button>
+                            <a href="System-Documentation-Search.html" class="btn btn-secondary" data-app="System-Documentation-Search.html">
+                                <i class="fas fa-search"></i> Search documents
+                            </a>
+                        </div>
+                    </form>
+
+                    <div id="systemDocMessage" class="system-doc-message" aria-live="polite"></div>
+                </div>
+
+                <div class="table-container system-doc-form-container">
+                    <div class="system-doc-filter-group system-doc-description-group">
+                        <label for="docDescription"><i class="fas fa-align-left"></i> Description</label>
+                        <textarea id="docDescription" name="docDescription" class="system-doc-description-input" rows="8" placeholder="Optional description"></textarea>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="system-documentation-script.js"></script>
+</body>
+</html>

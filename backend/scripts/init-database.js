@@ -341,6 +341,8 @@ async function initDatabase() {
       { application: 'warehouse.html', menuName: 'Product' },
       { application: 'special-search-product.html', menuName: 'Product_Special_Search' },
       { application: 'upload-warehouse-map.html', menuName: 'Applications_Upload_Warehouse_Map' },
+      { application: 'System-Documentation.html', menuName: 'Applications_System_Documentation' },
+      { application: 'System-Documentation-Search.html', menuName: 'Applications_System_Documentation_Search' },
       { application: 'location.html', menuName: 'Location' },
       { application: 'location-search.html', menuName: 'Location_Search' },
       { application: 'location-product.html', menuName: 'Location_Product' },
@@ -397,6 +399,24 @@ async function initDatabase() {
       )
     `);
     console.log('✅ Tabela user_applications criada/verificada');
+
+    await query(`
+      CREATE TABLE IF NOT EXISTS system_documentation (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        title VARCHAR(200) NOT NULL,
+        description TEXT,
+        file_name VARCHAR(255) NOT NULL,
+        stored_name VARCHAR(255) NOT NULL,
+        mime_type VARCHAR(100),
+        file_size BIGINT,
+        uploaded_by UUID REFERENCES funcionarios(id) ON DELETE SET NULL,
+        uploaded_by_name VARCHAR(100),
+        criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+    await query(`CREATE INDEX IF NOT EXISTS idx_system_documentation_title ON system_documentation(title)`);
+    await query(`CREATE INDEX IF NOT EXISTS idx_system_documentation_criado ON system_documentation(criado_em DESC)`);
+    console.log('✅ Tabela system_documentation criada/verificada');
 
     // Criar tabela location_product (chave primária: location_code, product_code, sipr_sq_number)
     await query(`

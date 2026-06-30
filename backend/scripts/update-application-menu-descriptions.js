@@ -8,6 +8,8 @@ const systemApplicationMenus = [
   { application: 'warehouse.html', menuName: 'Product' },
   { application: 'special-search-product.html', menuName: 'Product_Special_Search' },
   { application: 'upload-warehouse-map.html', menuName: 'Applications_Upload_Warehouse_Map' },
+  { application: 'System-Documentation.html', menuName: 'Applications_System_Documentation' },
+  { application: 'System-Documentation-Search.html', menuName: 'Applications_System_Documentation_Search' },
   { application: 'location.html', menuName: 'Location' },
   { application: 'location-search.html', menuName: 'Location_Search' },
   { application: 'location-product.html', menuName: 'Location_Product' },

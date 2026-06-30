@@ -19,6 +19,7 @@ const warehouseMapRoutes = require('./routes/warehouseMap');
 const authRoutes = require('./routes/auth');
 const companiesRoutes = require('./routes/companies');
 const churchServiceOrderRoutes = require('./routes/churchServiceOrder');
+const systemDocumentationRoutes = require('./routes/systemDocumentation');
 const { isAuthenticated, protectPages, requireAuth } = require('./middleware/auth');
 const funcionarioServiceDB = require('./services/funcionarioServiceDB');
 const { initDatabase } = require('./scripts/init-database');
@@ -79,6 +80,7 @@ app.use('/api/user-applications', userApplicationsRoutes);
 app.use('/api/situations', situationsRoutes);
 app.use('/api/picking', pickingRoutes);
 app.use('/api/warehouse-map', warehouseMapRoutes);
+app.use('/api/system-documentation', systemDocumentationRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {

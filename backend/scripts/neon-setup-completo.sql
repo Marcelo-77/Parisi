@@ -77,6 +77,22 @@ ADD COLUMN IF NOT EXISTS announcements_position INTEGER NOT NULL DEFAULT 8;
 ALTER TABLE church_service_order
 ADD COLUMN IF NOT EXISTS scripture_position INTEGER NOT NULL DEFAULT 4;
 
+CREATE TABLE IF NOT EXISTS system_documentation (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  title VARCHAR(200) NOT NULL,
+  description TEXT,
+  file_name VARCHAR(255) NOT NULL,
+  stored_name VARCHAR(255) NOT NULL,
+  mime_type VARCHAR(100),
+  file_size BIGINT,
+  uploaded_by UUID REFERENCES funcionarios(id) ON DELETE SET NULL,
+  uploaded_by_name VARCHAR(100),
+  criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_system_documentation_title ON system_documentation(title);
+CREATE INDEX IF NOT EXISTS idx_system_documentation_criado ON system_documentation(criado_em DESC);
+
 -- =============================================================================
 -- 2) WAREHOUSE (produtos e movimentacoes simples)
 -- =============================================================================
@@ -261,6 +277,8 @@ FROM (VALUES
   ('warehouse.html', 'Product'),
   ('special-search-product.html', 'Product_Special_Search'),
   ('upload-warehouse-map.html', 'Applications_Upload_Warehouse_Map'),
+  ('System-Documentation.html', 'Applications_System_Documentation'),
+  ('System-Documentation-Search.html', 'Applications_System_Documentation_Search'),
   ('location.html', 'Location'),
   ('location-search.html', 'Location_Search'),
   ('location-product.html', 'Location_Product'),
@@ -291,6 +309,8 @@ FROM (VALUES
   ('warehouse.html', 'Product'),
   ('special-search-product.html', 'Product_Special_Search'),
   ('upload-warehouse-map.html', 'Applications_Upload_Warehouse_Map'),
+  ('System-Documentation.html', 'Applications_System_Documentation'),
+  ('System-Documentation-Search.html', 'Applications_System_Documentation_Search'),
   ('location.html', 'Location'),
   ('location-search.html', 'Location_Search'),
   ('location-product.html', 'Location_Product'),

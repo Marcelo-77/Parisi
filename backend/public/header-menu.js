@@ -59,6 +59,8 @@
                             <a href="applications.html?mode=search" class="dropdown-item" data-app="applications.html"><i class="fas fa-search"></i> Search Applications</a>
                             <a href="application_users.html" class="dropdown-item" data-app="application_users.html"><i class="fas fa-user-cog"></i> Application Users</a>
                             <a href="upload-warehouse-map.html" class="dropdown-item" data-app="upload-warehouse-map.html"><i class="fas fa-upload"></i> Upload Warehouse Map</a>
+                            <a href="System-Documentation.html" class="dropdown-item" data-app="System-Documentation.html"><i class="fas fa-plus"></i> New System Documentation</a>
+                            <a href="System-Documentation-Search.html" class="dropdown-item" data-app="System-Documentation-Search.html"><i class="fas fa-search"></i> Search System Documentation</a>
                         </div>
                     </div>
                     <div class="movement-dropdown">
