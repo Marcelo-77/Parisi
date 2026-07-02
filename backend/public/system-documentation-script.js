@@ -61,6 +61,7 @@
       const response = await fetch(API_BASE, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
         body: JSON.stringify({
           title,
           description: descriptionInput?.value.trim() || '',

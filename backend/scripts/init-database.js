@@ -416,6 +416,7 @@ async function initDatabase() {
     `);
     await query(`CREATE INDEX IF NOT EXISTS idx_system_documentation_title ON system_documentation(title)`);
     await query(`CREATE INDEX IF NOT EXISTS idx_system_documentation_criado ON system_documentation(criado_em DESC)`);
+    await query(`ALTER TABLE system_documentation ADD COLUMN IF NOT EXISTS file_data BYTEA`);
     console.log('✅ Tabela system_documentation criada/verificada');
 
     // Criar tabela location_product (chave primária: location_code, product_code, sipr_sq_number)

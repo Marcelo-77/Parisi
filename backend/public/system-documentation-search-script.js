@@ -166,7 +166,7 @@
       const contentType = response.headers.get('Content-Type') || '';
       if (!response.ok || contentType.includes('application/json')) {
         const data = await response.json().catch(() => ({}));
-        throw new Error(data.error || `Download failed (${response.status})`);
+        throw new Error(data.error || 'File not found. Upload the document again in System Documentation.');
       }
 
       const blob = await response.blob();

@@ -26,6 +26,19 @@ function mapRow(row) {
   };
 }
 
+const LIST_COLUMNS = `
+  id, title, description, file_name, stored_name, mime_type, file_size,
+  uploaded_by, uploaded_by_name, criado_em
+`;
+
+let schemaReady = false;
+
+async function ensureSchema() {
+  if (schemaReady) return;
+  await query(`ALTER TABLE ${TABLE} ADD COLUMN IF NOT EXISTS file_data BYTEA`);
+  schemaReady = true;
+}
+
 function sanitizeFileName(name) {
   const base = path.basename(String(name || 'document').trim());
   return base.replace(/[^\w.\- ()]/g, '_').substring(0, 200) || 'document';
@@ -68,7 +81,7 @@ async function list(filters = {}) {
 
   const where = whereClauses.length ? `WHERE ${whereClauses.join(' AND ')}` : '';
   const sql = `
-    SELECT sd.*
+    SELECT ${LIST_COLUMNS}
     FROM ${TABLE} sd
     ${where}
     ORDER BY sd.criado_em DESC, sd.title ASC
@@ -76,6 +89,7 @@ async function list(filters = {}) {
   `;
 
   try {
+    await ensureSchema();
     const result = await query(sql, values);
     return (result.rows || []).map(mapRow);
   } catch (error) {
@@ -85,12 +99,14 @@ async function list(filters = {}) {
 }
 
 async function findById(id) {
-  const result = await query(`SELECT * FROM ${TABLE} WHERE id = $1`, [id]);
+  await ensureSchema();
+  const result = await query(`SELECT ${LIST_COLUMNS} FROM ${TABLE} WHERE id = $1`, [id]);
   if (!result.rows.length) return null;
   return mapRow(result.rows[0]);
 }
 
 async function getFileInfo(id) {
+  await ensureSchema();
   const result = await query(
     `SELECT file_name, stored_name, mime_type FROM ${TABLE} WHERE id = $1`,
     [id]
@@ -101,6 +117,31 @@ async function getFileInfo(id) {
     storedName: result.rows[0].stored_name,
     mimeType: result.rows[0].mime_type || null
   };
+}
+
+async function getDownloadFile(id) {
+  await ensureSchema();
+  const result = await query(
+    `SELECT file_name, stored_name, mime_type, file_data FROM ${TABLE} WHERE id = $1`,
+    [id]
+  );
+  if (!result.rows.length) return null;
+
+  const row = result.rows[0];
+  const fileName = row.file_name;
+  const mimeType = row.mime_type || null;
+
+  if (row.file_data && row.file_data.length) {
+    const buffer = Buffer.isBuffer(row.file_data) ? row.file_data : Buffer.from(row.file_data);
+    return { fileName, mimeType, buffer };
+  }
+
+  const diskPath = getAbsolutePath(row.stored_name);
+  if (fs.existsSync(diskPath)) {
+    return { fileName, mimeType, buffer: fs.readFileSync(diskPath) };
+  }
+
+  return null;
 }
 
 async function create(data) {
@@ -130,13 +171,19 @@ async function create(data) {
   const storedName = `${id}${ext}`;
   const absolutePath = getAbsolutePath(storedName);
 
-  fs.writeFileSync(absolutePath, buffer);
+  try {
+    fs.writeFileSync(absolutePath, buffer);
+  } catch (diskError) {
+    console.warn('System documentation disk cache skipped:', diskError.message);
+  }
+
+  await ensureSchema();
 
   const sql = `
     INSERT INTO ${TABLE}
-      (id, title, description, file_name, stored_name, mime_type, file_size, uploaded_by, uploaded_by_name)
-    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-    RETURNING *
+      (id, title, description, file_name, stored_name, mime_type, file_size, file_data, uploaded_by, uploaded_by_name)
+    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+    RETURNING ${LIST_COLUMNS}
   `;
 
   try {
@@ -148,6 +195,7 @@ async function create(data) {
       storedName,
       mimeType,
       buffer.length,
+      buffer,
       data.uploadedBy || null,
       data.uploadedByName ? String(data.uploadedByName).trim().substring(0, 100) : null
     ]);
@@ -163,7 +211,9 @@ module.exports = {
   list,
   findById,
   getFileInfo,
+  getDownloadFile,
   create,
   getAbsolutePath,
-  ensureUploadDir
+  ensureUploadDir,
+  ensureSchema
 };

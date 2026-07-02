@@ -87,7 +87,8 @@ CREATE TABLE IF NOT EXISTS system_documentation (
   file_size BIGINT,
   uploaded_by UUID REFERENCES funcionarios(id) ON DELETE SET NULL,
   uploaded_by_name VARCHAR(100),
-  criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+  criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  file_data BYTEA
 );
 
 CREATE INDEX IF NOT EXISTS idx_system_documentation_title ON system_documentation(title);

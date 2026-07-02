@@ -1,5 +1,4 @@
 const express = require('express');
-const fs = require('fs');
 const systemDocumentationService = require('../services/systemDocumentationService');
 const funcionarioServiceDB = require('../services/funcionarioServiceDB');
 const { getSessionUserId, isRootSession } = require('../middleware/auth');
@@ -45,29 +44,24 @@ router.get('/', async (req, res) => {
 
 router.get('/:id/download', async (req, res) => {
   try {
-    const fileInfo = await systemDocumentationService.getFileInfo(req.params.id);
-    if (!fileInfo) {
-      return res.status(404).json({ success: false, error: 'Document not found' });
+    const file = await systemDocumentationService.getDownloadFile(req.params.id);
+    if (!file || !file.buffer || !file.buffer.length) {
+      return res.status(404).json({
+        success: false,
+        error: 'File not found. Please upload the document again.'
+      });
     }
 
-    const filePath = systemDocumentationService.getAbsolutePath(fileInfo.storedName);
-    if (!fs.existsSync(filePath)) {
-      return res.status(404).json({ success: false, error: 'File not found on server' });
+    const encodedName = encodeURIComponent(file.fileName);
+    res.setHeader(
+      'Content-Disposition',
+      `attachment; filename="${encodedName}"; filename*=UTF-8''${encodedName}`
+    );
+    if (file.mimeType) {
+      res.type(file.mimeType);
     }
 
-    if (fileInfo.mimeType) {
-      res.type(fileInfo.mimeType);
-    }
-
-    return res.download(filePath, fileInfo.fileName, (err) => {
-      if (err && !res.headersSent) {
-        console.error('System documentation download send error:', err);
-        res.status(500).json({
-          success: false,
-          error: err.message || 'Error downloading documentation'
-        });
-      }
-    });
+    return res.send(file.buffer);
   } catch (error) {
     console.error('System documentation download error:', error);
     if (!res.headersSent) {
