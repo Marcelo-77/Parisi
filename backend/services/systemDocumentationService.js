@@ -92,13 +92,14 @@ async function findById(id) {
 
 async function getFileInfo(id) {
   const result = await query(
-    `SELECT file_name, stored_name FROM ${TABLE} WHERE id = $1`,
+    `SELECT file_name, stored_name, mime_type FROM ${TABLE} WHERE id = $1`,
     [id]
   );
   if (!result.rows.length) return null;
   return {
     fileName: result.rows[0].file_name,
-    storedName: result.rows[0].stored_name
+    storedName: result.rows[0].stored_name,
+    mimeType: result.rows[0].mime_type || null
   };
 }
 

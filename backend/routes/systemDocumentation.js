@@ -55,13 +55,27 @@ router.get('/:id/download', async (req, res) => {
       return res.status(404).json({ success: false, error: 'File not found on server' });
     }
 
-    res.download(filePath, fileInfo.fileName);
+    if (fileInfo.mimeType) {
+      res.type(fileInfo.mimeType);
+    }
+
+    return res.download(filePath, fileInfo.fileName, (err) => {
+      if (err && !res.headersSent) {
+        console.error('System documentation download send error:', err);
+        res.status(500).json({
+          success: false,
+          error: err.message || 'Error downloading documentation'
+        });
+      }
+    });
   } catch (error) {
     console.error('System documentation download error:', error);
-    res.status(500).json({
-      success: false,
-      error: error.message || 'Error downloading documentation'
-    });
+    if (!res.headersSent) {
+      res.status(500).json({
+        success: false,
+        error: error.message || 'Error downloading documentation'
+      });
+    }
   }
 });
 

@@ -28,7 +28,14 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 // Security and logging middlewares
-app.use(helmet());
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      ...helmet.contentSecurityPolicy.getDefaultDirectives(),
+      'img-src': ["'self'", 'data:', 'blob:']
+    }
+  }
+}));
 app.use(cors());
 app.use(morgan('combined'));
 

@@ -139,6 +139,59 @@
     updateResultsMeta(null);
   }
 
+  function parseFileNameFromDisposition(header, fallback) {
+    if (!header) return fallback;
+    const utf8Match = header.match(/filename\*=UTF-8''([^;]+)/i);
+    if (utf8Match) {
+      try {
+        return decodeURIComponent(utf8Match[1].trim());
+      } catch {
+        return fallback;
+      }
+    }
+    const plainMatch = header.match(/filename="?([^";]+)"?/i);
+    return plainMatch ? plainMatch[1].trim() : fallback;
+  }
+
+  async function downloadDocument(doc) {
+    if (!doc || !doc.id) return;
+
+    showMessage('Preparing download...', 'info');
+
+    try {
+      const response = await fetch(`${API_BASE}/${encodeURIComponent(doc.id)}/download`, {
+        credentials: 'same-origin'
+      });
+
+      const contentType = response.headers.get('Content-Type') || '';
+      if (!response.ok || contentType.includes('application/json')) {
+        const data = await response.json().catch(() => ({}));
+        throw new Error(data.error || `Download failed (${response.status})`);
+      }
+
+      const blob = await response.blob();
+      const fileName = parseFileNameFromDisposition(
+        response.headers.get('Content-Disposition'),
+        doc.fileName || 'document'
+      );
+
+      const objectUrl = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = objectUrl;
+      link.download = fileName;
+      link.style.display = 'none';
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(objectUrl);
+
+      showMessage(`Downloaded: ${fileName}`, 'success');
+    } catch (error) {
+      console.error('Download documentation error:', error);
+      showMessage(error.message || 'Error downloading file.', 'error');
+    }
+  }
+
   function renderResults(list) {
     const tbody = document.getElementById('systemDocResults');
     if (!tbody) return;
@@ -182,12 +235,20 @@
             <span class="system-doc-size-badge">${escapeHtml(formatFileSize(doc.fileSize))}</span>
           </td>
           <td class="td-actions">
-            <a href="${API_BASE}/${encodeURIComponent(doc.id)}/download" class="btn btn-primary btn-download" download title="Download ${escapeHtml(doc.fileName)}">
+            <button type="button" class="btn btn-primary btn-download" data-doc-id="${escapeHtml(doc.id)}" title="Download ${escapeHtml(doc.fileName)}">
               <i class="fas fa-download"></i> Download
-            </a>
+            </button>
           </td>
         </tr>`;
     }).join('');
+
+    tbody.querySelectorAll('.btn-download').forEach((button) => {
+      button.addEventListener('click', () => {
+        const docId = button.getAttribute('data-doc-id');
+        const doc = list.find((item) => String(item.id) === String(docId));
+        if (doc) downloadDocument(doc);
+      });
+    });
   }
 
   async function runSearch() {

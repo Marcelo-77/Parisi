@@ -137,18 +137,18 @@
             <div class="form-container" style="width:100%;max-width:none;">
                 <div class="filters-container special-search-panel">
                     <div class="filters-header">
-                        <h2><i class="fas fa-upload"></i> Upload WareHouseMap.xlsx</h2>
+                        <h2><i class="fas fa-upload"></i> Upload Warehouse Map File</h2>
                     </div>
                     <div class="filters-content show">
                         <p style="color:#555;margin:0 0 12px;">
-                            Upload <strong>WareHouseMap.xlsx</strong> with the <strong>Warehouse SECTOR</strong> sheet. The file will replace the server map used by <strong>Special Search Product</strong>.
+                            Upload an <strong>Excel (.xlsx/.xls)</strong> file to generate coordinates, then upload the <strong>image</strong>. Use the <strong>4 orange corner handles</strong> on the preview to align circles with the figure, click <strong>Preview D row</strong>, then <strong>Save calibration</strong>.
                         </p>
                         <div class="special-search-actions">
                             <div class="filter-group">
                                 <label for="warehouseMapUploadFile">
-                                    <i class="fas fa-file-excel"></i> Select Excel File
+                                    <i class="fas fa-file"></i> Select File
                                 </label>
-                                <input type="file" id="warehouseMapUploadFile" accept=".xlsx,.xls,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel">
+                                <input type="file" id="warehouseMapUploadFile" accept=".xlsx,.xls,.png,.jpg,.jpeg,.gif,.webp,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,image/png,image/jpeg,image/gif,image/webp">
                                 <div id="selectedMapFileName" class="special-search-file-name">No file selected</div>
                             </div>
                         </div>
@@ -164,6 +164,10 @@
                             <div>
                                 <strong>File Size</strong>
                                 <span id="currentMapSize">-</span>
+                            </div>
+                            <div>
+                                <strong>Location Coordinates</strong>
+                                <span id="currentMapLocationCount">-</span>
                             </div>
                         </div>
                         <div class="filters-actions" style="margin-top:12px;">
@@ -183,7 +187,7 @@
 
                 <div class="results-container">
                     <div class="results-header">
-                        <h3><i class="fas fa-map"></i> Warehouse SECTOR Preview</h3>
+                        <h3><i class="fas fa-map"></i> Warehouse Map Preview</h3>
                     </div>
                     <div class="results-content">
                         <div id="warehouseMapPreviewContainer"></div>
@@ -200,6 +204,7 @@
     <script src="section-options.js"></script>
     <script src="vendor/xlsx.full.min.js"></script>
     <script src="warehouse-map-utils.js"></script>
+    <script src="map-calibration.js"></script>
     <script src="upload-warehouse-map-script.js"></script>
 </body>
 </html>

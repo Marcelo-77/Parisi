@@ -7,6 +7,9 @@
     const MAP_ZOOM_STEP = 0.25;
 
     let currentGrid = null;
+    let currentMapKind = null;
+    let currentMapImageUrl = null;
+    let currentLocationIndex = null;
     let mapZoomLevel = 1;
     let mapFitScale = 1;
     let mapResizeTimer = null;
@@ -15,6 +18,25 @@
     let selectedProduct = null;
     let productLocations = [];
     let productsLoadPromise = null;
+
+    function updateMapControlsState() {
+        const hasMapView = (currentMapKind === 'image' && currentMapImageUrl)
+            || (currentMapKind === 'excel' && Boolean(currentGrid));
+        const canSearchOnMap = (currentMapKind === 'image' && Boolean(currentLocationIndex))
+            || (currentMapKind === 'excel' && Boolean(currentGrid));
+        const mapSearchInput = document.getElementById('mapLocationSearch');
+        const refreshBtn = document.getElementById('refreshMapBtn');
+        const clearSearchBtn = document.getElementById('clearMapSearchBtn');
+        const zoomOutBtn = document.getElementById('mapZoomOutBtn');
+        const zoomInBtn = document.getElementById('mapZoomInBtn');
+        const zoomResetBtn = document.getElementById('mapZoomResetBtn');
+
+        if (mapSearchInput) mapSearchInput.disabled = !canSearchOnMap;
+        if (clearSearchBtn) clearSearchBtn.disabled = !canSearchOnMap;
+        [refreshBtn, zoomOutBtn, zoomInBtn, zoomResetBtn].forEach((el) => {
+            if (el) el.disabled = !hasMapView;
+        });
+    }
 
     function normalizeProductCode(value) {
         return String(value || '').trim().toLowerCase();
@@ -90,6 +112,8 @@
         const searchTerm = searchInput ? searchInput.value.trim() : '';
         return {
             productLocations,
+            searchTerm,
+            locationIndex: currentLocationIndex,
             scrollToTop: !searchTerm,
             autoScrollToMatch: Boolean(searchTerm),
             ...(extra || {})
@@ -145,31 +169,49 @@
 
     function getMapWrapElements() {
         const container = document.getElementById('warehouseMapContainer');
-        if (!container) return {};
+        if (!container) return { mode: 'none' };
+        const imageStack = container.querySelector('.warehouse-map-image-only-stack');
+        if (imageStack) {
+            return {
+                mode: 'image',
+                container,
+                wrap: imageStack,
+                table: null
+            };
+        }
         return {
+            mode: 'excel',
             container,
             wrap: container.querySelector('.warehouse-map-wrap'),
             table: container.querySelector('.warehouse-map-table')
         };
     }
 
-    function clearMapWrapScale(wrap) {
+    function clearMapWrapScale(wrap, mode) {
         if (!wrap) return;
         wrap.style.zoom = '';
-        wrap.style.transform = '';
-        wrap.style.transformOrigin = '';
-        wrap.style.width = '';
-        wrap.style.height = '';
+        if (mode !== 'image') {
+            wrap.style.transform = '';
+            wrap.style.transformOrigin = '';
+            wrap.style.width = '';
+            wrap.style.height = '';
+        }
     }
 
     function updateMapFitScale() {
-        const { wrap, table } = getMapWrapElements();
+        const els = getMapWrapElements();
+        if (els.mode === 'image') {
+            mapFitScale = 1;
+            return;
+        }
+
+        const { wrap, table } = els;
         if (!wrap || !table) {
             mapFitScale = 1;
             return;
         }
 
-        clearMapWrapScale(wrap);
+        clearMapWrapScale(wrap, els.mode);
 
         const available = Math.max(wrap.clientWidth - 8, 1);
         const needed = table.scrollWidth;
@@ -177,12 +219,28 @@
     }
 
     function applyMapZoom() {
-        const { wrap, table } = getMapWrapElements();
+        const els = getMapWrapElements();
+        const { wrap, table, mode } = els;
         if (!wrap) return;
 
         const effectiveScale = mapFitScale * mapZoomLevel;
 
-        if (typeof CSS !== 'undefined' && CSS.supports('zoom', '1')) {
+        if (mode === 'image') {
+            wrap.style.overflow = 'visible';
+            wrap.style.overflowX = 'visible';
+            wrap.style.overflowY = 'visible';
+            wrap.style.width = '';
+            wrap.style.height = '';
+            if (typeof CSS !== 'undefined' && CSS.supports('zoom', '1')) {
+                wrap.style.zoom = effectiveScale === 1 ? '' : String(effectiveScale);
+                wrap.style.transform = '';
+                wrap.style.transformOrigin = '';
+            } else {
+                wrap.style.zoom = '';
+                wrap.style.transform = effectiveScale === 1 ? '' : `scale(${effectiveScale})`;
+                wrap.style.transformOrigin = 'top left';
+            }
+        } else if (typeof CSS !== 'undefined' && CSS.supports('zoom', '1')) {
             wrap.style.zoom = effectiveScale === 1 ? '' : String(effectiveScale);
             wrap.style.transform = '';
             wrap.style.transformOrigin = '';
@@ -245,18 +303,82 @@
     function renderMapWithHighlights(blinkMatches) {
         const searchInput = document.getElementById('mapLocationSearch');
         const searchTerm = searchInput ? searchInput.value : '';
-        if (!currentGrid) return;
         const mapOptions = getMapOptions();
         if (blinkMatches) {
             mapOptions.blinkProductMatches = true;
         }
+
+        if (currentMapKind === 'image' && currentMapImageUrl) {
+            mapOptions.locationIndex = currentLocationIndex;
+            WarehouseMapUtils.renderImageWarehouseMap('warehouseMapContainer', currentMapImageUrl, mapOptions);
+            refreshMapScale();
+            return;
+        }
+
+        if (!currentGrid) return;
         WarehouseMapUtils.renderWarehouseMap('warehouseMapContainer', currentGrid, searchTerm, mapOptions);
         refreshMapScale();
     }
 
+    async function loadLocationIndex(forceReload) {
+        if (currentLocationIndex && !forceReload) {
+            return currentLocationIndex;
+        }
+
+        const response = await fetch('/api/warehouse-map/locations');
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok || !data.success || !data.exists || !data.data) {
+            currentLocationIndex = null;
+            return null;
+        }
+
+        currentLocationIndex = WarehouseMapUtils.normalizeLocationIndex(data.data);
+        return currentLocationIndex;
+    }
+
     async function ensureMapLoaded() {
-        if (currentGrid) return currentGrid;
+        if (currentMapKind === 'image' && currentMapImageUrl) {
+            await loadLocationIndex();
+            return currentLocationIndex;
+        }
+        if (currentGrid && currentMapKind === 'excel') {
+            return currentGrid;
+        }
+
+        const infoResponse = await fetch('/api/warehouse-map/info');
+        const infoData = await infoResponse.json().catch(() => ({}));
+        if (!infoResponse.ok || !infoData.success || !infoData.exists) {
+            throw new Error(infoData.message || 'Warehouse map is not available on the server.');
+        }
+
+        if (infoData.kind === 'image') {
+            const imageUrl = infoData.imageUrl || '/WareHouseMap-image.png';
+            const version = infoData.updatedAt ? new Date(infoData.updatedAt).getTime() : Date.now();
+            const separator = imageUrl.includes('?') ? '&' : '?';
+            currentMapImageUrl = `${imageUrl}${separator}v=${version}`;
+            currentMapKind = 'image';
+            currentGrid = null;
+            await loadLocationIndex(true);
+            updateMapControlsState();
+            return currentLocationIndex;
+        }
+
+        if (infoData.imageUrl && infoData.locationsExists) {
+            const imageUrl = infoData.imageUrl;
+            const version = infoData.updatedAt ? new Date(infoData.updatedAt).getTime() : Date.now();
+            const separator = imageUrl.includes('?') ? '&' : '?';
+            currentMapImageUrl = `${imageUrl}${separator}v=${version}`;
+            currentMapKind = 'image';
+            currentGrid = null;
+            await loadLocationIndex(true);
+            updateMapControlsState();
+            return currentLocationIndex;
+        }
+
+        currentMapKind = 'excel';
+        currentMapImageUrl = null;
         currentGrid = await WarehouseMapUtils.loadServerMap();
+        updateMapControlsState();
         return currentGrid;
     }
 
@@ -441,10 +563,23 @@
         `;
 
         content.querySelectorAll('tbody tr').forEach((row) => {
-            row.addEventListener('click', () => {
+            row.addEventListener('click', async () => {
                 const locationCode = row.getAttribute('data-location-code');
                 content.querySelectorAll('tbody tr').forEach((tr) => tr.classList.remove('is-active'));
                 row.classList.add('is-active');
+                if (currentMapKind === 'image' && currentMapImageUrl) {
+                    if (!currentLocationIndex) {
+                        await loadLocationIndex(true);
+                    }
+                    WarehouseMapUtils.renderImageWarehouseMap('warehouseMapContainer', currentMapImageUrl, {
+                        locationIndex: currentLocationIndex,
+                        productLocations: [{ locationCode }],
+                        blinkProductMatches: true
+                    });
+                    refreshMapScale();
+                    focusMapAtTop();
+                    return;
+                }
                 WarehouseMapUtils.scrollToProductLocation(locationCode, productLocations.map((item) => item.locationCode));
             });
         });
@@ -486,8 +621,20 @@
             renderProductLocations(productLocations);
 
             if (productLocations.length > 0) {
-                await ensureMapLoaded();
-                renderMapWithHighlights(true);
+                try {
+                    await ensureMapLoaded();
+                    renderMapWithHighlights(true);
+                } catch (mapError) {
+                    console.error('Map load error:', mapError);
+                    const mapContainer = document.getElementById('warehouseMapContainer');
+                    if (mapContainer) {
+                        mapContainer.innerHTML = `
+                            <div class="warehouse-map-placeholder">
+                                <i class="fas fa-exclamation-triangle"></i>
+                                <p>${escapeHtml(mapError.message || 'Unable to load warehouse map.')}</p>
+                            </div>`;
+                    }
+                }
                 focusMapAtTop();
             } else {
                 setMapPanelVisible(false);
@@ -565,12 +712,22 @@
 
     async function loadAndRenderMap() {
         try {
+            currentGrid = null;
+            currentMapKind = null;
+            currentMapImageUrl = null;
+            currentLocationIndex = null;
             await ensureMapLoaded();
-            renderMapWithHighlights();
+            if ((currentMapKind === 'image' && currentMapImageUrl) || currentGrid) {
+                renderMapWithHighlights();
+            }
         } catch (error) {
             console.error('Load map error:', error);
             currentGrid = null;
+            currentMapKind = null;
+            currentMapImageUrl = null;
+            currentLocationIndex = null;
             WarehouseMapUtils.renderWarehouseMap('warehouseMapContainer', null, '');
+            updateMapControlsState();
         }
     }
 
