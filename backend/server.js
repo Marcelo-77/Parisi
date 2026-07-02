@@ -20,6 +20,8 @@ const authRoutes = require('./routes/auth');
 const companiesRoutes = require('./routes/companies');
 const churchServiceOrderRoutes = require('./routes/churchServiceOrder');
 const systemDocumentationRoutes = require('./routes/systemDocumentation');
+const systemSettingsRoutes = require('./routes/systemSettings');
+const systemSettingsService = require('./services/systemSettingsService');
 const { isAuthenticated, protectPages, requireAuth } = require('./middleware/auth');
 const funcionarioServiceDB = require('./services/funcionarioServiceDB');
 const { initDatabase } = require('./scripts/init-database');
@@ -64,6 +66,20 @@ app.get('/', (req, res) => {
 // Auth routes (public)
 app.use('/api/auth', authRoutes);
 
+// Public read-only system settings (background on login page)
+app.get('/api/system-settings', async (req, res) => {
+  try {
+    const data = await systemSettingsService.getSettings();
+    res.json({ success: true, data });
+  } catch (error) {
+    console.error('System settings read error:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message || 'Error loading system settings'
+    });
+  }
+});
+
 // Protect HTML pages before static files
 app.use(protectPages);
 
@@ -88,6 +104,7 @@ app.use('/api/situations', situationsRoutes);
 app.use('/api/picking', pickingRoutes);
 app.use('/api/warehouse-map', warehouseMapRoutes);
 app.use('/api/system-documentation', systemDocumentationRoutes);
+app.use('/api/system-settings', systemSettingsRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {

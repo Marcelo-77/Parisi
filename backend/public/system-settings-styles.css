@@ -1,0 +1,121 @@
+.system-settings-page .system-settings-section {
+  max-width: 760px;
+  margin: 0 auto;
+}
+
+.system-settings-page .system-settings-intro {
+  margin-bottom: 1.25rem;
+  color: #4b5563;
+}
+
+.system-settings-card {
+  background: #fff;
+  border: 1px solid #dde2e8;
+  border-radius: 12px;
+  padding: 1.25rem 1.5rem;
+  margin-bottom: 1rem;
+}
+
+.system-settings-card h3 {
+  margin: 0 0 0.75rem;
+  font-size: 1.05rem;
+  color: #1f2937;
+}
+
+.system-settings-option {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.system-settings-option input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  margin-top: 0.15rem;
+}
+
+.system-settings-option label {
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.system-settings-help {
+  margin: 0.35rem 0 0;
+  color: #6b7280;
+  font-size: 0.92rem;
+}
+
+.system-settings-colors {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1rem;
+}
+
+.system-settings-color-field label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 0.45rem;
+  color: #1f2937;
+}
+
+.system-settings-color-field input[type="color"] {
+  width: 100%;
+  height: 44px;
+  border: 1px solid #cfd6df;
+  border-radius: 8px;
+  padding: 0.2rem;
+  background: #fff;
+  cursor: pointer;
+}
+
+.system-settings-preview {
+  margin-top: 1rem;
+  border-radius: 12px;
+  min-height: 88px;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.05);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-weight: 600;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
+}
+
+.system-settings-actions {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-top: 1rem;
+}
+
+.system-settings-message {
+  display: none;
+  margin: 1rem 0 0;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  font-weight: 600;
+}
+
+.system-settings-message.show {
+  display: block;
+}
+
+.system-settings-message.show.success {
+  background: #ecfdf3;
+  color: #166534;
+  border: 1px solid #bbf7d0;
+}
+
+.system-settings-message.show.error {
+  background: #fef2f2;
+  color: #b91c1c;
+  border: 1px solid #fecaca;
+}
+
+.system-settings-message.show.info {
+  background: #eff6ff;
+  color: #1d4ed8;
+  border: 1px solid #bfdbfe;
+}

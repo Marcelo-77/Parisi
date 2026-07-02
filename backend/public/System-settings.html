@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Double-Y Warehouse System - System Settings</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="warehouse-styles.css">
+    <link rel="stylesheet" href="pesquisa-styles.css">
+    <link rel="stylesheet" href="system-settings-styles.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body class="system-settings-page">
+    <script src="auth-check.js"></script>
+    <script src="system-settings-shared.js"></script>
+    <script src="system-settings-apply.js"></script>
+    <script src="header-menu.js"></script>
+    <script src="menu-access.js"></script>
+    <script src="double-y-logo-effect.js"></script>
+    <script src="dev-environment-badge.js"></script>
+    <div class="container">
+        <header class="header">
+            <div class="header-stats-row">
+                <div class="header-stats-left">
+                    <div class="header-stat header-stat-total">
+                        <span class="header-stat-value" id="totalItems">0</span>
+                        <span class="header-stat-label">Total Items</span>
+                    </div>
+                    <div class="header-stat header-stat-low">
+                        <span class="header-stat-value" id="lowStockItems">0</span>
+                        <span class="header-stat-label">Low Stock</span>
+                    </div>
+                </div>
+                <div class="double-y-wordmark" aria-label="Double Y"><img src="doubley-glyph.png" alt="" class="double-y-glyph" aria-hidden="true"><span class="double-y-name">Double Y</span><img src="doubley-glyph-bottom.png" alt="" class="double-y-glyph double-y-glyph-bottom" aria-hidden="true"></div>
+                <div class="header-stats-right">
+                    <div class="header-stat header-stat-entries">
+                        <span class="header-stat-value" id="totalEntradas">0</span>
+                        <span class="header-stat-label">Entries Today</span>
+                    </div>
+                    <div class="header-stat header-stat-exits">
+                        <span class="header-stat-value" id="totalSaidas">0</span>
+                        <span class="header-stat-label">Exits Today</span>
+                    </div>
+                </div>
+            </div>
+            <div class="header-content">
+                <h1><i class="fas fa-warehouse"></i> Double-Y Warehouse System</h1>
+                <p class="header-search-users-label">System Settings</p>
+                <div class="header-actions"></div>
+            </div>
+        </header>
+
+        <main class="main-content">
+            <section class="system-settings-section">
+                <div class="system-settings-intro">
+                    <h2><i class="fas fa-sliders-h"></i> System Settings</h2>
+                    <p>Configure header buttons and the background color used across the system.</p>
+                </div>
+
+                <form id="systemSettingsForm" novalidate>
+                    <div class="system-settings-card">
+                        <h3><i class="fas fa-grip-horizontal"></i> Header buttons</h3>
+                        <div class="system-settings-option">
+                            <input type="checkbox" id="showHeaderStats" name="showHeaderStats" checked>
+                            <div>
+                                <label for="showHeaderStats">Show buttons on top</label>
+                                <p class="system-settings-help">When checked, displays Total Items, Low Stock, Entries Today and Exits Today in the page header.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="system-settings-card">
+                        <h3><i class="fas fa-palette"></i> Background color</h3>
+                        <p class="system-settings-help">Default is blue. You can change the system background gradient.</p>
+                        <div class="system-settings-colors">
+                            <div class="system-settings-color-field">
+                                <label for="backgroundColor">Start color</label>
+                                <input type="color" id="backgroundColor" name="backgroundColor" value="#667eea">
+                            </div>
+                            <div class="system-settings-color-field">
+                                <label for="backgroundColorEnd">End color</label>
+                                <input type="color" id="backgroundColorEnd" name="backgroundColorEnd" value="#764ba2">
+                            </div>
+                        </div>
+                        <div id="backgroundPreview" class="system-settings-preview">Background preview</div>
+                    </div>
+
+                    <div class="system-settings-actions">
+                        <button type="button" class="btn btn-secondary" id="cancelSystemSettingsBtn" disabled>
+                            <i class="fas fa-undo"></i> Cancel changes
+                        </button>
+                        <button type="submit" class="btn btn-primary" id="saveSystemSettingsBtn">
+                            <i class="fas fa-save"></i> Save settings
+                        </button>
+                    </div>
+
+                    <div id="systemSettingsMessage" class="system-settings-message" role="status"></div>
+                </form>
+            </section>
+        </main>
+
+        <footer class="footer">
+            <p>&copy; 2026 Double-Y Warehouse System</p>
+        </footer>
+    </div>
+
+    <script src="system-settings-script.js"></script>
+</body>
+</html>

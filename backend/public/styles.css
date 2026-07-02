@@ -5,12 +5,23 @@
     box-sizing: border-box;
 }
 
+:root {
+    --system-bg-start: #667eea;
+    --system-bg-end: #764ba2;
+}
+
 body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     line-height: 1.6;
     color: #333;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, var(--system-bg-start) 0%, var(--system-bg-end) 100%);
     min-height: 100vh;
+}
+
+body.header-stats-hidden .header-stats-left .header-stat,
+body.header-stats-hidden .header-stats-right .header-stat {
+    visibility: hidden;
+    pointer-events: none;
 }
 
 .container {

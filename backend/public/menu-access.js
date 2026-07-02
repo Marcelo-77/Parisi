@@ -141,6 +141,39 @@
     }
   }
 
+  function loadScriptOnce(src) {
+    return new Promise((resolve, reject) => {
+      const existing = document.querySelector(`script[src="${src}"]`);
+      if (existing) {
+        if (existing.dataset.loaded === 'true') {
+          resolve();
+          return;
+        }
+        existing.addEventListener('load', () => resolve(), { once: true });
+        existing.addEventListener('error', () => reject(new Error(`Failed to load ${src}`)), { once: true });
+        return;
+      }
+
+      const script = document.createElement('script');
+      script.src = src;
+      script.onload = () => {
+        script.dataset.loaded = 'true';
+        resolve();
+      };
+      script.onerror = () => reject(new Error(`Failed to load ${src}`));
+      document.head.appendChild(script);
+    });
+  }
+
+  async function ensureSystemSettingsScripts() {
+    try {
+      await loadScriptOnce('system-settings-shared.js');
+      await loadScriptOnce('system-settings-apply.js');
+    } catch (error) {
+      console.warn('System settings scripts:', error.message);
+    }
+  }
+
   function updateMasterDataVisibility(headerActions) {
     const masterData = headerActions.querySelector('.master-data-dropdown');
     if (!masterData) return;
@@ -227,6 +260,8 @@
 
   async function initMenuAccess() {
     if (window.location.pathname.endsWith('/login.html')) return;
+
+    await ensureSystemSettingsScripts();
 
     if (window.DoubleYHeaderMenu) {
       window.DoubleYHeaderMenu.ensure();

@@ -61,6 +61,7 @@
                             <a href="upload-warehouse-map.html" class="dropdown-item" data-app="upload-warehouse-map.html"><i class="fas fa-upload"></i> Upload Warehouse Map</a>
                             <a href="System-Documentation.html" class="dropdown-item" data-app="System-Documentation.html"><i class="fas fa-plus"></i> New System Documentation</a>
                             <a href="System-Documentation-Search.html" class="dropdown-item" data-app="System-Documentation-Search.html"><i class="fas fa-search"></i> Search System Documentation</a>
+                            <a href="System-settings.html" class="dropdown-item" data-app="System-settings.html"><i class="fas fa-sliders-h"></i> System Settings</a>
                         </div>
                     </div>
                     <div class="movement-dropdown">

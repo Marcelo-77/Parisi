@@ -280,6 +280,7 @@ FROM (VALUES
   ('upload-warehouse-map.html', 'Applications_Upload_Warehouse_Map'),
   ('System-Documentation.html', 'Applications_System_Documentation'),
   ('System-Documentation-Search.html', 'Applications_System_Documentation_Search'),
+  ('System-settings.html', 'Applications_System_Settings'),
   ('location.html', 'Location'),
   ('location-search.html', 'Location_Search'),
   ('location-product.html', 'Location_Product'),
@@ -312,6 +313,7 @@ FROM (VALUES
   ('upload-warehouse-map.html', 'Applications_Upload_Warehouse_Map'),
   ('System-Documentation.html', 'Applications_System_Documentation'),
   ('System-Documentation-Search.html', 'Applications_System_Documentation_Search'),
+  ('System-settings.html', 'Applications_System_Settings'),
   ('location.html', 'Location'),
   ('location-search.html', 'Location_Search'),
   ('location-product.html', 'Location_Product'),
@@ -337,6 +339,21 @@ WHERE syap_nm_application = 'index.html';
 
 CREATE UNIQUE INDEX IF NOT EXISTS idx_system_applications_name
 ON system_applications (syap_nm_application);
+
+CREATE TABLE IF NOT EXISTS system_settings (
+  setting_key VARCHAR(100) PRIMARY KEY,
+  setting_value TEXT NOT NULL,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+INSERT INTO system_settings (setting_key, setting_value)
+SELECT v.setting_key, v.setting_value
+FROM (VALUES
+  ('show_header_stats', 'true'),
+  ('background_color', '#667eea'),
+  ('background_color_end', '#764ba2')
+) AS v(setting_key, setting_value)
+ON CONFLICT (setting_key) DO NOTHING;
 
 CREATE TABLE IF NOT EXISTS user_applications (
   id_funcionario UUID NOT NULL REFERENCES funcionarios(id) ON DELETE CASCADE,

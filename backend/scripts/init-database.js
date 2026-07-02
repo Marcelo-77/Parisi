@@ -343,6 +343,7 @@ async function initDatabase() {
       { application: 'upload-warehouse-map.html', menuName: 'Applications_Upload_Warehouse_Map' },
       { application: 'System-Documentation.html', menuName: 'Applications_System_Documentation' },
       { application: 'System-Documentation-Search.html', menuName: 'Applications_System_Documentation_Search' },
+      { application: 'System-settings.html', menuName: 'Applications_System_Settings' },
       { application: 'location.html', menuName: 'Location' },
       { application: 'location-search.html', menuName: 'Location_Search' },
       { application: 'location-product.html', menuName: 'Location_Product' },
@@ -418,6 +419,28 @@ async function initDatabase() {
     await query(`CREATE INDEX IF NOT EXISTS idx_system_documentation_criado ON system_documentation(criado_em DESC)`);
     await query(`ALTER TABLE system_documentation ADD COLUMN IF NOT EXISTS file_data BYTEA`);
     console.log('✅ Tabela system_documentation criada/verificada');
+
+    await query(`
+      CREATE TABLE IF NOT EXISTS system_settings (
+        setting_key VARCHAR(100) PRIMARY KEY,
+        setting_value TEXT NOT NULL,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+    const defaultSystemSettings = [
+      ['show_header_stats', 'true'],
+      ['background_color', '#667eea'],
+      ['background_color_end', '#764ba2']
+    ];
+    for (const [key, value] of defaultSystemSettings) {
+      await query(
+        `INSERT INTO system_settings (setting_key, setting_value)
+         VALUES ($1, $2)
+         ON CONFLICT (setting_key) DO NOTHING`,
+        [key, value]
+      );
+    }
+    console.log('✅ Tabela system_settings criada/verificada');
 
     // Criar tabela location_product (chave primária: location_code, product_code, sipr_sq_number)
     await query(`
