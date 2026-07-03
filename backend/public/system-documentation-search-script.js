@@ -1,5 +1,6 @@
 (function () {
   const API_BASE = '/api/system-documentation';
+  let isRootUser = false;
 
   function escapeHtml(value) {
     if (value == null) return '';
@@ -73,6 +74,32 @@
     return map[ext] || { icon: 'fa-file', className: 'file-default' };
   }
 
+  function formatSector(sector) {
+    if (window.SectionOptions && typeof SectionOptions.formatSectorDisplay === 'function') {
+      return SectionOptions.formatSectorDisplay(sector);
+    }
+    const normalized = sector != null ? String(sector).trim() : '';
+    return normalized || 'For everyone';
+  }
+
+  function populateSectorFilter() {
+    const select = document.getElementById('searchSector');
+    if (!select || !window.SectionOptions) return;
+
+    const currentValue = select.value;
+    select.innerHTML = [
+      '<option value="">All sectors</option>',
+      '<option value="__everyone__">For everyone</option>'
+    ].join('');
+    SectionOptions.SECTION_OPTIONS.forEach((item) => {
+      const option = document.createElement('option');
+      option.value = item.value;
+      option.textContent = item.label;
+      select.appendChild(option);
+    });
+    select.value = currentValue || '';
+  }
+
   function collectFilters() {
     let dateFrom = document.getElementById('searchDateFrom')?.value || '';
     let dateTo = document.getElementById('searchDateTo')?.value || '';
@@ -86,6 +113,7 @@
     return {
       title: document.getElementById('searchTitle')?.value.trim() || '',
       uploadedByName: document.getElementById('searchUploadedBy')?.value.trim() || '',
+      sector: document.getElementById('searchSector')?.value || '',
       dateFrom,
       dateTo
     };
@@ -105,7 +133,7 @@
     if (!tbody) return;
     tbody.innerHTML = `
       <tr>
-        <td colspan="6" class="empty-state">
+        <td colspan="7" class="empty-state">
           <i class="fas fa-spinner fa-spin"></i>
           <p>Searching documents...</p>
         </td>
@@ -118,7 +146,7 @@
     if (!tbody) return;
     tbody.innerHTML = `
       <tr>
-        <td colspan="6" class="empty-state">
+        <td colspan="7" class="empty-state">
           <i class="fas fa-file-circle-xmark"></i>
           <p>No documents found. Try different filters or upload a new document.</p>
         </td>
@@ -131,7 +159,7 @@
     if (!tbody) return;
     tbody.innerHTML = `
       <tr>
-        <td colspan="6" class="empty-state system-doc-error-cell">
+        <td colspan="7" class="empty-state system-doc-error-cell">
           <i class="fas fa-circle-exclamation"></i>
           <p>${escapeHtml(message)}</p>
         </td>
@@ -192,6 +220,59 @@
     }
   }
 
+  async function loadRootAccess() {
+    try {
+      const cached = sessionStorage.getItem('doubley_menu_access');
+      if (cached) {
+        const data = JSON.parse(cached);
+        if (data && typeof data.isRoot === 'boolean') {
+          isRootUser = data.isRoot;
+          return;
+        }
+      }
+    } catch {
+      // ignore cache errors
+    }
+
+    try {
+      const response = await fetch('/api/auth/menu-access', { credentials: 'same-origin' });
+      const data = await response.json().catch(() => ({}));
+      if (response.ok && data.success) {
+        isRootUser = Boolean(data.isRoot);
+      }
+    } catch (error) {
+      console.warn('Root access check skipped:', error.message);
+    }
+  }
+
+  async function deleteDocument(doc) {
+    if (!doc || !doc.id || !isRootUser) return;
+
+    const label = doc.title || doc.fileName || 'this document';
+    if (!window.confirm(`Delete "${label}"? This action cannot be undone.`)) {
+      return;
+    }
+
+    showMessage('Deleting document...', 'info');
+
+    try {
+      const response = await fetch(`${API_BASE}/${encodeURIComponent(doc.id)}`, {
+        method: 'DELETE',
+        credentials: 'same-origin'
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok || !data.success) {
+        throw new Error(data.error || 'Unable to delete document.');
+      }
+
+      showMessage('Document deleted successfully.', 'success');
+      await runSearch();
+    } catch (error) {
+      console.error('Delete documentation error:', error);
+      showMessage(error.message || 'Error deleting document.', 'error');
+    }
+  }
+
   function renderResults(list) {
     const tbody = document.getElementById('systemDocResults');
     if (!tbody) return;
@@ -207,11 +288,19 @@
 
     tbody.innerHTML = list.map((doc) => {
       const fileType = getFileTypeInfo(doc.fileName);
+      const sectorLabel = formatSector(doc.sector);
+      const sectorClass = doc.sector ? 'specific-sector' : 'for-everyone';
       return `
         <tr>
           <td class="system-doc-title-cell">
             <span class="system-doc-title-main">${escapeHtml(doc.title)}</span>
             ${doc.description ? `<div class="system-doc-description">${escapeHtml(doc.description)}</div>` : ''}
+          </td>
+          <td>
+            <span class="system-doc-sector-badge ${sectorClass}">
+              <i class="fas fa-layer-group"></i>
+              ${escapeHtml(sectorLabel)}
+            </span>
           </td>
           <td class="system-doc-file-cell">
             <span class="system-doc-file-badge" title="${escapeHtml(doc.fileName)}">
@@ -238,6 +327,10 @@
             <button type="button" class="btn btn-primary btn-download" data-doc-id="${escapeHtml(doc.id)}" title="Download ${escapeHtml(doc.fileName)}">
               <i class="fas fa-download"></i> Download
             </button>
+            ${isRootUser ? `
+            <button type="button" class="btn btn-delete btn-doc-delete" data-doc-id="${escapeHtml(doc.id)}" title="Delete ${escapeHtml(doc.title)}">
+              <i class="fas fa-trash-alt"></i> Delete
+            </button>` : ''}
           </td>
         </tr>`;
     }).join('');
@@ -247,6 +340,14 @@
         const docId = button.getAttribute('data-doc-id');
         const doc = list.find((item) => String(item.id) === String(docId));
         if (doc) downloadDocument(doc);
+      });
+    });
+
+    tbody.querySelectorAll('.btn-doc-delete').forEach((button) => {
+      button.addEventListener('click', () => {
+        const docId = button.getAttribute('data-doc-id');
+        const doc = list.find((item) => String(item.id) === String(docId));
+        if (doc) deleteDocument(doc);
       });
     });
   }
@@ -272,13 +373,16 @@
   function clearSearch() {
     document.getElementById('searchTitle').value = '';
     document.getElementById('searchUploadedBy').value = '';
+    document.getElementById('searchSector').value = '';
     document.getElementById('searchDateFrom').value = '';
     document.getElementById('searchDateTo').value = '';
     showMessage('');
     runSearch();
   }
 
-  document.addEventListener('DOMContentLoaded', () => {
+  document.addEventListener('DOMContentLoaded', async () => {
+    populateSectorFilter();
+    await loadRootAccess();
     document.getElementById('searchDocsBtn')?.addEventListener('click', runSearch);
     document.getElementById('clearSearchBtn')?.addEventListener('click', clearSearch);
     runSearch();

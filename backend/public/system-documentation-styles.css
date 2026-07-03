@@ -30,7 +30,7 @@
 }
 
 .system-doc-filters-row {
-  grid-template-columns: repeat(4, minmax(180px, 1fr));
+  grid-template-columns: repeat(5, minmax(160px, 1fr));
 }
 
 .system-doc-filter-group {
@@ -141,7 +141,7 @@
 }
 
 .system-doc-upload-fields-row {
-  grid-template-columns: repeat(2, minmax(220px, 1fr));
+  grid-template-columns: repeat(3, minmax(200px, 1fr));
 }
 
 .system-doc-upload-form {
@@ -279,6 +279,27 @@
   font-size: 0.8rem;
 }
 
+.system-doc-sector-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.35rem 0.65rem;
+  border-radius: 999px;
+  font-size: 0.88rem;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.system-doc-sector-badge.for-everyone {
+  background: #ecfeff;
+  color: #0f766e;
+}
+
+.system-doc-sector-badge.specific-sector {
+  background: #fef3c7;
+  color: #92400e;
+}
+
 .system-doc-meta {
   display: inline-flex;
   align-items: center;
@@ -306,6 +327,10 @@
 .system-doc-table .td-actions {
   text-align: right;
   white-space: nowrap;
+  display: flex;
+  gap: 0.5rem;
+  justify-content: flex-end;
+  flex-wrap: wrap;
 }
 
 .system-doc-table th.th-actions {
@@ -316,6 +341,20 @@
   padding: 0.45rem 0.85rem;
   font-size: 0.85rem;
   border-radius: 8px;
+}
+
+.system-doc-table .btn-doc-delete {
+  padding: 0.45rem 0.85rem;
+  font-size: 0.85rem;
+  border-radius: 8px;
+  background: #dc3545;
+  color: #fff;
+  border: none;
+}
+
+.system-doc-table .btn-doc-delete:hover {
+  background: #c82333;
+  transform: translateY(-1px);
 }
 
 .system-doc-error-cell {
@@ -329,6 +368,10 @@
 @media (max-width: 1100px) {
   .system-doc-filters-row {
     grid-template-columns: repeat(2, minmax(180px, 1fr));
+  }
+
+  .system-doc-upload-fields-row {
+    grid-template-columns: repeat(2, minmax(200px, 1fr));
   }
 }
 

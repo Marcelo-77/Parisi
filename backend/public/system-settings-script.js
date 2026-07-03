@@ -52,16 +52,20 @@
   function refreshDirtyState() {
     const saveBtn = document.getElementById('saveSystemSettingsBtn');
     const cancelBtn = document.getElementById('cancelSystemSettingsBtn');
+    const defaultBtn = document.getElementById('useDefaultSystemSettingsBtn');
     if (!persistedSettings) {
       if (saveBtn) saveBtn.disabled = true;
       if (cancelBtn) cancelBtn.disabled = true;
+      if (defaultBtn) defaultBtn.disabled = true;
       return;
     }
 
     const current = readFormSettings();
     const hasChanges = !settingsEqual(current, persistedSettings);
+    const isDefault = settingsEqual(current, window.DoubleYSystemSettings.DEFAULT_SETTINGS);
     if (saveBtn) saveBtn.disabled = !hasChanges;
     if (cancelBtn) cancelBtn.disabled = !hasChanges;
+    if (defaultBtn) defaultBtn.disabled = isDefault;
   }
 
   async function loadSettings() {
@@ -127,6 +131,33 @@
     showMessage('Changes canceled.', 'info');
   }
 
+  function applyDefaultValues() {
+    const defaults = window.DoubleYSystemSettings.normalizeSettings(
+      window.DoubleYSystemSettings.DEFAULT_SETTINGS
+    );
+    fillForm(defaults);
+    window.DoubleYSystemSettings.applySystemSettings(defaults);
+    refreshDirtyState();
+    showMessage('Default values loaded. Click Save settings to persist.', 'info');
+  }
+
+  function closeScreen() {
+    try {
+      window.close();
+    } catch {
+      // ignore and fallback
+    }
+
+    setTimeout(() => {
+      if (window.closed) return;
+      if (window.history.length > 1) {
+        window.history.back();
+        return;
+      }
+      window.location.href = 'applications.html';
+    }, 120);
+  }
+
   function bindLivePreview() {
     ['showHeaderStats', 'backgroundColor', 'backgroundColorEnd'].forEach((id) => {
       const el = document.getElementById(id);
@@ -149,6 +180,8 @@
   document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('systemSettingsForm')?.addEventListener('submit', saveSettings);
     document.getElementById('cancelSystemSettingsBtn')?.addEventListener('click', cancelChanges);
+    document.getElementById('useDefaultSystemSettingsBtn')?.addEventListener('click', applyDefaultValues);
+    document.getElementById('closeSystemSettingsBtn')?.addEventListener('click', closeScreen);
     bindLivePreview();
     loadSettings();
   });

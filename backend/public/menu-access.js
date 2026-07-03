@@ -145,7 +145,20 @@
     return new Promise((resolve, reject) => {
       const existing = document.querySelector(`script[src="${src}"]`);
       if (existing) {
-        if (existing.dataset.loaded === 'true') {
+        const readyState = String(existing.readyState || '').toLowerCase();
+        if (
+          existing.dataset.loaded === 'true'
+          || readyState === 'loaded'
+          || readyState === 'complete'
+        ) {
+          existing.dataset.loaded = 'true';
+          resolve();
+          return;
+        }
+        // When scripts are included in HTML without async/defer, they are already
+        // loaded/executed before this code runs, so there is no pending load event.
+        if (document.readyState !== 'loading') {
+          existing.dataset.loaded = 'true';
           resolve();
           return;
         }

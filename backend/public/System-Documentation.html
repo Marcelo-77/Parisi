@@ -63,6 +63,13 @@
                                 <input type="text" id="docTitle" name="docTitle" class="system-doc-filter-input" maxlength="200" required placeholder="Document title">
                             </div>
                             <div class="system-doc-filter-group">
+                                <label for="docSector"><i class="fas fa-layer-group"></i> Sector</label>
+                                <select id="docSector" name="docSector" class="system-doc-filter-input">
+                                    <option value="">For everyone</option>
+                                </select>
+                                <p class="system-doc-upload-hint"><i class="fas fa-info-circle"></i> Leave as <strong>For everyone</strong> when the document applies to all sectors.</p>
+                            </div>
+                            <div class="system-doc-filter-group">
                                 <label for="docFile"><i class="fas fa-file"></i> File</label>
                                 <input type="file" id="docFile" name="docFile" class="system-doc-filter-input system-doc-file-input" required accept=".pdf,.doc,.docx,.xls,.xlsx,.txt,.png,.jpg,.jpeg,.gif,.csv,.zip">
                                 <p class="system-doc-upload-hint"><i class="fas fa-info-circle"></i> Maximum file size: 7 MB. Supported: PDF, Office, images, text, CSV, ZIP.</p>
@@ -92,6 +99,7 @@
         </main>
     </div>
 
+    <script src="section-options.js"></script>
     <script src="system-documentation-script.js"></script>
 </body>
 </html>

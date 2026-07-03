@@ -29,7 +29,8 @@ router.get('/', async (req, res) => {
       title: req.query.title,
       uploadedByName: req.query.uploadedByName,
       dateFrom: req.query.dateFrom,
-      dateTo: req.query.dateTo
+      dateTo: req.query.dateTo,
+      sector: req.query.sector
     });
 
     res.json({ success: true, data, total: data.length });
@@ -75,12 +76,13 @@ router.get('/:id/download', async (req, res) => {
 
 router.post('/', async (req, res) => {
   try {
-    const { title, description, fileName, mimeType, fileBase64 } = req.body || {};
+    const { title, description, sector, fileName, mimeType, fileBase64 } = req.body || {};
     const uploader = await getUploaderInfo(req);
 
     const doc = await systemDocumentationService.create({
       title,
       description,
+      sector,
       fileName,
       mimeType,
       fileBase64,
@@ -94,6 +96,33 @@ router.post('/', async (req, res) => {
     res.status(400).json({
       success: false,
       error: error.message || 'Error saving documentation'
+    });
+  }
+});
+
+router.delete('/:id', async (req, res) => {
+  try {
+    if (!isRootSession(req)) {
+      return res.status(403).json({
+        success: false,
+        error: 'Only root users can delete documentation files.'
+      });
+    }
+
+    const deleted = await systemDocumentationService.remove(req.params.id);
+    if (!deleted) {
+      return res.status(404).json({
+        success: false,
+        error: 'Document not found.'
+      });
+    }
+
+    res.json({ success: true, data: deleted });
+  } catch (error) {
+    console.error('System documentation delete error:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message || 'Error deleting documentation'
     });
   }
 });

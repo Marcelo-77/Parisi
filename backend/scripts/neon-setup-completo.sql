@@ -81,6 +81,7 @@ CREATE TABLE IF NOT EXISTS system_documentation (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   title VARCHAR(200) NOT NULL,
   description TEXT,
+  sector VARCHAR(50),
   file_name VARCHAR(255) NOT NULL,
   stored_name VARCHAR(255) NOT NULL,
   mime_type VARCHAR(100),
@@ -90,6 +91,8 @@ CREATE TABLE IF NOT EXISTS system_documentation (
   criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   file_data BYTEA
 );
+
+ALTER TABLE system_documentation ADD COLUMN IF NOT EXISTS sector VARCHAR(50);
 
 CREATE INDEX IF NOT EXISTS idx_system_documentation_title ON system_documentation(title);
 CREATE INDEX IF NOT EXISTS idx_system_documentation_criado ON system_documentation(criado_em DESC);

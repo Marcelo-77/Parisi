@@ -41,10 +41,17 @@
         selectEl.innerHTML = buildSectionSelectOptions(config);
     }
 
+    function formatSectorDisplay(value) {
+        const normalized = value != null ? String(value).trim() : '';
+        if (!normalized) return 'For everyone';
+        return formatSectionLabel(normalized);
+    }
+
     global.SectionOptions = {
         SECTION_OPTIONS,
         SECTION_LABELS,
         formatSectionLabel,
+        formatSectorDisplay,
         buildSectionSelectOptions,
         populateSectionSelect
     };

@@ -23,10 +23,26 @@
     });
   }
 
+  function populateSectorSelect() {
+    const sectorSelect = document.getElementById('docSector');
+    if (!sectorSelect || !window.SectionOptions) return;
+
+    const currentValue = sectorSelect.value;
+    sectorSelect.innerHTML = '<option value="">For everyone</option>';
+    SectionOptions.SECTION_OPTIONS.forEach((item) => {
+      const option = document.createElement('option');
+      option.value = item.value;
+      option.textContent = item.label;
+      sectorSelect.appendChild(option);
+    });
+    sectorSelect.value = currentValue || '';
+  }
+
   async function handleUpload(event) {
     event.preventDefault();
 
     const titleInput = document.getElementById('docTitle');
+    const sectorInput = document.getElementById('docSector');
     const fileInput = document.getElementById('docFile');
     const descriptionInput = document.getElementById('docDescription');
     const submitBtn = document.getElementById('uploadDocBtn');
@@ -64,6 +80,7 @@
         credentials: 'same-origin',
         body: JSON.stringify({
           title,
+          sector: sectorInput?.value.trim() || '',
           description: descriptionInput?.value.trim() || '',
           fileName: file.name,
           mimeType: file.type || 'application/octet-stream',
@@ -90,6 +107,7 @@
   }
 
   document.addEventListener('DOMContentLoaded', () => {
+    populateSectorSelect();
     document.getElementById('uploadDocForm')?.addEventListener('submit', handleUpload);
   });
 })();

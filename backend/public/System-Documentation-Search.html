@@ -61,6 +61,13 @@
                             <input type="text" id="searchUploadedBy" class="system-doc-filter-input" placeholder="User name">
                         </div>
                         <div class="system-doc-filter-group">
+                            <label for="searchSector"><i class="fas fa-layer-group"></i> Sector</label>
+                            <select id="searchSector" class="system-doc-filter-input">
+                                <option value="">All sectors</option>
+                                <option value="__everyone__">For everyone</option>
+                            </select>
+                        </div>
+                        <div class="system-doc-filter-group">
                             <label for="searchDateFrom"><i class="fas fa-calendar-day"></i> Date from</label>
                             <input type="date" id="searchDateFrom" class="system-doc-filter-input">
                         </div>
@@ -89,6 +96,7 @@
                         <thead>
                             <tr>
                                 <th><i class="fas fa-heading"></i> Title</th>
+                                <th><i class="fas fa-layer-group"></i> Sector</th>
                                 <th><i class="fas fa-file"></i> File</th>
                                 <th class="th-hide-mobile"><i class="fas fa-user"></i> Uploaded by</th>
                                 <th><i class="fas fa-calendar-alt"></i> Date / time</th>
@@ -98,7 +106,7 @@
                         </thead>
                         <tbody id="systemDocResults">
                             <tr>
-                                <td colspan="6" class="empty-state">
+                                <td colspan="7" class="empty-state">
                                     <i class="fas fa-search"></i>
                                     <p>Use filters and click <strong>Search</strong> to load documents.</p>
                                 </td>
@@ -110,6 +118,7 @@
         </main>
     </div>
 
+    <script src="section-options.js"></script>
     <script src="system-documentation-search-script.js"></script>
 </body>
 </html>

@@ -90,6 +90,26 @@
   margin-top: 1rem;
 }
 
+.system-settings-actions .btn-default {
+  background: #0f766e;
+  color: #fff;
+}
+
+.system-settings-actions .btn-default:hover {
+  background: #115e59;
+  transform: translateY(-2px);
+}
+
+.system-settings-actions .btn-close {
+  background: #ef4444;
+  color: #fff;
+}
+
+.system-settings-actions .btn-close:hover {
+  background: #dc2626;
+  transform: translateY(-2px);
+}
+
 .system-settings-message {
   display: none;
   margin: 1rem 0 0;

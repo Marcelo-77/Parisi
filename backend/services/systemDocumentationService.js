@@ -12,11 +12,17 @@ function ensureUploadDir() {
   }
 }
 
+function normalizeSector(value) {
+  const sector = value != null ? String(value).trim().toUpperCase() : '';
+  return sector || null;
+}
+
 function mapRow(row) {
   return {
     id: row.id,
     title: row.title,
     description: row.description || '',
+    sector: row.sector || null,
     fileName: row.file_name,
     mimeType: row.mime_type || null,
     fileSize: row.file_size != null ? Number(row.file_size) : null,
@@ -27,7 +33,7 @@ function mapRow(row) {
 }
 
 const LIST_COLUMNS = `
-  id, title, description, file_name, stored_name, mime_type, file_size,
+  id, title, description, sector, file_name, stored_name, mime_type, file_size,
   uploaded_by, uploaded_by_name, criado_em
 `;
 
@@ -36,6 +42,7 @@ let schemaReady = false;
 async function ensureSchema() {
   if (schemaReady) return;
   await query(`ALTER TABLE ${TABLE} ADD COLUMN IF NOT EXISTS file_data BYTEA`);
+  await query(`ALTER TABLE ${TABLE} ADD COLUMN IF NOT EXISTS sector VARCHAR(50)`);
   schemaReady = true;
 }
 
@@ -77,6 +84,13 @@ async function list(filters = {}) {
   if (filters.dateTo) {
     whereClauses.push(`sd.criado_em <= $${idx++}::timestamp`);
     values.push(`${String(filters.dateTo).trim()} 23:59:59`);
+  }
+
+  if (filters.sector === '__everyone__') {
+    whereClauses.push(`(sd.sector IS NULL OR TRIM(sd.sector) = '')`);
+  } else if (filters.sector && String(filters.sector).trim()) {
+    whereClauses.push(`UPPER(TRIM(sd.sector)) = $${idx++}`);
+    values.push(String(filters.sector).trim().toUpperCase());
   }
 
   const where = whereClauses.length ? `WHERE ${whereClauses.join(' AND ')}` : '';
@@ -179,10 +193,12 @@ async function create(data) {
 
   await ensureSchema();
 
+  const sector = normalizeSector(data.sector);
+
   const sql = `
     INSERT INTO ${TABLE}
-      (id, title, description, file_name, stored_name, mime_type, file_size, file_data, uploaded_by, uploaded_by_name)
-    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+      (id, title, description, sector, file_name, stored_name, mime_type, file_size, file_data, uploaded_by, uploaded_by_name)
+    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
     RETURNING ${LIST_COLUMNS}
   `;
 
@@ -191,6 +207,7 @@ async function create(data) {
       id,
       title.substring(0, 200),
       description,
+      sector,
       fileName,
       storedName,
       mimeType,
@@ -207,12 +224,39 @@ async function create(data) {
   }
 }
 
+async function remove(id) {
+  await ensureSchema();
+  const result = await query(
+    `SELECT stored_name FROM ${TABLE} WHERE id = $1`,
+    [id]
+  );
+  if (!result.rows.length) return null;
+
+  const storedName = result.rows[0].stored_name;
+  const deleteResult = await query(`DELETE FROM ${TABLE} WHERE id = $1 RETURNING id`, [id]);
+  if (!deleteResult.rows.length) return null;
+
+  if (storedName) {
+    const absolutePath = getAbsolutePath(storedName);
+    if (fs.existsSync(absolutePath)) {
+      try {
+        fs.unlinkSync(absolutePath);
+      } catch (error) {
+        console.warn('System documentation disk file delete skipped:', error.message);
+      }
+    }
+  }
+
+  return { id: deleteResult.rows[0].id };
+}
+
 module.exports = {
   list,
   findById,
   getFileInfo,
   getDownloadFile,
   create,
+  remove,
   getAbsolutePath,
   ensureUploadDir,
   ensureSchema
