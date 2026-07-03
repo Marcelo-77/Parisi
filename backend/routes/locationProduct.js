@@ -1,6 +1,7 @@
 const express = require('express');
 const { body, query, validationResult } = require('express-validator');
 const locationProductService = require('../services/locationProductService');
+const { getSessionUserKey } = require('../middleware/auth');
 
 const router = express.Router();
 
@@ -139,7 +140,11 @@ router.get(
 // POST /api/location-product
 router.post('/', validarCreate, handleValidationErrors, async (req, res) => {
   try {
-    const created = await locationProductService.criar(req.body);
+    const userKey = getSessionUserKey(req);
+    const created = await locationProductService.criar({
+      ...req.body,
+      usuarioInseriu: userKey
+    });
     res.status(201).json({
       success: true,
       message: 'Location product record created',

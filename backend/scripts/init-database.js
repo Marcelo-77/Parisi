@@ -458,6 +458,12 @@ async function initDatabase() {
     `);
     console.log('✅ Tabela location_product criada/verificada');
 
+    await query(`
+      ALTER TABLE location_product
+      ADD COLUMN IF NOT EXISTS usuario_inseriu VARCHAR(50)
+    `);
+    console.log('✅ location_product.usuario_inseriu verificada');
+
     // Migração: alterar PK de (location_code, product_code, entry_datetime, sipr_sq_number) para (location_code, product_code, sipr_sq_number)
     try {
       const cols = await query(`

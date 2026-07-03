@@ -329,7 +329,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!hasSearched) {
       tbody.innerHTML = `
         <tr>
-          <td colspan="7" class="empty-state">
+          <td colspan="8" class="empty-state">
             <i class="fas fa-search"></i>
             <p>Use filters and click Search to load records.</p>
           </td>
@@ -342,7 +342,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!records.length) {
       tbody.innerHTML = `
         <tr>
-          <td colspan="7" class="empty-state">
+          <td colspan="8" class="empty-state">
             <i class="fas fa-inbox"></i>
             <p>No records. Click "New Record" to add.</p>
           </td>
@@ -362,6 +362,7 @@ document.addEventListener('DOMContentLoaded', () => {
           <td>${escapeHtml(r.situationDescription || '')}</td>
           <td>${r.quantityInformed ?? 0}</td>
           <td>${r.quantityCurrent ?? 0}</td>
+          <td>${escapeHtml(r.usuarioInseriuNome || r.usuarioInseriu || '-')}</td>
           <td class="td-actions">
             <button type="button" class="btn btn-edit btn-edit-qty-current" data-location="${escapeHtml(r.locationCode)}" data-product="${escapeHtml(r.productCode)}" data-entry="${escapeHtml(entryDt)}" data-sipr="${r.siprSqNumber}" data-qty-informed="${r.quantityInformed ?? 0}" data-qty-current="${r.quantityCurrent ?? 0}" title="Edit Quantity Current">
               <i class="fas fa-edit"></i> Edit
@@ -503,6 +504,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const res = await fetch(API_LOCATION_PRODUCT, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
+          credentials: 'same-origin',
           body: JSON.stringify(payload)
         });
         const data = await res.json();

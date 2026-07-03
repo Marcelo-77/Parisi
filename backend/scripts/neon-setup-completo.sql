@@ -373,10 +373,12 @@ CREATE TABLE IF NOT EXISTS location_product (
   quantity_informed INTEGER DEFAULT 0,
   quantity_current INTEGER DEFAULT 0,
   stat_cd_id VARCHAR(1),
+  usuario_inseriu VARCHAR(50),
   PRIMARY KEY (location_code, product_code, sipr_sq_number)
 );
 
 ALTER TABLE location_product ADD COLUMN IF NOT EXISTS stat_cd_id VARCHAR(1);
+ALTER TABLE location_product ADD COLUMN IF NOT EXISTS usuario_inseriu VARCHAR(50);
 
 DO $$
 BEGIN

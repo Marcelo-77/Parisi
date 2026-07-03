@@ -12,10 +12,19 @@ function mapRow(row) {
     siprSqNumber: row.sipr_sq_number,
     quantityInformed: parseInt(row.quantity_informed) || 0,
     quantityCurrent: parseInt(row.quantity_current) || 0,
-    statCdId: row.stat_cd_id != null ? String(row.stat_cd_id) : null
+    statCdId: row.stat_cd_id != null ? String(row.stat_cd_id) : null,
+    usuarioInseriu: row.usuario_inseriu || null,
+    usuarioInseriuNome: resolveUsuarioInseriuNome(row)
   };
   if (row.sipr_nm_description != null) out.situationDescription = row.sipr_nm_description;
   return out;
+}
+
+function resolveUsuarioInseriuNome(row) {
+  if (row.usuario_inseriu_nome) return row.usuario_inseriu_nome;
+  const key = row.usuario_inseriu != null ? String(row.usuario_inseriu).trim().toLowerCase() : '';
+  if (key === 'root') return 'Root';
+  return null;
 }
 
 async function criar(dados) {
@@ -26,8 +35,8 @@ async function criar(dados) {
 
   const insertSql = `
     INSERT INTO ${TABLE}
-      (location_code, product_code, entry_datetime, sipr_sq_number, quantity_informed, quantity_current, stat_cd_id)
-    VALUES ($1, $2, $3, $4, $5, $6, $7)
+      (location_code, product_code, entry_datetime, sipr_sq_number, quantity_informed, quantity_current, stat_cd_id, usuario_inseriu)
+    VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
     RETURNING *
   `;
 
@@ -38,7 +47,8 @@ async function criar(dados) {
     dados.siprSqNumber,
     dados.quantityInformed ?? 0,
     dados.quantityCurrent ?? 0,
-    dados.statCdId != null ? String(dados.statCdId).substring(0, 1) : 'A'
+    dados.statCdId != null ? String(dados.statCdId).substring(0, 1) : 'A',
+    dados.usuarioInseriu || null
   ];
 
   const quantityCurrent = parseInt(dados.quantityCurrent, 10) || 0;
@@ -128,10 +138,15 @@ async function buscarTodos(filtros = {}) {
   const where = `WHERE ${whereClauses.join(' AND ')}`;
 
   const selectSql = `
-    SELECT lp.*, sp.sipr_nm_description, wi.barcode
+    SELECT lp.*, sp.sipr_nm_description, wi.barcode,
+      CASE
+        WHEN LOWER(TRIM(COALESCE(lp.usuario_inseriu, ''))) = 'root' THEN 'Root'
+        ELSE f.nome
+      END AS usuario_inseriu_nome
     FROM ${TABLE} lp
     LEFT JOIN situation_product sp ON sp.sipr_sq_number = lp.sipr_sq_number
     LEFT JOIN warehouse_items wi ON TRIM(LOWER(wi.codigo)) = TRIM(LOWER(lp.product_code))
+    LEFT JOIN funcionarios f ON f.id::text = lp.usuario_inseriu
     ${where}
     ORDER BY lp.entry_datetime DESC, lp.location_code, lp.product_code
   `;
