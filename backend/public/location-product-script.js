@@ -417,6 +417,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const res = await fetch(API_LOCATION_PRODUCT, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
         body: JSON.stringify({
           locationCode,
           productCode,
@@ -547,7 +548,7 @@ document.addEventListener('DOMContentLoaded', () => {
       siprSqNumber: dataset.sipr || ''
     });
 
-    fetch(`${API_LOCATION_PRODUCT}?${params}`, { method: 'DELETE' })
+    fetch(`${API_LOCATION_PRODUCT}?${params}`, { method: 'DELETE', credentials: 'same-origin' })
       .then(res => res.json())
       .then(data => {
         if (data.success) {

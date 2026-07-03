@@ -27,6 +27,45 @@ function resolveUsuarioInseriuNome(row) {
   return null;
 }
 
+function resolveUsuarioAlterouNome(row) {
+  if (row.usuario_alterou_nome) return row.usuario_alterou_nome;
+  const key = row.usuario_alterou_log != null ? String(row.usuario_alterou_log).trim().toLowerCase() : '';
+  if (key === 'root') return 'Root';
+  return null;
+}
+
+async function insertLogEntry(client, {
+  operation,
+  locationCode,
+  productCode,
+  siprSqNumber,
+  quantityPrev,
+  quantityCurrent,
+  usuario
+}) {
+  await client.query(
+    `INSERT INTO ${TABLE_LOG} (
+      location_code_log,
+      product_code_log,
+      entry_datetime_log,
+      quantity_current_prev_log,
+      quantity_current_log,
+      sipr_sq_number,
+      usuario_alterou_log,
+      operation_log
+    ) VALUES ($1, $2, CURRENT_TIMESTAMP, $3, $4, $5, $6, $7)`,
+    [
+      locationCode,
+      productCode,
+      quantityPrev,
+      quantityCurrent,
+      siprSqNumber,
+      usuario || null,
+      operation
+    ]
+  );
+}
+
 async function criar(dados) {
   const erros = validar(dados);
   if (erros.length > 0) {
@@ -74,6 +113,16 @@ async function criar(dados) {
       throw new Error('Já existe um registro ativo para este local, produto e situação. Não é permitido duplicar (ex.: mesmo Location + Product + Full).');
     }
     const result = await client.query(insertSql, values);
+    const createdRow = result.rows[0];
+    await insertLogEntry(client, {
+      operation: 'INSERT',
+      locationCode: createdRow.location_code,
+      productCode: createdRow.product_code,
+      siprSqNumber: createdRow.sipr_sq_number,
+      quantityPrev: null,
+      quantityCurrent: parseInt(createdRow.quantity_current, 10) || 0,
+      usuario: dados.usuarioInseriu || null
+    });
     const isFull = await client.query(
       `SELECT sipr_nm_description FROM situation_product WHERE sipr_sq_number = $1`,
       [dados.siprSqNumber]
@@ -190,27 +239,88 @@ async function atualizarQuantidades(locationCode, productCode, entryDatetime, si
     RETURNING *
   `;
 
+  const client = await getClient();
   try {
-    const result = await query(updateSql, values);
-    if (result.rows.length === 0) throw new Error('Record not found');
-    return mapRow(result.rows[0]);
+    await client.query('BEGIN');
+
+    const oldResult = await client.query(
+      `SELECT quantity_informed, quantity_current
+       FROM ${TABLE}
+       WHERE location_code = $1 AND product_code = $2 AND sipr_sq_number = $3`,
+      [locationCode, productCode, siprSqNumber]
+    );
+    if (!oldResult.rows.length) {
+      await client.query('ROLLBACK');
+      throw new Error('Record not found');
+    }
+    const oldRow = oldResult.rows[0];
+
+    const result = await client.query(updateSql, values);
+    const updatedRow = result.rows[0];
+
+    await insertLogEntry(client, {
+      operation: 'UPDATE',
+      locationCode: updatedRow.location_code,
+      productCode: updatedRow.product_code,
+      siprSqNumber: updatedRow.sipr_sq_number,
+      quantityPrev: parseInt(oldRow.quantity_current, 10) || 0,
+      quantityCurrent: parseInt(updatedRow.quantity_current, 10) || 0,
+      usuario: dados.usuarioAlterou || null
+    });
+
+    await client.query('COMMIT');
+    return mapRow(updatedRow);
   } catch (error) {
+    await client.query('ROLLBACK').catch(() => {});
+    if (error.message === 'Record not found') throw error;
     console.error('❌ Error updating location_product:', error);
     throw new Error(`Error updating record: ${error.message}`);
+  } finally {
+    client.release();
   }
 }
 
-async function deletar(locationCode, productCode, entryDatetime, siprSqNumber) {
-  const deleteSql = `
-    DELETE FROM ${TABLE}
-    WHERE location_code = $1 AND product_code = $2 AND sipr_sq_number = $3
-  `;
+async function deletar(locationCode, productCode, entryDatetime, siprSqNumber, dados = {}) {
+  const client = await getClient();
   try {
-    const result = await query(deleteSql, [locationCode, productCode, siprSqNumber]);
-    return result.rowCount > 0;
+    await client.query('BEGIN');
+
+    const oldResult = await client.query(
+      `SELECT location_code, product_code, sipr_sq_number, quantity_current
+       FROM ${TABLE}
+       WHERE location_code = $1 AND product_code = $2 AND sipr_sq_number = $3`,
+      [locationCode, productCode, siprSqNumber]
+    );
+    if (!oldResult.rows.length) {
+      await client.query('ROLLBACK');
+      return false;
+    }
+    const oldRow = oldResult.rows[0];
+
+    await client.query(
+      `DELETE FROM ${TABLE}
+       WHERE location_code = $1 AND product_code = $2 AND sipr_sq_number = $3`,
+      [locationCode, productCode, siprSqNumber]
+    );
+
+    await insertLogEntry(client, {
+      operation: 'DELETE',
+      locationCode: oldRow.location_code,
+      productCode: oldRow.product_code,
+      siprSqNumber: oldRow.sipr_sq_number,
+      quantityPrev: parseInt(oldRow.quantity_current, 10) || 0,
+      quantityCurrent: 0,
+      usuario: dados.usuarioAlterou || null
+    });
+
+    await client.query('COMMIT');
+    return true;
   } catch (error) {
+    await client.query('ROLLBACK').catch(() => {});
     console.error('❌ Error deleting location_product:', error);
     throw new Error(`Error deleting record: ${error.message}`);
+  } finally {
+    client.release();
   }
 }
 
@@ -316,6 +426,14 @@ async function buscarPorProdutoFullStatus(productCode) {
   }
 }
 
+function formatOperationLabel(operation) {
+  const value = operation != null ? String(operation).trim().toUpperCase() : '';
+  if (value === 'INSERT') return 'Insert';
+  if (value === 'UPDATE') return 'Update';
+  if (value === 'DELETE') return 'Delete';
+  return value || '-';
+}
+
 /** Pesquisa em location_product_log com filtros opcionais */
 async function buscarLog(filtros = {}) {
   const whereClauses = [];
@@ -345,11 +463,17 @@ async function buscarLog(filtros = {}) {
   const sql = `
     SELECT l.location_code_log, l.product_code_log, l.entry_datetime_log,
            l.quantity_current_prev_log, l.quantity_current_log, l.sipr_sq_number,
-           sp.sipr_nm_description AS situation_description
+           l.usuario_alterou_log, l.operation_log,
+           sp.sipr_nm_description AS situation_description,
+           CASE
+             WHEN LOWER(TRIM(COALESCE(l.usuario_alterou_log, ''))) = 'root' THEN 'Root'
+             ELSE f.nome
+           END AS usuario_alterou_nome
     FROM ${TABLE_LOG} l
     LEFT JOIN situation_product sp ON sp.sipr_sq_number = l.sipr_sq_number
+    LEFT JOIN funcionarios f ON f.id::text = l.usuario_alterou_log
     ${where}
-    ORDER BY l.entry_datetime_log DESC
+    ORDER BY l.location_code_log ASC, l.product_code_log ASC, l.entry_datetime_log ASC
   `;
   try {
     const result = await query(sql, values);
@@ -360,7 +484,11 @@ async function buscarLog(filtros = {}) {
       quantityCurrentPrevLog: row.quantity_current_prev_log != null ? parseInt(row.quantity_current_prev_log, 10) : null,
       quantityCurrentLog: row.quantity_current_log != null ? parseInt(row.quantity_current_log, 10) : null,
       siprSqNumber: row.sipr_sq_number != null ? parseInt(row.sipr_sq_number, 10) : null,
-      situationDescription: row.sipr_nm_description != null ? String(row.sipr_nm_description).trim() : ''
+      situationDescription: row.sipr_nm_description != null ? String(row.sipr_nm_description).trim() : '',
+      operationLog: row.operation_log || null,
+      operationLabel: formatOperationLabel(row.operation_log),
+      usuarioAlterouLog: row.usuario_alterou_log || null,
+      usuarioAlterouNome: resolveUsuarioAlterouNome(row)
     }));
   } catch (error) {
     console.error('❌ Error fetching location_product_log:', error);

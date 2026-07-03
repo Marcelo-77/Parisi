@@ -175,12 +175,13 @@ router.put(
   async (req, res) => {
     try {
       const { locationCode, productCode, entryDatetime, siprSqNumber, quantityInformed, quantityCurrent } = req.body;
+      const userKey = getSessionUserKey(req);
       const updated = await locationProductService.atualizarQuantidades(
         locationCode,
         productCode,
         entryDatetime,
         siprSqNumber,
-        { quantityInformed, quantityCurrent }
+        { quantityInformed, quantityCurrent, usuarioAlterou: userKey }
       );
       res.json({ success: true, message: 'Record updated', data: updated });
     } catch (error) {
@@ -207,11 +208,13 @@ router.delete('/', async (req, res) => {
         error: 'locationCode, productCode, entryDatetime and siprSqNumber are required'
       });
     }
+    const userKey = getSessionUserKey(req);
     const deleted = await locationProductService.deletar(
       locationCode,
       productCode,
       entryDatetime,
-      parseInt(siprSqNumber)
+      parseInt(siprSqNumber),
+      { usuarioAlterou: userKey }
     );
     if (!deleted) {
       return res.status(404).json({ success: false, error: 'Record not found' });

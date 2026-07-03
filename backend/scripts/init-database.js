@@ -524,10 +524,25 @@ async function initDatabase() {
         quantity_current_prev_log INTEGER,
         quantity_current_log INTEGER,
         sipr_sq_number INTEGER NOT NULL,
+        usuario_alterou_log VARCHAR(50),
+        operation_log VARCHAR(10),
         PRIMARY KEY (location_code_log, product_code_log, sipr_sq_number, entry_datetime_log)
       )
     `);
     console.log('✅ Tabela location_product_log criada/verificada');
+
+    await query(`
+      ALTER TABLE location_product_log
+      ADD COLUMN IF NOT EXISTS usuario_alterou_log VARCHAR(50)
+    `);
+    await query(`
+      ALTER TABLE location_product_log
+      ADD COLUMN IF NOT EXISTS operation_log VARCHAR(10)
+    `);
+    console.log('✅ location_product_log.usuario_alterou_log / operation_log verificadas');
+
+    await query(`DROP TRIGGER IF EXISTS location_product_before_update_log ON location_product`);
+    console.log('✅ Trigger legado location_product -> location_product_log removido (log via aplicacao)');
 
     // Criar índices para melhor performance
     await query(`
@@ -570,41 +585,6 @@ async function initDatabase() {
       CREATE INDEX IF NOT EXISTS idx_location_product_log_entry ON location_product_log(entry_datetime_log)
     `);
     console.log('✅ Índices criados/verificados');
-
-    // Trigger BEFORE UPDATE em location_product: gravar em location_product_log quando quantity_current mudar
-    await query(`
-      CREATE OR REPLACE FUNCTION location_product_log_on_update()
-      RETURNS TRIGGER AS $$
-      BEGIN
-        IF OLD.quantity_current IS DISTINCT FROM NEW.quantity_current THEN
-          INSERT INTO location_product_log (
-            location_code_log,
-            product_code_log,
-            entry_datetime_log,
-            quantity_current_prev_log,
-            quantity_current_log,
-            sipr_sq_number
-          ) VALUES (
-            OLD.location_code,
-            OLD.product_code,
-            CURRENT_TIMESTAMP,
-            OLD.quantity_current,
-            NEW.quantity_current,
-            OLD.sipr_sq_number
-          );
-        END IF;
-        RETURN NEW;
-      END;
-      $$ LANGUAGE plpgsql;
-    `);
-    await query(`
-      DROP TRIGGER IF EXISTS location_product_before_update_log ON location_product;
-      CREATE TRIGGER location_product_before_update_log
-        BEFORE UPDATE ON location_product
-        FOR EACH ROW
-        EXECUTE FUNCTION location_product_log_on_update();
-    `);
-    console.log('✅ Trigger location_product -> location_product_log criado/verificado');
 
     // Criar função para atualizar updated_at automaticamente
     await query(`

@@ -401,8 +401,13 @@ CREATE TABLE IF NOT EXISTS location_product_log (
   quantity_current_prev_log INTEGER,
   quantity_current_log INTEGER,
   sipr_sq_number INTEGER NOT NULL,
+  usuario_alterou_log VARCHAR(50),
+  operation_log VARCHAR(10),
   PRIMARY KEY (location_code_log, product_code_log, sipr_sq_number, entry_datetime_log)
 );
+
+ALTER TABLE location_product_log ADD COLUMN IF NOT EXISTS usuario_alterou_log VARCHAR(50);
+ALTER TABLE location_product_log ADD COLUMN IF NOT EXISTS operation_log VARCHAR(10);
 
 -- =============================================================================
 -- 5) DADOS OPCIONAIS - CLIENTES (Harvey Norman)
@@ -467,35 +472,7 @@ CREATE INDEX IF NOT EXISTS idx_location_product_log_entry ON location_product_lo
 -- =============================================================================
 -- 7) FUNCOES E TRIGGERS
 -- =============================================================================
-CREATE OR REPLACE FUNCTION location_product_log_on_update()
-RETURNS TRIGGER AS $$
-BEGIN
-  IF OLD.quantity_current IS DISTINCT FROM NEW.quantity_current THEN
-    INSERT INTO location_product_log (
-      location_code_log,
-      product_code_log,
-      entry_datetime_log,
-      quantity_current_prev_log,
-      quantity_current_log,
-      sipr_sq_number
-    ) VALUES (
-      OLD.location_code,
-      OLD.product_code,
-      CURRENT_TIMESTAMP,
-      OLD.quantity_current,
-      NEW.quantity_current,
-      OLD.sipr_sq_number
-    );
-  END IF;
-  RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
-
 DROP TRIGGER IF EXISTS location_product_before_update_log ON location_product;
-CREATE TRIGGER location_product_before_update_log
-  BEFORE UPDATE ON location_product
-  FOR EACH ROW
-  EXECUTE FUNCTION location_product_log_on_update();
 
 CREATE OR REPLACE FUNCTION update_updated_at_column()
 RETURNS TRIGGER AS $$

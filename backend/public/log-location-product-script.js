@@ -44,7 +44,7 @@
         if (resultsCount) resultsCount.textContent = list.length + ' record(s)';
         if (!logTableBody) return;
         if (list.length === 0) {
-          logTableBody.innerHTML = '<tr><td colspan="6" class="empty-state"><i class="fas fa-inbox"></i><p>No log records found.</p></td></tr>';
+          logTableBody.innerHTML = '<tr><td colspan="8" class="empty-state"><i class="fas fa-inbox"></i><p>No log records found.</p></td></tr>';
           return;
         }
         logTableBody.innerHTML = list.map(function (r) {
@@ -53,15 +53,17 @@
             '<td>' + escapeHtml(r.productCodeLog || '') + '</td>' +
             '<td>' + formatDateTime(r.entryDatetimeLog) + '</td>' +
             '<td>' + escapeHtml(r.situationDescription || ('#' + (r.siprSqNumber != null ? r.siprSqNumber : ''))) + '</td>' +
+            '<td>' + escapeHtml(r.operationLabel || r.operationLog || '-') + '</td>' +
             '<td>' + (r.quantityCurrentPrevLog != null ? r.quantityCurrentPrevLog : '-') + '</td>' +
             '<td>' + (r.quantityCurrentLog != null ? r.quantityCurrentLog : '-') + '</td>' +
+            '<td>' + escapeHtml(r.usuarioAlterouNome || r.usuarioAlterouLog || '-') + '</td>' +
             '</tr>';
         }).join('');
       })
       .catch(function (err) {
         console.error('Error loading log:', err);
         if (resultsCount) resultsCount.textContent = '0 records';
-        if (logTableBody) logTableBody.innerHTML = '<tr><td colspan="6" class="empty-state"><p class="error-state">Error loading log.</p></td></tr>';
+        if (logTableBody) logTableBody.innerHTML = '<tr><td colspan="8" class="empty-state"><p class="error-state">Error loading log.</p></td></tr>';
       });
   }
 
@@ -73,7 +75,7 @@
       if (filterEntryFrom) filterEntryFrom.value = '';
       if (filterEntryTo) filterEntryTo.value = '';
       if (resultsCount) resultsCount.textContent = '0 records';
-      if (logTableBody) logTableBody.innerHTML = '<tr><td colspan="6" class="empty-state"><i class="fas fa-search"></i><p>Use filters and click <strong>Search</strong> to load log records.</p></td></tr>';
+      if (logTableBody) logTableBody.innerHTML = '<tr><td colspan="8" class="empty-state"><i class="fas fa-search"></i><p>Use filters and click <strong>Search</strong> to load log records.</p></td></tr>';
     });
   }
 
