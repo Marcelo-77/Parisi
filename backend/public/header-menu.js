@@ -130,7 +130,10 @@
                             <a href="help.html#picking" class="dropdown-item" data-app="help.html"><i class="fas fa-dolly"></i> Picking Workflow</a>
                             <a href="help.html#qrcode" class="dropdown-item" data-app="help.html"><i class="fas fa-qrcode"></i> Generate QR Code</a>
                         </div>
-                    </div>`;
+                    </div>
+                    <button type="button" class="btn btn-primary system-exit-btn" id="exitSystemBtn" data-always-accessible="true" title="Exit system">
+                        <i class="fas fa-right-from-bracket"></i> Exit
+                    </button>`;
 
   const MENU_BUTTON_IDS = [
     'usersMenuBtn',

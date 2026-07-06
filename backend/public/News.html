@@ -50,12 +50,18 @@
 
         <main class="main-content">
             <section class="news-section">
-                <div class="news-intro">
-                    <div class="news-intro-header">
+                <div class="news-hero">
+                    <div class="news-hero-text">
+                        <div class="news-hero-icon" aria-hidden="true"><i class="fas fa-newspaper"></i></div>
                         <div>
-                            <h2><i class="fas fa-newspaper"></i> New announcement</h2>
+                            <h2>New announcement</h2>
                             <p>Create a news item with validity period, target sector(s), and optional attachments from System Documentation.</p>
                         </div>
+                    </div>
+                    <div class="news-hero-actions">
+                        <a href="News-Search.html" class="btn btn-secondary" data-app="News-Search.html">
+                            <i class="fas fa-search"></i> Search news
+                        </a>
                         <button type="button" class="btn btn-secondary news-help-btn" id="newsHelpBtn" aria-haspopup="dialog" aria-controls="newsHelpModal">
                             <i class="fas fa-circle-question"></i> Help
                         </button>
@@ -63,93 +69,146 @@
                 </div>
 
                 <form id="newsForm" novalidate>
-                    <div class="news-card">
-                        <h3><i class="fas fa-align-left"></i> Description</h3>
-                        <div class="news-field">
-                            <label for="newsDescription"><i class="fas fa-pen"></i> News description *</label>
-                            <textarea id="newsDescription" class="news-textarea" required placeholder="Enter the news text"></textarea>
-                        </div>
-                    </div>
-
-                    <div class="news-card">
-                        <h3><i class="fas fa-calendar-alt"></i> Validity period</h3>
-                        <div class="news-dates-row">
-                            <div class="news-field">
-                                <label for="newsStartDate"><i class="fas fa-play"></i> Start date *</label>
-                                <input type="date" id="newsStartDate" class="news-input" required>
+                    <div class="news-form-layout">
+                        <div class="news-form-main">
+                            <div class="news-card">
+                                <div class="news-card-head">
+                                    <h3><i class="fas fa-align-left"></i> Description</h3>
+                                    <span class="news-card-tag">Content</span>
+                                </div>
+                                <div class="news-field">
+                                    <label for="newsDescription"><i class="fas fa-pen"></i> News description *</label>
+                                    <textarea id="newsDescription" class="news-textarea" required placeholder="Enter the message users will see after login..." maxlength="4000"></textarea>
+                                    <div class="news-field-meta">
+                                        <span id="newsDescriptionHint" class="news-field-hint">Shown in the login popup.</span>
+                                        <span id="newsDescriptionCount" class="news-char-count">0 / 4000</span>
+                                    </div>
+                                </div>
                             </div>
-                            <div class="news-field">
-                                <label for="newsEndDate"><i class="fas fa-stop"></i> End date *</label>
-                                <input type="date" id="newsEndDate" class="news-input" required>
+
+                            <div class="news-card">
+                                <div class="news-card-head">
+                                    <h3><i class="fas fa-calendar-alt"></i> Validity period</h3>
+                                    <span class="news-card-tag">Schedule</span>
+                                </div>
+                                <div class="news-dates-row">
+                                    <div class="news-field">
+                                        <label for="newsStartDate"><i class="fas fa-play"></i> Start date *</label>
+                                        <input type="date" id="newsStartDate" class="news-input" required>
+                                    </div>
+                                    <div class="news-field">
+                                        <label for="newsEndDate"><i class="fas fa-stop"></i> End date *</label>
+                                        <input type="date" id="newsEndDate" class="news-input" required>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="news-card">
+                                <div class="news-card-head">
+                                    <h3><i class="fas fa-layer-group"></i> Display sectors</h3>
+                                    <span class="news-card-tag">Audience</span>
+                                </div>
+                                <p class="news-help news-help-intro">Choose <strong>All sectors</strong> or select one or more specific warehouse sectors.</p>
+                                <div class="news-sector-mode news-sector-pills">
+                                    <label class="news-sector-pill">
+                                        <input type="radio" name="newsSectorMode" id="newsSectorAll" value="all" checked>
+                                        <span><i class="fas fa-globe"></i> All sectors</span>
+                                    </label>
+                                    <label class="news-sector-pill">
+                                        <input type="radio" name="newsSectorMode" id="newsSectorSelected" value="selected">
+                                        <span><i class="fas fa-check-double"></i> Selected sectors</span>
+                                    </label>
+                                </div>
+                                <div id="newsSectorGrid" class="news-sector-grid is-disabled" aria-disabled="true"></div>
+                            </div>
+
+                            <div class="news-card">
+                                <div class="news-card-head">
+                                    <h3><i class="fas fa-paperclip"></i> Attachments</h3>
+                                    <span class="news-card-tag">Optional</span>
+                                </div>
+                                <p class="news-help news-help-intro">Link files from System Documentation. Users can download them from the login popup.</p>
+                                <div class="news-doc-search-row">
+                                    <div class="news-field">
+                                        <label for="docSearchTitle"><i class="fas fa-search"></i> Search documents</label>
+                                        <input type="text" id="docSearchTitle" class="news-input" placeholder="Title, description or file name">
+                                    </div>
+                                    <button type="button" class="btn btn-secondary" id="searchDocumentationBtn">
+                                        <i class="fas fa-search"></i> Search
+                                    </button>
+                                </div>
+                                <div id="docSearchResults" class="news-doc-results" hidden>
+                                    <table>
+                                        <thead>
+                                            <tr>
+                                                <th>Title</th>
+                                                <th>File</th>
+                                                <th>Sector</th>
+                                                <th></th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="docSearchResultsBody"></tbody>
+                                    </table>
+                                </div>
+                                <div class="news-field news-attached-field">
+                                    <label><i class="fas fa-link"></i> Attached files <span id="attachedDocsCount" class="news-inline-badge">0</span></label>
+                                    <div id="attachedDocsList" class="news-attached-list">
+                                        <p class="news-empty-attached"><i class="fas fa-inbox"></i> No files attached yet.</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="news-card news-actions-card">
+                                <div class="news-actions">
+                                    <button type="button" class="btn btn-secondary" id="clearNewsBtn">
+                                        <i class="fas fa-eraser"></i> Clear
+                                    </button>
+                                    <button type="submit" class="btn btn-primary" id="saveNewsBtn">
+                                        <i class="fas fa-save"></i> Save news
+                                    </button>
+                                </div>
+                                <div id="newsMessage" class="news-message" role="status" aria-live="polite"></div>
                             </div>
                         </div>
-                    </div>
 
-                    <div class="news-card">
-                        <h3><i class="fas fa-layer-group"></i> Display sectors</h3>
-                        <p class="news-help">Choose <strong>All sectors</strong> or select one or more specific sectors.</p>
-                        <div class="news-sector-mode">
-                            <label>
-                                <input type="radio" name="newsSectorMode" id="newsSectorAll" value="all" checked>
-                                All sectors
-                            </label>
-                            <label>
-                                <input type="radio" name="newsSectorMode" id="newsSectorSelected" value="selected">
-                                Selected sectors
-                            </label>
-                        </div>
-                        <div id="newsSectorGrid" class="news-sector-grid is-disabled" aria-disabled="true"></div>
-                    </div>
-
-                    <div class="news-card">
-                        <h3><i class="fas fa-paperclip"></i> Attachments (System Documentation)</h3>
-                        <p class="news-help">Search and attach files already saved in System Documentation.</p>
-
-                        <div class="news-doc-search-row">
-                            <div class="news-field">
-                                <label for="docSearchTitle"><i class="fas fa-search"></i> Search documents</label>
-                                <input type="text" id="docSearchTitle" class="news-input" placeholder="Title, description or file name">
+                        <aside class="news-form-aside" aria-label="Announcement summary">
+                            <div class="news-summary-panel">
+                                <div class="news-summary-panel-head">
+                                    <h3><i class="fas fa-eye"></i> Summary</h3>
+                                    <p>Live preview of how this news will be delivered.</p>
+                                </div>
+                                <ul class="news-summary-list">
+                                    <li>
+                                        <span class="news-summary-label">Status</span>
+                                        <span id="newsSummaryStatus" class="news-status-badge news-status-draft">Draft</span>
+                                    </li>
+                                    <li>
+                                        <span class="news-summary-label">Period</span>
+                                        <span id="newsSummaryPeriod" class="news-summary-value">—</span>
+                                    </li>
+                                    <li>
+                                        <span class="news-summary-label">Audience</span>
+                                        <span id="newsSummaryAudience" class="news-summary-value">All sectors</span>
+                                    </li>
+                                    <li>
+                                        <span class="news-summary-label">Attachments</span>
+                                        <span id="newsSummaryAttachments" class="news-summary-value">0 file(s)</span>
+                                    </li>
+                                </ul>
+                                <div class="news-summary-preview">
+                                    <div class="news-summary-preview-label">Popup preview</div>
+                                    <div id="newsPopupPreview" class="news-popup-preview">
+                                        <div class="news-popup-preview-header">
+                                            <i class="fas fa-bullhorn"></i> News
+                                        </div>
+                                        <div id="newsPopupPreviewBody" class="news-popup-preview-body">
+                                            Your message will appear here...
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
-                            <button type="button" class="btn btn-secondary" id="searchDocumentationBtn">
-                                <i class="fas fa-search"></i> Search
-                            </button>
-                        </div>
-
-                        <div id="docSearchResults" class="news-doc-results" hidden>
-                            <table>
-                                <thead>
-                                    <tr>
-                                        <th>Title</th>
-                                        <th>File</th>
-                                        <th>Sector</th>
-                                        <th></th>
-                                    </tr>
-                                </thead>
-                                <tbody id="docSearchResultsBody"></tbody>
-                            </table>
-                        </div>
-
-                        <div class="news-field" style="margin-top: 1rem;">
-                            <label><i class="fas fa-link"></i> Attached files</label>
-                            <div id="attachedDocsList" class="news-attached-list">
-                                <p class="news-empty-attached">No files attached yet.</p>
-                            </div>
-                        </div>
+                        </aside>
                     </div>
-
-                    <div class="form-actions news-actions">
-                        <button type="button" class="btn btn-secondary" id="clearNewsBtn">
-                            <i class="fas fa-eraser"></i> Clear
-                        </button>
-                        <a href="News-Search.html" class="btn btn-secondary" data-app="News-Search.html">
-                            <i class="fas fa-search"></i> Search news
-                        </a>
-                        <button type="submit" class="btn btn-primary" id="saveNewsBtn">
-                            <i class="fas fa-save"></i> Save news
-                        </button>
-                    </div>
-
-                    <div id="newsMessage" class="news-message" role="status" aria-live="polite"></div>
                 </form>
 
                 <div id="newsHelpModal" class="modal news-help-modal" role="dialog" aria-modal="true" aria-labelledby="newsHelpModalTitle" hidden>
@@ -160,30 +219,20 @@
                         </div>
                         <div class="modal-body news-help-modal-body">
                             <p>When you save a news item here, the system can show it automatically to users after they log in. Below is how each part of the form affects delivery and display.</p>
-
                             <h4><i class="fas fa-align-left"></i> Description</h4>
                             <p>This is the main message shown in the login popup. Write clear, complete information for the target audience.</p>
-
                             <h4><i class="fas fa-calendar-alt"></i> Validity period</h4>
-                            <p>A news item is <strong>active</strong> only when the current date is between the <strong>start date</strong> and <strong>end date</strong> (inclusive). Outside that range, it is not shown to users and does not appear in unread announcements.</p>
-
+                            <p>A news item is <strong>active</strong> only when the current date is between the <strong>start date</strong> and <strong>end date</strong> (inclusive).</p>
                             <h4><i class="fas fa-layer-group"></i> Display sectors</h4>
                             <ul>
-                                <li><strong>All sectors</strong> — every logged-in user can receive this news (except users who already marked it as read).</li>
-                                <li><strong>Selected sectors</strong> — only users whose <strong>Warehouse Sector</strong> matches one of the selected sectors receive it. The sector is configured in <strong>Users → New User / Edit User</strong>.</li>
-                                <li>Users <strong>without a sector</strong> only receive news marked as <strong>All sectors</strong>.</li>
-                                <li>The <strong>Root</strong> account sees all active unread news, regardless of sector.</li>
+                                <li><strong>All sectors</strong> — every logged-in user can receive this news.</li>
+                                <li><strong>Selected sectors</strong> — only users with a matching <strong>Warehouse Sector</strong>.</li>
+                                <li>Users without a sector only receive <strong>All sectors</strong> news.</li>
                             </ul>
-
                             <h4><i class="fas fa-paperclip"></i> Attachments</h4>
-                            <p>Attachments are optional. They must already exist in <strong>System Documentation</strong>. Linked files appear in the login popup with a <strong>download</strong> link so users can open or save the document.</p>
-
-                            <h4><i class="fas fa-bullhorn"></i> Login popup and read confirmation</h4>
-                            <p>After login, on the first authenticated page in the session, the system loads <strong>unread</strong> news that are active and match the user's sector. If there are several, they are shown <strong>one at a time</strong>.</p>
-                            <p>The user must tick <strong>"I have read this news and do not want to see it again"</strong> and click <strong>Continue</strong>. That records the read status; the same news will not be shown again to that user.</p>
-
-                            <h4><i class="fas fa-search"></i> Managing existing news</h4>
-                            <p>Use <strong>Search news</strong> to find, edit, or delete announcements that were already created.</p>
+                            <p>Optional files from <strong>System Documentation</strong> with download links in the popup.</p>
+                            <h4><i class="fas fa-bullhorn"></i> Read confirmation</h4>
+                            <p>Users must confirm they read the news; it will not be shown again to that user.</p>
                         </div>
                         <div class="modal-footer">
                             <button type="button" class="btn btn-primary" id="closeNewsHelpBtn">

@@ -50,12 +50,26 @@
 
         <main class="main-content">
             <section class="news-section news-search-section">
-                <div class="news-intro">
-                    <h2><i class="fas fa-search"></i> Search news</h2>
-                    <p>Find announcements by description, sector, creator or date. Edit or delete existing news.</p>
+                <div class="news-hero">
+                    <div class="news-hero-text">
+                        <div class="news-hero-icon" aria-hidden="true"><i class="fas fa-search"></i></div>
+                        <div>
+                            <h2>Search news</h2>
+                            <p>Find announcements by description, sector, creator or date. Edit or delete existing news.</p>
+                        </div>
+                    </div>
+                    <div class="news-hero-actions">
+                        <a href="News.html" class="btn btn-primary" data-app="News.html">
+                            <i class="fas fa-plus"></i> New news
+                        </a>
+                    </div>
                 </div>
 
-                <div class="news-card">
+                <div class="news-card news-filters-card">
+                    <div class="news-card-head">
+                        <h3><i class="fas fa-filter"></i> Filters</h3>
+                        <span class="news-card-tag">Search</span>
+                    </div>
                     <div class="news-search-filters">
                         <div class="news-field">
                             <label for="searchDescription"><i class="fas fa-align-left"></i> Description</label>
@@ -69,7 +83,7 @@
                             <label for="searchSector"><i class="fas fa-layer-group"></i> Sector</label>
                             <select id="searchSector" class="news-input">
                                 <option value="">All sectors</option>
-                                <option value="__all_sectors__">All sectors (news flag)</option>
+                                <option value="__all_sectors__">News for all sectors</option>
                             </select>
                         </div>
                         <div class="news-field">
@@ -80,52 +94,59 @@
                             <label for="searchDateTo"><i class="fas fa-calendar-day"></i> Created to</label>
                             <input type="date" id="searchDateTo" class="news-input">
                         </div>
-                        <div class="news-field news-field-checkbox">
-                            <label class="news-checkbox-inline">
+                        <div class="news-field news-field-toggle">
+                            <label class="news-toggle-filter" for="searchActiveOnly">
                                 <input type="checkbox" id="searchActiveOnly">
-                                Active today only
+                                <span class="news-toggle-filter-slider" aria-hidden="true"></span>
+                                <span class="news-toggle-filter-text">
+                                    <strong>Active today only</strong>
+                                    <small>Show news valid on the current date</small>
+                                </span>
                             </label>
                         </div>
                     </div>
-
-                    <div class="news-actions">
+                    <div class="news-actions news-search-actions">
                         <button type="button" class="btn btn-primary" id="searchNewsBtn">
                             <i class="fas fa-search"></i> Search
                         </button>
                         <button type="button" class="btn btn-secondary" id="clearSearchBtn">
                             <i class="fas fa-eraser"></i> Clear
                         </button>
-                        <a href="News.html" class="btn btn-secondary" data-app="News.html">
-                            <i class="fas fa-plus"></i> New news
-                        </a>
-                        <span id="newsResultsMeta" class="news-results-meta" aria-live="polite"></span>
                     </div>
-
                     <div id="newsSearchMessage" class="news-message" role="status" aria-live="polite"></div>
                 </div>
 
-                <div class="table-container news-table-container">
-                    <table class="warehouse-table">
-                        <thead>
-                            <tr>
-                                <th><i class="fas fa-align-left"></i> Description</th>
-                                <th><i class="fas fa-play"></i> Start</th>
-                                <th><i class="fas fa-stop"></i> End</th>
-                                <th><i class="fas fa-layer-group"></i> Sectors</th>
-                                <th><i class="fas fa-paperclip"></i> Files</th>
-                                <th class="th-hide-mobile"><i class="fas fa-user"></i> Created by</th>
-                                <th class="th-actions"><i class="fas fa-cog"></i> Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody id="newsResultsBody">
-                            <tr>
-                                <td colspan="7" class="empty-state">
-                                    <i class="fas fa-search"></i>
-                                    <p>Use filters and click <strong>Search</strong> to load news.</p>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
+                <div class="news-card news-results-card">
+                    <div class="news-card-head">
+                        <h3><i class="fas fa-list"></i> Results</h3>
+                        <span id="newsResultsMeta" class="news-results-badge" aria-live="polite">No search yet</span>
+                    </div>
+                    <div class="table-container news-table-container">
+                        <table class="warehouse-table news-results-table">
+                            <thead>
+                                <tr>
+                                    <th>Status</th>
+                                    <th><i class="fas fa-align-left"></i> Description</th>
+                                    <th><i class="fas fa-play"></i> Start</th>
+                                    <th><i class="fas fa-stop"></i> End</th>
+                                    <th><i class="fas fa-layer-group"></i> Sectors</th>
+                                    <th><i class="fas fa-paperclip"></i> Files</th>
+                                    <th class="th-hide-mobile"><i class="fas fa-user"></i> Created by</th>
+                                    <th class="th-actions"><i class="fas fa-cog"></i> Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="newsResultsBody">
+                                <tr class="news-empty-row">
+                                    <td colspan="8">
+                                        <div class="news-empty-state">
+                                            <i class="fas fa-search"></i>
+                                            <p>Use the filters above and click <strong>Search</strong> to load news.</p>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </section>
         </main>
@@ -135,48 +156,54 @@
         </footer>
     </div>
 
-    <div id="editNewsModal" class="modal" aria-hidden="true">
+    <div id="editNewsModal" class="modal news-edit-modal-wrap" aria-hidden="true">
         <div class="modal-content news-edit-modal">
-            <div class="modal-header">
+            <div class="modal-header news-edit-modal-header">
                 <h3><i class="fas fa-edit"></i> Edit news</h3>
                 <button type="button" class="modal-close" id="closeEditNewsModal" aria-label="Close">&times;</button>
             </div>
-            <form id="editNewsForm">
+            <form id="editNewsForm" class="news-edit-form">
                 <input type="hidden" id="editNewsId">
 
-                <div class="news-field">
-                    <label for="editNewsDescription"><i class="fas fa-pen"></i> Description *</label>
-                    <textarea id="editNewsDescription" class="news-textarea" required></textarea>
-                </div>
-
-                <div class="news-dates-row">
+                <div class="news-edit-section">
+                    <h4><i class="fas fa-align-left"></i> Description</h4>
                     <div class="news-field">
-                        <label for="editNewsStartDate"><i class="fas fa-play"></i> Start date *</label>
-                        <input type="date" id="editNewsStartDate" class="news-input" required>
-                    </div>
-                    <div class="news-field">
-                        <label for="editNewsEndDate"><i class="fas fa-stop"></i> End date *</label>
-                        <input type="date" id="editNewsEndDate" class="news-input" required>
+                        <label for="editNewsDescription">News text *</label>
+                        <textarea id="editNewsDescription" class="news-textarea" required></textarea>
                     </div>
                 </div>
 
-                <div class="news-field">
-                    <label><i class="fas fa-layer-group"></i> Display sectors</label>
-                    <div class="news-sector-mode">
-                        <label>
+                <div class="news-edit-section">
+                    <h4><i class="fas fa-calendar-alt"></i> Validity</h4>
+                    <div class="news-dates-row">
+                        <div class="news-field">
+                            <label for="editNewsStartDate">Start date *</label>
+                            <input type="date" id="editNewsStartDate" class="news-input" required>
+                        </div>
+                        <div class="news-field">
+                            <label for="editNewsEndDate">End date *</label>
+                            <input type="date" id="editNewsEndDate" class="news-input" required>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="news-edit-section">
+                    <h4><i class="fas fa-layer-group"></i> Sectors</h4>
+                    <div class="news-sector-mode news-sector-pills">
+                        <label class="news-sector-pill">
                             <input type="radio" name="editNewsSectorMode" id="editNewsSectorAll" value="all">
-                            All sectors
+                            <span>All sectors</span>
                         </label>
-                        <label>
+                        <label class="news-sector-pill">
                             <input type="radio" name="editNewsSectorMode" id="editNewsSectorSelected" value="selected">
-                            Selected sectors
+                            <span>Selected sectors</span>
                         </label>
                     </div>
                     <div id="editNewsSectorGrid" class="news-sector-grid is-disabled"></div>
                 </div>
 
-                <div class="news-field">
-                    <label><i class="fas fa-paperclip"></i> Attachments</label>
+                <div class="news-edit-section">
+                    <h4><i class="fas fa-paperclip"></i> Attachments</h4>
                     <div class="news-doc-search-row">
                         <div class="news-field" style="margin-bottom:0;">
                             <input type="text" id="editDocSearchTitle" class="news-input" placeholder="Search documentation">
@@ -196,7 +223,7 @@
                     <div id="editAttachedDocsList" class="news-attached-list"></div>
                 </div>
 
-                <div class="modal-actions">
+                <div class="modal-actions news-edit-modal-actions">
                     <button type="button" class="btn btn-secondary" id="cancelEditNewsBtn">Cancel</button>
                     <button type="submit" class="btn btn-primary" id="saveEditNewsBtn">
                         <i class="fas fa-save"></i> Save changes

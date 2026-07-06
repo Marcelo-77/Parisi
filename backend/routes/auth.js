@@ -323,7 +323,10 @@ router.post('/change-password', async (req, res) => {
 
 router.post('/logout', (req, res) => {
   clearSessionCookie(res);
-  return res.json({ success: true, message: 'Logged out' });
+  return res.json({
+    success: true,
+    message: 'You have been logged out successfully.'
+  });
 });
 
 module.exports = router;

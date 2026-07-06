@@ -82,6 +82,32 @@
     return `${value.slice(0, max)}...`;
   }
 
+  function getNewsStatus(item) {
+    const start = formatDate(item.startDate);
+    const end = formatDate(item.endDate);
+    if (!start || start === '-' || !end || end === '-') {
+      return { key: 'draft', label: 'Draft' };
+    }
+    const today = new Date().toISOString().slice(0, 10);
+    if (today < start) return { key: 'upcoming', label: 'Upcoming' };
+    if (today > end) return { key: 'expired', label: 'Expired' };
+    return { key: 'active', label: 'Active' };
+  }
+
+  function renderStatusBadge(item) {
+    const status = getNewsStatus(item);
+    return `<span class="news-status-badge news-status-${status.key}">${escapeHtml(status.label)}</span>`;
+  }
+
+  function updateResultsMeta(count, searched) {
+    if (!newsResultsMeta) return;
+    if (!searched) {
+      newsResultsMeta.textContent = 'No search yet';
+      return;
+    }
+    newsResultsMeta.textContent = count === 1 ? '1 record' : `${count} records`;
+  }
+
   function populateSearchSectorSelect() {
     if (!searchSector || !window.SectionOptions) return;
     const current = searchSector.value;
@@ -168,9 +194,7 @@
 
       searchResults = Array.isArray(data.data) ? data.data : [];
       renderResults();
-      if (newsResultsMeta) {
-        newsResultsMeta.textContent = `${searchResults.length} record(s)`;
-      }
+      updateResultsMeta(searchResults.length, true);
       showMessage('', '');
     } catch (error) {
       console.error('Search news error:', error);
@@ -182,10 +206,12 @@
     if (!newsResultsBody) return;
     if (!searchResults.length) {
       newsResultsBody.innerHTML = `
-        <tr>
-          <td colspan="7" class="empty-state">
-            <i class="fas fa-inbox"></i>
-            <p>No news found.</p>
+        <tr class="news-empty-row">
+          <td colspan="8">
+            <div class="news-empty-state">
+              <i class="fas fa-inbox"></i>
+              <p>No news found for the current filters.</p>
+            </div>
           </td>
         </tr>`;
       return;
@@ -193,11 +219,12 @@
 
     newsResultsBody.innerHTML = searchResults.map((item) => `
       <tr data-id="${escapeHtml(item.id)}">
-        <td title="${escapeHtml(item.description)}">${escapeHtml(truncateText(item.description, 80))}</td>
+        <td>${renderStatusBadge(item)}</td>
+        <td class="news-desc-cell" title="${escapeHtml(item.description)}">${escapeHtml(truncateText(item.description, 90))}</td>
         <td>${escapeHtml(formatDate(item.startDate))}</td>
         <td>${escapeHtml(formatDate(item.endDate))}</td>
         <td>${escapeHtml(formatSectors(item))}</td>
-        <td>${(item.documentation || []).length}</td>
+        <td><span class="news-files-count">${(item.documentation || []).length}</span></td>
         <td class="th-hide-mobile">${escapeHtml(item.createdByName || '-')}</td>
         <td class="td-actions">
           <button type="button" class="btn-action btn-edit btn btn-sm btn-outline edit-news-btn" data-id="${escapeHtml(item.id)}" title="Edit">
@@ -382,13 +409,26 @@
     if (searchActiveOnly) searchActiveOnly.checked = false;
     searchResults = [];
     renderResults();
-    if (newsResultsMeta) newsResultsMeta.textContent = '';
+    updateResultsMeta(0, false);
     showMessage('', '');
+  }
+
+  function bindSearchEnterKey() {
+    [searchDescription, searchCreatedBy].forEach((input) => {
+      if (!input) return;
+      input.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter') {
+          event.preventDefault();
+          searchNews();
+        }
+      });
+    });
   }
 
   populateSearchSectorSelect();
   populateEditSectorGrid();
   updateEditSectorMode();
+  bindSearchEnterKey();
 
   if (searchNewsBtn) searchNewsBtn.addEventListener('click', searchNews);
   if (clearSearchBtn) clearSearchBtn.addEventListener('click', clearSearch);

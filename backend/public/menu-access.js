@@ -213,6 +213,22 @@
     }
   }
 
+  async function ensureSystemLogoutScripts() {
+    try {
+      await loadStylesheetOnce('system-logout.css');
+      await loadScriptOnce('system-logout.js');
+    } catch (error) {
+      console.warn('System logout scripts:', error.message);
+    }
+  }
+
+  async function bindSystemLogoutIfReady() {
+    await ensureSystemLogoutScripts();
+    if (window.DoubleYSystemLogout && typeof window.DoubleYSystemLogout.bind === 'function') {
+      window.DoubleYSystemLogout.bind();
+    }
+  }
+
   async function showNewsAnnouncementsIfNeeded() {
     await ensureNewsAnnouncementScripts();
     if (window.DoubleYNewsAnnouncement && typeof window.DoubleYNewsAnnouncement.show === 'function') {
@@ -339,6 +355,8 @@
       window.DoubleYHeaderMenu.setupDropdowns();
     }
 
+    await bindSystemLogoutIfReady();
+
     markMenuAccessPending();
 
     const cached = readCachedMenuAccess();
@@ -356,6 +374,7 @@
       if (window.DoubleYHeaderMenu) {
         window.DoubleYHeaderMenu.setupDropdowns();
       }
+      await bindSystemLogoutIfReady();
     } catch (error) {
       console.error('Menu access error:', error);
       if (cached) {

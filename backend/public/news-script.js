@@ -60,6 +60,7 @@
         input.checked = false;
       });
     }
+    updateFormSummary();
   }
 
   function getSelectedSectors() {
@@ -70,8 +71,12 @@
 
   function renderAttachedDocs() {
     if (!attachedDocsList) return;
+    const countEl = document.getElementById('attachedDocsCount');
+    if (countEl) countEl.textContent = String(attachedDocs.size);
+
     if (!attachedDocs.size) {
-      attachedDocsList.innerHTML = '<p class="news-empty-attached">No files attached yet.</p>';
+      attachedDocsList.innerHTML = '<p class="news-empty-attached"><i class="fas fa-inbox"></i> No files attached yet.</p>';
+      updateFormSummary();
       return;
     }
 
@@ -86,6 +91,7 @@
         </button>
       </div>
     `).join('');
+    updateFormSummary();
   }
 
   function addAttachedDoc(doc) {
@@ -142,6 +148,79 @@
     }
   }
 
+  function getNewsStatusFromDates(startDate, endDate) {
+    const start = startDate ? String(startDate).slice(0, 10) : '';
+    const end = endDate ? String(endDate).slice(0, 10) : '';
+    if (!start || !end) return { key: 'draft', label: 'Draft' };
+    const today = new Date().toISOString().slice(0, 10);
+    if (today < start) return { key: 'upcoming', label: 'Upcoming' };
+    if (today > end) return { key: 'expired', label: 'Expired' };
+    return { key: 'active', label: 'Active' };
+  }
+
+  function updateFormSummary() {
+    const statusEl = document.getElementById('newsSummaryStatus');
+    const periodEl = document.getElementById('newsSummaryPeriod');
+    const audienceEl = document.getElementById('newsSummaryAudience');
+    const attachmentsEl = document.getElementById('newsSummaryAttachments');
+    const previewBody = document.getElementById('newsPopupPreviewBody');
+    const countEl = document.getElementById('newsDescriptionCount');
+
+    const description = descriptionInput ? descriptionInput.value : '';
+    const startDate = startDateInput ? startDateInput.value : '';
+    const endDate = endDateInput ? endDateInput.value : '';
+    const allSectors = Boolean(sectorAllRadio && sectorAllRadio.checked);
+    const sectors = getSelectedSectors();
+
+    if (countEl) {
+      countEl.textContent = `${description.length} / 4000`;
+    }
+
+    if (statusEl) {
+      const status = getNewsStatusFromDates(startDate, endDate);
+      statusEl.textContent = status.label;
+      statusEl.className = `news-status-badge news-status-${status.key}`;
+    }
+
+    if (periodEl) {
+      periodEl.textContent = startDate && endDate ? `${startDate} → ${endDate}` : '—';
+    }
+
+    if (audienceEl) {
+      if (allSectors) {
+        audienceEl.textContent = 'All sectors';
+      } else if (sectors.length) {
+        audienceEl.textContent = sectors
+          .map((s) => (window.SectionOptions ? window.SectionOptions.formatSectionLabel(s) : s))
+          .join(', ');
+      } else {
+        audienceEl.textContent = 'Select sector(s)';
+      }
+    }
+
+    if (attachmentsEl) {
+      attachmentsEl.textContent = `${attachedDocs.size} file(s)`;
+    }
+
+    if (previewBody) {
+      const previewText = description.trim();
+      previewBody.textContent = previewText || 'Your message will appear here...';
+    }
+  }
+
+  function bindFormSummary() {
+    const fields = [descriptionInput, startDateInput, endDateInput, sectorAllRadio, sectorSelectedRadio];
+    fields.forEach((el) => {
+      if (!el) return;
+      el.addEventListener('input', updateFormSummary);
+      el.addEventListener('change', updateFormSummary);
+    });
+    if (sectorGrid) {
+      sectorGrid.addEventListener('change', updateFormSummary);
+    }
+    updateFormSummary();
+  }
+
   function resetForm() {
     if (form) form.reset();
     attachedDocs.clear();
@@ -151,6 +230,7 @@
     if (sectorAllRadio) sectorAllRadio.checked = true;
     updateSectorMode();
     clearMessage();
+    updateFormSummary();
   }
 
   async function saveNews(event) {
@@ -224,6 +304,7 @@
 
   populateSectorGrid();
   updateSectorMode();
+  bindFormSummary();
 
   if (sectorAllRadio) sectorAllRadio.addEventListener('change', updateSectorMode);
   if (sectorSelectedRadio) sectorSelectedRadio.addEventListener('change', updateSectorMode);
