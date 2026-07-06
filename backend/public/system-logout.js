@@ -33,7 +33,6 @@
     overlay.innerHTML = [
       '<div class="system-exit-modal">',
       '  <div class="system-exit-modal-header">',
-      '    <i class="fas fa-heart" aria-hidden="true"></i>',
       '    <h2 id="systemExitTitle">Thank you!</h2>',
       '  </div>',
       '  <div class="system-exit-modal-body">',
