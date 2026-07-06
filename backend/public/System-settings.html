@@ -52,55 +52,133 @@
 
         <main class="main-content">
             <section class="system-settings-section">
-                <div class="system-settings-intro">
-                    <h2><i class="fas fa-sliders-h"></i> System Settings</h2>
-                    <p>Configure header buttons and the background color used across the system.</p>
+                <div class="system-settings-hero">
+                    <div class="system-settings-hero-text">
+                        <div class="system-settings-hero-icon" aria-hidden="true">
+                            <i class="fas fa-sliders-h"></i>
+                        </div>
+                        <div>
+                            <h2>System Settings</h2>
+                            <p>Customize the header display and background gradient used across all pages. Changes preview live before you save.</p>
+                        </div>
+                    </div>
+                    <span id="systemSettingsDirtyBadge" class="system-settings-dirty-badge" hidden>
+                        <i class="fas fa-circle" aria-hidden="true"></i> Unsaved changes
+                    </span>
                 </div>
 
                 <form id="systemSettingsForm" novalidate>
-                    <div class="system-settings-card">
-                        <h3><i class="fas fa-grip-horizontal"></i> Header buttons</h3>
-                        <div class="system-settings-option">
-                            <input type="checkbox" id="showHeaderStats" name="showHeaderStats" checked>
-                            <div>
-                                <label for="showHeaderStats">Show buttons on top</label>
-                                <p class="system-settings-help">When checked, displays Total Items, Low Stock, Entries Today and Exits Today in the page header.</p>
+                    <div class="system-settings-layout">
+                        <div class="system-settings-main">
+                            <div class="system-settings-card">
+                                <div class="system-settings-card-head">
+                                    <h3><i class="fas fa-grip-horizontal"></i> Header display</h3>
+                                    <span class="system-settings-card-tag">Appearance</span>
+                                </div>
+                                <div class="system-settings-toggle-row">
+                                    <label class="system-settings-switch" for="showHeaderStats">
+                                        <input type="checkbox" id="showHeaderStats" name="showHeaderStats" checked>
+                                        <span class="system-settings-switch-slider" aria-hidden="true"></span>
+                                    </label>
+                                    <div class="system-settings-toggle-copy">
+                                        <label for="showHeaderStats">Show header statistics</label>
+                                        <p class="system-settings-help">Displays Total Items, Low Stock, Entries Today and Exits Today in the page header on every screen.</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="system-settings-card">
+                                <div class="system-settings-card-head">
+                                    <h3><i class="fas fa-palette"></i> Background gradient</h3>
+                                    <span class="system-settings-card-tag">Theme</span>
+                                </div>
+                                <p class="system-settings-help system-settings-help-intro">Pick the start and end colors for the system background. Default is blue to purple.</p>
+                                <div class="system-settings-colors">
+                                    <div class="system-settings-color-field">
+                                        <label for="backgroundColor"><i class="fas fa-droplet"></i> Start color</label>
+                                        <div class="system-settings-color-input-wrap">
+                                            <input type="color" id="backgroundColor" name="backgroundColor" value="#667eea" aria-describedby="backgroundColorHex">
+                                            <output id="backgroundColorHex" class="system-settings-hex" for="backgroundColor">#667EEA</output>
+                                        </div>
+                                    </div>
+                                    <div class="system-settings-color-field">
+                                        <label for="backgroundColorEnd"><i class="fas fa-droplet"></i> End color</label>
+                                        <div class="system-settings-color-input-wrap">
+                                            <input type="color" id="backgroundColorEnd" name="backgroundColorEnd" value="#764ba2" aria-describedby="backgroundColorEndHex">
+                                            <output id="backgroundColorEndHex" class="system-settings-hex" for="backgroundColorEnd">#764BA2</output>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="system-settings-card system-settings-actions-card">
+                                <div class="system-settings-actions">
+                                    <div class="system-settings-actions-group system-settings-actions-secondary">
+                                        <button type="button" class="btn btn-default" id="useDefaultSystemSettingsBtn">
+                                            <i class="fas fa-rotate-left"></i> Use defaults
+                                        </button>
+                                        <button type="button" class="btn btn-close" id="closeSystemSettingsBtn">
+                                            <i class="fas fa-times"></i> Close
+                                        </button>
+                                    </div>
+                                    <div class="system-settings-actions-group system-settings-actions-primary">
+                                        <button type="button" class="btn btn-secondary" id="cancelSystemSettingsBtn" disabled>
+                                            <i class="fas fa-undo"></i> Cancel
+                                        </button>
+                                        <button type="submit" class="btn btn-primary" id="saveSystemSettingsBtn">
+                                            <i class="fas fa-save"></i> Save settings
+                                        </button>
+                                    </div>
+                                </div>
+                                <div id="systemSettingsMessage" class="system-settings-message" role="status" aria-live="polite"></div>
                             </div>
                         </div>
-                    </div>
 
-                    <div class="system-settings-card">
-                        <h3><i class="fas fa-palette"></i> Background color</h3>
-                        <p class="system-settings-help">Default is blue. You can change the system background gradient.</p>
-                        <div class="system-settings-colors">
-                            <div class="system-settings-color-field">
-                                <label for="backgroundColor">Start color</label>
-                                <input type="color" id="backgroundColor" name="backgroundColor" value="#667eea">
+                        <aside class="system-settings-aside" aria-label="Live preview">
+                            <div class="system-settings-preview-panel">
+                                <div class="system-settings-preview-panel-head">
+                                    <h3><i class="fas fa-eye"></i> Live preview</h3>
+                                    <p>How the header and background will look after saving.</p>
+                                </div>
+
+                                <div class="system-settings-preview-frame">
+                                    <div id="previewHeaderMock" class="system-settings-preview-header">
+                                        <div class="system-settings-preview-stat">
+                                            <strong>128</strong>
+                                            <span>Total Items</span>
+                                        </div>
+                                        <div class="system-settings-preview-stat system-settings-preview-stat-warn">
+                                            <strong>4</strong>
+                                            <span>Low Stock</span>
+                                        </div>
+                                        <div class="system-settings-preview-brand">Double Y</div>
+                                        <div class="system-settings-preview-stat system-settings-preview-stat-ok">
+                                            <strong>12</strong>
+                                            <span>Entries</span>
+                                        </div>
+                                        <div class="system-settings-preview-stat system-settings-preview-stat-exit">
+                                            <strong>7</strong>
+                                            <span>Exits</span>
+                                        </div>
+                                    </div>
+                                    <div id="backgroundPreview" class="system-settings-preview-body">
+                                        <span>Background gradient</span>
+                                    </div>
+                                </div>
+
+                                <div class="system-settings-preview-legend">
+                                    <div class="system-settings-preview-swatch">
+                                        <span id="previewSwatchStart" class="system-settings-swatch-color" style="background:#667eea"></span>
+                                        <span>Start</span>
+                                    </div>
+                                    <div class="system-settings-preview-swatch">
+                                        <span id="previewSwatchEnd" class="system-settings-swatch-color" style="background:#764ba2"></span>
+                                        <span>End</span>
+                                    </div>
+                                </div>
                             </div>
-                            <div class="system-settings-color-field">
-                                <label for="backgroundColorEnd">End color</label>
-                                <input type="color" id="backgroundColorEnd" name="backgroundColorEnd" value="#764ba2">
-                            </div>
-                        </div>
-                        <div id="backgroundPreview" class="system-settings-preview">Background preview</div>
+                        </aside>
                     </div>
-
-                    <div class="form-actions system-settings-actions">
-                        <button type="button" class="btn btn-default" id="useDefaultSystemSettingsBtn">
-                            <i class="fas fa-rotate-left"></i> Use default values
-                        </button>
-                        <button type="button" class="btn btn-close" id="closeSystemSettingsBtn">
-                            <i class="fas fa-times"></i> Close
-                        </button>
-                        <button type="button" class="btn btn-secondary" id="cancelSystemSettingsBtn" disabled>
-                            <i class="fas fa-undo"></i> Cancel changes
-                        </button>
-                        <button type="submit" class="btn btn-primary" id="saveSystemSettingsBtn">
-                            <i class="fas fa-save"></i> Save settings
-                        </button>
-                    </div>
-
-                    <div id="systemSettingsMessage" class="system-settings-message" role="status"></div>
                 </form>
             </section>
         </main>

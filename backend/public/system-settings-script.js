@@ -16,8 +16,30 @@
 
   function updatePreview(settings) {
     const preview = document.getElementById('backgroundPreview');
+    const previewHeader = document.getElementById('previewHeaderMock');
+    const swatchStart = document.getElementById('previewSwatchStart');
+    const swatchEnd = document.getElementById('previewSwatchEnd');
+    const hexStart = document.getElementById('backgroundColorHex');
+    const hexEnd = document.getElementById('backgroundColorEndHex');
+
     if (!preview || !window.DoubleYSystemSettings) return;
-    preview.style.background = window.DoubleYSystemSettings.buildBackgroundStyle(settings);
+
+    const gradient = window.DoubleYSystemSettings.buildBackgroundStyle(settings);
+    preview.style.background = gradient;
+
+    const frame = preview.closest('.system-settings-preview-frame');
+    if (frame) {
+      frame.style.background = gradient;
+    }
+
+    if (previewHeader) {
+      previewHeader.classList.toggle('is-hidden', settings.showHeaderStats === false);
+    }
+
+    if (swatchStart) swatchStart.style.background = settings.backgroundColor;
+    if (swatchEnd) swatchEnd.style.background = settings.backgroundColorEnd;
+    if (hexStart) hexStart.textContent = String(settings.backgroundColor || '').toUpperCase();
+    if (hexEnd) hexEnd.textContent = String(settings.backgroundColorEnd || '').toUpperCase();
   }
 
   function readFormSettings() {
@@ -53,10 +75,12 @@
     const saveBtn = document.getElementById('saveSystemSettingsBtn');
     const cancelBtn = document.getElementById('cancelSystemSettingsBtn');
     const defaultBtn = document.getElementById('useDefaultSystemSettingsBtn');
+    const dirtyBadge = document.getElementById('systemSettingsDirtyBadge');
     if (!persistedSettings) {
       if (saveBtn) saveBtn.disabled = true;
       if (cancelBtn) cancelBtn.disabled = true;
       if (defaultBtn) defaultBtn.disabled = true;
+      if (dirtyBadge) dirtyBadge.hidden = true;
       return;
     }
 
@@ -66,6 +90,7 @@
     if (saveBtn) saveBtn.disabled = !hasChanges;
     if (cancelBtn) cancelBtn.disabled = !hasChanges;
     if (defaultBtn) defaultBtn.disabled = isDefault;
+    if (dirtyBadge) dirtyBadge.hidden = !hasChanges;
   }
 
   async function loadSettings() {
