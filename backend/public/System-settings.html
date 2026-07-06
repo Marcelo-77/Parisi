@@ -50,22 +50,18 @@
             </div>
         </header>
 
-        <main class="main-content">
+        <main class="main-content system-settings-main">
             <section class="system-settings-section">
-                <div class="system-settings-hero">
-                    <div class="system-settings-hero-text">
-                        <div class="system-settings-hero-icon" aria-hidden="true">
-                            <i class="fas fa-sliders-h"></i>
-                        </div>
-                        <div>
-                            <h2>System Settings</h2>
+                <div class="system-settings-white-panel">
+                    <div class="system-settings-page-intro">
+                        <div class="system-settings-page-intro-text">
+                            <h2><i class="fas fa-sliders-h"></i> System Settings</h2>
                             <p>Customize the header display and background gradient used across all pages. Changes preview live before you save.</p>
                         </div>
+                        <span id="systemSettingsDirtyBadge" class="system-settings-dirty-badge" hidden>
+                            <i class="fas fa-circle" aria-hidden="true"></i> Unsaved changes
+                        </span>
                     </div>
-                    <span id="systemSettingsDirtyBadge" class="system-settings-dirty-badge" hidden>
-                        <i class="fas fa-circle" aria-hidden="true"></i> Unsaved changes
-                    </span>
-                </div>
 
                 <form id="systemSettingsForm" novalidate>
                     <div class="system-settings-layout">
@@ -180,6 +176,7 @@
                         </aside>
                     </div>
                 </form>
+                </div>
             </section>
         </main>
 

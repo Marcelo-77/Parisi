@@ -48,28 +48,26 @@
             </div>
         </header>
 
-        <main class="main-content">
+        <main class="main-content news-search-main">
             <section class="news-section news-search-section">
-                <div class="news-hero">
-                    <div class="news-hero-text">
-                        <div class="news-hero-icon" aria-hidden="true"><i class="fas fa-search"></i></div>
-                        <div>
-                            <h2>Search news</h2>
+                <div class="news-search-white-panel news-white-panel">
+                    <div class="news-search-intro news-page-intro">
+                        <div class="news-search-intro-text news-page-intro-text">
+                            <h2><i class="fas fa-search"></i> Search news</h2>
                             <p>Find announcements by description, sector, creator or date. Edit or delete existing news.</p>
                         </div>
+                        <div class="news-search-intro-actions news-page-intro-actions">
+                            <a href="News.html" class="btn btn-primary" data-app="News.html">
+                                <i class="fas fa-plus"></i> New news
+                            </a>
+                        </div>
                     </div>
-                    <div class="news-hero-actions">
-                        <a href="News.html" class="btn btn-primary" data-app="News.html">
-                            <i class="fas fa-plus"></i> New news
-                        </a>
-                    </div>
-                </div>
 
-                <div class="news-card news-filters-card">
-                    <div class="news-card-head">
-                        <h3><i class="fas fa-filter"></i> Filters</h3>
-                        <span class="news-card-tag">Search</span>
-                    </div>
+                    <div class="news-search-block news-filters-block">
+                        <div class="news-card-head">
+                            <h3><i class="fas fa-filter"></i> Filters</h3>
+                            <span class="news-card-tag">Search</span>
+                        </div>
                     <div class="news-search-filters">
                         <div class="news-field">
                             <label for="searchDescription"><i class="fas fa-align-left"></i> Description</label>
@@ -114,13 +112,13 @@
                         </button>
                     </div>
                     <div id="newsSearchMessage" class="news-message" role="status" aria-live="polite"></div>
-                </div>
-
-                <div class="news-card news-results-card">
-                    <div class="news-card-head">
-                        <h3><i class="fas fa-list"></i> Results</h3>
-                        <span id="newsResultsMeta" class="news-results-badge" aria-live="polite">No search yet</span>
                     </div>
+
+                    <div class="news-search-block news-results-block">
+                        <div class="news-card-head">
+                            <h3><i class="fas fa-list"></i> Results</h3>
+                            <span id="newsResultsMeta" class="news-results-badge" aria-live="polite">No search yet</span>
+                        </div>
                     <div class="table-container news-table-container">
                         <table class="warehouse-table news-results-table">
                             <thead>
@@ -146,6 +144,7 @@
                                 </tr>
                             </tbody>
                         </table>
+                    </div>
                     </div>
                 </div>
             </section>

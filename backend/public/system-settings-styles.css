@@ -3,47 +3,52 @@
   margin: 0 auto;
 }
 
-.system-settings-hero {
+.system-settings-main {
+  align-items: stretch;
+  width: 100%;
+}
+
+.system-settings-white-panel {
+  width: 100%;
+  background: #fff;
+  border-radius: 16px;
+  padding: 1.5rem 1.75rem;
+  margin: 20px 0;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
+  border: 1px solid #e8edf2;
+}
+
+.system-settings-page-intro {
   display: flex;
   flex-wrap: wrap;
   align-items: flex-start;
   justify-content: space-between;
   gap: 1rem;
-  margin-bottom: 1.5rem;
+  padding-bottom: 1.25rem;
+  margin-bottom: 1.25rem;
+  border-bottom: 2px solid #f0f2f5;
 }
 
-.system-settings-hero-text {
-  display: flex;
-  align-items: flex-start;
-  gap: 1rem;
-  flex: 1 1 320px;
-}
-
-.system-settings-hero-icon {
-  flex-shrink: 0;
-  width: 52px;
-  height: 52px;
-  border-radius: 14px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: #fff;
-  font-size: 1.25rem;
-  box-shadow: 0 8px 20px rgba(102, 126, 234, 0.28);
-}
-
-.system-settings-hero h2 {
-  margin: 0 0 0.35rem;
+.system-settings-page-intro-text h2 {
+  margin: 0 0 0.4rem;
   font-size: 1.45rem;
   color: #1f2937;
 }
 
-.system-settings-hero p {
+.system-settings-page-intro-text h2 i {
+  color: #667eea;
+  margin-right: 0.35rem;
+}
+
+.system-settings-page-intro-text p {
   margin: 0;
   color: #4b5563;
   line-height: 1.55;
-  max-width: 52ch;
+  max-width: 62ch;
+}
+
+.system-settings-white-panel > form {
+  margin-top: 0;
 }
 
 .system-settings-dirty-badge {
@@ -453,9 +458,13 @@
 }
 
 @media (max-width: 640px) {
-  .system-settings-hero-text {
+  .system-settings-page-intro {
     flex-direction: column;
-    gap: 0.75rem;
+    align-items: stretch;
+  }
+
+  .system-settings-dirty-badge {
+    align-self: flex-start;
   }
 
   .system-settings-preview-header {

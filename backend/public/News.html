@@ -48,25 +48,23 @@
             </div>
         </header>
 
-        <main class="main-content">
+        <main class="main-content news-create-main">
             <section class="news-section">
-                <div class="news-hero">
-                    <div class="news-hero-text">
-                        <div class="news-hero-icon" aria-hidden="true"><i class="fas fa-newspaper"></i></div>
-                        <div>
-                            <h2>New announcement</h2>
+                <div class="news-white-panel">
+                    <div class="news-page-intro">
+                        <div class="news-page-intro-text">
+                            <h2><i class="fas fa-newspaper"></i> New announcement</h2>
                             <p>Create a news item with validity period, target sector(s), and optional attachments from System Documentation.</p>
                         </div>
+                        <div class="news-page-intro-actions">
+                            <a href="News-Search.html" class="btn btn-secondary" data-app="News-Search.html">
+                                <i class="fas fa-search"></i> Search news
+                            </a>
+                            <button type="button" class="btn btn-secondary news-help-btn" id="newsHelpBtn" aria-haspopup="dialog" aria-controls="newsHelpModal">
+                                <i class="fas fa-circle-question"></i> Help
+                            </button>
+                        </div>
                     </div>
-                    <div class="news-hero-actions">
-                        <a href="News-Search.html" class="btn btn-secondary" data-app="News-Search.html">
-                            <i class="fas fa-search"></i> Search news
-                        </a>
-                        <button type="button" class="btn btn-secondary news-help-btn" id="newsHelpBtn" aria-haspopup="dialog" aria-controls="newsHelpModal">
-                            <i class="fas fa-circle-question"></i> Help
-                        </button>
-                    </div>
-                </div>
 
                 <form id="newsForm" novalidate>
                     <div class="news-form-layout">
@@ -210,6 +208,7 @@
                         </aside>
                     </div>
                 </form>
+                </div>
 
                 <div id="newsHelpModal" class="modal news-help-modal" role="dialog" aria-modal="true" aria-labelledby="newsHelpModalTitle" hidden>
                     <div class="modal-content news-help-modal-content">
