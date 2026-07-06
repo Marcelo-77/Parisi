@@ -1,5 +1,5 @@
 // Employee service using PostgreSQL
-const { query } = require('../config/database');
+const { query, getClient } = require('../config/database');
 const Funcionario = require('../models/Funcionario');
 const { verifyStoredPassword } = require('../middleware/auth');
 const companyService = require('./companyService');
@@ -34,8 +34,8 @@ class FuncionarioServiceDB {
 
     const insertQuery = `
       INSERT INTO ${this.tableName} 
-      (nome, email, telefone, cargo, departamento, data_admissao, photo, ativo, password, company_id)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+      (nome, email, telefone, cargo, departamento, data_admissao, photo, ativo, password, company_id, sector)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
       RETURNING id
     `;
 
@@ -49,7 +49,8 @@ class FuncionarioServiceDB {
       funcionario.photo || null,
       funcionario.ativo,
       funcionario.password || null,
-      funcionario.companyId || dados.companyId || null
+      funcionario.companyId || dados.companyId || null,
+      funcionario.sector || dados.sector || null
     ];
 
     try {
@@ -296,12 +297,16 @@ class FuncionarioServiceDB {
       }
     }
 
+    if (dados.sector !== undefined) {
+      dados.sector = dados.sector ? String(dados.sector).trim() : null;
+    }
+
     // Build update query dynamically
     const updateFields = [];
     const values = [];
     let paramCount = 0;
 
-    const allowedFields = ['nome', 'email', 'telefone', 'cargo', 'departamento', 'dataAdmissao', 'photo', 'ativo', 'password', 'companyId'];
+    const allowedFields = ['nome', 'email', 'telefone', 'cargo', 'departamento', 'sector', 'dataAdmissao', 'photo', 'ativo', 'password', 'companyId'];
     
     allowedFields.forEach(field => {
       if (dados[field] !== undefined) {
@@ -364,21 +369,46 @@ class FuncionarioServiceDB {
 
   // Permanently delete employee
   async excluirPermanentemente(id) {
-    const deleteQuery = `DELETE FROM ${this.tableName} WHERE id = $1 RETURNING *`;
+    const client = await getClient();
 
     try {
-      const result = await query(deleteQuery, [id]);
-      
-      if (result.rows.length === 0) {
+      await client.query('BEGIN');
+
+      const existing = await client.query(
+        `SELECT * FROM ${this.tableName} WHERE id = $1`,
+        [id]
+      );
+      if (existing.rows.length === 0) {
+        await client.query('ROLLBACK');
         throw new Error('Employee not found');
       }
-      
+
+      await client.query(
+        'UPDATE phase_movement_item SET id_funcionario = NULL WHERE id_funcionario = $1',
+        [id]
+      );
+      await client.query(
+        'DELETE FROM user_applications WHERE id_funcionario = $1',
+        [id]
+      );
+
+      const result = await client.query(
+        `DELETE FROM ${this.tableName} WHERE id = $1 RETURNING *`,
+        [id]
+      );
+
+      await client.query('COMMIT');
+
       const funcionarioExcluido = this.mapRowToFuncionario(result.rows[0]);
       console.log(`✅ Employee permanently deleted: ${funcionarioExcluido.nome}`);
       return funcionarioExcluido;
     } catch (error) {
+      await client.query('ROLLBACK').catch(() => {});
       console.error('❌ Error permanently deleting employee:', error);
-      throw error;
+      if (error.message === 'Employee not found') throw error;
+      throw new Error(`Error permanently deleting employee: ${error.message}`);
+    } finally {
+      client.release();
     }
   }
 
@@ -449,6 +479,7 @@ class FuncionarioServiceDB {
       telefone: row.telefone,
       cargo: row.cargo,
       departamento: row.departamento,
+      sector: row.sector || null,
       companyId: row.company_id || null,
       companyName: row.company_name || null,
       dataAdmissao: row.data_admissao,

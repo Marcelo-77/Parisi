@@ -5,7 +5,7 @@
  * Barcodes/nomes enriquecidos com BARCODEPARISI.csv quando houver match.
  *
  * Uso:
- *   node scripts/generate-neon-insert-products.js
+ *   node scripts/generatena-neon-insert-products.js
  *   node scripts/generate-neon-insert-products.js --source=data_product
  *   node scripts/generate-neon-insert-products.js --source=csv
  *

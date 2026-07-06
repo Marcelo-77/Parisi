@@ -76,6 +76,16 @@ async function initDatabase() {
       // Coluna pode já existir
     }
 
+    try {
+      await query(`
+        ALTER TABLE funcionarios
+        ADD COLUMN IF NOT EXISTS sector VARCHAR(50)
+      `);
+      console.log('✅ Coluna sector adicionada/verificada em funcionarios');
+    } catch (error) {
+      // Coluna pode já existir
+    }
+
     await query(`
       INSERT INTO company (name)
       VALUES ('Parisi Bathware Sydney'), ('Double-Y Warehouse System'), ('Alpha & Omega Church')
@@ -344,6 +354,8 @@ async function initDatabase() {
       { application: 'System-Documentation.html', menuName: 'Applications_System_Documentation' },
       { application: 'System-Documentation-Search.html', menuName: 'Applications_System_Documentation_Search' },
       { application: 'System-settings.html', menuName: 'Applications_System_Settings' },
+      { application: 'News.html', menuName: 'Applications_News' },
+      { application: 'News-Search.html', menuName: 'Applications_News_Search' },
       { application: 'location.html', menuName: 'Location' },
       { application: 'location-search.html', menuName: 'Location_Search' },
       { application: 'location-product.html', menuName: 'Location_Product' },
@@ -420,6 +432,40 @@ async function initDatabase() {
     await query(`ALTER TABLE system_documentation ADD COLUMN IF NOT EXISTS file_data BYTEA`);
     await query(`ALTER TABLE system_documentation ADD COLUMN IF NOT EXISTS sector VARCHAR(50)`);
     console.log('✅ Tabela system_documentation criada/verificada');
+
+    await query(`
+      CREATE TABLE IF NOT EXISTS news (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        description TEXT NOT NULL,
+        start_date DATE NOT NULL,
+        end_date DATE NOT NULL,
+        all_sectors BOOLEAN NOT NULL DEFAULT false,
+        sectors JSONB NOT NULL DEFAULT '[]'::jsonb,
+        created_by UUID REFERENCES funcionarios(id) ON DELETE SET NULL,
+        created_by_name VARCHAR(100),
+        criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        atualizado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+    await query(`
+      CREATE TABLE IF NOT EXISTS news_documentation (
+        news_id UUID NOT NULL REFERENCES news(id) ON DELETE CASCADE,
+        system_documentation_id UUID NOT NULL REFERENCES system_documentation(id) ON DELETE CASCADE,
+        PRIMARY KEY (news_id, system_documentation_id)
+      )
+    `);
+    await query(`CREATE INDEX IF NOT EXISTS idx_news_dates ON news(start_date, end_date)`);
+    await query(`CREATE INDEX IF NOT EXISTS idx_news_criado ON news(criado_em DESC)`);
+    await query(`
+      CREATE TABLE IF NOT EXISTS news_read (
+        news_id UUID NOT NULL REFERENCES news(id) ON DELETE CASCADE,
+        user_key VARCHAR(100) NOT NULL,
+        read_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY (news_id, user_key)
+      )
+    `);
+    await query(`CREATE INDEX IF NOT EXISTS idx_news_read_user ON news_read(user_key)`);
+    console.log('✅ Tabelas news e news_documentation criadas/verificadas');
 
     await query(`
       CREATE TABLE IF NOT EXISTS system_settings (

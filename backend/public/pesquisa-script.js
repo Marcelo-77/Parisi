@@ -429,7 +429,7 @@ async function confirmarExclusao() {
     if (!funcionarioSelecionado) return;
     
     try {
-        const response = await fetch(`${API_BASE_URL}/${funcionarioSelecionado.id}`, {
+        const response = await fetch(`${API_BASE_URL}/${funcionarioSelecionado.id}/permanente`, {
             method: 'DELETE'
         });
         

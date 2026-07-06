@@ -55,13 +55,39 @@
                             <i class="fas fa-window-restore"></i> Applications <i class="fas fa-chevron-down"></i>
                         </button>
                         <div class="applications-dropdown-menu" id="applicationsDropdownMenu" aria-hidden="true">
-                            <a href="applications.html" class="dropdown-item" data-app="applications.html"><i class="fas fa-plus"></i> New Applications</a>
-                            <a href="applications.html?mode=search" class="dropdown-item" data-app="applications.html"><i class="fas fa-search"></i> Search Applications</a>
-                            <a href="application_users.html" class="dropdown-item" data-app="application_users.html"><i class="fas fa-user-cog"></i> Application Users</a>
+                            <div class="dropdown-submenu-group" data-submenu="applications-registry">
+                                <button type="button" class="dropdown-submenu-trigger" aria-haspopup="true" aria-expanded="false">
+                                    <span><i class="fas fa-window-restore"></i> Applications</span>
+                                    <i class="fas fa-chevron-right submenu-chevron" aria-hidden="true"></i>
+                                </button>
+                                <div class="dropdown-submenu" aria-hidden="true">
+                                    <a href="applications.html" class="dropdown-item" data-app="applications.html"><i class="fas fa-plus"></i> New Applications</a>
+                                    <a href="applications.html?mode=search" class="dropdown-item" data-app="applications.html"><i class="fas fa-search"></i> Search Applications</a>
+                                    <a href="application_users.html" class="dropdown-item" data-app="application_users.html"><i class="fas fa-user-cog"></i> Application Users</a>
+                                </div>
+                            </div>
                             <a href="upload-warehouse-map.html" class="dropdown-item" data-app="upload-warehouse-map.html"><i class="fas fa-upload"></i> Upload Warehouse Map</a>
-                            <a href="System-Documentation.html" class="dropdown-item" data-app="System-Documentation.html"><i class="fas fa-plus"></i> New System Documentation</a>
-                            <a href="System-Documentation-Search.html" class="dropdown-item" data-app="System-Documentation-Search.html"><i class="fas fa-search"></i> Search System Documentation</a>
+                            <div class="dropdown-submenu-group" data-submenu="system-documentation">
+                                <button type="button" class="dropdown-submenu-trigger" aria-haspopup="true" aria-expanded="false">
+                                    <span><i class="fas fa-book"></i> System Documentation</span>
+                                    <i class="fas fa-chevron-right submenu-chevron" aria-hidden="true"></i>
+                                </button>
+                                <div class="dropdown-submenu" aria-hidden="true">
+                                    <a href="System-Documentation.html" class="dropdown-item" data-app="System-Documentation.html"><i class="fas fa-plus"></i> New System Documentation</a>
+                                    <a href="System-Documentation-Search.html" class="dropdown-item" data-app="System-Documentation-Search.html"><i class="fas fa-search"></i> Search System Documentation</a>
+                                </div>
+                            </div>
                             <a href="System-settings.html" class="dropdown-item" data-app="System-settings.html"><i class="fas fa-sliders-h"></i> System Settings</a>
+                            <div class="dropdown-submenu-group" data-submenu="news">
+                                <button type="button" class="dropdown-submenu-trigger" aria-haspopup="true" aria-expanded="false">
+                                    <span><i class="fas fa-newspaper"></i> News</span>
+                                    <i class="fas fa-chevron-right submenu-chevron" aria-hidden="true"></i>
+                                </button>
+                                <div class="dropdown-submenu" aria-hidden="true">
+                                    <a href="News.html" class="dropdown-item" data-app="News.html"><i class="fas fa-plus"></i> News</a>
+                                    <a href="News-Search.html" class="dropdown-item" data-app="News-Search.html"><i class="fas fa-search"></i> Search News</a>
+                                </div>
+                            </div>
                         </div>
                     </div>
                     <div class="movement-dropdown">

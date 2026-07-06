@@ -1,0 +1,228 @@
+%% Double-Y Warehouse System — Entity Relationship Diagram (Mermaid)
+%% View at https://mermaid.live or in VS Code / GitHub
+
+erDiagram
+    company ||--o{ funcionarios : "has"
+    funcionarios ||--o{ user_applications : "granted"
+    system_applications ||--o{ user_applications : "includes"
+    funcionarios ||--o{ system_documentation : "uploads"
+    funcionarios ||--o{ news : "creates"
+    funcionarios ||--o{ church_service_order : "creates"
+    funcionarios ||--o{ phase_movement_item : "handles"
+    news ||--o{ news_documentation : "attaches"
+    system_documentation ||--o{ news_documentation : "linked"
+    news ||--o{ news_read : "read by"
+    warehouse_items ||--o{ warehouse_movements : "logged"
+    warehouse_items ||--o{ movement_item : "in"
+    warehouse_items ||--o{ location_product : "stored at"
+    warehouse_locations ||--o{ location_product : "contains"
+    situation_product ||--o{ location_product : "condition"
+    type_movement ||--o{ phase_movement : "has phases"
+    type_movement ||--o{ movement : "typed"
+    customer ||--o{ movement : "orders"
+    movement ||--o{ movement_item : "contains"
+    movement_item ||--o{ phase_movement_item : "tracked in"
+    phase_movement ||--o{ phase_movement_item : "phase"
+
+    company {
+        uuid id PK
+        varchar name UK
+        timestamp criado_em
+        timestamp atualizado_em
+    }
+
+    funcionarios {
+        uuid id PK
+        varchar nome
+        varchar email UK
+        varchar telefone
+        varchar cargo
+        varchar departamento
+        date data_admissao
+        text photo
+        text password
+        boolean ativo
+        uuid company_id FK
+        varchar sector
+        timestamp criado_em
+        timestamp atualizado_em
+    }
+
+    system_applications {
+        int syap_cd_seq PK
+        varchar syap_nm_application UK
+        varchar syap_ds_detailed
+    }
+
+    user_applications {
+        uuid id_funcionario PK_FK
+        int syap_cd_seq PK_FK
+        timestamp criado_em
+    }
+
+    system_settings {
+        varchar setting_key PK
+        text setting_value
+        timestamp updated_at
+    }
+
+    system_documentation {
+        uuid id PK
+        varchar title
+        text description
+        varchar sector
+        varchar file_name
+        varchar stored_name
+        varchar mime_type
+        bigint file_size
+        bytea file_data
+        uuid uploaded_by FK
+        varchar uploaded_by_name
+        timestamp criado_em
+    }
+
+    news {
+        uuid id PK
+        text description
+        date start_date
+        date end_date
+        boolean all_sectors
+        jsonb sectors
+        uuid created_by FK
+        varchar created_by_name
+        timestamp criado_em
+        timestamp atualizado_em
+    }
+
+    news_documentation {
+        uuid news_id PK_FK
+        uuid system_documentation_id PK_FK
+    }
+
+    news_read {
+        uuid news_id PK_FK
+        varchar user_key PK
+        timestamp read_at
+    }
+
+    church_service_order {
+        uuid id PK
+        varchar title
+        date service_date
+        varchar church_name
+        jsonb worship_songs
+        uuid created_by FK
+        timestamp criado_em
+        timestamp atualizado_em
+    }
+
+    warehouse_items {
+        uuid id PK
+        varchar codigo UK
+        numeric barcode
+        varchar nome
+        varchar categoria
+        int quantidade
+        int quantidade_minima
+        varchar localizacao
+        decimal preco_unitario
+        varchar fornecedor
+        text descricao
+        timestamp criado_em
+        timestamp atualizado_em
+    }
+
+    warehouse_movements {
+        uuid id PK
+        uuid item_id FK
+        varchar tipo
+        int quantidade
+        text motivo
+        timestamp data_movimentacao
+    }
+
+    warehouse_locations {
+        uuid id PK
+        varchar location UK
+        varchar status
+        varchar access_type
+        varchar section
+        varchar usuario_inseriu
+        varchar usuario_alterou
+        timestamp criado_em
+        timestamp atualizado_em
+    }
+
+    situation_product {
+        int sipr_sq_number PK
+        varchar sipr_nm_description
+    }
+
+    location_product {
+        varchar location_code PK_FK
+        varchar product_code PK_FK
+        int sipr_sq_number PK_FK
+        timestamp entry_datetime
+        int quantity_informed
+        int quantity_current
+        varchar stat_cd_id
+        varchar usuario_inseriu
+    }
+
+    location_product_log {
+        varchar location_code_log PK
+        varchar product_code_log PK
+        int sipr_sq_number PK
+        timestamp entry_datetime_log PK
+        int quantity_current_prev_log
+        int quantity_current_log
+        varchar usuario_alterou_log
+        varchar operation_log
+    }
+
+    type_movement {
+        int tymo_cd_id PK
+        varchar tymo_nm_movement
+        varchar tymo_cd_control
+    }
+
+    phase_movement {
+        int phmo_sq_id PK
+        int tymo_sq_id FK
+        varchar phmo_ds_phase
+        int phmo_nr_sequence
+    }
+
+    customer {
+        int cust_cd_id PK
+        varchar cust_nm_customer
+        varchar cust_cd_code
+        varchar cust_ds_address
+    }
+
+    movement {
+        int move_cd_id PK
+        int tymo_cd_id FK
+        int move_cd_destination
+        timestamp move_dt_movement
+        varchar move_cd_movement
+        int cust_cd_id FK
+    }
+
+    movement_item {
+        int moit_cd_id PK
+        int move_cd_id FK
+        varchar product_code FK
+        int move_qt_movement
+    }
+
+    phase_movement_item {
+        int phmi_cd_id PK
+        int phmo_sq_id FK
+        int moit_cd_id FK
+        int phmi_qt_movement
+        int phmi_qt_picked
+        int phmi_qt_double_checked
+        int phmi_cd_motivo
+        uuid id_funcionario FK
+    }

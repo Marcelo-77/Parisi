@@ -67,10 +67,21 @@ const validacoes = {
 document.addEventListener('DOMContentLoaded', async function() {
     setupEventListeners();
     setupFormValidation();
+    initSectorSelect();
     await loadCompanies();
     await initializePageMode();
     checkAPIHealth();
 });
+
+function initSectorSelect() {
+    const select = document.getElementById('sector');
+    if (!select || !window.SectionOptions) return;
+    window.SectionOptions.populateSectionSelect(select, {
+        includeEmpty: true,
+        emptyLabel: 'No sector',
+        emptyValue: ''
+    });
+}
 
 async function loadCompanies() {
     const select = document.getElementById('companyId');
@@ -260,6 +271,8 @@ function populateFormFromUser(user) {
     document.getElementById('departamento').value = user.departamento || '';
     const companySelect = document.getElementById('companyId');
     if (companySelect) companySelect.value = user.companyId || '';
+    const sectorSelect = document.getElementById('sector');
+    if (sectorSelect) sectorSelect.value = user.sector || '';
     document.getElementById('dataAdmissao').value = toDateInputValue(user.dataAdmissao);
     document.getElementById('ativo').checked = user.ativo !== false;
 
@@ -636,6 +649,7 @@ async function handleFormSubmit(e) {
         cargo: formData.get('cargo').trim(),
         departamento: formData.get('departamento'),
         companyId: formData.get('companyId'),
+        sector: formData.get('sector') || null,
         dataAdmissao: formData.get('dataAdmissao') || null,
         ativo: formData.get('ativo') === 'on'
     };
@@ -704,6 +718,7 @@ function showSuccess(funcionario, isEdit) {
         <p><strong>Telefone:</strong> ${funcionario.telefone}</p>
         <p><strong>Cargo:</strong> ${funcionario.cargo}</p>
         <p><strong>Departamento:</strong> ${funcionario.departamento}</p>
+        <p><strong>Sector:</strong> ${funcionario.sector ? (window.SectionOptions ? window.SectionOptions.formatSectionLabel(funcionario.sector) : funcionario.sector) : '—'}</p>
         <p><strong>Company:</strong> ${funcionario.companyName || '—'}</p>
         ${funcionario.dataAdmissao ? `<p><strong>Data de Admissão:</strong> ${new Date(funcionario.dataAdmissao).toLocaleDateString('pt-BR')}</p>` : ''}
         <p><strong>Status:</strong> ${funcionario.ativo ? 'Ativo' : 'Inativo'}</p>

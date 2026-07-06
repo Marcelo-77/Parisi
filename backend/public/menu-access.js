@@ -187,17 +187,74 @@
     }
   }
 
+  function loadStylesheetOnce(href) {
+    return new Promise((resolve, reject) => {
+      const existing = document.querySelector(`link[href="${href}"]`);
+      if (existing) {
+        resolve();
+        return;
+      }
+
+      const link = document.createElement('link');
+      link.rel = 'stylesheet';
+      link.href = href;
+      link.onload = () => resolve();
+      link.onerror = () => reject(new Error(`Failed to load ${href}`));
+      document.head.appendChild(link);
+    });
+  }
+
+  async function ensureNewsAnnouncementScripts() {
+    try {
+      await loadStylesheetOnce('news-announcement.css');
+      await loadScriptOnce('news-announcement.js');
+    } catch (error) {
+      console.warn('News announcement scripts:', error.message);
+    }
+  }
+
+  async function showNewsAnnouncementsIfNeeded() {
+    await ensureNewsAnnouncementScripts();
+    if (window.DoubleYNewsAnnouncement && typeof window.DoubleYNewsAnnouncement.show === 'function') {
+      try {
+        await window.DoubleYNewsAnnouncement.show();
+      } catch (error) {
+        console.warn('News announcement:', error.message);
+      }
+    }
+  }
+
+  function updateSubmenuGroupsVisibility(dropdown) {
+    if (!dropdown) return;
+
+    dropdown.querySelectorAll('.dropdown-submenu-group').forEach((group) => {
+      const visibleItems = Array.from(group.querySelectorAll('.dropdown-item')).filter((item) => item.style.display !== 'none');
+      group.style.display = visibleItems.length > 0 ? '' : 'none';
+    });
+  }
+
   function updateMasterDataVisibility(headerActions) {
     const masterData = headerActions.querySelector('.master-data-dropdown');
     if (!masterData) return;
 
-    masterData.querySelectorAll('.dropdown-submenu-group').forEach((group) => {
-      const visibleItems = Array.from(group.querySelectorAll('.dropdown-item')).filter((item) => item.style.display !== 'none');
-      group.style.display = visibleItems.length > 0 ? '' : 'none';
-    });
+    updateSubmenuGroupsVisibility(masterData);
 
     const visibleGroups = Array.from(masterData.querySelectorAll('.dropdown-submenu-group')).filter((group) => group.style.display !== 'none');
     masterData.style.display = visibleGroups.length > 0 ? '' : 'none';
+  }
+
+  function updateApplicationsDropdownVisibility(headerActions) {
+    const applications = headerActions.querySelector('.applications-dropdown');
+    if (!applications) return;
+
+    updateSubmenuGroupsVisibility(applications);
+
+    const menu = applications.querySelector('.applications-dropdown-menu');
+    const directItems = menu
+      ? Array.from(menu.children).filter((el) => el.classList.contains('dropdown-item') && el.style.display !== 'none')
+      : [];
+    const visibleGroups = Array.from(applications.querySelectorAll('.dropdown-submenu-group')).filter((group) => group.style.display !== 'none');
+    applications.style.display = (directItems.length > 0 || visibleGroups.length > 0) ? '' : 'none';
   }
 
   function resetMenuVisibility() {
@@ -246,12 +303,13 @@
       }
     });
 
-    document.querySelectorAll('.header-actions .users-dropdown, .header-actions .applications-dropdown, .header-actions .movement-dropdown, .header-actions .picking-dropdown, .header-actions .church-dropdown, .header-actions .help-dropdown').forEach((group) => {
+    document.querySelectorAll('.header-actions .users-dropdown, .header-actions .movement-dropdown, .header-actions .picking-dropdown, .header-actions .church-dropdown, .header-actions .help-dropdown').forEach((group) => {
       const visibleItems = Array.from(group.querySelectorAll('.dropdown-item')).filter((item) => item.style.display !== 'none');
       group.style.display = visibleItems.length > 0 ? '' : 'none';
     });
 
     updateMasterDataVisibility(headerActions);
+    updateApplicationsDropdownVisibility(headerActions);
 
     headerActions.setAttribute('data-menu-access-ready', 'true');
   }
@@ -310,6 +368,8 @@
         revealMenuWithoutFilter();
       }
     }
+
+    await showNewsAnnouncementsIfNeeded();
   }
 
   if (document.readyState === 'loading') {

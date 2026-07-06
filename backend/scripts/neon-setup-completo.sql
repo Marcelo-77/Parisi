@@ -44,6 +44,7 @@ CREATE TABLE IF NOT EXISTS company (
 );
 
 ALTER TABLE funcionarios ADD COLUMN IF NOT EXISTS company_id UUID REFERENCES company(id);
+ALTER TABLE funcionarios ADD COLUMN IF NOT EXISTS sector VARCHAR(50);
 
 INSERT INTO company (name)
 VALUES ('Parisi Bathware Sydney'), ('Double-Y Warehouse System'), ('Alpha & Omega Church')
@@ -96,6 +97,37 @@ ALTER TABLE system_documentation ADD COLUMN IF NOT EXISTS sector VARCHAR(50);
 
 CREATE INDEX IF NOT EXISTS idx_system_documentation_title ON system_documentation(title);
 CREATE INDEX IF NOT EXISTS idx_system_documentation_criado ON system_documentation(criado_em DESC);
+
+CREATE TABLE IF NOT EXISTS news (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  description TEXT NOT NULL,
+  start_date DATE NOT NULL,
+  end_date DATE NOT NULL,
+  all_sectors BOOLEAN NOT NULL DEFAULT false,
+  sectors JSONB NOT NULL DEFAULT '[]'::jsonb,
+  created_by UUID REFERENCES funcionarios(id) ON DELETE SET NULL,
+  created_by_name VARCHAR(100),
+  criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  atualizado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS news_documentation (
+  news_id UUID NOT NULL REFERENCES news(id) ON DELETE CASCADE,
+  system_documentation_id UUID NOT NULL REFERENCES system_documentation(id) ON DELETE CASCADE,
+  PRIMARY KEY (news_id, system_documentation_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_news_dates ON news(start_date, end_date);
+CREATE INDEX IF NOT EXISTS idx_news_criado ON news(criado_em DESC);
+
+CREATE TABLE IF NOT EXISTS news_read (
+  news_id UUID NOT NULL REFERENCES news(id) ON DELETE CASCADE,
+  user_key VARCHAR(100) NOT NULL,
+  read_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (news_id, user_key)
+);
+
+CREATE INDEX IF NOT EXISTS idx_news_read_user ON news_read(user_key);
 
 -- =============================================================================
 -- 2) WAREHOUSE (produtos e movimentacoes simples)
@@ -284,6 +316,8 @@ FROM (VALUES
   ('System-Documentation.html', 'Applications_System_Documentation'),
   ('System-Documentation-Search.html', 'Applications_System_Documentation_Search'),
   ('System-settings.html', 'Applications_System_Settings'),
+  ('News.html', 'Applications_News'),
+  ('News-Search.html', 'Applications_News_Search'),
   ('location.html', 'Location'),
   ('location-search.html', 'Location_Search'),
   ('location-product.html', 'Location_Product'),
@@ -317,6 +351,8 @@ FROM (VALUES
   ('System-Documentation.html', 'Applications_System_Documentation'),
   ('System-Documentation-Search.html', 'Applications_System_Documentation_Search'),
   ('System-settings.html', 'Applications_System_Settings'),
+  ('News.html', 'Applications_News'),
+  ('News-Search.html', 'Applications_News_Search'),
   ('location.html', 'Location'),
   ('location-search.html', 'Location_Search'),
   ('location-product.html', 'Location_Product'),

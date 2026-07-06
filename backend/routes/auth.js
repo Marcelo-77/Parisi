@@ -38,6 +38,7 @@ async function getSessionUserProfile(req) {
     email: profile.email,
     cargo: profile.cargo || null,
     isRoot: false,
+    sector: profile.sector || null,
     companyId: profile.companyId || null,
     companyName: profile.companyName || null,
     photo: profile.photo || null
@@ -163,6 +164,7 @@ router.post('/login', async (req, res) => {
         email: profile.email,
         cargo: profile.cargo || null,
         isRoot: false,
+        sector: profile.sector || null,
         companyId: profile.companyId || null,
         companyName: profile.companyName || null,
         photo: profile.photo || null

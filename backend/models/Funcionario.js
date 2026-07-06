@@ -9,6 +9,7 @@ class Funcionario {
     this.telefone = dados.telefone;
     this.cargo = dados.cargo;
     this.departamento = dados.departamento;
+    this.sector = dados.sector || null;
     this.companyId = dados.companyId || null;
     this.companyName = dados.companyName || null;
     this.dataAdmissao = dados.dataAdmissao || new Date().toISOString().split('T')[0];
@@ -72,7 +73,7 @@ class Funcionario {
 
   // Update employee data
   atualizar(dados) {
-    const camposPermitidos = ['nome', 'email', 'telefone', 'cargo', 'departamento', 'dataAdmissao', 'photo', 'ativo', 'companyId'];
+    const camposPermitidos = ['nome', 'email', 'telefone', 'cargo', 'departamento', 'sector', 'dataAdmissao', 'photo', 'ativo', 'companyId'];
     
     camposPermitidos.forEach(campo => {
       if (dados[campo] !== undefined) {
@@ -92,6 +93,7 @@ class Funcionario {
       telefone: this.telefone,
       cargo: this.cargo,
       departamento: this.departamento,
+      sector: this.sector || null,
       companyId: this.companyId,
       companyName: this.companyName,
       dataAdmissao: this.dataAdmissao,

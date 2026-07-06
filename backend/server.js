@@ -20,6 +20,7 @@ const authRoutes = require('./routes/auth');
 const companiesRoutes = require('./routes/companies');
 const churchServiceOrderRoutes = require('./routes/churchServiceOrder');
 const systemDocumentationRoutes = require('./routes/systemDocumentation');
+const newsRoutes = require('./routes/news');
 const systemSettingsRoutes = require('./routes/systemSettings');
 const systemSettingsService = require('./services/systemSettingsService');
 const { isAuthenticated, protectPages, requireAuth } = require('./middleware/auth');
@@ -104,6 +105,7 @@ app.use('/api/situations', situationsRoutes);
 app.use('/api/picking', pickingRoutes);
 app.use('/api/warehouse-map', warehouseMapRoutes);
 app.use('/api/system-documentation', systemDocumentationRoutes);
+app.use('/api/news', newsRoutes);
 app.use('/api/system-settings', systemSettingsRoutes);
 
 // Error handling middleware

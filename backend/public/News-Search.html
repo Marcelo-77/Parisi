@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Double-Y Warehouse System - Search News</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="warehouse-styles.css">
+    <link rel="stylesheet" href="pesquisa-styles.css">
+    <link rel="stylesheet" href="news-styles.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body class="news-page news-search-page">
+    <script src="auth-check.js"></script>
+    <script src="header-menu.js"></script>
+    <script src="menu-access.js"></script>
+    <script src="double-y-logo-effect.js"></script>
+    <script src="dev-environment-badge.js"></script>
+    <div class="container">
+        <header class="header">
+            <div class="header-stats-row">
+                <div class="header-stats-left">
+                    <div class="header-stat header-stat-total">
+                        <span class="header-stat-value" id="totalItems">0</span>
+                        <span class="header-stat-label">Total Items</span>
+                    </div>
+                    <div class="header-stat header-stat-low">
+                        <span class="header-stat-value" id="lowStockItems">0</span>
+                        <span class="header-stat-label">Low Stock</span>
+                    </div>
+                </div>
+                <div class="double-y-wordmark" aria-label="Double Y"><img src="doubley-glyph.png" alt="" class="double-y-glyph" aria-hidden="true"><span class="double-y-name">Double Y</span><img src="doubley-glyph-bottom.png" alt="" class="double-y-glyph double-y-glyph-bottom" aria-hidden="true"></div>
+                <div class="header-stats-right">
+                    <div class="header-stat header-stat-entries">
+                        <span class="header-stat-value" id="totalEntradas">0</span>
+                        <span class="header-stat-label">Entries Today</span>
+                    </div>
+                    <div class="header-stat header-stat-exits">
+                        <span class="header-stat-value" id="totalSaidas">0</span>
+                        <span class="header-stat-label">Exits Today</span>
+                    </div>
+                </div>
+            </div>
+            <div class="header-content">
+                <h1><i class="fas fa-warehouse"></i> Double-Y Warehouse System</h1>
+                <p class="header-search-users-label">Search News</p>
+                <div class="header-actions"></div>
+            </div>
+        </header>
+
+        <main class="main-content">
+            <section class="news-section news-search-section">
+                <div class="news-intro">
+                    <h2><i class="fas fa-search"></i> Search news</h2>
+                    <p>Find announcements by description, sector, creator or date. Edit or delete existing news.</p>
+                </div>
+
+                <div class="news-card">
+                    <div class="news-search-filters">
+                        <div class="news-field">
+                            <label for="searchDescription"><i class="fas fa-align-left"></i> Description</label>
+                            <input type="text" id="searchDescription" class="news-input" placeholder="Search in description">
+                        </div>
+                        <div class="news-field">
+                            <label for="searchCreatedBy"><i class="fas fa-user"></i> Created by</label>
+                            <input type="text" id="searchCreatedBy" class="news-input" placeholder="User name">
+                        </div>
+                        <div class="news-field">
+                            <label for="searchSector"><i class="fas fa-layer-group"></i> Sector</label>
+                            <select id="searchSector" class="news-input">
+                                <option value="">All sectors</option>
+                                <option value="__all_sectors__">All sectors (news flag)</option>
+                            </select>
+                        </div>
+                        <div class="news-field">
+                            <label for="searchDateFrom"><i class="fas fa-calendar-day"></i> Created from</label>
+                            <input type="date" id="searchDateFrom" class="news-input">
+                        </div>
+                        <div class="news-field">
+                            <label for="searchDateTo"><i class="fas fa-calendar-day"></i> Created to</label>
+                            <input type="date" id="searchDateTo" class="news-input">
+                        </div>
+                        <div class="news-field news-field-checkbox">
+                            <label class="news-checkbox-inline">
+                                <input type="checkbox" id="searchActiveOnly">
+                                Active today only
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="news-actions">
+                        <button type="button" class="btn btn-primary" id="searchNewsBtn">
+                            <i class="fas fa-search"></i> Search
+                        </button>
+                        <button type="button" class="btn btn-secondary" id="clearSearchBtn">
+                            <i class="fas fa-eraser"></i> Clear
+                        </button>
+                        <a href="News.html" class="btn btn-secondary" data-app="News.html">
+                            <i class="fas fa-plus"></i> New news
+                        </a>
+                        <span id="newsResultsMeta" class="news-results-meta" aria-live="polite"></span>
+                    </div>
+
+                    <div id="newsSearchMessage" class="news-message" role="status" aria-live="polite"></div>
+                </div>
+
+                <div class="table-container news-table-container">
+                    <table class="warehouse-table">
+                        <thead>
+                            <tr>
+                                <th><i class="fas fa-align-left"></i> Description</th>
+                                <th><i class="fas fa-play"></i> Start</th>
+                                <th><i class="fas fa-stop"></i> End</th>
+                                <th><i class="fas fa-layer-group"></i> Sectors</th>
+                                <th><i class="fas fa-paperclip"></i> Files</th>
+                                <th class="th-hide-mobile"><i class="fas fa-user"></i> Created by</th>
+                                <th class="th-actions"><i class="fas fa-cog"></i> Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="newsResultsBody">
+                            <tr>
+                                <td colspan="7" class="empty-state">
+                                    <i class="fas fa-search"></i>
+                                    <p>Use filters and click <strong>Search</strong> to load news.</p>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        </main>
+
+        <footer class="footer">
+            <p>&copy; 2026 Double-Y Warehouse System</p>
+        </footer>
+    </div>
+
+    <div id="editNewsModal" class="modal" aria-hidden="true">
+        <div class="modal-content news-edit-modal">
+            <div class="modal-header">
+                <h3><i class="fas fa-edit"></i> Edit news</h3>
+                <button type="button" class="modal-close" id="closeEditNewsModal" aria-label="Close">&times;</button>
+            </div>
+            <form id="editNewsForm">
+                <input type="hidden" id="editNewsId">
+
+                <div class="news-field">
+                    <label for="editNewsDescription"><i class="fas fa-pen"></i> Description *</label>
+                    <textarea id="editNewsDescription" class="news-textarea" required></textarea>
+                </div>
+
+                <div class="news-dates-row">
+                    <div class="news-field">
+                        <label for="editNewsStartDate"><i class="fas fa-play"></i> Start date *</label>
+                        <input type="date" id="editNewsStartDate" class="news-input" required>
+                    </div>
+                    <div class="news-field">
+                        <label for="editNewsEndDate"><i class="fas fa-stop"></i> End date *</label>
+                        <input type="date" id="editNewsEndDate" class="news-input" required>
+                    </div>
+                </div>
+
+                <div class="news-field">
+                    <label><i class="fas fa-layer-group"></i> Display sectors</label>
+                    <div class="news-sector-mode">
+                        <label>
+                            <input type="radio" name="editNewsSectorMode" id="editNewsSectorAll" value="all">
+                            All sectors
+                        </label>
+                        <label>
+                            <input type="radio" name="editNewsSectorMode" id="editNewsSectorSelected" value="selected">
+                            Selected sectors
+                        </label>
+                    </div>
+                    <div id="editNewsSectorGrid" class="news-sector-grid is-disabled"></div>
+                </div>
+
+                <div class="news-field">
+                    <label><i class="fas fa-paperclip"></i> Attachments</label>
+                    <div class="news-doc-search-row">
+                        <div class="news-field" style="margin-bottom:0;">
+                            <input type="text" id="editDocSearchTitle" class="news-input" placeholder="Search documentation">
+                        </div>
+                        <button type="button" class="btn btn-secondary btn-sm" id="editSearchDocumentationBtn">
+                            <i class="fas fa-search"></i> Search
+                        </button>
+                    </div>
+                    <div id="editDocSearchResults" class="news-doc-results" hidden>
+                        <table>
+                            <thead>
+                                <tr><th>Title</th><th>File</th><th></th></tr>
+                            </thead>
+                            <tbody id="editDocSearchResultsBody"></tbody>
+                        </table>
+                    </div>
+                    <div id="editAttachedDocsList" class="news-attached-list"></div>
+                </div>
+
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-secondary" id="cancelEditNewsBtn">Cancel</button>
+                    <button type="submit" class="btn btn-primary" id="saveEditNewsBtn">
+                        <i class="fas fa-save"></i> Save changes
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="section-options.js"></script>
+    <script src="news-search-script.js"></script>
+</body>
+</html>

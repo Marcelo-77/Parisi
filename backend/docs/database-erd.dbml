@@ -1,0 +1,335 @@
+// Double-Y Warehouse System — Entity Relationship Model
+// Import at https://dbdiagram.io to view/export PNG or PDF
+// Generated from init-database.js / neon-setup-completo.sql
+
+Project double_y_warehouse {
+  database_type: 'PostgreSQL'
+  Note: 'Double-Y Warehouse System — full schema'
+}
+
+// =============================================================================
+// USERS & ACCESS
+// =============================================================================
+
+Table company {
+  id uuid [pk, default: `gen_random_uuid()`]
+  name varchar(150) [unique, not null]
+  criado_em timestamp [default: `CURRENT_TIMESTAMP`]
+  atualizado_em timestamp [default: `CURRENT_TIMESTAMP`]
+
+  Note: 'Companies (Parisi, Double-Y, Church)'
+}
+
+Table funcionarios {
+  id uuid [pk, default: `gen_random_uuid()`]
+  nome varchar(100) [not null]
+  email varchar(255) [unique, not null]
+  telefone varchar(20) [not null]
+  cargo varchar(50) [not null]
+  departamento varchar(50) [not null]
+  data_admissao date
+  photo text
+  password text
+  ativo boolean [default: true]
+  company_id uuid [ref: > company.id]
+  sector varchar(50)
+  criado_em timestamp [default: `CURRENT_TIMESTAMP`]
+  atualizado_em timestamp [default: `CURRENT_TIMESTAMP`]
+
+  Note: 'System users / employees'
+}
+
+Table system_applications {
+  syap_cd_seq integer [pk, increment]
+  syap_nm_application varchar(100) [not null, unique]
+  syap_ds_detailed varchar(150)
+
+  Note: 'HTML pages / menu applications'
+}
+
+Table user_applications {
+  id_funcionario uuid [pk, ref: > funcionarios.id]
+  syap_cd_seq integer [pk, ref: > system_applications.syap_cd_seq]
+  criado_em timestamp [default: `CURRENT_TIMESTAMP`]
+
+  Note: 'User access to applications (M:N)'
+}
+
+Table system_settings {
+  setting_key varchar(100) [pk]
+  setting_value text [not null]
+  updated_at timestamp [default: `CURRENT_TIMESTAMP`]
+
+  Note: 'Global UI settings (key-value)'
+}
+
+// =============================================================================
+// DOCUMENTATION & NEWS
+// =============================================================================
+
+Table system_documentation {
+  id uuid [pk, default: `gen_random_uuid()`]
+  title varchar(200) [not null]
+  description text
+  sector varchar(50)
+  file_name varchar(255) [not null]
+  stored_name varchar(255) [not null]
+  mime_type varchar(100)
+  file_size bigint
+  file_data bytea
+  uploaded_by uuid [ref: > funcionarios.id]
+  uploaded_by_name varchar(100)
+  criado_em timestamp [default: `CURRENT_TIMESTAMP`]
+
+  Note: 'Uploaded system documents'
+}
+
+Table news {
+  id uuid [pk, default: `gen_random_uuid()`]
+  description text [not null]
+  start_date date [not null]
+  end_date date [not null]
+  all_sectors boolean [not null, default: false]
+  sectors jsonb [not null, default: `'[]'::jsonb`]
+  created_by uuid [ref: > funcionarios.id]
+  created_by_name varchar(100)
+  criado_em timestamp [default: `CURRENT_TIMESTAMP`]
+  atualizado_em timestamp [default: `CURRENT_TIMESTAMP`]
+
+  Note: 'Announcements shown on login'
+}
+
+Table news_documentation {
+  news_id uuid [pk, ref: > news.id]
+  system_documentation_id uuid [pk, ref: > system_documentation.id]
+
+  Note: 'News attachments (M:N)'
+}
+
+Table news_read {
+  news_id uuid [pk, ref: > news.id]
+  user_key varchar(100) [pk]
+  read_at timestamp [default: `CURRENT_TIMESTAMP`]
+
+  Note: 'Read status per user (user_key = funcionarios.id or root)'
+}
+
+// =============================================================================
+// CHURCH
+// =============================================================================
+
+Table church_service_order {
+  id uuid [pk, default: `gen_random_uuid()`]
+  title varchar(150) [not null, default: 'Ordem de Culto']
+  service_date date
+  church_name varchar(150)
+  dirigente varchar(150)
+  opening_act varchar(300)
+  worship_songs jsonb [not null, default: `'[]'::jsonb`]
+  scripture_reader varchar(150)
+  praise_leader varchar(150)
+  praise_status varchar(150)
+  offerings_instruction varchar(500)
+  message_speaker varchar(150)
+  closing_prayer_leader varchar(150)
+  priestly_blessing_leader varchar(150)
+  announcements_position integer [not null, default: 8]
+  scripture_position integer [not null, default: 4]
+  created_by uuid [ref: > funcionarios.id]
+  criado_em timestamp [default: `CURRENT_TIMESTAMP`]
+  atualizado_em timestamp [default: `CURRENT_TIMESTAMP`]
+
+  Note: 'Church order of service'
+}
+
+// =============================================================================
+// WAREHOUSE — PRODUCTS
+// =============================================================================
+
+Table warehouse_items {
+  id uuid [pk, default: `gen_random_uuid()`]
+  codigo varchar(50) [unique, not null]
+  barcode numeric(20)
+  nome varchar(100) [not null]
+  categoria varchar(50) [not null]
+  quantidade integer [default: 0]
+  quantidade_minima integer [default: 0]
+  localizacao varchar(50)
+  preco_unitario decimal(10,2) [default: 0]
+  fornecedor varchar(100)
+  descricao text
+  criado_em timestamp [default: `CURRENT_TIMESTAMP`]
+  atualizado_em timestamp [default: `CURRENT_TIMESTAMP`]
+
+  Note: 'Products / stock items'
+}
+
+Table warehouse_movements {
+  id uuid [pk, default: `gen_random_uuid()`]
+  item_id uuid [not null, ref: > warehouse_items.id]
+  tipo varchar(10) [not null, note: 'entrada | saida']
+  quantidade integer [not null]
+  motivo text
+  data_movimentacao timestamp [default: `CURRENT_TIMESTAMP`]
+
+  Note: 'Simple stock in/out log'
+}
+
+// =============================================================================
+// WAREHOUSE — LOCATIONS
+// =============================================================================
+
+Table warehouse_locations {
+  id uuid [pk, default: `gen_random_uuid()`]
+  location varchar(50) [unique, not null]
+  status varchar(20) [not null]
+  access_type varchar(50) [not null]
+  section varchar(50) [not null, default: 'OTHER']
+  usuario_inseriu varchar(50)
+  usuario_alterou varchar(50)
+  criado_em timestamp [default: `CURRENT_TIMESTAMP`]
+  atualizado_em timestamp [default: `CURRENT_TIMESTAMP`]
+
+  Note: 'Physical warehouse locations'
+}
+
+Table situation_product {
+  sipr_sq_number integer [pk, increment]
+  sipr_nm_description varchar(255)
+
+  Note: 'Product condition (Full, Missing, etc.)'
+}
+
+Table location_product {
+  location_code varchar(50) [pk, ref: > warehouse_locations.location]
+  product_code varchar(50) [pk, ref: > warehouse_items.codigo]
+  sipr_sq_number integer [pk, ref: > situation_product.sipr_sq_number]
+  entry_datetime timestamp [not null]
+  quantity_informed integer [default: 0]
+  quantity_current integer [default: 0]
+  stat_cd_id varchar(1)
+  usuario_inseriu varchar(50)
+
+  Note: 'Product at location with situation'
+}
+
+Table location_product_log {
+  location_code_log varchar(50) [pk]
+  product_code_log varchar(50) [pk]
+  sipr_sq_number integer [pk]
+  entry_datetime_log timestamp [pk]
+  quantity_current_prev_log integer
+  quantity_current_log integer
+  usuario_alterou_log varchar(50)
+  operation_log varchar(10)
+
+  Note: 'Audit log (trigger); logical link to location_product'
+}
+
+// =============================================================================
+// MOVEMENT & PICKING
+// =============================================================================
+
+Table type_movement {
+  tymo_cd_id integer [pk, increment]
+  tymo_nm_movement varchar(50)
+  tymo_cd_control varchar(50)
+
+  Note: 'Movement types (Customer Order, etc.)'
+}
+
+Table phase_movement {
+  phmo_sq_id integer [pk, increment]
+  tymo_sq_id integer [not null, ref: > type_movement.tymo_cd_id]
+  phmo_ds_phase varchar(50)
+  phmo_nr_sequence integer
+
+  Note: 'Phases per movement type (picking workflow)'
+}
+
+Table customer {
+  cust_cd_id integer [pk, increment]
+  cust_nm_customer varchar(50)
+  cust_cd_code varchar(20)
+  cust_ds_address varchar(100)
+
+  Note: 'Customers'
+}
+
+Table movement {
+  move_cd_id integer [pk, increment]
+  tymo_cd_id integer [not null, ref: > type_movement.tymo_cd_id]
+  move_cd_destination integer
+  move_dt_movement timestamp
+  move_cd_movement varchar(50)
+  cust_cd_id integer [ref: > customer.cust_cd_id]
+
+  Note: 'Warehouse movements / orders'
+}
+
+Table movement_item {
+  moit_cd_id integer [pk, increment]
+  move_cd_id integer [not null, ref: > movement.move_cd_id]
+  product_code varchar(50) [not null, ref: > warehouse_items.codigo]
+  move_qt_movement integer [not null]
+
+  indexes {
+    (move_cd_id, product_code) [unique]
+  }
+
+  Note: 'Products in a movement'
+}
+
+Table phase_movement_item {
+  phmi_cd_id integer [pk, increment]
+  phmo_sq_id integer [not null, ref: > phase_movement.phmo_sq_id]
+  moit_cd_id integer [not null, ref: > movement_item.moit_cd_id]
+  phmi_qt_movement integer
+  phmi_qt_picked integer
+  phmi_qt_double_checked integer
+  phmi_cd_motivo integer [note: '1 or 2']
+  id_funcionario uuid [ref: > funcionarios.id]
+
+  Note: 'Picking / double-check quantities per phase'
+}
+
+// =============================================================================
+// TABLE GROUPS (visual notes)
+// =============================================================================
+
+TableGroup users_access {
+  company
+  funcionarios
+  system_applications
+  user_applications
+  system_settings
+}
+
+TableGroup documentation_news {
+  system_documentation
+  news
+  news_documentation
+  news_read
+}
+
+TableGroup warehouse_core {
+  warehouse_items
+  warehouse_movements
+  warehouse_locations
+  situation_product
+  location_product
+  location_product_log
+}
+
+TableGroup movement_picking {
+  type_movement
+  phase_movement
+  customer
+  movement
+  movement_item
+  phase_movement_item
+}
+
+TableGroup church {
+  church_service_order
+}

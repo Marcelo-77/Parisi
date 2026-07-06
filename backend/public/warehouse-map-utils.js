@@ -712,12 +712,13 @@
         return { positions: [], locationIndex: null };
     }
 
-    function blinkImageMapPositions(container, positions, locationIndex) {
+    function blinkImageMapPositions(container, positions, locationIndex, blinkOptions) {
         if (!container || !positions.length || !locationIndex) return;
 
         clearMapLocationBlink();
         clearImageBlinkMarkers(container);
 
+        const persistent = Boolean(blinkOptions && blinkOptions.persistentHighlight);
         const stack = container.querySelector('.warehouse-map-image-only-stack')
             || container.querySelector('.warehouse-map-image-overlay-stack');
         if (!stack) return;
@@ -732,7 +733,9 @@
 
         positions.forEach(({ rowIndex, colIndex, locationCode }) => {
             const marker = document.createElement('div');
-            marker.className = 'warehouse-map-blink-marker is-blinking';
+            marker.className = persistent
+                ? 'warehouse-map-blink-marker is-static'
+                : 'warehouse-map-blink-marker is-blinking';
             marker.setAttribute('aria-hidden', 'true');
             if (locationCode) {
                 marker.setAttribute('data-location', locationCode);
@@ -756,10 +759,12 @@
 
         if (!markerLayer.children.length) return;
 
-        mapBlinkClearTimer = setTimeout(() => {
-            clearImageBlinkMarkers(container);
-            mapBlinkClearTimer = null;
-        }, MAP_BLINK_DURATION_MS);
+        if (!persistent) {
+            mapBlinkClearTimer = setTimeout(() => {
+                clearImageBlinkMarkers(container);
+                mapBlinkClearTimer = null;
+            }, MAP_BLINK_DURATION_MS);
+        }
     }
 
     function renderImageWarehouseMap(containerId, imageUrl, options) {
@@ -775,6 +780,7 @@
             ? Object.keys(locationIndex.locations).length
             : 0;
         const searchTerm = String(opts.searchTerm || '').trim().toUpperCase();
+        const persistentHighlight = Boolean(opts.persistentHighlight);
         let statusNote = '';
 
         container.innerHTML = `
@@ -793,7 +799,9 @@
             if (opts.blinkProductMatches && productLocations.length) {
                 const { positions } = resolveImageBlinkPositions(opts, productLocations);
                 if (positions.length) {
-                    blinkImageMapPositions(container, positions, locationIndex);
+                    blinkImageMapPositions(container, positions, locationIndex, {
+                        persistentHighlight
+                    });
                 } else {
                     statusNote = 'Location not found on map (check Excel coordinates).';
                 }
@@ -808,7 +816,9 @@
                         rowIndex: pos.row,
                         colIndex: pos.col,
                         locationCode: mapKey
-                    }], locationIndex);
+                    }], locationIndex, {
+                        persistentHighlight
+                    });
                 } else {
                     statusNote = `Bin "${searchTerm}" not in Excel map.`;
                 }
