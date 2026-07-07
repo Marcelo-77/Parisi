@@ -5,6 +5,8 @@ const API_USER_APPLICATIONS = API_BASE + '/api/user-applications';
 let availableApps = [];
 let selectedApps = [];
 let currentUserId = null;
+let loadedUsers = [];
+let savedSelectedIds = [];
 
 function escapeHtml(text) {
   if (text == null) return '';
@@ -26,6 +28,69 @@ function sortApps(list) {
   });
 }
 
+function getSelectedIds(list) {
+  return sortApps(list).map((app) => app.syapCdSeq);
+}
+
+function hasUnsavedChanges() {
+  if (!currentUserId) return false;
+  const current = getSelectedIds(selectedApps);
+  if (current.length !== savedSelectedIds.length) return true;
+  return current.some((id, index) => id !== savedSelectedIds[index]);
+}
+
+function setAssignmentCardEnabled(enabled) {
+  const card = document.getElementById('assignmentCard');
+  const saveBtn = document.getElementById('saveUserApplicationsBtn');
+  if (card) card.classList.toggle('is-disabled', !enabled);
+  if (saveBtn) saveBtn.disabled = !enabled;
+}
+
+function showStatus(message, type) {
+  const statusEl = document.getElementById('assignmentStatus');
+  if (!statusEl) return;
+  statusEl.textContent = message || '';
+  statusEl.className = 'app-users-message';
+  if (type) statusEl.classList.add(type);
+}
+
+function updateSummary() {
+  const userSelect = document.getElementById('userSelect');
+  const summaryUserName = document.getElementById('summaryUserName');
+  const summaryAvailable = document.getElementById('summaryAvailable');
+  const summaryAssigned = document.getElementById('summaryAssigned');
+  const summaryStatus = document.getElementById('summaryStatus');
+  const dirtyBadge = document.getElementById('appUsersDirtyBadge');
+  const saveBtn = document.getElementById('saveUserApplicationsBtn');
+
+  const selectedUser = loadedUsers.find((user) => user.id === currentUserId);
+  const userLabel = selectedUser
+    ? `${selectedUser.nome} (${selectedUser.email})`
+    : 'No user selected';
+
+  if (summaryUserName) summaryUserName.textContent = userLabel;
+  if (summaryAvailable) summaryAvailable.textContent = String(availableApps.length);
+  if (summaryAssigned) summaryAssigned.textContent = String(selectedApps.length);
+
+  const dirty = hasUnsavedChanges();
+  if (dirtyBadge) dirtyBadge.hidden = !dirty;
+  if (saveBtn && currentUserId) saveBtn.disabled = false;
+
+  if (summaryStatus) {
+    summaryStatus.className = 'app-users-status-badge';
+    if (!currentUserId) {
+      summaryStatus.textContent = 'Select a user';
+      summaryStatus.classList.add('idle');
+    } else if (dirty) {
+      summaryStatus.textContent = 'Unsaved changes';
+      summaryStatus.classList.add('unsaved');
+    } else {
+      summaryStatus.textContent = 'Saved';
+      summaryStatus.classList.add('saved');
+    }
+  }
+}
+
 function renderLists() {
   const availableList = document.getElementById('availableList');
   const selectedList = document.getElementById('selectedList');
@@ -42,8 +107,10 @@ function renderLists() {
     <option value="${app.syapCdSeq}">${escapeHtml(formatApplicationLabel(app))}</option>
   `).join('');
 
-  if (availableCount) availableCount.textContent = `${availableApps.length} application(s)`;
-  if (selectedCount) selectedCount.textContent = `${selectedApps.length} application(s)`;
+  if (availableCount) availableCount.textContent = String(availableApps.length);
+  if (selectedCount) selectedCount.textContent = String(selectedApps.length);
+
+  updateSummary();
 }
 
 function getSelectedOptionValues(selectEl) {
@@ -72,52 +139,6 @@ function moveAll(fromList, toList) {
   renderLists();
 }
 
-function setupHeaderDropdowns() {
-  const dropdowns = [
-    ['usersMenuBtn', 'usersDropdownMenu'],
-    ['productMenuBtn', 'productDropdownMenu'],
-    ['applicationsMenuBtn', 'applicationsDropdownMenu'],
-    ['locationMenuBtn', 'locationDropdownMenu'],
-    ['movementMenuBtn', 'movementDropdownMenu'],
-    ['pickingMenuBtn', 'pickingDropdownMenu'],
-    ['helpMenuBtn', 'helpDropdownMenu'],
-    ['customerMenuBtn', 'customerDropdownMenu']
-  ];
-  const buttons = {};
-  const menus = {};
-  dropdowns.forEach(([btnId, menuId]) => {
-    buttons[btnId] = document.getElementById(btnId);
-    menus[menuId] = document.getElementById(menuId);
-  });
-
-  function closeAll() {
-    Object.values(menus).forEach((el) => { if (el) el.setAttribute('aria-hidden', 'true'); });
-    Object.values(buttons).forEach((el) => { if (el) el.setAttribute('aria-expanded', 'false'); });
-  }
-
-  Object.keys(buttons).forEach((btnId) => {
-    const btn = buttons[btnId];
-    const menuId = btnId.replace('MenuBtn', 'DropdownMenu');
-    const menu = menus[menuId];
-    if (btn && menu) {
-      btn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        closeAll();
-        const open = menu.getAttribute('aria-hidden') !== 'true';
-        menu.setAttribute('aria-hidden', open ? 'true' : 'false');
-        btn.setAttribute('aria-expanded', !open);
-      });
-    }
-  });
-
-  document.addEventListener('click', closeAll);
-
-  const newProductBtn = document.getElementById('newProductBtn');
-  const searchProductBtn = document.getElementById('searchProductBtn');
-  if (newProductBtn) newProductBtn.addEventListener('click', () => { window.location.href = 'warehouse.html?action=new'; });
-  if (searchProductBtn) searchProductBtn.addEventListener('click', () => { window.location.href = 'warehouse.html?action=search'; });
-}
-
 async function loadUsers() {
   const userSelect = document.getElementById('userSelect');
   if (!userSelect) return;
@@ -125,21 +146,24 @@ async function loadUsers() {
   try {
     const res = await fetch(`${API_FUNCIONARIOS}?ativo=true&ordenarPor=nome&direcao=asc`);
     const data = await res.json();
-    const users = (data.success && data.data) ? data.data : [];
+    loadedUsers = (data.success && data.data) ? data.data : [];
 
-    userSelect.innerHTML = '<option value="">Select a user...</option>' + users.map((user) => `
+    userSelect.innerHTML = '<option value="">Select a user...</option>' + loadedUsers.map((user) => `
       <option value="${user.id}">${escapeHtml(user.nome)} (${escapeHtml(user.email)})</option>
     `).join('');
 
     const params = new URLSearchParams(window.location.search);
     const userId = params.get('user');
-    if (userId && users.some((user) => user.id === userId)) {
+    if (userId && loadedUsers.some((user) => user.id === userId)) {
       userSelect.value = userId;
       await loadUserApplications(userId);
+    } else {
+      updateSummary();
     }
   } catch (error) {
     console.error(error);
     userSelect.innerHTML = '<option value="">Error loading users</option>';
+    showStatus('Could not load users. Please refresh the page.', 'error');
   }
 }
 
@@ -147,7 +171,10 @@ function clearLists() {
   availableApps = [];
   selectedApps = [];
   currentUserId = null;
+  savedSelectedIds = [];
+  setAssignmentCardEnabled(false);
   renderLists();
+  showStatus('');
 }
 
 async function loadUserApplications(funcionarioId) {
@@ -156,8 +183,8 @@ async function loadUserApplications(funcionarioId) {
     return;
   }
 
-  const statusEl = document.getElementById('assignmentStatus');
-  if (statusEl) statusEl.textContent = 'Loading applications...';
+  setAssignmentCardEnabled(true);
+  showStatus('Loading applications...', 'info');
 
   try {
     const res = await fetch(`${API_USER_APPLICATIONS}/${encodeURIComponent(funcionarioId)}`);
@@ -169,20 +196,19 @@ async function loadUserApplications(funcionarioId) {
     currentUserId = funcionarioId;
     availableApps = data.data.available || [];
     selectedApps = data.data.selected || [];
+    savedSelectedIds = getSelectedIds(selectedApps);
     renderLists();
-
-    if (statusEl) statusEl.textContent = '';
+    showStatus('');
   } catch (error) {
     console.error(error);
     clearLists();
-    if (statusEl) statusEl.textContent = '';
-    alert(error.message || 'Error loading user applications.');
+    showStatus(error.message || 'Error loading user applications.', 'error');
   }
 }
 
 async function saveUserApplications() {
   if (!currentUserId) {
-    alert('Please select a user first.');
+    showStatus('Please select a user first.', 'error');
     return;
   }
 
@@ -190,6 +216,7 @@ async function saveUserApplications() {
   if (saveBtn) saveBtn.disabled = true;
 
   try {
+    showStatus('Saving assignments...', 'info');
     const syapCdSeqList = selectedApps.map((app) => app.syapCdSeq);
     const res = await fetch(`${API_USER_APPLICATIONS}/${encodeURIComponent(currentUserId)}`, {
       method: 'PUT',
@@ -204,17 +231,20 @@ async function saveUserApplications() {
 
     availableApps = data.data.available || [];
     selectedApps = data.data.selected || [];
+    savedSelectedIds = getSelectedIds(selectedApps);
     renderLists();
-    alert('User applications saved successfully.');
+    showStatus('User applications saved successfully.', 'success');
   } catch (error) {
     console.error(error);
-    alert(error.message || 'Error saving user applications.');
+    showStatus(error.message || 'Error saving user applications.', 'error');
   } finally {
-    if (saveBtn) saveBtn.disabled = false;
+    if (saveBtn && currentUserId) saveBtn.disabled = false;
+    updateSummary();
   }
 }
 
 document.addEventListener('DOMContentLoaded', () => {
+  setAssignmentCardEnabled(false);
   loadUsers();
 
   const userSelect = document.getElementById('userSelect');

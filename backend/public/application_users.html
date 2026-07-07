@@ -7,103 +7,10 @@
     <link rel="stylesheet" href="styles.css">
     <link rel="stylesheet" href="warehouse-styles.css">
     <link rel="stylesheet" href="pesquisa-styles.css">
+    <link rel="stylesheet" href="application-users-styles.css">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <style>
-        .application-users-container {
-            width: 100%;
-            max-width: 1100px;
-            margin: 0 auto;
-        }
-
-        .user-select-row {
-            margin-bottom: 24px;
-        }
-
-        .user-select-row select {
-            width: 100%;
-            max-width: 520px;
-            padding: 10px 12px;
-            border: 1px solid #d0d7de;
-            border-radius: 8px;
-            font-size: 1rem;
-        }
-
-        .app-lists-wrapper {
-            display: grid;
-            grid-template-columns: 1fr auto 1fr;
-            gap: 16px;
-            align-items: stretch;
-        }
-
-        .app-list-panel {
-            background: #fff;
-            border: 1px solid #e2e8f0;
-            border-radius: 12px;
-            padding: 16px;
-            min-height: 420px;
-            display: flex;
-            flex-direction: column;
-        }
-
-        .app-list-panel h3 {
-            margin: 0 0 8px;
-            color: #334155;
-            font-size: 1.05rem;
-        }
-
-        .app-list-count {
-            color: #64748b;
-            font-size: 0.9rem;
-            margin-bottom: 12px;
-        }
-
-        .app-list-panel select {
-            flex: 1;
-            width: 100%;
-            min-height: 320px;
-            border: 1px solid #cbd5e1;
-            border-radius: 8px;
-            padding: 8px;
-            font-size: 0.95rem;
-        }
-
-        .app-list-actions {
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            gap: 10px;
-        }
-
-        .app-list-actions .btn {
-            min-width: 48px;
-        }
-
-        .assignment-actions {
-            margin-top: 24px;
-            display: flex;
-            align-items: center;
-            gap: 16px;
-        }
-
-        #assignmentStatus {
-            color: #64748b;
-            font-size: 0.95rem;
-        }
-
-        @media (max-width: 900px) {
-            .app-lists-wrapper {
-                grid-template-columns: 1fr;
-            }
-
-            .app-list-actions {
-                flex-direction: row;
-                flex-wrap: wrap;
-                justify-content: center;
-            }
-        }
-    </style>
 </head>
-<body>
+<body class="application-users-page">
     <script src="auth-check.js"></script>
     <script src="header-menu.js"></script>
     <script src="menu-access.js"></script>
@@ -137,141 +44,128 @@
             <div class="header-content">
                 <h1><i class="fas fa-warehouse"></i> Double-Y Warehouse System</h1>
                 <p class="header-search-users-label">Application Users</p>
-                <div class="header-actions">
-                    <div class="users-dropdown">
-                        <button type="button" class="btn btn-primary" id="usersMenuBtn" aria-haspopup="true" aria-expanded="false">
-                            <i class="fas fa-users"></i> Users <i class="fas fa-chevron-down"></i>
-                        </button>
-                        <div class="users-dropdown-menu" id="usersDropdownMenu" aria-hidden="true">
-                            <a href="users.html" class="dropdown-item"><i class="fas fa-user-plus"></i> New User</a>
-                            <a href="pesquisa.html" class="dropdown-item"><i class="fas fa-search"></i> Search User</a>
-                            <a href="change-password.html" class="dropdown-item" data-app="change-password.html" data-always-accessible="true"><i class="fas fa-key"></i> Change Password</a>
-                        </div>
-                    </div>
-                    <div class="customer-dropdown">
-                        <button type="button" class="btn btn-primary" id="customerMenuBtn" aria-haspopup="true" aria-expanded="false">
-                            <i class="fas fa-user"></i> Customer <i class="fas fa-chevron-down"></i>
-                        </button>
-                        <div class="customer-dropdown-menu" id="customerDropdownMenu" aria-hidden="true">
-                            <a href="customer.html" class="dropdown-item"><i class="fas fa-plus"></i> New Customer</a>
-                            <a href="customer.html?mode=search" class="dropdown-item"><i class="fas fa-search"></i> Search Customer</a>
-                        </div>
-                    </div>
-                    <div class="product-dropdown">
-                        <button type="button" class="btn btn-primary" id="productMenuBtn" aria-haspopup="true" aria-expanded="false">
-                            <i class="fas fa-box"></i> Product <i class="fas fa-chevron-down"></i>
-                        </button>
-                        <div class="product-dropdown-menu" id="productDropdownMenu" aria-hidden="true">
-                            <button type="button" id="newProductBtn" class="dropdown-item" data-app="warehouse.html"><i class="fas fa-plus"></i> New Product</button>
-                            <button type="button" id="searchProductBtn" class="dropdown-item" data-app="warehouse.html"><i class="fas fa-search"></i> Search Product</button>
-                            <a href="special-search-product.html" class="dropdown-item" data-app="special-search-product.html"><i class="fas fa-map"></i> Special Search Product</a>
-                        </div>
-                    </div>
-                    <div class="applications-dropdown">
-                        <button type="button" class="btn btn-primary" id="applicationsMenuBtn" aria-haspopup="true" aria-expanded="false">
-                            <i class="fas fa-window-restore"></i> Applications <i class="fas fa-chevron-down"></i>
-                        </button>
-                        <div class="applications-dropdown-menu" id="applicationsDropdownMenu" aria-hidden="true">
-                            <a href="applications.html" class="dropdown-item"><i class="fas fa-plus"></i> New Applications</a>
-                            <a href="applications.html?mode=search" class="dropdown-item"><i class="fas fa-search"></i> Search Applications</a>
-                            <a href="application_users.html" class="dropdown-item"><i class="fas fa-user-cog"></i> Application Users</a>
-                            <a href="upload-warehouse-map.html" class="dropdown-item" data-app="upload-warehouse-map.html"><i class="fas fa-upload"></i> Upload Warehouse Map</a>
-                        </div>
-                    </div>
-                    <div class="location-dropdown">
-                        <button type="button" class="btn btn-primary" id="locationMenuBtn" aria-haspopup="true" aria-expanded="false">
-                            <i class="fas fa-map-marker-alt"></i> Location <i class="fas fa-chevron-down"></i>
-                        </button>
-                        <div class="location-dropdown-menu" id="locationDropdownMenu" aria-hidden="true">
-                            <a href="location.html" class="dropdown-item"><i class="fas fa-plus"></i> New Location</a>
-                            <a href="location-search.html" class="dropdown-item"><i class="fas fa-search"></i> Search Location</a>
-                            <a href="location-product.html" class="dropdown-item"><i class="fas fa-boxes-stacked"></i> Location Product</a>
-                            <a href="log-location-product.html" class="dropdown-item"><i class="fas fa-history"></i> Log Location Product</a>
-                        </div>
-                    </div>
-                    <div class="movement-dropdown">
-                        <button type="button" class="btn btn-primary" id="movementMenuBtn" aria-haspopup="true" aria-expanded="false">
-                            <i class="fas fa-exchange-alt"></i> Movement <i class="fas fa-chevron-down"></i>
-                        </button>
-                        <div class="movement-dropdown-menu" id="movementDropdownMenu" aria-hidden="true">
-                            <a href="movement.html" class="dropdown-item"><i class="fas fa-plus"></i> New Movement</a>
-                            <a href="movement.html?mode=search" class="dropdown-item"><i class="fas fa-search"></i> Search Movement</a>
-                            <a href="movement-situation.html" class="dropdown-item"><i class="fas fa-stream"></i> Situation of the Movement</a>
-                        </div>
-                    </div>
-                    <div class="picking-dropdown">
-                        <button type="button" class="btn btn-primary" id="pickingMenuBtn" aria-haspopup="true" aria-expanded="false">
-                            <i class="fas fa-dolly"></i> Picking <i class="fas fa-chevron-down"></i>
-                        </button>
-                        <div class="picking-dropdown-menu" id="pickingDropdownMenu" aria-hidden="true">
-                            <a href="picking.html" class="dropdown-item"><i class="fas fa-list"></i> Picking List</a>
-                            <a href="picking.html?mode=search" class="dropdown-item"><i class="fas fa-search"></i> Order Sent for Picking</a>
-                            <a href="separation-picking.html" class="dropdown-item"><i class="fas fa-box-open"></i> Separation and Picking</a>
-                            <a href="double-checking.html" class="dropdown-item"><i class="fas fa-clipboard-check"></i> Sent for Double Checking</a>
-                        </div>
-                    </div>
-                    <div class="help-dropdown">
-                        <button type="button" class="btn btn-primary" id="helpMenuBtn" aria-haspopup="true" aria-expanded="false">
-                            <i class="fas fa-circle-question"></i> Help <i class="fas fa-chevron-down"></i>
-                        </button>
-                        <div class="help-dropdown-menu" id="helpDropdownMenu" aria-hidden="true">
-                            <a href="help.html" class="dropdown-item"><i class="fas fa-book"></i> Help Center</a>
-                            <a href="help.html#modules" class="dropdown-item"><i class="fas fa-th-large"></i> System Modules</a>
-                            <a href="help.html#picking" class="dropdown-item"><i class="fas fa-dolly"></i> Picking Workflow</a>
-                            <a href="help.html#qrcode" class="dropdown-item"><i class="fas fa-qrcode"></i> Generate QR Code</a>
-                        </div>
-                    </div>
-                </div>
+                <div class="header-actions"></div>
             </div>
         </header>
 
-        <main class="main-content">
-            <div class="form-container application-users-container">
-                <div class="filters-container">
-                    <div class="filters-header">
-                        <h2><i class="fas fa-user-cog"></i> Application Users</h2>
-                        <p>Select a user and assign which system applications they can access.</p>
+        <main class="main-content app-users-main">
+            <section class="app-users-section">
+                <div class="app-users-white-panel">
+                    <div class="app-users-page-intro">
+                        <div class="app-users-page-intro-text">
+                            <h2><i class="fas fa-user-cog"></i> Application Users</h2>
+                            <p>Select a user and assign which system applications they can access. Move items between lists and save when you are done.</p>
+                        </div>
+                        <div class="app-users-page-intro-actions">
+                            <span id="appUsersDirtyBadge" class="app-users-dirty-badge" hidden>
+                                <i class="fas fa-circle" aria-hidden="true"></i> Unsaved changes
+                            </span>
+                            <a href="applications.html" class="btn btn-secondary" data-app="applications.html">
+                                <i class="fas fa-window-restore"></i> Manage applications
+                            </a>
+                        </div>
                     </div>
-                    <div class="filters-content show">
-                        <div class="form-row user-select-row">
-                            <div class="form-group full-width">
-                                <label for="userSelect"><i class="fas fa-user"></i> User</label>
-                                <select id="userSelect">
-                                    <option value="">Loading users...</option>
-                                </select>
+
+                    <div class="app-users-layout">
+                        <div class="app-users-main-col">
+                            <div class="app-users-card">
+                                <div class="app-users-card-head">
+                                    <h3><i class="fas fa-user"></i> Select user</h3>
+                                    <span class="app-users-card-tag">Step 1</span>
+                                </div>
+                                <div class="app-users-field">
+                                    <label for="userSelect"><i class="fas fa-id-badge"></i> User</label>
+                                    <select id="userSelect" class="app-users-select">
+                                        <option value="">Loading users...</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="app-users-card is-disabled" id="assignmentCard">
+                                <div class="app-users-card-head">
+                                    <h3><i class="fas fa-window-restore"></i> Application access</h3>
+                                    <span class="app-users-card-tag">Step 2</span>
+                                </div>
+                                <p class="app-users-help">Double-click an application to move it between lists. Use the arrow buttons to move selected items or everything at once.</p>
+
+                                <div class="app-lists-wrapper">
+                                    <div class="app-list-panel">
+                                        <div class="app-list-panel-head">
+                                            <h4><i class="fas fa-list"></i> Available</h4>
+                                            <span class="app-list-count" id="availableCount">0</span>
+                                        </div>
+                                        <select id="availableList" multiple aria-label="Available applications"></select>
+                                    </div>
+
+                                    <div class="app-list-actions" aria-label="Move applications">
+                                        <button type="button" class="btn btn-secondary" id="addSelectedBtn" title="Add selected" aria-label="Add selected applications">
+                                            <i class="fas fa-angle-right"></i>
+                                        </button>
+                                        <button type="button" class="btn btn-secondary" id="addAllBtn" title="Add all" aria-label="Add all applications">
+                                            <i class="fas fa-angle-double-right"></i>
+                                        </button>
+                                        <button type="button" class="btn btn-secondary" id="removeSelectedBtn" title="Remove selected" aria-label="Remove selected applications">
+                                            <i class="fas fa-angle-left"></i>
+                                        </button>
+                                        <button type="button" class="btn btn-secondary" id="removeAllBtn" title="Remove all" aria-label="Remove all applications">
+                                            <i class="fas fa-angle-double-left"></i>
+                                        </button>
+                                    </div>
+
+                                    <div class="app-list-panel">
+                                        <div class="app-list-panel-head">
+                                            <h4><i class="fas fa-check-square"></i> Assigned</h4>
+                                            <span class="app-list-count" id="selectedCount">0</span>
+                                        </div>
+                                        <select id="selectedList" multiple aria-label="Assigned applications"></select>
+                                    </div>
+                                </div>
+
+                                <div class="app-users-actions">
+                                    <button type="button" class="btn btn-primary" id="saveUserApplicationsBtn" disabled>
+                                        <i class="fas fa-save"></i> Save assignments
+                                    </button>
+                                    <div id="assignmentStatus" class="app-users-message" role="status" aria-live="polite"></div>
+                                </div>
                             </div>
                         </div>
 
-                        <div class="app-lists-wrapper">
-                            <div class="app-list-panel">
-                                <h3><i class="fas fa-list"></i> Available Applications</h3>
-                                <div class="app-list-count" id="availableCount">0 application(s)</div>
-                                <select id="availableList" multiple aria-label="Available applications"></select>
+                        <aside class="app-users-aside" aria-label="Assignment summary">
+                            <div class="app-users-summary-panel">
+                                <div class="app-users-summary-panel-head">
+                                    <h3><i class="fas fa-clipboard-list"></i> Summary</h3>
+                                    <p>Overview of the current user and application assignment.</p>
+                                </div>
+                                <ul class="app-users-summary-list">
+                                    <li>
+                                        <span class="app-users-summary-label">User</span>
+                                        <span id="summaryUserName" class="app-users-summary-value">No user selected</span>
+                                    </li>
+                                    <li>
+                                        <span class="app-users-summary-label">Available</span>
+                                        <span id="summaryAvailable" class="app-users-summary-value">0</span>
+                                    </li>
+                                    <li>
+                                        <span class="app-users-summary-label">Assigned</span>
+                                        <span id="summaryAssigned" class="app-users-summary-value">0</span>
+                                    </li>
+                                    <li>
+                                        <span class="app-users-summary-label">Status</span>
+                                        <span id="summaryStatus" class="app-users-status-badge idle">Select a user</span>
+                                    </li>
+                                </ul>
+                                <div class="app-users-tips">
+                                    <h4><i class="fas fa-lightbulb"></i> Tips</h4>
+                                    <ul>
+                                        <li>Users only see menu items for assigned applications.</li>
+                                        <li>Change Password remains available to every user.</li>
+                                    </ul>
+                                </div>
                             </div>
-
-                            <div class="app-list-actions">
-                                <button type="button" class="btn btn-secondary" id="addSelectedBtn" title="Add selected"><i class="fas fa-angle-right"></i></button>
-                                <button type="button" class="btn btn-secondary" id="addAllBtn" title="Add all"><i class="fas fa-angle-double-right"></i></button>
-                                <button type="button" class="btn btn-secondary" id="removeSelectedBtn" title="Remove selected"><i class="fas fa-angle-left"></i></button>
-                                <button type="button" class="btn btn-secondary" id="removeAllBtn" title="Remove all"><i class="fas fa-angle-double-left"></i></button>
-                            </div>
-
-                            <div class="app-list-panel">
-                                <h3><i class="fas fa-check-square"></i> Selected Applications</h3>
-                                <div class="app-list-count" id="selectedCount">0 application(s)</div>
-                                <select id="selectedList" multiple aria-label="Selected applications"></select>
-                            </div>
-                        </div>
-
-                        <div class="assignment-actions">
-                            <button type="button" class="btn btn-primary" id="saveUserApplicationsBtn">
-                                <i class="fas fa-save"></i> Save
-                            </button>
-                            <span id="assignmentStatus"></span>
-                        </div>
+                        </aside>
                     </div>
                 </div>
-            </div>
+            </section>
         </main>
 
         <footer class="footer">

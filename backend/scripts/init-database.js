@@ -359,7 +359,7 @@ async function initDatabase() {
       { application: 'location.html', menuName: 'Location' },
       { application: 'location-search.html', menuName: 'Location_Search' },
       { application: 'location-product.html', menuName: 'Location_Product' },
-      { application: 'log-location-product.html', menuName: 'Location' },
+      { application: 'log-location-product.html', menuName: 'Log_location' },
       { application: 'movement.html', menuName: 'Movement' },
       { application: 'movement-situation.html', menuName: 'Movement_Situation' },
       { application: 'picking.html', menuName: 'Picking' },
