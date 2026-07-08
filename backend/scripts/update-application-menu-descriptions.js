@@ -24,6 +24,7 @@ const systemApplicationMenus = [
   { application: 'help.html', menuName: 'Help' },
   { application: 'applications.html', menuName: 'Applications' },
   { application: 'application_users.html', menuName: 'Applications_Users' },
+  { application: 'logged-in-users.html', menuName: 'Applications_Logged_In_Users' },
   { application: 'change-password.html', menuName: 'Users_Change_Password' }
 ];
 

@@ -371,6 +371,7 @@ async function initDatabase() {
       { application: 'Order_of_Service_Search.html', menuName: 'Church_Order_of_Service_Search' },
       { application: 'applications.html', menuName: 'Applications' },
       { application: 'application_users.html', menuName: 'Applications_Users' },
+      { application: 'logged-in-users.html', menuName: 'Applications_Logged_In_Users' },
       { application: 'change-password.html', menuName: 'Users_Change_Password' }
     ];
 
@@ -412,6 +413,31 @@ async function initDatabase() {
       )
     `);
     console.log('✅ Tabela user_applications criada/verificada');
+
+    await query(`
+      CREATE TABLE IF NOT EXISTS user_sessions (
+        id UUID PRIMARY KEY,
+        user_key VARCHAR(100) NOT NULL,
+        user_name VARCHAR(150),
+        user_email VARCHAR(150),
+        ip_address VARCHAR(45),
+        user_agent TEXT,
+        login_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        last_seen_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        logout_at TIMESTAMPTZ,
+        current_app VARCHAR(100),
+        is_active BOOLEAN NOT NULL DEFAULT TRUE
+      )
+    `);
+    await query(`
+      CREATE INDEX IF NOT EXISTS idx_user_sessions_active
+      ON user_sessions (is_active, last_seen_at DESC)
+    `);
+    await query(`
+      CREATE INDEX IF NOT EXISTS idx_user_sessions_user_key
+      ON user_sessions (user_key, is_active)
+    `);
+    console.log('✅ Tabela user_sessions criada/verificada');
 
     await query(`
       CREATE TABLE IF NOT EXISTS system_documentation (

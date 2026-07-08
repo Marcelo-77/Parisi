@@ -22,6 +22,7 @@ const churchServiceOrderRoutes = require('./routes/churchServiceOrder');
 const systemDocumentationRoutes = require('./routes/systemDocumentation');
 const newsRoutes = require('./routes/news');
 const systemSettingsRoutes = require('./routes/systemSettings');
+const loggedInUsersRoutes = require('./routes/loggedInUsers');
 const systemSettingsService = require('./services/systemSettingsService');
 const { isAuthenticated, protectPages, requireAuth } = require('./middleware/auth');
 const funcionarioServiceDB = require('./services/funcionarioServiceDB');
@@ -29,6 +30,8 @@ const { initDatabase } = require('./scripts/init-database');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+
+app.set('trust proxy', 1);
 
 // Security and logging middlewares
 app.use(helmet({
@@ -107,6 +110,7 @@ app.use('/api/warehouse-map', warehouseMapRoutes);
 app.use('/api/system-documentation', systemDocumentationRoutes);
 app.use('/api/news', newsRoutes);
 app.use('/api/system-settings', systemSettingsRoutes);
+app.use('/api/logged-in-users', loggedInUsersRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {

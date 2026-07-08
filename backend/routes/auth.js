@@ -1,9 +1,12 @@
 const express = require('express');
+const crypto = require('crypto');
 const {
   isAuthenticated,
   setSessionCookie,
   clearSessionCookie,
   getSessionUserId,
+  getSessionId,
+  getClientIp,
   isRootSession,
   verifyRootLogin,
   ROOT_USER,
@@ -12,8 +15,27 @@ const {
 const funcionarioServiceDB = require('../services/funcionarioServiceDB');
 const userApplicationService = require('../services/userApplicationService');
 const systemApplicationService = require('../services/systemApplicationService');
+const userSessionService = require('../services/userSessionService');
 
 const router = express.Router();
+
+async function startUserSession(req, res, user) {
+  const sessionId = crypto.randomUUID();
+  const userKey = user.isRoot ? ROOT_USER : user.id;
+  const currentApp = 'login.html';
+
+  await userSessionService.createSession({
+    id: sessionId,
+    userKey,
+    userName: user.nome,
+    userEmail: user.email,
+    ipAddress: getClientIp(req),
+    userAgent: req.headers['user-agent'] || null,
+    currentApp
+  });
+
+  setSessionCookie(res, sessionId, userKey);
+}
 
 async function getSessionUserProfile(req) {
   if (isRootSession(req)) {
@@ -128,18 +150,19 @@ router.post('/login', async (req, res) => {
 
   try {
     if (verifyRootLogin(email, password)) {
-      setSessionCookie(res, ROOT_USER);
+      const user = {
+        id: ROOT_USER,
+        nome: 'Root',
+        email: ROOT_USER,
+        cargo: 'System Administrator',
+        isRoot: true,
+        companyName: 'All Companies'
+      };
+      await startUserSession(req, res, user);
       return res.json({
         success: true,
         message: 'Login successful',
-        user: {
-          id: ROOT_USER,
-          nome: 'Root',
-          email: ROOT_USER,
-          cargo: 'System Administrator',
-          isRoot: true,
-          companyName: 'All Companies'
-        }
+        user
       });
     }
 
@@ -152,23 +175,24 @@ router.post('/login', async (req, res) => {
       });
     }
 
-    setSessionCookie(res, user.id);
     const fullUser = await funcionarioServiceDB.buscarPorId(user.id);
     const profile = typeof fullUser.toJSON === 'function' ? fullUser.toJSON() : fullUser;
+    const sessionUser = {
+      id: profile.id,
+      nome: profile.nome,
+      email: profile.email,
+      cargo: profile.cargo || null,
+      isRoot: false,
+      sector: profile.sector || null,
+      companyId: profile.companyId || null,
+      companyName: profile.companyName || null,
+      photo: profile.photo || null
+    };
+    await startUserSession(req, res, sessionUser);
     return res.json({
       success: true,
       message: 'Login successful',
-      user: {
-        id: profile.id,
-        nome: profile.nome,
-        email: profile.email,
-        cargo: profile.cargo || null,
-        isRoot: false,
-        sector: profile.sector || null,
-        companyId: profile.companyId || null,
-        companyName: profile.companyName || null,
-        photo: profile.photo || null
-      }
+      user: sessionUser
     });
   } catch (error) {
     console.error('Login error:', error);
@@ -321,7 +345,47 @@ router.post('/change-password', async (req, res) => {
   }
 });
 
-router.post('/logout', (req, res) => {
+router.post('/heartbeat', async (req, res) => {
+  if (!isAuthenticated(req)) {
+    return res.status(401).json({
+      success: false,
+      error: 'Unauthorized',
+      message: 'Login required'
+    });
+  }
+
+  const sessionId = getSessionId(req);
+  if (!sessionId) {
+    return res.json({ success: true, tracked: false });
+  }
+
+  const app = req.body && req.body.app ? String(req.body.app).trim() : null;
+
+  try {
+    await userSessionService.touchSession(sessionId, {
+      currentApp: app,
+      ipAddress: getClientIp(req),
+      userAgent: req.headers['user-agent'] || null
+    });
+    return res.json({ success: true, tracked: true });
+  } catch (error) {
+    console.error('Heartbeat error:', error);
+    return res.status(500).json({
+      success: false,
+      error: error.message || 'Error updating session'
+    });
+  }
+});
+
+router.post('/logout', async (req, res) => {
+  const sessionId = getSessionId(req);
+  if (sessionId) {
+    try {
+      await userSessionService.endSession(sessionId);
+    } catch (error) {
+      console.error('Logout session error:', error);
+    }
+  }
   clearSessionCookie(res);
   return res.json({
     success: true,

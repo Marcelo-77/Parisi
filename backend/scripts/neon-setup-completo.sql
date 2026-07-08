@@ -333,6 +333,7 @@ FROM (VALUES
   ('Order_of_Service_Search.html', 'Church_Order_of_Service_Search'),
   ('applications.html', 'Applications'),
   ('application_users.html', 'Applications_Users'),
+  ('logged-in-users.html', 'Applications_Logged_In_Users'),
   ('change-password.html', 'Users_Change_Password')
 ) AS v(application, menu_name)
 WHERE NOT EXISTS (
@@ -368,6 +369,7 @@ FROM (VALUES
   ('Order_of_Service_Search.html', 'Church_Order_of_Service_Search'),
   ('applications.html', 'Applications'),
   ('application_users.html', 'Applications_Users'),
+  ('logged-in-users.html', 'Applications_Logged_In_Users'),
   ('change-password.html', 'Users_Change_Password')
 ) AS v(application, menu_name)
 WHERE sa.syap_nm_application = v.application;
@@ -400,6 +402,26 @@ CREATE TABLE IF NOT EXISTS user_applications (
   criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (id_funcionario, syap_cd_seq)
 );
+
+CREATE TABLE IF NOT EXISTS user_sessions (
+  id UUID PRIMARY KEY,
+  user_key VARCHAR(100) NOT NULL,
+  user_name VARCHAR(150),
+  user_email VARCHAR(150),
+  ip_address VARCHAR(45),
+  user_agent TEXT,
+  login_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  last_seen_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  logout_at TIMESTAMPTZ,
+  current_app VARCHAR(100),
+  is_active BOOLEAN NOT NULL DEFAULT TRUE
+);
+
+CREATE INDEX IF NOT EXISTS idx_user_sessions_active
+ON user_sessions (is_active, last_seen_at DESC);
+
+CREATE INDEX IF NOT EXISTS idx_user_sessions_user_key
+ON user_sessions (user_key, is_active);
 
 CREATE TABLE IF NOT EXISTS location_product (
   location_code VARCHAR(50) NOT NULL REFERENCES warehouse_locations(location) ON DELETE CASCADE,

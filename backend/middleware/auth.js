@@ -5,17 +5,22 @@ const APP_PASSWORD = process.env.APP_PASSWORD || 'yahusha';
 const ROOT_USER = 'root';
 const UNIVERSAL_APPLICATIONS = ['change-password.html'];
 const SESSION_COOKIE = 'doubley_session';
+const SESSION_PAYLOAD_SEPARATOR = ':';
 
-function signToken(userId) {
-  const payload = userId ? String(userId) : 'authenticated';
-  const sig = crypto.createHmac('sha256', AUTH_SECRET).update(payload).digest('hex');
-  return `${payload}.${sig}`;
+function signToken(payload) {
+  const signedPayload = payload ? String(payload) : 'authenticated';
+  const sig = crypto.createHmac('sha256', AUTH_SECRET).update(signedPayload).digest('hex');
+  return `${signedPayload}.${sig}`;
 }
 
 function verifyToken(token) {
   if (!token) return null;
 
-  const [payload, sig] = token.split('.');
+  const lastDot = token.lastIndexOf('.');
+  if (lastDot <= 0) return null;
+
+  const payload = token.slice(0, lastDot);
+  const sig = token.slice(lastDot + 1);
   if (!payload || !sig) return null;
 
   const expected = crypto.createHmac('sha256', AUTH_SECRET).update(payload).digest('hex');
@@ -28,6 +33,30 @@ function verifyToken(token) {
   }
 
   return payload;
+}
+
+function parseSessionPayload(payload) {
+  if (!payload || payload === 'authenticated') {
+    return { sessionId: null, userKey: null };
+  }
+
+  const separatorIndex = payload.indexOf(SESSION_PAYLOAD_SEPARATOR);
+  if (separatorIndex > 0) {
+    return {
+      sessionId: payload.slice(0, separatorIndex),
+      userKey: payload.slice(separatorIndex + 1) || null
+    };
+  }
+
+  return { sessionId: null, userKey: payload };
+}
+
+function getClientIp(req) {
+  const forwarded = req.headers['x-forwarded-for'];
+  if (forwarded) {
+    return String(forwarded).split(',')[0].trim();
+  }
+  return req.ip || req.socket?.remoteAddress || null;
 }
 
 function parseCookies(req) {
@@ -48,22 +77,28 @@ function isAuthenticated(req) {
 }
 
 function getSessionUserId(req) {
-  const payload = getSessionPayload(req);
-  if (!payload || payload === 'authenticated' || payload === ROOT_USER) return null;
-  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(payload)
-    ? payload
+  const userKey = getSessionUserKey(req);
+  if (!userKey || userKey === ROOT_USER) return null;
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(userKey)
+    ? userKey
     : null;
 }
 
 function getSessionUserKey(req) {
   const payload = getSessionPayload(req);
-  if (!payload || payload === 'authenticated') return null;
-  if (payload === ROOT_USER) return ROOT_USER;
-  return getSessionUserId(req);
+  const { userKey } = parseSessionPayload(payload);
+  if (!userKey || userKey === 'authenticated') return null;
+  return userKey;
+}
+
+function getSessionId(req) {
+  const payload = getSessionPayload(req);
+  const { sessionId } = parseSessionPayload(payload);
+  return sessionId;
 }
 
 function isRootSession(req) {
-  return getSessionPayload(req) === ROOT_USER;
+  return getSessionUserKey(req) === ROOT_USER;
 }
 
 function verifyRootLogin(email, password) {
@@ -72,8 +107,12 @@ function verifyRootLogin(email, password) {
   return verifyPassword(password);
 }
 
-function setSessionCookie(res, userId) {
-  const token = signToken(userId);
+function buildSessionToken(sessionId, userKey) {
+  return signToken(`${sessionId}${SESSION_PAYLOAD_SEPARATOR}${userKey}`);
+}
+
+function setSessionCookie(res, sessionId, userKey) {
+  const token = buildSessionToken(sessionId, userKey);
   const secure = process.env.NODE_ENV === 'production';
   res.cookie(SESSION_COOKIE, token, {
     httpOnly: true,
@@ -115,6 +154,22 @@ function getPageApplicationName(path) {
   return fileName.endsWith('.html') ? fileName : null;
 }
 
+async function touchSessionFromRequest(req, currentApp) {
+  const sessionId = getSessionId(req);
+  if (!sessionId) return;
+
+  try {
+    const userSessionService = require('../services/userSessionService');
+    await userSessionService.touchSession(sessionId, {
+      currentApp: currentApp || null,
+      ipAddress: getClientIp(req),
+      userAgent: req.headers['user-agent'] || null
+    });
+  } catch (error) {
+    console.error('Session touch error:', error.message);
+  }
+}
+
 async function protectPages(req, res, next) {
   if (req.method !== 'GET') return next();
 
@@ -129,11 +184,13 @@ async function protectPages(req, res, next) {
       return res.redirect('/login.html');
     }
 
+    const pageApp = getPageApplicationName(path);
+    touchSessionFromRequest(req, pageApp);
+
     if (isRootSession(req)) {
       return next();
     }
 
-    const pageApp = getPageApplicationName(path);
     if (!pageApp) {
       return next();
     }
@@ -199,6 +256,8 @@ module.exports = {
   verifyRootLogin,
   getSessionUserId,
   getSessionUserKey,
+  getSessionId,
+  getClientIp,
   isRootSession,
   protectPages,
   requireAuth,

@@ -345,6 +345,34 @@
     }
   }
 
+  async function sendSessionHeartbeat() {
+    if (window.location.pathname.endsWith('/login.html')) return;
+
+    const app = getCurrentPageApp();
+    try {
+      await fetch('/api/auth/heartbeat', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ app: app || null })
+      });
+    } catch {
+      // ignore heartbeat errors
+    }
+  }
+
+  function startSessionHeartbeat() {
+    if (window.location.pathname.endsWith('/login.html')) return;
+
+    sendSessionHeartbeat();
+    window.setInterval(sendSessionHeartbeat, 30000);
+    document.addEventListener('visibilitychange', () => {
+      if (!document.hidden) {
+        sendSessionHeartbeat();
+      }
+    });
+  }
+
   async function initMenuAccess() {
     if (window.location.pathname.endsWith('/login.html')) return;
 
@@ -389,6 +417,7 @@
     }
 
     await showNewsAnnouncementsIfNeeded();
+    startSessionHeartbeat();
   }
 
   if (document.readyState === 'loading') {

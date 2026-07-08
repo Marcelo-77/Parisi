@@ -79,6 +79,13 @@
   border-top: 1px solid #f0f2f5;
 }
 
+.news-results-block {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
 .news-filters-block .news-card-head,
 .news-results-block .news-card-head {
   margin-bottom: 1rem;

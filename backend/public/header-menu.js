@@ -64,6 +64,7 @@
                                     <a href="applications.html" class="dropdown-item" data-app="applications.html"><i class="fas fa-plus"></i> New Applications</a>
                                     <a href="applications.html?mode=search" class="dropdown-item" data-app="applications.html"><i class="fas fa-search"></i> Search Applications</a>
                                     <a href="application_users.html" class="dropdown-item" data-app="application_users.html"><i class="fas fa-user-cog"></i> Application Users</a>
+                                    <a href="logged-in-users.html" class="dropdown-item" data-app="logged-in-users.html"><i class="fas fa-user-clock"></i> Logged-in Users</a>
                                 </div>
                             </div>
                             <a href="upload-warehouse-map.html" class="dropdown-item" data-app="upload-warehouse-map.html"><i class="fas fa-upload"></i> Upload Warehouse Map</a>

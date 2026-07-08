@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Double-Y Warehouse System - Logged-in Users</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="warehouse-styles.css">
+    <link rel="stylesheet" href="pesquisa-styles.css">
+    <link rel="stylesheet" href="logged-in-users-styles.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body class="logged-in-users-page">
+    <script src="auth-check.js"></script>
+    <script src="header-menu.js"></script>
+    <script src="menu-access.js"></script>
+    <script src="double-y-logo-effect.js"></script>
+    <script src="dev-environment-badge.js"></script>
+    <div class="container">
+        <header class="header">
+            <div class="header-stats-row">
+                <div class="header-stats-left">
+                    <div class="header-stat header-stat-total">
+                        <span class="header-stat-value" id="totalItems">0</span>
+                        <span class="header-stat-label">Total Items</span>
+                    </div>
+                    <div class="header-stat header-stat-low">
+                        <span class="header-stat-value" id="lowStockItems">0</span>
+                        <span class="header-stat-label">Low Stock</span>
+                    </div>
+                </div>
+                <div class="double-y-wordmark" aria-label="Double Y"><img src="doubley-glyph.png" alt="" class="double-y-glyph" aria-hidden="true"><span class="double-y-name">Double Y</span><img src="doubley-glyph-bottom.png" alt="" class="double-y-glyph double-y-glyph-bottom" aria-hidden="true"></div>
+                <div class="header-stats-right">
+                    <div class="header-stat header-stat-entries">
+                        <span class="header-stat-value" id="totalEntradas">0</span>
+                        <span class="header-stat-label">Entries Today</span>
+                    </div>
+                    <div class="header-stat header-stat-exits">
+                        <span class="header-stat-value" id="totalSaidas">0</span>
+                        <span class="header-stat-label">Exits Today</span>
+                    </div>
+                </div>
+            </div>
+            <div class="header-content">
+                <h1><i class="fas fa-warehouse"></i> Double-Y Warehouse System</h1>
+                <p class="header-search-users-label">Logged-in Users</p>
+                <div class="header-actions"></div>
+            </div>
+        </header>
+
+        <main class="main-content logged-in-users-main">
+            <section class="logged-in-users-section">
+                <div class="logged-in-users-white-panel">
+                    <div class="logged-in-users-page-intro">
+                        <div class="logged-in-users-page-intro-text">
+                            <h2><i class="fas fa-user-clock"></i> Logged-in Users</h2>
+                            <p>Monitor users currently active in the system. The list refreshes automatically and shows login location, session duration, and the application in use.</p>
+                        </div>
+                        <div class="logged-in-users-page-intro-actions">
+                            <span id="liveStatusPill" class="logged-in-users-status-pill is-live">
+                                <i class="fas fa-circle" aria-hidden="true"></i>
+                                <span id="liveStatusText">Live</span>
+                            </span>
+                            <button type="button" class="btn btn-secondary" id="refreshSessionsBtn">
+                                <i class="fas fa-sync-alt"></i> Refresh now
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="logged-in-users-summary">
+                        <div class="logged-in-users-summary-card">
+                            <span class="logged-in-users-summary-label">Active users</span>
+                            <span id="summaryActiveCount" class="logged-in-users-summary-value">0</span>
+                        </div>
+                        <div class="logged-in-users-summary-card">
+                            <span class="logged-in-users-summary-label">Refresh interval</span>
+                            <span id="summaryRefreshInterval" class="logged-in-users-summary-value">8s</span>
+                        </div>
+                        <div class="logged-in-users-summary-card">
+                            <span class="logged-in-users-summary-label">Stale after</span>
+                            <span id="summaryStaleMinutes" class="logged-in-users-summary-value">5 min</span>
+                        </div>
+                        <div class="logged-in-users-summary-card">
+                            <span class="logged-in-users-summary-label">Last update</span>
+                            <span id="summaryLastUpdate" class="logged-in-users-summary-value">—</span>
+                        </div>
+                    </div>
+
+                    <div class="logged-in-users-table-wrap">
+                        <table class="warehouse-table logged-in-users-table">
+                            <thead>
+                                <tr>
+                                    <th><i class="fas fa-user"></i> User</th>
+                                    <th><i class="fas fa-network-wired"></i> Logged from</th>
+                                    <th><i class="fas fa-hourglass-half"></i> Duration</th>
+                                    <th><i class="fas fa-window-restore"></i> Current application</th>
+                                    <th><i class="fas fa-clock"></i> Last activity</th>
+                                </tr>
+                            </thead>
+                            <tbody id="loggedInUsersBody">
+                                <tr>
+                                    <td colspan="5">
+                                        <div class="logged-in-users-empty">
+                                            <i class="fas fa-spinner fa-spin"></i>
+                                            <p>Loading active sessions...</p>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div id="loggedInUsersMessage" class="logged-in-users-message" role="status" aria-live="polite"></div>
+                </div>
+            </section>
+        </main>
+
+        <footer class="footer">
+            <p>&copy; 2026 Double-Y IT Systems. All rights reserved.</p>
+        </footer>
+    </div>
+
+    <script src="logged-in-users-script.js"></script>
+</body>
+</html>
