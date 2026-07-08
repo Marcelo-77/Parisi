@@ -246,6 +246,42 @@
   letter-spacing: 0.03em;
 }
 
+.system-settings-timeout-row {
+  display: grid;
+  grid-template-columns: minmax(220px, 320px);
+}
+
+.system-settings-timeout-field label {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  color: #1f2937;
+}
+
+.system-settings-timeout-field label i {
+  color: #667eea;
+  font-size: 0.85rem;
+}
+
+.system-settings-timeout-field input[type="number"] {
+  width: 100%;
+  padding: 0.65rem 0.8rem;
+  border: 1px solid #d1d5db;
+  border-radius: 10px;
+  background: #fff;
+  font-size: 1rem;
+  color: #1f2937;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.system-settings-timeout-field input[type="number"]:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.15);
+}
+
 .system-settings-aside {
   position: sticky;
   top: 1rem;

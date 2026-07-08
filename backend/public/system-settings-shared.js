@@ -3,7 +3,8 @@
   const DEFAULT_SETTINGS = {
     showHeaderStats: true,
     backgroundColor: '#667eea',
-    backgroundColorEnd: '#764ba2'
+    backgroundColorEnd: '#764ba2',
+    sessionInactivityMinutes: 30
   };
 
   function normalizeSettings(raw) {
@@ -17,7 +18,14 @@
         : DEFAULT_SETTINGS.backgroundColor,
       backgroundColorEnd: /^#[0-9A-Fa-f]{6}$/.test(raw.backgroundColorEnd || '')
         ? raw.backgroundColorEnd
-        : DEFAULT_SETTINGS.backgroundColorEnd
+        : DEFAULT_SETTINGS.backgroundColorEnd,
+      sessionInactivityMinutes: (() => {
+        const parsed = parseInt(String(raw.sessionInactivityMinutes ?? DEFAULT_SETTINGS.sessionInactivityMinutes), 10);
+        if (!Number.isInteger(parsed)) return DEFAULT_SETTINGS.sessionInactivityMinutes;
+        if (parsed < 1) return 1;
+        if (parsed > 240) return 240;
+        return parsed;
+      })()
     };
   }
 
@@ -53,6 +61,7 @@
     document.body.style.background = buildBackgroundStyle(normalized);
 
     document.body.classList.toggle('header-stats-hidden', !normalized.showHeaderStats);
+    window.dispatchEvent(new CustomEvent('doubley:system-settings-applied', { detail: normalized }));
   }
 
   async function fetchSystemSettings() {

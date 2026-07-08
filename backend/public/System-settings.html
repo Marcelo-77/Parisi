@@ -107,6 +107,20 @@
                                 </div>
                             </div>
 
+                            <div class="system-settings-card">
+                                <div class="system-settings-card-head">
+                                    <h3><i class="fas fa-user-clock"></i> Session inactivity timeout</h3>
+                                    <span class="system-settings-card-tag">Security</span>
+                                </div>
+                                <p class="system-settings-help system-settings-help-intro">Automatically log out users when they stay inactive for the configured time.</p>
+                                <div class="system-settings-timeout-row">
+                                    <div class="system-settings-timeout-field">
+                                        <label for="sessionInactivityMinutes"><i class="fas fa-clock"></i> Inactivity limit (minutes)</label>
+                                        <input type="number" id="sessionInactivityMinutes" name="sessionInactivityMinutes" min="1" max="240" step="1" value="30">
+                                    </div>
+                                </div>
+                            </div>
+
                             <div class="system-settings-card system-settings-actions-card">
                                 <div class="system-settings-actions">
                                     <div class="system-settings-actions-group system-settings-actions-secondary">

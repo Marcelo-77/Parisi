@@ -1,5 +1,9 @@
 (function () {
   const MENU_ACCESS_KEY = 'doubley_menu_access';
+  const TAB_SESSION_KEY = 'doubley_tab_auth';
+  const MENU_HEARTBEAT_MS = 30000;
+  let heartbeatTimer = null;
+  let inactivityTimer = null;
 
   function appFromHref(href) {
     if (!href) return null;
@@ -361,11 +365,67 @@
     }
   }
 
+  function getSessionInactivityMinutes() {
+    if (window.DoubleYSystemSettings && typeof window.DoubleYSystemSettings.readCachedSettings === 'function') {
+      const cached = window.DoubleYSystemSettings.readCachedSettings();
+      if (cached && Number.isInteger(cached.sessionInactivityMinutes)) {
+        return cached.sessionInactivityMinutes;
+      }
+    }
+    return 30;
+  }
+
+  async function forceLogoutByInactivity() {
+    try {
+      await fetch('/api/auth/logout', {
+        method: 'POST',
+        credentials: 'same-origin'
+      });
+    } catch {
+      // ignore logout errors
+    }
+
+    try {
+      sessionStorage.removeItem(TAB_SESSION_KEY);
+      clearCachedMenuAccess();
+    } catch {
+      // ignore storage errors
+    }
+
+    window.location.replace('/login.html');
+  }
+
+  function resetInactivityTimer() {
+    if (window.location.pathname.endsWith('/login.html')) return;
+
+    if (inactivityTimer) {
+      window.clearTimeout(inactivityTimer);
+    }
+
+    const minutes = getSessionInactivityMinutes();
+    inactivityTimer = window.setTimeout(forceLogoutByInactivity, minutes * 60 * 1000);
+  }
+
+  function bindInactivityListeners() {
+    if (window.location.pathname.endsWith('/login.html')) return;
+
+    const activityEvents = ['mousemove', 'mousedown', 'keydown', 'scroll', 'touchstart', 'click'];
+    activityEvents.forEach((eventName) => {
+      window.addEventListener(eventName, resetInactivityTimer, { passive: true });
+    });
+
+    window.addEventListener('doubley:system-settings-applied', resetInactivityTimer);
+    resetInactivityTimer();
+  }
+
   function startSessionHeartbeat() {
     if (window.location.pathname.endsWith('/login.html')) return;
 
     sendSessionHeartbeat();
-    window.setInterval(sendSessionHeartbeat, 30000);
+    if (heartbeatTimer) {
+      window.clearInterval(heartbeatTimer);
+    }
+    heartbeatTimer = window.setInterval(sendSessionHeartbeat, MENU_HEARTBEAT_MS);
     document.addEventListener('visibilitychange', () => {
       if (!document.hidden) {
         sendSessionHeartbeat();
@@ -418,6 +478,7 @@
 
     await showNewsAnnouncementsIfNeeded();
     startSessionHeartbeat();
+    bindInactivityListeners();
   }
 
   if (document.readyState === 'loading') {

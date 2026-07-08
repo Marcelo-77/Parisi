@@ -46,10 +46,15 @@
     const showHeaderStats = Boolean(document.getElementById('showHeaderStats')?.checked);
     const backgroundColor = document.getElementById('backgroundColor')?.value || '#667eea';
     const backgroundColorEnd = document.getElementById('backgroundColorEnd')?.value || '#764ba2';
+    const sessionInactivityMinutes = parseInt(
+      String(document.getElementById('sessionInactivityMinutes')?.value || '30'),
+      10
+    );
     return window.DoubleYSystemSettings.normalizeSettings({
       showHeaderStats,
       backgroundColor,
-      backgroundColorEnd
+      backgroundColorEnd,
+      sessionInactivityMinutes
     });
   }
 
@@ -57,10 +62,12 @@
     const showHeaderStats = document.getElementById('showHeaderStats');
     const backgroundColor = document.getElementById('backgroundColor');
     const backgroundColorEnd = document.getElementById('backgroundColorEnd');
+    const sessionInactivityMinutes = document.getElementById('sessionInactivityMinutes');
 
     if (showHeaderStats) showHeaderStats.checked = settings.showHeaderStats !== false;
     if (backgroundColor) backgroundColor.value = settings.backgroundColor;
     if (backgroundColorEnd) backgroundColorEnd.value = settings.backgroundColorEnd;
+    if (sessionInactivityMinutes) sessionInactivityMinutes.value = String(settings.sessionInactivityMinutes);
     updatePreview(settings);
   }
 
@@ -68,7 +75,8 @@
     if (!a || !b) return false;
     return a.showHeaderStats === b.showHeaderStats
       && a.backgroundColor === b.backgroundColor
-      && a.backgroundColorEnd === b.backgroundColorEnd;
+      && a.backgroundColorEnd === b.backgroundColorEnd
+      && a.sessionInactivityMinutes === b.sessionInactivityMinutes;
   }
 
   function refreshDirtyState() {
@@ -184,7 +192,7 @@
   }
 
   function bindLivePreview() {
-    ['showHeaderStats', 'backgroundColor', 'backgroundColorEnd'].forEach((id) => {
+    ['showHeaderStats', 'backgroundColor', 'backgroundColorEnd', 'sessionInactivityMinutes'].forEach((id) => {
       const el = document.getElementById(id);
       if (!el) return;
       el.addEventListener('input', () => {

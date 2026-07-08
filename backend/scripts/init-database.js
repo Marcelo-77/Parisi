@@ -503,7 +503,8 @@ async function initDatabase() {
     const defaultSystemSettings = [
       ['show_header_stats', 'true'],
       ['background_color', '#667eea'],
-      ['background_color_end', '#764ba2']
+      ['background_color_end', '#764ba2'],
+      ['session_inactivity_minutes', '30']
     ];
     for (const [key, value] of defaultSystemSettings) {
       await query(
