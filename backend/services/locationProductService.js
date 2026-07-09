@@ -34,6 +34,49 @@ function resolveUsuarioAlterouNome(row) {
   return null;
 }
 
+function isFullSituationDescription(description) {
+  return String(description || '').trim().toLowerCase() === 'full';
+}
+
+async function fetchSituationDescription(client, siprSqNumber) {
+  const result = await client.query(
+    `SELECT sipr_nm_description FROM situation_product WHERE sipr_sq_number = $1`,
+    [siprSqNumber]
+  );
+  return (result.rows[0] && result.rows[0].sipr_nm_description)
+    ? String(result.rows[0].sipr_nm_description).trim()
+    : '';
+}
+
+async function adjustWarehouseItemsQuantity(client, productCode, delta) {
+  const code = productCode != null ? String(productCode).trim() : '';
+  const change = parseInt(delta, 10) || 0;
+  if (!code || change === 0) return;
+
+  if (change < 0) {
+    const check = await client.query(
+      `SELECT quantidade FROM warehouse_items WHERE codigo = $1 FOR UPDATE`,
+      [code]
+    );
+    if (!check.rows.length) {
+      console.warn(`⚠️ warehouse_items: nenhum registro com codigo="${code}" para atualizar quantidade`);
+      return;
+    }
+    const current = parseInt(check.rows[0].quantidade, 10) || 0;
+    if (current + change < 0) {
+      throw new Error(`Insufficient warehouse stock for product "${code}"`);
+    }
+  }
+
+  const updateRes = await client.query(
+    `UPDATE warehouse_items SET quantidade = COALESCE(quantidade, 0) + $1 WHERE codigo = $2`,
+    [change, code]
+  );
+  if (updateRes.rowCount === 0) {
+    console.warn(`⚠️ warehouse_items: nenhum registro com codigo="${code}" para atualizar quantidade`);
+  }
+}
+
 async function insertLogEntry(client, {
   operation,
   locationCode,
@@ -123,20 +166,9 @@ async function criar(dados) {
       quantityCurrent: parseInt(createdRow.quantity_current, 10) || 0,
       usuario: dados.usuarioInseriu || null
     });
-    const isFull = await client.query(
-      `SELECT sipr_nm_description FROM situation_product WHERE sipr_sq_number = $1`,
-      [dados.siprSqNumber]
-    );
-    const situationDesc = (isFull.rows[0] && isFull.rows[0].sipr_nm_description) ? String(isFull.rows[0].sipr_nm_description).trim() : '';
-    const isFullSituation = situationDesc.toLowerCase() === 'full';
-    if (isFullSituation && quantityCurrent > 0 && productCode) {
-      const updateRes = await client.query(
-        `UPDATE warehouse_items SET quantidade = COALESCE(quantidade, 0) + $1 WHERE codigo = $2`,
-        [quantityCurrent, productCode]
-      );
-      if (updateRes.rowCount === 0) {
-        console.warn(`⚠️ warehouse_items: nenhum registro com codigo="${productCode}" para atualizar quantidade`);
-      }
+    const situationDesc = await fetchSituationDescription(client, dados.siprSqNumber);
+    if (isFullSituationDescription(situationDesc) && quantityCurrent > 0 && productCode) {
+      await adjustWarehouseItemsQuantity(client, productCode, quantityCurrent);
     }
     await client.query('COMMIT');
     return mapRow(result.rows[0]);
@@ -244,9 +276,10 @@ async function atualizarQuantidades(locationCode, productCode, entryDatetime, si
     await client.query('BEGIN');
 
     const oldResult = await client.query(
-      `SELECT quantity_informed, quantity_current
-       FROM ${TABLE}
-       WHERE location_code = $1 AND product_code = $2 AND sipr_sq_number = $3`,
+      `SELECT lp.quantity_informed, lp.quantity_current, lp.product_code, sp.sipr_nm_description
+       FROM ${TABLE} lp
+       LEFT JOIN situation_product sp ON sp.sipr_sq_number = lp.sipr_sq_number
+       WHERE lp.location_code = $1 AND lp.product_code = $2 AND lp.sipr_sq_number = $3`,
       [locationCode, productCode, siprSqNumber]
     );
     if (!oldResult.rows.length) {
@@ -254,17 +287,30 @@ async function atualizarQuantidades(locationCode, productCode, entryDatetime, si
       throw new Error('Record not found');
     }
     const oldRow = oldResult.rows[0];
+    const oldQtyCurrent = parseInt(oldRow.quantity_current, 10) || 0;
 
     const result = await client.query(updateSql, values);
     const updatedRow = result.rows[0];
+    const newQtyCurrent = parseInt(updatedRow.quantity_current, 10) || 0;
+
+    if (
+      dados.quantityCurrent !== undefined
+      && isFullSituationDescription(oldRow.sipr_nm_description)
+    ) {
+      await adjustWarehouseItemsQuantity(
+        client,
+        updatedRow.product_code,
+        newQtyCurrent - oldQtyCurrent
+      );
+    }
 
     await insertLogEntry(client, {
       operation: 'UPDATE',
       locationCode: updatedRow.location_code,
       productCode: updatedRow.product_code,
       siprSqNumber: updatedRow.sipr_sq_number,
-      quantityPrev: parseInt(oldRow.quantity_current, 10) || 0,
-      quantityCurrent: parseInt(updatedRow.quantity_current, 10) || 0,
+      quantityPrev: oldQtyCurrent,
+      quantityCurrent: newQtyCurrent,
       usuario: dados.usuarioAlterou || null
     });
 
@@ -273,6 +319,7 @@ async function atualizarQuantidades(locationCode, productCode, entryDatetime, si
   } catch (error) {
     await client.query('ROLLBACK').catch(() => {});
     if (error.message === 'Record not found') throw error;
+    if (error.message && error.message.startsWith('Insufficient warehouse stock')) throw error;
     console.error('❌ Error updating location_product:', error);
     throw new Error(`Error updating record: ${error.message}`);
   } finally {
@@ -286,9 +333,11 @@ async function deletar(locationCode, productCode, entryDatetime, siprSqNumber, d
     await client.query('BEGIN');
 
     const oldResult = await client.query(
-      `SELECT location_code, product_code, sipr_sq_number, quantity_current
-       FROM ${TABLE}
-       WHERE location_code = $1 AND product_code = $2 AND sipr_sq_number = $3`,
+      `SELECT lp.location_code, lp.product_code, lp.sipr_sq_number, lp.quantity_current,
+              sp.sipr_nm_description
+       FROM ${TABLE} lp
+       LEFT JOIN situation_product sp ON sp.sipr_sq_number = lp.sipr_sq_number
+       WHERE lp.location_code = $1 AND lp.product_code = $2 AND lp.sipr_sq_number = $3`,
       [locationCode, productCode, siprSqNumber]
     );
     if (!oldResult.rows.length) {
@@ -296,6 +345,11 @@ async function deletar(locationCode, productCode, entryDatetime, siprSqNumber, d
       return false;
     }
     const oldRow = oldResult.rows[0];
+    const oldQtyCurrent = parseInt(oldRow.quantity_current, 10) || 0;
+
+    if (isFullSituationDescription(oldRow.sipr_nm_description) && oldQtyCurrent > 0) {
+      await adjustWarehouseItemsQuantity(client, oldRow.product_code, -oldQtyCurrent);
+    }
 
     await client.query(
       `DELETE FROM ${TABLE}
@@ -308,7 +362,7 @@ async function deletar(locationCode, productCode, entryDatetime, siprSqNumber, d
       locationCode: oldRow.location_code,
       productCode: oldRow.product_code,
       siprSqNumber: oldRow.sipr_sq_number,
-      quantityPrev: parseInt(oldRow.quantity_current, 10) || 0,
+      quantityPrev: oldQtyCurrent,
       quantityCurrent: 0,
       usuario: dados.usuarioAlterou || null
     });
@@ -317,6 +371,7 @@ async function deletar(locationCode, productCode, entryDatetime, siprSqNumber, d
     return true;
   } catch (error) {
     await client.query('ROLLBACK').catch(() => {});
+    if (error.message && error.message.startsWith('Insufficient warehouse stock')) throw error;
     console.error('❌ Error deleting location_product:', error);
     throw new Error(`Error deleting record: ${error.message}`);
   } finally {

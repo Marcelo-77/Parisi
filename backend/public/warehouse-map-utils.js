@@ -239,7 +239,7 @@
                 if (classifyCell(value) !== 'location') return;
                 const mapLoc = normalizeCellText(value).toUpperCase();
                 const matched = productLocations.some((loc) =>
-                    locationMatchesMapCell(getLocationCodeFromProductItem(loc), mapLoc)
+                    productLocationMatchesMapCell(loc, mapLoc, null)
                 );
                 if (matched) {
                     positions.push({ rowIndex, colIndex, locationCode: mapLoc });
@@ -953,8 +953,8 @@
         }).filter((row) => row.locationCode);
     }
 
-    function getProductLocationsForMapCell(mapLoc, productList) {
-        return productList.filter((row) => locationMatchesMapCell(row.locationCode, mapLoc));
+    function getProductLocationsForMapCell(mapLoc, productList, locationIndex) {
+        return productList.filter((row) => productLocationMatchesMapCell(row, mapLoc, locationIndex));
     }
 
     let mapTooltipEl = null;
@@ -1005,12 +1005,13 @@
         `).join('');
     }
 
-    function setupProductLocationTooltips(table, productList) {
+    function setupProductLocationTooltips(table, productList, locationIndex) {
         const normalized = normalizeProductLocationList(productList);
         hideMapTooltip();
         if (!table) return;
 
         table._productLocationDetails = normalized;
+        table._productLocationIndex = locationIndex || null;
 
         if (table._mapTooltipHandlersAttached) return;
         table._mapTooltipHandlersAttached = true;
@@ -1022,8 +1023,9 @@
             if (!cell || !table.contains(cell)) return;
 
             const details = table._productLocationDetails || [];
+            const index = table._productLocationIndex || null;
             const mapLoc = cell.getAttribute('data-location') || '';
-            const matches = getProductLocationsForMapCell(mapLoc, details);
+            const matches = getProductLocationsForMapCell(mapLoc, details, index);
             if (!matches.length) return;
 
             tooltip.innerHTML = buildMapTooltipHtml(matches);
@@ -1054,7 +1056,9 @@
 
         keys.add(prod);
         const noSide = prod.replace(/[RLM]$/, '');
-        keys.add(noSide);
+        if (noSide !== prod) {
+            keys.add(noSide);
+        }
 
         const simple = noSide.match(/^([A-Z])(\d+)$/);
         if (simple) {
@@ -1065,11 +1069,13 @@
         const parsed = parseFn ? parseFn(prod) : null;
         if (parsed && parsed.street) {
             const street = parsed.street;
-            if (parsed.building !== '' && parsed.level !== '' && parsed.level !== '0') {
+            const levelNum = parsed.level === '' ? NaN : Number(parsed.level);
+            const hasPositiveLevel = parsed.level !== '' && !Number.isNaN(levelNum) && levelNum > 0;
+
+            if (parsed.building !== '' && hasPositiveLevel) {
                 keys.add(street + parsed.building + parsed.level);
                 keys.add(street + String(Number(parsed.building)) + String(Number(parsed.level)));
-            }
-            if (parsed.building !== '') {
+            } else if (parsed.building !== '') {
                 keys.add(street + parsed.building);
                 keys.add(street + String(Number(parsed.building)));
             }
@@ -1078,10 +1084,34 @@
         return keys;
     }
 
+    function resolveProductLocationMapKeys(productLocations, locationIndex) {
+        const keys = new Set();
+        const list = Array.isArray(productLocations) ? productLocations : [];
+        list.forEach((loc) => {
+            const code = getLocationCodeFromProductItem(loc);
+            if (!code) return;
+            let mapKey = null;
+            if (locationIndex && locationIndex.locations) {
+                mapKey = findLocationKeyInIndex(locationIndex, code);
+            }
+            if (!mapKey) {
+                const candidates = Array.from(getMapMatchKeys(code)).sort((a, b) => b.length - a.length);
+                mapKey = candidates[0] || code;
+            }
+            keys.add(String(mapKey).trim().toUpperCase());
+        });
+        return keys;
+    }
+
     function findLocationKeyInIndex(locationIndex, productLocation) {
         if (!locationIndex || !locationIndex.locations) return null;
+        const exact = String(productLocation || '').trim().toUpperCase();
+        if (exact && locationIndex.locations[exact]) {
+            return exact;
+        }
+
         const candidates = Array.from(getMapMatchKeys(productLocation))
-            .filter(Boolean)
+            .filter((key) => key && key !== exact)
             .sort((a, b) => b.length - a.length);
         for (let i = 0; i < candidates.length; i++) {
             if (locationIndex.locations[candidates[i]]) {
@@ -1091,10 +1121,25 @@
         return null;
     }
 
-    function locationMatchesMapCell(productLocation, mapCell) {
+    function locationMatchesMapCell(productLocation, mapCell, resolvedKeys) {
         const map = String(mapCell || '').trim().toUpperCase();
         if (!map) return false;
+        if (resolvedKeys && resolvedKeys.size) {
+            return resolvedKeys.has(map);
+        }
         return getMapMatchKeys(productLocation).has(map);
+    }
+
+    function productLocationMatchesMapCell(productLocation, mapCell, locationIndex) {
+        const map = String(mapCell || '').trim().toUpperCase();
+        if (!map) return false;
+        const code = getLocationCodeFromProductItem(productLocation);
+        if (!code) return false;
+        if (locationIndex && locationIndex.locations) {
+            const resolved = findLocationKeyInIndex(locationIndex, code);
+            return Boolean(resolved) && resolved.toUpperCase() === map;
+        }
+        return locationMatchesMapCell(code, map);
     }
 
     const MAP_BLINK_DURATION_MS = 7000;
@@ -1126,6 +1171,9 @@
     function applyMapHighlights(options) {
         const singleTerm = options && options.singleTerm != null ? options.singleTerm : '';
         const productLocations = options && Array.isArray(options.productLocations) ? options.productLocations : [];
+        const locationIndex = options && options.locationIndex
+            ? normalizeLocationIndex(options.locationIndex)
+            : null;
         const table = document.getElementById('warehouseMapTable');
         if (!table) return;
 
@@ -1137,7 +1185,7 @@
         cells.forEach((cell) => {
             const mapLoc = (cell.getAttribute('data-location') || '').toUpperCase();
             const isProductMatch = productLocations.some((loc) =>
-                locationMatchesMapCell(getLocationCodeFromProductItem(loc), mapLoc)
+                productLocationMatchesMapCell(loc, mapLoc, locationIndex)
             );
             const isSingleMatch = Boolean(normalizedSingle) && mapLoc === normalizedSingle;
 
@@ -1163,7 +1211,7 @@
             }
         }
 
-        setupProductLocationTooltips(table, productLocations);
+        setupProductLocationTooltips(table, productLocations, locationIndex);
 
         if (options && options.scrollToTop) {
             scrollMapToTop();
@@ -1199,6 +1247,7 @@
         applyMapHighlights({
             singleTerm: term,
             productLocations: productLocations || [],
+            locationIndex: mapOptions && mapOptions.locationIndex,
             blinkProductMatches: Boolean(mapOptions && mapOptions.blinkProductMatches),
             scrollToTop: Boolean(mapOptions && mapOptions.scrollToTop),
             autoScrollToMatch: mapOptions && mapOptions.autoScrollToMatch != null
@@ -1218,7 +1267,9 @@
         const container = document.getElementById('warehouseMapContainer');
         const imageStack = container && container.querySelector('.warehouse-map-image-only-stack');
         if (imageStack && container) {
-            const keys = Array.from(getMapMatchKeys(locationCode))
+            const exact = String(locationCode || '').trim().toUpperCase();
+            const keys = [exact]
+                .concat(Array.from(getMapMatchKeys(locationCode)).filter((key) => key && key !== exact))
                 .filter(Boolean)
                 .sort((a, b) => b.length - a.length);
             const matchCode = keys.find((key) => {
@@ -1242,7 +1293,7 @@
 
         cells.forEach((cell) => {
             const mapLoc = cell.getAttribute('data-location') || '';
-            if (!target && locationMatchesMapCell(locationCode, mapLoc)) {
+            if (!target && productLocationMatchesMapCell(locationCode, mapLoc, null)) {
                 target = cell;
             }
         });

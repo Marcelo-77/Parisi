@@ -7,8 +7,19 @@
   margin: 0 auto;
 }
 
-.news-search-section {
-  max-width: 1180px;
+.news-page.news-search-page .news-section,
+.news-search-page .news-search-section {
+  max-width: none;
+  width: 100%;
+}
+
+.news-search-page .news-search-main {
+  width: 100%;
+  max-width: none;
+}
+
+.news-search-page .main-content {
+  width: 100%;
 }
 
 .news-search-main,

@@ -4,7 +4,7 @@
         { value: 'BATHWARE', label: 'BathWare' },
         { value: 'CENTRAL', label: 'Central' },
         { value: 'WAREHOUSE2', label: 'Warehouse2' },
-        { value: 'FURNITUREWARE', label: 'Furnitureware' },
+        { value: 'FURNITUREWARE', label: 'Furniture' },
         { value: 'DOORWARE', label: 'Doorware' },
         { value: 'OTHER', label: 'Other' }
     ];

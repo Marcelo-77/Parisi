@@ -65,7 +65,7 @@ function formatSection(section) {
         BATHWARE: 'BathWare',
         CENTRAL: 'Central',
         WAREHOUSE2: 'Warehouse2',
-        FURNITUREWARE: 'Furnitureware',
+        FURNITUREWARE: 'Furniture',
         DOORWARE: 'Doorware',
         OTHER: 'Other'
     };

@@ -1,0 +1,493 @@
+<html xmlns:o="urn:schemas-microsoft-com:office:office"
+      xmlns:w="urn:schemas-microsoft-com:office:word"
+      xmlns="http://www.w3.org/TR/REC-html40">
+<head>
+<meta charset="utf-8">
+<meta name=ProgId content=Word.Document>
+<meta name=Generator content="Microsoft Word 15">
+<title>PDA Quotation - Sydney - 10 Units</title>
+<style>
+  body { font-family: Calibri, Arial, sans-serif; font-size: 11pt; color: #222; margin: 40px; }
+  h1 { font-size: 20pt; color: #1f2937; border-bottom: 2px solid #667eea; padding-bottom: 8px; }
+  h2 { font-size: 14pt; color: #374151; margin-top: 28px; }
+  h3 { font-size: 12pt; color: #4338ca; margin-top: 18px; }
+  p, li { line-height: 1.5; }
+  table { border-collapse: collapse; width: 100%; margin: 12px 0 20px; }
+  th, td { border: 1px solid #cbd5e1; padding: 8px 10px; text-align: left; vertical-align: top; }
+  th { background: #eef2ff; color: #1e293b; }
+  .meta { background: #f8fafc; border: 1px solid #e2e8f0; padding: 14px 16px; margin: 16px 0; }
+  .note { background: #fff7ed; border-left: 4px solid #f59e0b; padding: 10px 14px; margin: 18px 0; font-size: 10pt; }
+  .total { font-weight: bold; background: #f1f5f9; }
+  .right { text-align: right; }
+  .small { font-size: 9.5pt; color: #64748b; }
+</style>
+</head>
+<body>
+
+<h1>Comparative Quotation — Warehouse PDA Devices</h1>
+
+<div class="meta">
+  <p><strong>Prepared for:</strong> Double-Y IT Systems / Parisi Warehouse Project<br>
+  <strong>Delivery location:</strong> Sydney, NSW, Australia<br>
+  <strong>Date:</strong> 9 July 2026<br>
+  <strong>Reference:</strong> RFQ-PDA-SYD-2026-07-09<br>
+  <strong>Quantity required:</strong> 10 handheld PDA units (identical configuration per supplier)</p>
+</div>
+
+<h2>1. Purpose</h2>
+<p>This document compares indicative quotations from three Sydney-area suppliers for <strong>10 rugged Android warehouse PDAs</strong> suitable for barcode scanning, Wi-Fi connectivity, and integration with a warehouse management system (WMS). The devices are intended for in-warehouse use (four walls), including receiving, put-away, picking, and stocktake operations.</p>
+
+<h2>2. Standard Technical Requirement (all suppliers)</h2>
+<ul>
+  <li>Android-based rugged handheld computer (business class, not consumer smartphone)</li>
+  <li>Integrated 2D barcode imager (1D/2D, QR, Code128, EAN, etc.)</li>
+  <li>Wi-Fi 802.11 a/b/g/n/ac (dual band preferred)</li>
+  <li>Minimum 4 GB RAM / 64 GB storage (or equivalent)</li>
+  <li>5-inch colour touchscreen, glove-friendly</li>
+  <li>IP65 or better ingress protection; 1.2 m+ drop spec</li>
+  <li>Rechargeable battery for a full warehouse shift (8+ hours)</li>
+  <li>USB/data/charging capability and manufacturer warranty (minimum 12 months)</li>
+  <li>Pre-staging: Wi-Fi profile, barcode test, optional WMS client install</li>
+</ul>
+
+<h2>3. Supplier Comparison Summary</h2>
+<table>
+  <tr>
+    <th>Supplier</th>
+    <th>Proposed model</th>
+    <th>Unit price (ex GST)</th>
+    <th>Qty</th>
+    <th>Subtotal hardware (ex GST)</th>
+    <th>Lead time</th>
+    <th>Total (inc GST)</th>
+  </tr>
+  <tr>
+    <td><strong>Track n Trace</strong></td>
+    <td>CipherLab RK25 (Android, 2D imager, Wi-Fi)</td>
+    <td class="right">A$1,045.00</td>
+    <td class="right">10</td>
+    <td class="right">A$10,450.00</td>
+    <td>5–10 business days</td>
+    <td class="right"><strong>A$11,495.00</strong></td>
+  </tr>
+  <tr>
+    <td><strong>Barcode Dynamics</strong></td>
+    <td>Zebra TC21 (SE4710, 4/64 GB, Wi-Fi)</td>
+    <td class="right">A$1,109.00</td>
+    <td class="right">10</td>
+    <td class="right">A$11,090.00</td>
+    <td>7–14 business days</td>
+    <td class="right"><strong>A$12,199.00</strong></td>
+  </tr>
+  <tr>
+    <td><strong>Barcode Datalink</strong></td>
+    <td>Honeywell CT45 XP (2D, Wi-Fi, 6/64 GB)</td>
+    <td class="right">A$1,180.00</td>
+    <td class="right">10</td>
+    <td class="right">A$11,800.00</td>
+    <td>10–15 business days</td>
+    <td class="right"><strong>A$12,980.00</strong></td>
+  </tr>
+</table>
+<p class="small">GST applied at 10% (Australian goods and services tax). Prices are indicative for budget planning based on published Australian distributor pricing and typical B2B volume for 10 units (July 2026). Formal written quotes must be obtained from each supplier before purchase.</p>
+
+<h2>4. Detailed Supplier Quotations</h2>
+
+<h3>4.1 Track n Trace — Quotation A</h3>
+<table>
+  <tr><th colspan="2">Supplier details</th></tr>
+  <tr><td>Company</td><td>Track n Trace Pty Ltd</td></tr>
+  <tr><td>Location</td><td>Suite 6.15, Level 6, 7 Maitland Place, Norwest NSW 2153 (Sydney metro)</td></tr>
+  <tr><td>Phone</td><td>1300 808 412</td></tr>
+  <tr><td>Email</td><td>sales@trackntrace.com.au</td></tr>
+  <tr><td>Website</td><td>https://trackntrace.com.au</td></tr>
+</table>
+
+<table>
+  <tr>
+    <th>Item</th>
+    <th>Description</th>
+    <th class="right">Qty</th>
+    <th class="right">Unit (ex GST)</th>
+    <th class="right">Line total (ex GST)</th>
+  </tr>
+  <tr>
+    <td>1</td>
+    <td>CipherLab RK25 rugged Android mobile computer, 2D barcode imager, Wi-Fi, 4/64 GB, standard battery</td>
+    <td class="right">10</td>
+    <td class="right">A$1,045.00</td>
+    <td class="right">A$10,450.00</td>
+  </tr>
+  <tr>
+    <td>2</td>
+    <td>Single-slot USB charging cradle (1 per device)</td>
+    <td class="right">10</td>
+    <td class="right">A$48.00</td>
+    <td class="right">A$480.00</td>
+  </tr>
+  <tr>
+    <td>3</td>
+    <td>Device staging: Wi-Fi profile, barcode engine test, asset label</td>
+    <td class="right">10</td>
+    <td class="right">A$35.00</td>
+    <td class="right">A$350.00</td>
+  </tr>
+  <tr>
+    <td>4</td>
+    <td>Courier delivery — Sydney metropolitan area</td>
+    <td class="right">1</td>
+    <td class="right">A$85.00</td>
+    <td class="right">A$85.00</td>
+  </tr>
+  <tr class="total">
+    <td colspan="4">Subtotal (ex GST)</td>
+    <td class="right">A$11,365.00</td>
+  </tr>
+  <tr class="total">
+    <td colspan="4">GST (10%)</td>
+    <td class="right">A$1,136.50</td>
+  </tr>
+  <tr class="total">
+    <td colspan="4">Grand total (inc GST)</td>
+    <td class="right">A$12,501.50</td>
+  </tr>
+</table>
+<p><strong>Included:</strong> 12-month manufacturer warranty, phone/email support, basic warehouse scan app consultation.<br>
+<strong>Notes:</strong> Track n Trace has strong experience deploying RK25 devices for Australian stocktake and warehouse projects. Optional custom mobile application development quoted separately.</p>
+
+<h3>4.2 Barcode Dynamics — Quotation B</h3>
+<table>
+  <tr><th colspan="2">Supplier details</th></tr>
+  <tr><td>Company</td><td>Barcode Dynamics Pty Ltd</td></tr>
+  <tr><td>Location</td><td>Sydney and Brisbane (Australia-wide service; Sydney manufacturing &amp; labelling facility)</td></tr>
+  <tr><td>Phone</td><td>02 9905 8366 (Sydney administration) / 07 3399 6510 (sales)</td></tr>
+  <tr><td>Website</td><td>https://barcodedynamics.com.au</td></tr>
+  <tr><td>Partner status</td><td>Zebra Premier Solution Partner (Australia)</td></tr>
+</table>
+
+<table>
+  <tr>
+    <th>Item</th>
+    <th>Description</th>
+    <th class="right">Qty</th>
+    <th class="right">Unit (ex GST)</th>
+    <th class="right">Line total (ex GST)</th>
+  </tr>
+  <tr>
+    <td>1</td>
+    <td>Zebra TC21 mobile computer, SE4710 2D imager, Wi-Fi, 4 GB RAM / 64 GB flash, standard battery, GMS Android</td>
+    <td class="right">10</td>
+    <td class="right">A$1,109.00</td>
+    <td class="right">A$11,090.00</td>
+  </tr>
+  <tr>
+    <td>2</td>
+    <td>Zebra single-slot charge cradle with power supply</td>
+    <td class="right">10</td>
+    <td class="right">A$62.00</td>
+    <td class="right">A$620.00</td>
+  </tr>
+  <tr>
+    <td>3</td>
+    <td>Enterprise staging: Zebra StageNow profile, Wi-Fi, barcode verification, MDM-ready setup</td>
+    <td class="right">10</td>
+    <td class="right">A$45.00</td>
+    <td class="right">A$450.00</td>
+  </tr>
+  <tr>
+    <td>4</td>
+    <td>Freight and handling — Sydney delivery</td>
+    <td class="right">1</td>
+    <td class="right">A$95.00</td>
+    <td class="right">A$95.00</td>
+  </tr>
+  <tr class="total">
+    <td colspan="4">Subtotal (ex GST)</td>
+    <td class="right">A$12,255.00</td>
+  </tr>
+  <tr class="total">
+    <td colspan="4">GST (10%)</td>
+    <td class="right">A$1,225.50</td>
+  </tr>
+  <tr class="total">
+    <td colspan="4">Grand total (inc GST)</td>
+    <td class="right">A$13,480.50</td>
+  </tr>
+</table>
+<p><strong>Included:</strong> 12-month Zebra manufacturer warranty, access to Zebra Mobility DNA tools, optional on-site installation (quoted separately).<br>
+<strong>Notes:</strong> Mid-range pricing with premium Zebra ecosystem. Recommended when long-term support, spare parts availability, and enterprise MDM integration are priorities.</p>
+
+<h3>4.3 Barcode Datalink — Quotation C</h3>
+<table>
+  <tr><th colspan="2">Supplier details</th></tr>
+  <tr><td>Company</td><td>Barcode Datalink Pty Ltd</td></tr>
+  <tr><td>Location</td><td>Australian-owned supplier (national delivery; Sydney customers serviced)</td></tr>
+  <tr><td>Phone</td><td>+61 414 535 395</td></tr>
+  <tr><td>Website</td><td>https://www.barcodedatalink.com</td></tr>
+  <tr><td>Experience</td><td>Barcode scanning and printing solutions since 1991</td></tr>
+</table>
+
+<table>
+  <tr>
+    <th>Item</th>
+    <th>Description</th>
+    <th class="right">Qty</th>
+    <th class="right">Unit (ex GST)</th>
+    <th class="right">Line total (ex GST)</th>
+  </tr>
+  <tr>
+    <td>1</td>
+    <td>Honeywell CT45 XP mobile computer, 2D imager, Wi-Fi 6, 6 GB RAM / 64 GB, warm-swappable battery</td>
+    <td class="right">10</td>
+    <td class="right">A$1,180.00</td>
+    <td class="right">A$11,800.00</td>
+  </tr>
+  <tr>
+    <td>2</td>
+    <td>4-bay battery charging dock (shared: 3 units for 10 devices rotation)</td>
+    <td class="right">3</td>
+    <td class="right">A$210.00</td>
+    <td class="right">A$630.00</td>
+  </tr>
+  <tr>
+    <td>3</td>
+    <td>Rugged case + tempered screen protector kit</td>
+    <td class="right">10</td>
+    <td class="right">A$28.00</td>
+    <td class="right">A$280.00</td>
+  </tr>
+  <tr>
+    <td>4</td>
+    <td>Device configuration and barcode scan acceptance test</td>
+    <td class="right">10</td>
+    <td class="right">A$30.00</td>
+    <td class="right">A$300.00</td>
+  </tr>
+  <tr>
+    <td>5</td>
+    <td>Delivery — Sydney metro</td>
+    <td class="right">1</td>
+    <td class="right">A$75.00</td>
+    <td class="right">A$75.00</td>
+  </tr>
+  <tr class="total">
+    <td colspan="4">Subtotal (ex GST)</td>
+    <td class="right">A$13,085.00</td>
+  </tr>
+  <tr class="total">
+    <td colspan="4">GST (10%)</td>
+    <td class="right">A$1,308.50</td>
+  </tr>
+  <tr class="total">
+    <td colspan="4">Grand total (inc GST)</td>
+    <td class="right">A$14,393.50</td>
+  </tr>
+</table>
+<p><strong>Included:</strong> 12-month manufacturer warranty, 30-day phone support for device rollout.<br>
+<strong>Notes:</strong> Highest unit specification (Wi-Fi 6, 6 GB RAM, warm-swappable battery). Best for intensive scan environments and longer shifts with spare battery strategy.</p>
+
+<h2>5. Recommendation Summary</h2>
+<table>
+  <tr>
+    <th>Criteria</th>
+    <th>Track n Trace</th>
+    <th>Barcode Dynamics</th>
+    <th>Barcode Datalink</th>
+  </tr>
+  <tr>
+    <td>Lowest total cost (inc GST)</td>
+    <td><strong>Best value</strong></td>
+    <td>Mid-range</td>
+    <td>Highest</td>
+  </tr>
+  <tr>
+    <td>Warehouse / WMS experience</td>
+    <td>Strong (RK25 deployments)</td>
+    <td>Strong (Zebra partner)</td>
+    <td>Good (general barcode specialist)</td>
+  </tr>
+  <tr>
+    <td>Device ecosystem &amp; spare parts</td>
+    <td>Good</td>
+    <td><strong>Excellent (Zebra)</strong></td>
+    <td>Good (Honeywell)</td>
+  </tr>
+  <tr>
+    <td>Delivery speed (indicative)</td>
+    <td><strong>Fastest</strong></td>
+    <td>Medium</td>
+    <td>Slowest</td>
+  </tr>
+  <tr>
+    <td>Hardware specification</td>
+    <td>Standard</td>
+    <td>Standard+</td>
+    <td><strong>Premium</strong></td>
+  </tr>
+</table>
+
+<p><strong>Suggested approach:</strong> Request formal written quotes from all three suppliers using reference <strong>RFQ-PDA-SYD-2026-07-09</strong>, confirm exact SKU/part numbers, warranty terms, and whether volume discount applies beyond 10 units. For the Parisi / Double-Y warehouse rollout, <strong>Track n Trace</strong> offers the lowest indicative total; <strong>Barcode Dynamics (Zebra TC21)</strong> offers the best balance of enterprise support and ecosystem if budget allows a modest premium.</p>
+
+<h2>6. Optional Add-ons (not included — quote separately)</h2>
+<ul>
+  <li>Multi-slot charging cabinet (10-bay) — approx. A$650–A$1,200 ex GST</li>
+  <li>Extended warranty / accidental damage cover (2–3 years) — approx. A$90–A$150 per device per year</li>
+  <li>MDM enrolment (SOTI, Ivanti, Zebra DNA Cloud) — setup from A$500 ex GST</li>
+  <li>On-site user training (half day, Sydney) — approx. A$800–A$1,200 ex GST</li>
+  <li>Spare batteries (2 pack) — approx. A$120–A$180 ex GST per pair</li>
+</ul>
+
+<h2>7. HARMONiQ Mobile Warehouse — Compatibility Assessment</h2>
+
+<p>This section evaluates whether the three quoted PDA models are suitable for <strong>HARMONiQ Mobile Warehouse</strong> (WT170), as documented for the Parisi warehouse environment. Reference: <em>HARMONiQ Mobile Warehouse</em> user guide (Parisi project documentation).</p>
+
+<h3>7.1 How HARMONiQ uses PDAs (architecture)</h3>
+<p>HARMONiQ Mobile Warehouse does <strong>not</strong> run as a native Android application on the device. According to the official setup guide, the typical deployment is:</p>
+<ol>
+  <li>Each PDA connects via <strong>Microsoft Remote Desktop (RDP)</strong> to a <strong>Windows terminal server</strong> where HARMONiQ is installed.</li>
+  <li>Each warehouse operator requires a <strong>Windows Active Directory</strong> user account authorised for the terminal server.</li>
+  <li>HARMONiQ is configured on the server: <strong>PDA menus</strong>, <strong>roles</strong> (Custom Mobile Menu), and <strong>user assignments</strong> (functions prefixed with <strong>MWH</strong>).</li>
+  <li>Operators work inside the RDP session: Stock Inquiries, Picking Notes, Goods In, Stock Take, Packing, etc.</li>
+  <li>The barcode imager must send scanned data into the <strong>active RDP window</strong> (keyboard wedge / data capture profile).</li>
+</ol>
+<p>RDP connection settings documented: <strong>High Color</strong>, <strong>Full Screen</strong>, <strong>Fit remote desktop to screen</strong>.</p>
+
+<h3>7.2 Quoted devices vs HARMONiQ requirements</h3>
+<table>
+  <tr>
+    <th>Requirement (HARMONiQ / WT170)</th>
+    <th>CipherLab RK25</th>
+    <th>Zebra TC21</th>
+    <th>Honeywell CT45 XP</th>
+  </tr>
+  <tr>
+    <td>Wi-Fi connectivity to terminal server</td>
+    <td>Yes</td>
+    <td>Yes</td>
+    <td>Yes (Wi-Fi 6)</td>
+  </tr>
+  <tr>
+    <td>Android OS (RDP client installable)</td>
+    <td>Yes</td>
+    <td>Yes</td>
+    <td>Yes</td>
+  </tr>
+  <tr>
+    <td>2D barcode imager (product / bin / batch scan)</td>
+    <td>Yes</td>
+    <td>Yes (SE4710)</td>
+    <td>Yes</td>
+  </tr>
+  <tr>
+    <td>Scanner → RDP keyboard wedge</td>
+    <td>Configurable*</td>
+    <td>DataWedge*</td>
+    <td>Velocity / wedge*</td>
+  </tr>
+  <tr>
+    <td>Rugged / warehouse shift battery</td>
+    <td>Yes</td>
+    <td>Yes</td>
+    <td>Yes (warm-swap option)</td>
+  </tr>
+  <tr>
+    <td>Screen size for full-screen RDP UI</td>
+    <td>~5" — adequate†</td>
+    <td>~5" — adequate†</td>
+    <td>~5" — adequate†</td>
+  </tr>
+  <tr>
+    <td><strong>Overall HARMONiQ fit</strong></td>
+    <td><strong>Compatible*</strong></td>
+    <td><strong>Compatible*</strong></td>
+    <td><strong>Compatible*</strong></td>
+  </tr>
+</table>
+<p class="small">* Requires supplier/implementer configuration and pilot testing before rollout.<br>
+† Full desktop HARMONiQ UI via RDP on a 5-inch screen may feel compact; recommend a 1-device proof of concept.</p>
+
+<h3>7.3 Scanner configuration (critical for HARMONiQ)</h3>
+<p>HARMONiQ workflows rely on the <strong>Scan</strong> button and barcode fields inside the RDP session (picking, goods in, stocktake, packing). The imager must deliver scan data to the foreground RDP application:</p>
+<ul>
+  <li><strong>Zebra TC21:</strong> configure <strong>DataWedge</strong> profile targeting the Remote Desktop client package; enable keyboard output with suffix (e.g. Enter).</li>
+  <li><strong>Honeywell CT45 XP:</strong> configure <strong>Velocity</strong> or enterprise keyboard wedge profile for the RDP client.</li>
+  <li><strong>CipherLab RK25:</strong> configure reader service / wedge mode for the installed RDP application.</li>
+</ul>
+<p>Request each supplier to include <strong>HARMONiQ RDP scan profile setup</strong> in their staging quote (or as a billable professional service line item).</p>
+
+<h3>7.4 Infrastructure prerequisites (not included in hardware quotes)</h3>
+<ul>
+  <li>Windows terminal server hosting HARMONiQ (RDS / Remote Desktop Services)</li>
+  <li>Active Directory user accounts — one per PDA operator</li>
+  <li>Stable warehouse Wi-Fi with coverage at all bin locations</li>
+  <li>HARMONiQ PDA menus, roles, and MWH functions configured by ERP administrator</li>
+  <li>Product barcodes in HARMONiQ aligned with physical labels (Parisi catalogue / BARCODEPARISI)</li>
+  <li>RDP/CAL licensing as required by Microsoft licensing model in use</li>
+</ul>
+
+<h3>7.5 HARMONiQ vs Double-Y Warehouse System</h3>
+<table>
+  <tr>
+    <th>Aspect</th>
+    <th>HARMONiQ Mobile Warehouse</th>
+    <th>Double-Y Warehouse System</th>
+  </tr>
+  <tr>
+    <td>Software on PDA</td>
+    <td>RDP session → HARMONiQ on terminal server</td>
+    <td>Web browser → Double-Y backend (no Harmoniq integration today)</td>
+  </tr>
+  <tr>
+    <td>Same PDA hardware?</td>
+    <td colspan="2">Yes — all three quoted models can support both scenarios (different software configuration)</td>
+  </tr>
+  <tr>
+    <td>Product master data</td>
+    <td>HARMONiQ ERP database</td>
+    <td>PostgreSQL <code>warehouse_items</code> (imported from Parisi catalogue)</td>
+  </tr>
+</table>
+
+<h3>7.6 Supplier notes for HARMONiQ deployment</h3>
+<table>
+  <tr>
+    <th>Supplier</th>
+    <th>HARMONiQ relevance</th>
+  </tr>
+  <tr>
+    <td><strong>Track n Trace</strong></td>
+    <td>Australian warehouse mobility specialist; RK25 deployments for stocktake and scanning projects. Strong candidate for HARMONiQ RDP + scanner staging. Lowest indicative hardware cost.</td>
+  </tr>
+  <tr>
+    <td><strong>Barcode Dynamics</strong></td>
+    <td>Zebra Premier Solution Partner; experienced in enterprise MDM and DataWedge profiles. Recommended if Parisi standardises on Zebra and needs long-term vendor support.</td>
+  </tr>
+  <tr>
+    <td><strong>Barcode Datalink</strong></td>
+    <td>General barcode hardware supplier since 1991; suitable if premium Honeywell specification is preferred. Confirm RDP wedge experience before ordering.</td>
+  </tr>
+</table>
+
+<h3>7.7 Recommended pre-purchase validation (POC checklist)</h3>
+<p>Before purchasing all 10 units, complete a <strong>1-device proof of concept</strong> on the live (or UAT) HARMONiQ terminal server:</p>
+<ol>
+  <li>Install Microsoft Remote Desktop (or approved RDP client) on the trial PDA.</li>
+  <li>Connect to the HARMONiQ terminal server (High Color, Full Screen, Fit to screen).</li>
+  <li>Log in with an AD test user assigned a Mobile Warehouse role.</li>
+  <li>Open <strong>Stock Inquiries</strong> → scan a known Parisi product barcode → confirm product resolves correctly.</li>
+  <li>Open <strong>Picking Note</strong> (test environment) → scan item → confirm quantity entry works.</li>
+  <li>Test Wi-Fi roaming between two warehouse zones during an active RDP session.</li>
+  <li>Confirm session reconnect behaviour after brief Wi-Fi drop (warehouse reality).</li>
+  <li>Obtain written confirmation from the <strong>HARMONiQ implementer / VAR</strong> that the selected model is accepted for production use.</li>
+</ol>
+
+<p><strong>Conclusion:</strong> All three quoted PDA models are <strong>technically suitable</strong> for HARMONiQ Mobile Warehouse under the documented <strong>RDP + 2D scanner + Wi-Fi</strong> architecture. They are <strong>not plug-and-play certified</strong> in the WT170 manual (no specific device list). Pilot testing and implementer sign-off are mandatory before full deployment.</p>
+
+<div class="note">
+  <strong>Disclaimer:</strong> This document was prepared for internal budget and supplier comparison purposes. It is not a binding offer from any supplier. Prices are indicative only, based on publicly available Australian market references (July 2026) and estimated volume pricing for 10 units. Final pricing, availability, and specifications are subject to each vendor's formal quotation, stock levels, and exchange rate / import conditions at time of order.
+</div>
+
+<p class="small">Document generated: 9 July 2026 — Double-Y IT Systems — File: PDA-Quotation-Sydney-10-Units.doc</p>
+
+</body>
+</html>
