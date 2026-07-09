@@ -3,29 +3,20 @@
    ============================================================================= */
 
 .news-page .news-section {
-  max-width: 1140px;
-  margin: 0 auto;
-}
-
-.news-page.news-search-page .news-section,
-.news-search-page .news-search-section {
   max-width: none;
   width: 100%;
 }
 
-.news-search-page .news-search-main {
+.news-page .main-content,
+.news-search-page .news-search-main,
+.news-create-main {
   width: 100%;
   max-width: none;
-}
-
-.news-search-page .main-content {
-  width: 100%;
 }
 
 .news-search-main,
 .news-create-main {
   align-items: stretch;
-  width: 100%;
 }
 
 .news-white-panel,
