@@ -9,6 +9,8 @@ const LOCATION_FIELD_IDS = {
     codeId: 'locationCode',
     sideGroupId: 'locationSideGroup',
     sublevelGroupId: 'locationSublevelGroup',
+    levelZeroModeId: 'locationLevelZeroMode',
+    levelZeroModeGroupId: 'locationLevelZeroModeGroup',
     accessTypeId: 'accessType'
 };
 
@@ -174,6 +176,10 @@ document.addEventListener('DOMContentLoaded', () => {
             showError('locationLevel', validation.errors.level);
             valid = false;
         }
+        if (validation.errors.levelZeroMode) {
+            showError('locationLevelZeroMode', validation.errors.levelZeroMode);
+            valid = false;
+        }
         if (validation.errors.side) {
             showError('locationSide', validation.errors.side);
             valid = false;
@@ -205,6 +211,14 @@ document.addEventListener('DOMContentLoaded', () => {
         return valid;
     }
 
+    function resetLocationForm() {
+        form.reset();
+        clearErrors();
+        document.getElementById('locationStatus').value = 'active';
+        LocationCodeUtils.updateComposedLocation(LOCATION_FIELD_IDS);
+        document.getElementById('locationStreet').focus();
+    }
+
     form.addEventListener('submit', (e) => {
         e.preventDefault();
         if (!validate()) return;
@@ -234,10 +248,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 throw new Error(msg);
             }
             alert('Location saved successfully.');
-            form.reset();
-            clearErrors();
-            LocationCodeUtils.updateComposedLocation(LOCATION_FIELD_IDS);
-            document.getElementById('locationStreet').focus();
+            resetLocationForm();
         })
         .catch((err) => {
             console.error('Error saving location:', err);
@@ -254,10 +265,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     clearBtn.addEventListener('click', () => {
-        form.reset();
-        clearErrors();
-        LocationCodeUtils.updateComposedLocation(LOCATION_FIELD_IDS);
-        document.getElementById('locationStreet').focus();
+        resetLocationForm();
     });
 
 });

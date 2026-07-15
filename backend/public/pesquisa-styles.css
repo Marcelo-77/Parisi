@@ -718,12 +718,13 @@
 }
 
 .th-actions {
-    width: 120px;
+    width: 280px;
     text-align: center;
 }
 
 .td-actions .btn-edit,
-.td-actions .btn-delete {
+.td-actions .btn-delete,
+.td-actions .btn-print {
     padding: 6px 12px;
     font-size: 0.85rem;
     margin: 0 3px;
@@ -735,7 +736,8 @@
 }
 
 .td-actions .btn-edit i,
-.td-actions .btn-delete i {
+.td-actions .btn-delete i,
+.td-actions .btn-print i {
     font-size: 0.8rem;
     margin-right: 4px;
 }
@@ -756,6 +758,15 @@
 
 .btn-delete:hover {
     background: #c0392b;
+}
+
+.btn-print {
+    background: #27ae60;
+    color: white;
+}
+
+.btn-print:hover {
+    background: #1e8449;
 }
 
 

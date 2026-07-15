@@ -2,7 +2,6 @@
     const SECTION_OPTIONS = [
         { value: 'TAPWARE', label: 'Tapware' },
         { value: 'BATHWARE', label: 'BathWare' },
-        { value: 'CENTRAL', label: 'Central' },
         { value: 'WAREHOUSE2', label: 'Warehouse2' },
         { value: 'FURNITUREWARE', label: 'Furniture' },
         { value: 'DOORWARE', label: 'Doorware' },

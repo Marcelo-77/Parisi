@@ -1,6 +1,6 @@
-const { query } = require('../config/database');
+const { query, getClient } = require('../config/database');
 
-const VALID_SECTIONS = ['TAPWARE', 'BATHWARE', 'CENTRAL', 'WAREHOUSE2', 'FURNITUREWARE', 'DOORWARE', 'OTHER'];
+const VALID_SECTIONS = ['TAPWARE', 'BATHWARE', 'WAREHOUSE2', 'FURNITUREWARE', 'DOORWARE', 'OTHER'];
 const VALID_ACCESS_TYPES = ['Shelf by Hand', 'Shelf by Wave', 'Shelf By Fork'];
 
 class LocationService {
@@ -118,6 +118,21 @@ class LocationService {
     }
   }
 
+  async ensureLocationProductFkCascade(client) {
+    await client.query(`
+      ALTER TABLE location_product
+      DROP CONSTRAINT IF EXISTS location_product_location_code_fkey
+    `);
+    await client.query(`
+      ALTER TABLE location_product
+      ADD CONSTRAINT location_product_location_code_fkey
+      FOREIGN KEY (location_code)
+      REFERENCES warehouse_locations(location)
+      ON DELETE CASCADE
+      ON UPDATE CASCADE
+    `);
+  }
+
   async atualizar(id, dados) {
     const idStr = id ? String(id).trim() : '';
     const existente = await this.buscarPorId(idStr);
@@ -130,40 +145,71 @@ class LocationService {
       throw new Error(`Invalid data: ${erros.join(', ')}`);
     }
 
-    if (dados.location && dados.location.trim() !== existente.location) {
-      const outro = await this.buscarPorLocation(dados.location.trim());
-      if (outro) {
+    const requestedLocation = dados.location ? String(dados.location).trim() : existente.location;
+    const sameLocationIgnoringCase =
+      String(requestedLocation).trim().toLowerCase() === String(existente.location).trim().toLowerCase();
+    const locationToSave = requestedLocation;
+    const locationChanged = locationToSave !== existente.location;
+
+    if (!sameLocationIgnoringCase) {
+      const outro = await this.buscarPorLocation(requestedLocation);
+      if (outro && String(outro.id) !== idStr) {
         throw new Error('Location already registered');
       }
     }
 
-    const updateQuery = `
-      UPDATE ${this.tableName}
-      SET location = COALESCE($2, location),
-          status = COALESCE($3, status),
-          access_type = COALESCE($4, access_type),
-          section = COALESCE($5, section),
-          usuario_alterou = COALESCE($6, usuario_alterou),
-          atualizado_em = CURRENT_TIMESTAMP
-      WHERE id = $1::uuid
-      RETURNING *
-    `;
-
-    const values = [
-      idStr,
-      dados.location ? dados.location.trim() : existente.location,
-      dados.status || existente.status,
-      dados.accessType || existente.accessType,
-      dados.section || existente.section,
-      dados.usuarioAlterou || null
-    ];
-
+    const client = await getClient();
     try {
-      const result = await query(updateQuery, values);
+      await client.query('BEGIN');
+
+      if (locationChanged) {
+        await this.ensureLocationProductFkCascade(client);
+      }
+
+      const updateQuery = `
+        UPDATE ${this.tableName}
+        SET location = $2,
+            status = COALESCE($3, status),
+            access_type = COALESCE($4, access_type),
+            section = COALESCE($5, section),
+            usuario_alterou = COALESCE($6, usuario_alterou),
+            atualizado_em = CURRENT_TIMESTAMP
+        WHERE id = $1::uuid
+        RETURNING *
+      `;
+
+      const values = [
+        idStr,
+        locationToSave,
+        dados.status || existente.status,
+        dados.accessType || existente.accessType,
+        dados.section || existente.section,
+        dados.usuarioAlterou || null
+      ];
+
+      const result = await client.query(updateQuery, values);
+
+      if (locationChanged) {
+        await client.query(
+          `UPDATE location_product_log
+           SET location_code_log = $1
+           WHERE TRIM(LOWER(location_code_log)) = TRIM(LOWER($2))`,
+          [locationToSave, existente.location]
+        );
+      }
+
+      await client.query('COMMIT');
       return this.mapRowToLocation(result.rows[0]);
     } catch (error) {
+      try {
+        await client.query('ROLLBACK');
+      } catch {
+        // ignore rollback errors
+      }
       console.error('❌ Error updating location:', error);
       throw new Error(`Error updating location: ${error.message}`);
+    } finally {
+      client.release();
     }
   }
 

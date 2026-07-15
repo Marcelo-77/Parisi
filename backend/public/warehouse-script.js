@@ -1295,7 +1295,7 @@ function getMockItems() {
             id: '2',
             codigo: 'PROD-002',
             nome: 'Logitech Mouse',
-            categoria: 'CENTRAL',
+            categoria: 'OTHER',
             quantidade: 2,
             quantidadeMinima: 10,
             descricao: 'Logitech M705 Wireless Mouse',

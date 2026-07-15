@@ -6,7 +6,7 @@ const TABLE = 'news';
 const LINK_TABLE = 'news_documentation';
 
 const VALID_SECTORS = new Set([
-  'TAPWARE', 'BATHWARE', 'CENTRAL', 'WAREHOUSE2', 'FURNITUREWARE', 'DOORWARE', 'OTHER'
+  'TAPWARE', 'BATHWARE', 'WAREHOUSE2', 'FURNITUREWARE', 'DOORWARE', 'OTHER'
 ]);
 
 function normalizeSectors(list) {

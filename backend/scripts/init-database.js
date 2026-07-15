@@ -519,7 +519,7 @@ async function initDatabase() {
     // Criar tabela location_product (chave primária: location_code, product_code, sipr_sq_number)
     await query(`
       CREATE TABLE IF NOT EXISTS location_product (
-        location_code VARCHAR(50) NOT NULL REFERENCES warehouse_locations(location) ON DELETE CASCADE,
+        location_code VARCHAR(50) NOT NULL REFERENCES warehouse_locations(location) ON DELETE CASCADE ON UPDATE CASCADE,
         product_code VARCHAR(50) NOT NULL REFERENCES warehouse_items(codigo) ON DELETE CASCADE,
         entry_datetime TIMESTAMP NOT NULL,
         sipr_sq_number INTEGER NOT NULL REFERENCES situation_product(sipr_sq_number) ON DELETE RESTRICT,
@@ -530,6 +530,25 @@ async function initDatabase() {
       )
     `);
     console.log('✅ Tabela location_product criada/verificada');
+
+    // Permitir renomear location mesmo com location_product vinculados
+    try {
+      await query(`
+        ALTER TABLE location_product
+        DROP CONSTRAINT IF EXISTS location_product_location_code_fkey
+      `);
+      await query(`
+        ALTER TABLE location_product
+        ADD CONSTRAINT location_product_location_code_fkey
+        FOREIGN KEY (location_code)
+        REFERENCES warehouse_locations(location)
+        ON DELETE CASCADE
+        ON UPDATE CASCADE
+      `);
+      console.log('✅ location_product FK com ON UPDATE CASCADE verificada');
+    } catch (err) {
+      console.warn('⚠️ location_product FK ON UPDATE CASCADE:', err.message);
+    }
 
     await query(`
       ALTER TABLE location_product

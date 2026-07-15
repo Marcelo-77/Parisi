@@ -63,7 +63,6 @@ function formatSection(section) {
     const map = {
         TAPWARE: 'Tapware',
         BATHWARE: 'BathWare',
-        CENTRAL: 'Central',
         WAREHOUSE2: 'Warehouse2',
         FURNITUREWARE: 'Furniture',
         DOORWARE: 'Doorware',
@@ -186,7 +185,9 @@ const SEARCH_FIELD_IDS = {
     sublevelId: 'searchLocationSublevel',
     codeId: 'searchLocation',
     sideGroupId: 'searchLocationSideGroup',
-    sublevelGroupId: 'searchLocationSublevelGroup'
+    sublevelGroupId: 'searchLocationSublevelGroup',
+    levelZeroModeId: 'searchLocationLevelZeroMode',
+    levelZeroModeGroupId: 'searchLocationLevelZeroModeGroup'
 };
 
 const EDIT_FIELD_IDS = {
@@ -198,6 +199,8 @@ const EDIT_FIELD_IDS = {
     codeId: 'editLocationCode',
     sideGroupId: 'editLocationSideGroup',
     sublevelGroupId: 'editLocationSublevelGroup',
+    levelZeroModeId: 'editLocationLevelZeroMode',
+    levelZeroModeGroupId: 'editLocationLevelZeroModeGroup',
     accessTypeId: 'editAccessType'
 };
 
@@ -362,6 +365,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     <button type="button" class="btn btn-edit" data-id="${escapeHtml(loc.id || '')}" title="Edit">
                         <i class="fas fa-edit"></i> Edit
                     </button>
+                    <button type="button" class="btn btn-print" data-location="${escapeHtml(loc.location || '')}" title="Print bin label">
+                        <i class="fas fa-print"></i> Print
+                    </button>
                     <button type="button" class="btn btn-delete" data-id="${escapeHtml(loc.id || '')}" data-location="${escapeHtml(loc.location || '')}" title="Delete">
                         <i class="fas fa-trash-alt"></i> Delete
                     </button>
@@ -372,18 +378,611 @@ document.addEventListener('DOMContentLoaded', () => {
         resultsCountEl.textContent = `${list.length} location${list.length > 1 ? 's' : ''}`;
     }
 
-    // Event delegation: handle Edit/Delete clicks on tbody (works when clicking icon or text inside button)
+    const printBinLabelModal = document.getElementById('printBinLabelModal');
+    const printBinLabelCodeEl = document.getElementById('printBinLabelCode');
+    const printBinLabelPreset = document.getElementById('printBinLabelPreset');
+    const printBinLabelWidth = document.getElementById('printBinLabelWidth');
+    const printBinLabelHeight = document.getElementById('printBinLabelHeight');
+    const printBinLabelSizeError = document.getElementById('printBinLabelSizeError');
+    let pendingPrintLocationCode = '';
+
+    function openPrintBinLabelModal(locationCode) {
+        const code = String(locationCode || '').trim().toUpperCase();
+        if (!code) {
+            alert('Location code is missing.');
+            return;
+        }
+        pendingPrintLocationCode = code;
+        if (printBinLabelCodeEl) printBinLabelCodeEl.textContent = code;
+        if (printBinLabelSizeError) {
+            printBinLabelSizeError.style.display = 'none';
+            printBinLabelSizeError.textContent = '';
+        }
+        if (printBinLabelPreset) printBinLabelPreset.value = '100x40';
+        if (printBinLabelWidth) {
+            printBinLabelWidth.value = '100';
+            printBinLabelWidth.readOnly = true;
+        }
+        if (printBinLabelHeight) {
+            printBinLabelHeight.value = '40';
+            printBinLabelHeight.readOnly = true;
+        }
+        if (printBinLabelModal) {
+            printBinLabelModal.classList.add('show');
+            printBinLabelModal.setAttribute('aria-hidden', 'false');
+        }
+    }
+
+    function closePrintBinLabelModal() {
+        if (printBinLabelModal) {
+            printBinLabelModal.classList.remove('show');
+            printBinLabelModal.setAttribute('aria-hidden', 'true');
+        }
+        pendingPrintLocationCode = '';
+    }
+
+    function applyPrintPreset() {
+        if (!printBinLabelPreset || !printBinLabelWidth || !printBinLabelHeight) return;
+        const value = printBinLabelPreset.value;
+        if (value === 'custom') {
+            printBinLabelWidth.readOnly = false;
+            printBinLabelHeight.readOnly = false;
+            printBinLabelWidth.focus();
+            return;
+        }
+        const parts = value.split('x');
+        printBinLabelWidth.value = parts[0] || '100';
+        printBinLabelHeight.value = parts[1] || '40';
+        printBinLabelWidth.readOnly = true;
+        printBinLabelHeight.readOnly = true;
+    }
+
+    function getSelectedPrintSize() {
+        const widthMm = Number(printBinLabelWidth && printBinLabelWidth.value);
+        const heightMm = Number(printBinLabelHeight && printBinLabelHeight.value);
+        if (!Number.isFinite(widthMm) || widthMm < 20 || widthMm > 300) {
+            return { error: 'Length (L) must be between 20 and 300 mm.' };
+        }
+        if (!Number.isFinite(heightMm) || heightMm < 15 || heightMm > 200) {
+            return { error: 'Height must be between 15 and 200 mm.' };
+        }
+        return { widthMm, heightMm };
+    }
+
+    function loadImageFromSrc(src) {
+        return new Promise((resolve, reject) => {
+            const img = new Image();
+            img.onload = () => resolve(img);
+            img.onerror = () => reject(new Error('Failed to load image'));
+            img.src = src;
+        });
+    }
+
+    function buildLabelLayout(widthMm, heightMm) {
+        const scale = Math.min(widthMm / 100, heightMm / 40);
+        const brandCol = Math.max(18, Math.round(widthMm * 0.26 * 10) / 10);
+        const qrCol = Math.max(12, Math.round(widthMm * 0.20 * 10) / 10);
+        const padX = Math.max(1.5, Math.round(widthMm * 0.035 * 10) / 10);
+        const padY = Math.max(1.2, Math.round(heightMm * 0.10 * 10) / 10);
+        return {
+            widthMm,
+            heightMm,
+            scale,
+            brandCol,
+            qrCol,
+            padX,
+            padY,
+            brandFont: Math.max(10, Math.round(18 * scale)),
+            brandSubFont: Math.max(5, Math.round(6 * scale * 10) / 10),
+            titleFont: Math.max(7, Math.round(9 * scale)),
+            codeFont: Math.max(14, Math.round(30 * scale)),
+            barcodeTextFont: Math.max(7, Math.round(9 * scale)),
+            qrSize: Math.max(40, Math.round(Math.min(heightMm * 0.70, qrCol * 0.90) * (96 / 25.4))),
+            barcodeHeightPx: Math.max(18, Math.round(26 * scale)),
+            pageLandscape: widthMm >= heightMm
+        };
+    }
+
+    function prepareBinLabelAssets(code, layout) {
+        return new Promise((resolve) => {
+            const safeCode = escapeHtml(code);
+            const temp = document.createElement('div');
+            temp.style.cssText = 'position:absolute;left:-9999px;top:0;visibility:hidden;';
+            document.body.appendChild(temp);
+
+            let barcodeHtml = '';
+            try {
+                const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+                svg.id = 'binLabelBarcode_' + Date.now();
+                temp.appendChild(svg);
+                JsBarcode(svg, code, {
+                    format: 'CODE128',
+                    displayValue: false,
+                    margin: 0,
+                    height: layout.barcodeHeightPx,
+                    width: Math.max(1, Math.min(2.4, 1.4 * layout.scale))
+                });
+                barcodeHtml = svg.outerHTML;
+            } catch (err) {
+                console.error('Barcode generation error:', err);
+                barcodeHtml = '';
+            }
+
+            const qrDiv = document.createElement('div');
+            temp.appendChild(qrDiv);
+
+            const cleanup = () => {
+                try {
+                    document.body.removeChild(temp);
+                } catch {
+                    // ignore
+                }
+            };
+
+            const finish = (qrDataUrl) => {
+                cleanup();
+                resolve({ safeCode, barcodeHtml, qrDataUrl: qrDataUrl || '' });
+            };
+
+            try {
+                new QRCode(qrDiv, {
+                    text: code,
+                    width: layout.qrSize,
+                    height: layout.qrSize,
+                    correctLevel: QRCode.CorrectLevel.M
+                });
+            } catch (err) {
+                console.error('QR generation error:', err);
+                finish('');
+                return;
+            }
+
+            setTimeout(() => {
+                let qrDataUrl = '';
+                try {
+                    const canvas = qrDiv.querySelector('canvas');
+                    if (canvas) qrDataUrl = canvas.toDataURL('image/png');
+                    if (!qrDataUrl) {
+                        const img = qrDiv.querySelector('img');
+                        if (img && img.src) qrDataUrl = img.src;
+                    }
+                } catch (err) {
+                    console.error('QR extract error:', err);
+                }
+                finish(qrDataUrl);
+            }, 120);
+        });
+    }
+
+    function buildBinLabelMarkup(layout, assets) {
+        const {
+            widthMm, heightMm, scale, brandCol, qrCol, padX, padY,
+            brandFont, brandSubFont, titleFont, codeFont, barcodeTextFont,
+            barcodeHeightPx
+        } = layout;
+        const { safeCode, barcodeHtml, qrDataUrl } = assets;
+        const qrHtml = qrDataUrl
+            ? `<img src="${qrDataUrl.replace(/"/g, '&quot;')}" alt="QR Code" />`
+            : `<div style="font-size:10px;text-align:center;">QR<br>${safeCode}</div>`;
+        const barcodeBlock = barcodeHtml || `<div style="font-size:${barcodeTextFont}px;">${safeCode}</div>`;
+        const gap = Math.max(1, padX * 0.4);
+
+        return {
+            css: `
+    * { box-sizing: border-box; }
+    .label {
+      width: ${widthMm}mm;
+      height: ${heightMm}mm;
+      margin: 0;
+      border: 1.5px solid #111;
+      border-radius: 4px;
+      display: grid;
+      grid-template-columns: ${brandCol}mm minmax(0, 1fr) ${qrCol}mm;
+      align-items: center;
+      column-gap: ${gap}mm;
+      padding: ${padY}mm ${padX}mm;
+      background: #fff;
+      overflow: hidden;
+      color: #000;
+      font-family: Arial, Helvetica, sans-serif;
+    }
+    .brand {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: flex-start;
+      padding-right: ${Math.max(1, padX * 0.5)}mm;
+      border-right: 1.5px solid #111;
+      height: 100%;
+      min-width: 0;
+      overflow: hidden;
+    }
+    .brand-name {
+      font-size: ${brandFont}px;
+      font-weight: 800;
+      letter-spacing: 0.04em;
+      line-height: 1.05;
+      white-space: nowrap;
+    }
+    .brand-sub {
+      margin-top: 2px;
+      font-size: ${brandSubFont}px;
+      font-weight: 500;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      line-height: 1.1;
+      white-space: nowrap;
+    }
+    .center {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      min-width: 0;
+      height: 100%;
+      overflow: hidden;
+      padding: 0 1mm;
+    }
+    .bin-title {
+      font-size: ${titleFont}px;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      margin: 0 0 2px;
+      line-height: 1.1;
+    }
+    .bin-code {
+      font-size: ${codeFont}px;
+      font-weight: 800;
+      line-height: 1;
+      letter-spacing: 0.02em;
+      margin: 0 0 ${Math.max(2, Math.round(3 * scale))}px;
+      white-space: nowrap;
+    }
+    .barcode-wrap {
+      width: 100%;
+      max-width: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      overflow: hidden;
+    }
+    .barcode-wrap svg {
+      display: block;
+      width: 100%;
+      max-width: 100%;
+      height: ${barcodeHeightPx}px;
+    }
+    .barcode-text {
+      margin-top: 2px;
+      font-size: ${barcodeTextFont}px;
+      font-weight: 500;
+      letter-spacing: 0.04em;
+      line-height: 1.1;
+    }
+    .qr-wrap {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      min-width: 0;
+      overflow: hidden;
+    }
+    .qr-wrap img {
+      width: ${Math.max(18, Math.round(qrCol * 0.82))}mm;
+      height: ${Math.max(18, Math.round(qrCol * 0.82))}mm;
+      max-width: 100%;
+      max-height: ${Math.max(18, Math.round(heightMm * 0.70))}mm;
+      display: block;
+      object-fit: contain;
+    }`,
+            body: `
+  <div class="label">
+    <div class="brand">
+      <div class="brand-name">PARISI</div>
+      <div class="brand-sub">Bathware Australia</div>
+    </div>
+    <div class="center">
+      <div class="bin-title">BIN LOCATION</div>
+      <div class="bin-code">${safeCode}</div>
+      <div class="barcode-wrap">
+        ${barcodeBlock}
+        <div class="barcode-text">${safeCode}</div>
+      </div>
+    </div>
+    <div class="qr-wrap">${qrHtml}</div>
+  </div>`
+        };
+    }
+
+    function openBinLabelPrintWindow(code, layout, assets) {
+        const markup = buildBinLabelMarkup(layout, assets);
+        const { widthMm, heightMm, pageLandscape } = layout;
+        const { safeCode } = assets;
+
+        const w = window.open('', '_blank', 'width=900,height=520');
+        if (!w) {
+            alert('Allow popups to print the bin location label.');
+            return;
+        }
+
+        w.document.write(`<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Bin Location - ${safeCode}</title>
+  <style>
+    @page { margin: 4mm; size: ${pageLandscape ? 'landscape' : 'portrait'}; }
+    body {
+      margin: 0;
+      padding: 10px;
+      background: #fff;
+      color: #000;
+    }
+    ${markup.css}
+    .no-print { text-align: center; margin-top: 14px; color: #555; font-size: 13px; }
+    .no-print button { padding: 10px 18px; font-size: 14px; cursor: pointer; }
+    @media print {
+      body { padding: 0; }
+      .no-print { display: none !important; }
+      .label { page-break-inside: avoid; }
+    }
+  </style>
+</head>
+<body>
+  ${markup.body}
+  <div class="no-print">
+    <div>Size: ${widthMm} × ${heightMm} mm</div>
+    <button type="button" onclick="window.print()">Print</button>
+  </div>
+  <script>
+    setTimeout(function () { window.focus(); window.print(); }, 250);
+  <\/script>
+</body>
+</html>`);
+        w.document.close();
+    }
+
+    async function downloadBinLabelPng(code, layout, assets) {
+        const pxPerMm = 12;
+        const W = Math.round(layout.widthMm * pxPerMm);
+        const H = Math.round(layout.heightMm * pxPerMm);
+        const canvas = document.createElement('canvas');
+        canvas.width = W;
+        canvas.height = H;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) throw new Error('Canvas not supported');
+
+        const cssPxPerMm = 96 / 25.4;
+        const fontScale = pxPerMm / cssPxPerMm;
+        const padX = Math.max(6, Math.round(layout.padX * pxPerMm));
+        const padY = Math.max(5, Math.round(layout.padY * pxPerMm));
+
+        let brandFont = Math.max(11, Math.round(layout.brandFont * fontScale));
+        let brandSubFont = Math.max(7, Math.round(layout.brandSubFont * fontScale));
+        let titleFont = Math.max(9, Math.round(layout.titleFont * fontScale));
+        let codeFont = Math.max(16, Math.round(layout.codeFont * fontScale));
+        let captionFont = Math.max(8, Math.round(layout.barcodeTextFont * fontScale));
+
+        const fitBrandFonts = () => {
+            ctx.font = `800 ${brandFont}px Arial, Helvetica, sans-serif`;
+            let w1 = ctx.measureText('PARISI').width;
+            ctx.font = `500 ${brandSubFont}px Arial, Helvetica, sans-serif`;
+            let w2 = ctx.measureText('BATHWARE AUSTRALIA').width;
+            return Math.ceil(Math.max(w1, w2));
+        };
+
+        let brandTextW = fitBrandFonts();
+        let brandColPx = brandTextW + padX + 8;
+        // Keep brand column within ~30% of label width by shrinking fonts if needed
+        while (brandColPx > W * 0.30 && brandFont > 10) {
+            brandFont -= 1;
+            brandSubFont = Math.max(6, Math.round(brandFont * 0.32));
+            brandTextW = fitBrandFonts();
+            brandColPx = brandTextW + padX + 8;
+        }
+        brandColPx = Math.max(brandColPx, Math.round(layout.brandCol * pxPerMm));
+
+        const qrColPx = Math.min(Math.round(H * 0.78), Math.round(W * 0.22));
+        const gap = Math.max(6, Math.round(W * 0.012));
+        const dividerX = brandColPx;
+        const centerLeft = dividerX + gap;
+        const centerRight = W - qrColPx;
+        const centerW = Math.max(20, centerRight - centerLeft - gap);
+        const cx = centerLeft + centerW / 2;
+
+        // Shrink code font until it fits in center column
+        ctx.font = `800 ${codeFont}px Arial, Helvetica, sans-serif`;
+        while (ctx.measureText(code).width > centerW * 0.96 && codeFont > 14) {
+            codeFont -= 1;
+            ctx.font = `800 ${codeFont}px Arial, Helvetica, sans-serif`;
+        }
+        ctx.font = `700 ${titleFont}px Arial, Helvetica, sans-serif`;
+        while (ctx.measureText('BIN LOCATION').width > centerW * 0.98 && titleFont > 8) {
+            titleFont -= 1;
+            ctx.font = `700 ${titleFont}px Arial, Helvetica, sans-serif`;
+        }
+
+        const barcodeH = Math.max(14, Math.min(Math.round(H * 0.22), Math.round(layout.barcodeHeightPx * fontScale)));
+        const stackGap = Math.max(3, Math.round(H * 0.035));
+        const stackH = titleFont + stackGap + codeFont + stackGap + barcodeH + stackGap + captionFont;
+        let y = Math.max(padY, Math.round((H - stackH) / 2));
+
+        // Background + border
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, W, H);
+        ctx.strokeStyle = '#111111';
+        ctx.lineWidth = Math.max(2, Math.round(H * 0.012));
+        ctx.strokeRect(1, 1, W - 2, H - 2);
+
+        // Brand
+        ctx.fillStyle = '#000000';
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'alphabetic';
+        const brandBlockH = brandFont + brandSubFont + 6;
+        const brandBase = (H - brandBlockH) / 2 + brandFont;
+        ctx.font = `800 ${brandFont}px Arial, Helvetica, sans-serif`;
+        ctx.fillText('PARISI', padX, brandBase);
+        ctx.font = `500 ${brandSubFont}px Arial, Helvetica, sans-serif`;
+        ctx.fillText('BATHWARE AUSTRALIA', padX, brandBase + brandSubFont + 4);
+
+        // Divider (after brand column only)
+        ctx.beginPath();
+        ctx.moveTo(dividerX, padY);
+        ctx.lineTo(dividerX, H - padY);
+        ctx.stroke();
+
+        // Center column
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'top';
+        ctx.font = `700 ${titleFont}px Arial, Helvetica, sans-serif`;
+        ctx.fillText('BIN LOCATION', cx, y);
+        y += titleFont + stackGap;
+
+        ctx.font = `800 ${codeFont}px Arial, Helvetica, sans-serif`;
+        ctx.fillText(code, cx, y);
+        y += codeFont + stackGap;
+
+        // Clip barcode to center column so it never crosses the divider
+        if (assets.barcodeHtml) {
+            try {
+                const barcodeUrl = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(assets.barcodeHtml);
+                const barcodeImg = await loadImageFromSrc(barcodeUrl);
+                const bw = centerW * 0.92;
+                const bx = cx - bw / 2;
+                ctx.save();
+                ctx.beginPath();
+                ctx.rect(centerLeft, 0, centerW, H);
+                ctx.clip();
+                ctx.drawImage(barcodeImg, bx, y, bw, barcodeH);
+                ctx.restore();
+            } catch (err) {
+                console.error('Barcode draw error:', err);
+            }
+        }
+        y += barcodeH + stackGap;
+
+        ctx.font = `500 ${captionFont}px Arial, Helvetica, sans-serif`;
+        ctx.fillText(code, cx, y);
+
+        // QR in right column only
+        if (assets.qrDataUrl) {
+            try {
+                const qrImg = await loadImageFromSrc(assets.qrDataUrl);
+                const qSize = Math.min(qrColPx - 4, H - padY * 2);
+                const qx = W - qrColPx + (qrColPx - qSize) / 2;
+                const qy = (H - qSize) / 2;
+                ctx.drawImage(qrImg, qx, qy, qSize, qSize);
+            } catch (err) {
+                console.error('QR draw error:', err);
+            }
+        }
+
+        await new Promise((resolve, reject) => {
+            canvas.toBlob((blob) => {
+                if (!blob) {
+                    reject(new Error('Could not create PNG file'));
+                    return;
+                }
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `bin-location-${code.replace(/[^\w.-]+/g, '_')}-${layout.widthMm}x${layout.heightMm}mm.png`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                setTimeout(() => URL.revokeObjectURL(url), 1000);
+                resolve();
+            }, 'image/png');
+        });
+    }
+
+    async function exportBinLocationLabel(locationCode, sizeOptions = {}, mode = 'print') {
+        const code = String(locationCode || '').trim().toUpperCase();
+        if (!code) {
+            alert('Location code is missing.');
+            return;
+        }
+
+        if (typeof JsBarcode === 'undefined' || typeof QRCode === 'undefined') {
+            alert('Barcode/QR libraries not loaded. Refresh the page and try again.');
+            return;
+        }
+
+        const layout = buildLabelLayout(
+            Number(sizeOptions.widthMm) || 100,
+            Number(sizeOptions.heightMm) || 40
+        );
+
+        try {
+            const assets = await prepareBinLabelAssets(code, layout);
+            if (mode === 'download') {
+                await downloadBinLabelPng(code, layout, assets);
+            } else {
+                openBinLabelPrintWindow(code, layout, assets);
+            }
+        } catch (err) {
+            console.error('Bin label export error:', err);
+            alert((mode === 'download' ? 'Download' : 'Print') + ' failed: ' + (err.message || 'Unknown error'));
+        }
+    }
+
+    function runBinLabelAction(mode) {
+        const size = getSelectedPrintSize();
+        if (size.error) {
+            if (printBinLabelSizeError) {
+                printBinLabelSizeError.textContent = size.error;
+                printBinLabelSizeError.style.display = 'block';
+            } else {
+                alert(size.error);
+            }
+            return;
+        }
+        if (printBinLabelSizeError) printBinLabelSizeError.style.display = 'none';
+        const code = pendingPrintLocationCode;
+        closePrintBinLabelModal();
+        exportBinLocationLabel(code, size, mode);
+    }
+
+    if (printBinLabelPreset) {
+        printBinLabelPreset.addEventListener('change', applyPrintPreset);
+    }
+    const confirmPrintBinLabelBtn = document.getElementById('confirmPrintBinLabel');
+    const confirmDownloadBinLabelBtn = document.getElementById('confirmDownloadBinLabel');
+    const cancelPrintBinLabelBtn = document.getElementById('cancelPrintBinLabel');
+    const closePrintBinLabelModalBtn = document.getElementById('closePrintBinLabelModal');
+    if (confirmPrintBinLabelBtn) {
+        confirmPrintBinLabelBtn.addEventListener('click', () => runBinLabelAction('print'));
+    }
+    if (confirmDownloadBinLabelBtn) {
+        confirmDownloadBinLabelBtn.addEventListener('click', () => runBinLabelAction('download'));
+    }
+    if (cancelPrintBinLabelBtn) cancelPrintBinLabelBtn.addEventListener('click', closePrintBinLabelModal);
+    if (closePrintBinLabelModalBtn) closePrintBinLabelModalBtn.addEventListener('click', closePrintBinLabelModal);
+    if (printBinLabelModal) {
+        printBinLabelModal.addEventListener('click', (e) => {
+            if (e.target === printBinLabelModal) closePrintBinLabelModal();
+        });
+    }
+
+    // Event delegation: handle Edit/Delete/Print clicks on tbody (works when clicking icon or text inside button)
     const tbody = document.getElementById('locationsTableBody');
     if (tbody) {
         tbody.addEventListener('click', function (e) {
             const editBtn = e.target.closest('.btn-edit');
             const deleteBtn = e.target.closest('.btn-delete');
+            const printBtn = e.target.closest('.btn-print');
             if (editBtn) {
                 e.preventDefault();
                 e.stopPropagation();
                 const id = editBtn.getAttribute('data-id');
                 if (id) openEditModal(id);
                 else alert('Error: location id not found. Please refresh the page.');
+            } else if (printBtn) {
+                e.preventDefault();
+                e.stopPropagation();
+                const locationCode = printBtn.getAttribute('data-location') || '';
+                openPrintBinLabelModal(locationCode);
             } else if (deleteBtn) {
                 e.preventDefault();
                 e.stopPropagation();

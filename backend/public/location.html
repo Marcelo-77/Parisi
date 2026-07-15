@@ -167,6 +167,17 @@
                                    placeholder="Ex: 1" min="0" step="1" inputmode="numeric">
                             <span class="error-message" id="locationLevel-error"></span>
                         </div>
+                        <div class="form-group" id="locationLevelZeroModeGroup" style="display:none;">
+                            <label for="locationLevelZeroMode">
+                                <i class="fas fa-sliders"></i> Level 0 type *
+                            </label>
+                            <select id="locationLevelZeroMode" name="locationLevelZeroMode">
+                                <option value="">Select type</option>
+                                <option value="side">Side</option>
+                                <option value="sublevel">Sublevel</option>
+                            </select>
+                            <span class="error-message" id="locationLevelZeroMode-error"></span>
+                        </div>
                         <div class="form-group" id="locationSublevelGroup" style="display:none;">
                             <label for="locationSublevel">
                                 <i class="fas fa-sort-numeric-down"></i> Sublevel *
@@ -195,7 +206,7 @@
                                 <i class="fas fa-map-marker-alt"></i> Location *
                             </label>
                             <input type="text" id="locationCode" name="locationCode" required
-                                   readonly placeholder="Composed from Street, Building, Level and Sublevel/Side"
+                                   readonly placeholder="Ex: B1-00, B15-1L"
                                    class="input-readonly">
                             <span class="error-message" id="locationCode-error"></span>
                         </div>
@@ -210,7 +221,6 @@
                                 <option value="">Select section</option>
                                 <option value="TAPWARE">Tapware</option>
                                 <option value="BATHWARE">BathWare</option>
-                                <option value="CENTRAL">Central</option>
                                 <option value="WAREHOUSE2">Warehouse2</option>
                                 <option value="FURNITUREWARE">Furniture</option>
                                 <option value="DOORWARE">Doorware</option>
@@ -223,8 +233,7 @@
                                 <i class="fas fa-toggle-on"></i> Status *
                             </label>
                             <select id="locationStatus" name="locationStatus" required>
-                                <option value="">Select status</option>
-                                <option value="active">Active</option>
+                                <option value="active" selected>Active</option>
                                 <option value="inactive">Inactive</option>
                             </select>
                             <span class="error-message" id="locationStatus-error"></span>

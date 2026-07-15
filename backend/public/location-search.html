@@ -159,6 +159,16 @@
                                 </label>
                                 <input type="number" id="searchLocationLevel" min="0" step="1" placeholder="Ex: 1">
                             </div>
+                            <div class="filter-group" id="searchLocationLevelZeroModeGroup" style="display:none;">
+                                <label for="searchLocationLevelZeroMode">
+                                    <i class="fas fa-sliders"></i> Level 0 type
+                                </label>
+                                <select id="searchLocationLevelZeroMode">
+                                    <option value="">Select type</option>
+                                    <option value="side">Side</option>
+                                    <option value="sublevel">Sublevel</option>
+                                </select>
+                            </div>
                             <div class="filter-group" id="searchLocationSublevelGroup" style="display:none;">
                                 <label for="searchLocationSublevel">
                                     <i class="fas fa-sort-numeric-down"></i> Sublevel
@@ -180,7 +190,7 @@
                                 <label for="searchLocation">
                                     <i class="fas fa-search"></i> Location
                                 </label>
-                                <input type="text" id="searchLocation" placeholder="Ex: B11M, D700" style="text-transform: uppercase;" autocomplete="off">
+                                <input type="text" id="searchLocation" placeholder="Ex: B15-1L, B1-00" style="text-transform: uppercase;" autocomplete="off">
                             </div>
                             <div class="filter-group">
                                 <label for="filterLocationStatus">
@@ -288,6 +298,14 @@
                         <label for="editLocationLevel"><i class="fas fa-layer-group"></i> Level *</label>
                         <input type="number" id="editLocationLevel" min="0" step="1" required placeholder="Ex: 1">
                     </div>
+                    <div class="form-group" id="editLocationLevelZeroModeGroup" style="display:none;">
+                        <label for="editLocationLevelZeroMode"><i class="fas fa-sliders"></i> Level 0 type *</label>
+                        <select id="editLocationLevelZeroMode">
+                            <option value="">Select type</option>
+                            <option value="side">Side</option>
+                            <option value="sublevel">Sublevel</option>
+                        </select>
+                    </div>
                     <div class="form-group" id="editLocationSublevelGroup" style="display:none;">
                         <label for="editLocationSublevel"><i class="fas fa-sort-numeric-down"></i> Sublevel *</label>
                         <input type="number" id="editLocationSublevel" min="0" step="1" placeholder="Ex: 0">
@@ -312,7 +330,6 @@
                         <option value="">Select section</option>
                         <option value="TAPWARE">Tapware</option>
                         <option value="BATHWARE">BathWare</option>
-                        <option value="CENTRAL">Central</option>
                         <option value="WAREHOUSE2">Warehouse2</option>
                         <option value="FURNITUREWARE">Furniture</option>
                         <option value="DOORWARE">Doorware</option>
@@ -342,6 +359,56 @@
         </div>
     </div>
 
+    <!-- Modal Print Bin Label Size -->
+    <div id="printBinLabelModal" class="modal" aria-hidden="true">
+        <div class="modal-content" style="max-width: 520px;">
+            <div class="modal-header">
+                <h3><i class="fas fa-print"></i> Print / Download Bin Location</h3>
+                <button type="button" class="modal-close" id="closePrintBinLabelModal" aria-label="Close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p style="margin-bottom: 14px; color: #555;">
+                    Location: <strong id="printBinLabelCode">-</strong>
+                </p>
+                <p style="margin-bottom: 10px; color: #555;">Choose label size (Length × Height) in millimetres:</p>
+                <div class="form-group">
+                    <label for="printBinLabelPreset"><i class="fas fa-ruler-combined"></i> Preset</label>
+                    <select id="printBinLabelPreset">
+                        <option value="100x40" selected>100 × 40 mm</option>
+                        <option value="90x35">90 × 35 mm</option>
+                        <option value="80x30">80 × 30 mm</option>
+                        <option value="70x25">70 × 25 mm</option>
+                        <option value="120x45">120 × 45 mm</option>
+                        <option value="150x50">150 × 50 mm</option>
+                        <option value="custom">Custom size...</option>
+                    </select>
+                </div>
+                <div class="form-row" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                    <div class="form-group">
+                        <label for="printBinLabelWidth"><i class="fas fa-arrows-left-right"></i> Length (L) mm *</label>
+                        <input type="number" id="printBinLabelWidth" min="20" max="300" step="1" value="100">
+                    </div>
+                    <div class="form-group">
+                        <label for="printBinLabelHeight"><i class="fas fa-arrows-up-down"></i> Height mm *</label>
+                        <input type="number" id="printBinLabelHeight" min="15" max="200" step="1" value="40">
+                    </div>
+                </div>
+                <p id="printBinLabelSizeError" class="error-message" style="display:none;"></p>
+            </div>
+            <div class="modal-actions" style="display:flex;flex-wrap:wrap;gap:8px;justify-content:flex-end;">
+                <button type="button" class="btn btn-secondary" id="cancelPrintBinLabel">Cancel</button>
+                <button type="button" class="btn btn-secondary" id="confirmDownloadBinLabel" style="background:#16a085;color:#fff;border:none;">
+                    <i class="fas fa-download"></i> Download
+                </button>
+                <button type="button" class="btn btn-primary" id="confirmPrintBinLabel">
+                    <i class="fas fa-print"></i> Print
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script src="jsbarcode.min.js"></script>
+    <script src="qrcode.min.js"></script>
     <script src="location-code-utils.js"></script>
     <script src="location-search-script.js"></script>
 </body>

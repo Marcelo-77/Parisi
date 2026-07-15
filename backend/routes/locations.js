@@ -29,7 +29,7 @@ const validarLocation = [
     .isIn(['Shelf by Hand', 'Shelf by Wave', 'Shelf By Fork'])
     .withMessage('Access type is invalid'),
   body('section')
-    .isIn(['TAPWARE', 'BATHWARE', 'CENTRAL', 'WAREHOUSE2', 'FURNITUREWARE', 'DOORWARE', 'OTHER'])
+    .isIn(['TAPWARE', 'BATHWARE', 'WAREHOUSE2', 'FURNITUREWARE', 'DOORWARE', 'OTHER'])
     .withMessage('Section is invalid')
 ];
 
@@ -44,7 +44,7 @@ router.get(
       .isIn(['Shelf by Hand', 'Shelf by Wave', 'Shelf By Fork']),
     query('section')
       .optional()
-      .isIn(['TAPWARE', 'BATHWARE', 'CENTRAL', 'WAREHOUSE2', 'FURNITUREWARE', 'DOORWARE', 'OTHER'])
+      .isIn(['TAPWARE', 'BATHWARE', 'WAREHOUSE2', 'FURNITUREWARE', 'DOORWARE', 'OTHER'])
   ],
   handleValidationErrors,
   async (req, res) => {

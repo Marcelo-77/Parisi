@@ -7,8 +7,18 @@
     return Number.isNaN(value) ? '' : String(value);
   }
 
-  function composeLocationCode({ street, building, level, side, sublevel }, options = {}) {
-    const useDashes = Boolean(options.useDashes);
+  function resolveLevelZeroMode(parts) {
+    if (parts.levelZeroMode === 'side' || parts.levelZeroMode === 'sublevel') {
+      return parts.levelZeroMode;
+    }
+    if (parts.side) return 'side';
+    if (parts.sublevel !== '') return 'sublevel';
+    return '';
+  }
+
+  // Format: {street}{building}-{level}{side|sublevel}
+  // Examples: B1-00, B15-1L, A7-0R
+  function composeLocationCode({ street, building, level, side, sublevel, levelZeroMode }) {
     if (!street || building === '') {
       return '';
     }
@@ -19,6 +29,18 @@
     }
 
     if (levelNumber === 0) {
+      const mode = resolveLevelZeroMode({ side, sublevel, levelZeroMode });
+      if (mode === 'side') {
+        if (!side) {
+          return '';
+        }
+        return `${street}${building}-0${side}`;
+      }
+
+      if (mode !== 'sublevel') {
+        return '';
+      }
+
       if (sublevel === '') {
         return '';
       }
@@ -26,73 +48,82 @@
       if (Number.isNaN(sublevelNumber) || sublevelNumber < 0) {
         return '';
       }
-      if (useDashes) {
-        return `${street}${building}-0-${normalizeNumberValue(sublevel)}`;
-      }
-      return `${street}${building}0${normalizeNumberValue(sublevel)}`;
+      return `${street}${building}-0${normalizeNumberValue(sublevel)}`;
     }
 
     if (level === '' || !side) {
       return '';
     }
 
-    if (useDashes) {
-      return `${street}${building}-${levelNumber}-${side}`;
-    }
-    return `${street}${building}${levelNumber}${side}`;
+    return `${street}${building}-${levelNumber}${side}`;
   }
 
   function parseLocationCode(code) {
     const normalized = String(code || '').trim().toUpperCase();
     if (!normalized || !/^[A-Z]/.test(normalized)) {
-      return { street: '', building: '', level: '', side: '', sublevel: '' };
+      return { street: '', building: '', level: '', side: '', sublevel: '', levelZeroMode: '' };
     }
 
     const street = normalized[0];
     const rest = normalized.slice(1);
 
     if (!rest) {
-      return { street, building: '', level: '', side: '', sublevel: '' };
+      return { street, building: '', level: '', side: '', sublevel: '', levelZeroMode: '' };
     }
 
-    const dashedLevelSideMatch = rest.match(/^(\d+)-(\d+)-([RLM])$/);
+    // Current format: 15-1L / 1-00 / 7-0R
+    const dashedLevelSideMatch = rest.match(/^(\d+)-(\d+)([RLM])$/);
     if (dashedLevelSideMatch) {
+      const level = dashedLevelSideMatch[2];
       return {
         street,
         building: dashedLevelSideMatch[1],
-        level: dashedLevelSideMatch[2],
+        level,
         side: dashedLevelSideMatch[3],
-        sublevel: ''
+        sublevel: '',
+        levelZeroMode: level === '0' ? 'side' : ''
       };
     }
 
-    const dashedSublevelMatch = rest.match(/^(\d+)-0-(\d+)$/);
+    const dashedSublevelMatch = rest.match(/^(\d+)-0(\d+)$/);
     if (dashedSublevelMatch) {
       return {
         street,
         building: dashedSublevelMatch[1] === '' ? '0' : dashedSublevelMatch[1],
         level: '0',
         side: '',
-        sublevel: normalizeNumberValue(dashedSublevelMatch[2])
+        sublevel: normalizeNumberValue(dashedSublevelMatch[2]),
+        levelZeroMode: 'sublevel'
       };
     }
 
-    const dashedSideMatch = rest.match(/^(.+)-([RLM])$/);
-    if (dashedSideMatch) {
-      const body = dashedSideMatch[1];
-      const side = dashedSideMatch[2];
-      const level = body.slice(-1);
-      const building = body.slice(0, -1);
-
+    // Legacy double-dash: 15-1-L / 1-0-0
+    const legacyDoubleDashSide = rest.match(/^(\d+)-(\d+)-([RLM])$/);
+    if (legacyDoubleDashSide) {
+      const level = legacyDoubleDashSide[2];
       return {
         street,
-        building: building === '' ? '0' : building,
+        building: legacyDoubleDashSide[1],
         level,
-        side,
-        sublevel: ''
+        side: legacyDoubleDashSide[3],
+        sublevel: '',
+        levelZeroMode: level === '0' ? 'side' : ''
       };
     }
 
+    const legacyDoubleDashSublevel = rest.match(/^(\d+)-0-(\d+)$/);
+    if (legacyDoubleDashSublevel) {
+      return {
+        street,
+        building: legacyDoubleDashSublevel[1] === '' ? '0' : legacyDoubleDashSublevel[1],
+        level: '0',
+        side: '',
+        sublevel: normalizeNumberValue(legacyDoubleDashSublevel[2]),
+        levelZeroMode: 'sublevel'
+      };
+    }
+
+    // Legacy no-dash: 151L / 100 / 70R
     const legacySideMatch = rest.match(/^(.+)([RLM])$/);
     if (legacySideMatch) {
       const body = legacySideMatch[1];
@@ -101,65 +132,61 @@
       const building = body.slice(0, -1);
       const levelNumber = Number(level);
 
-      if (!Number.isNaN(levelNumber) && levelNumber > 0) {
+      if (!Number.isNaN(levelNumber) && levelNumber >= 0) {
         return {
           street,
           building: building === '' ? '0' : building,
           level,
           side,
-          sublevel: ''
+          sublevel: '',
+          levelZeroMode: levelNumber === 0 ? 'side' : ''
         };
       }
     }
 
-    const sublevelMatch = rest.match(/^(.+)0(\d+)$/);
-    if (sublevelMatch) {
+    const legacySublevelMatch = rest.match(/^(.+)0(\d+)$/);
+    if (legacySublevelMatch) {
       return {
         street,
-        building: sublevelMatch[1] === '' ? '0' : sublevelMatch[1],
+        building: legacySublevelMatch[1] === '' ? '0' : legacySublevelMatch[1],
         level: '0',
         side: '',
-        sublevel: normalizeNumberValue(sublevelMatch[2])
+        sublevel: normalizeNumberValue(legacySublevelMatch[2]),
+        levelZeroMode: 'sublevel'
       };
     }
 
-    return { street, building: '', level: '', side: '', sublevel: '' };
+    return { street, building: '', level: '', side: '', sublevel: '', levelZeroMode: '' };
   }
 
-  function buildPartialSearchTerm({ street, building, level, side, sublevel }, options = {}) {
-    const useDashes = Boolean(options.useDashes);
+  function buildPartialSearchTerm({ street, building, level, side, sublevel, levelZeroMode }) {
     let term = street || '';
     if (building !== '') {
       term += building;
-      if (useDashes) term += '-';
+      term += '-';
     }
 
     if (level === '') {
-      return term;
+      return term.endsWith('-') ? term.slice(0, -1) : term;
     }
 
     const levelNumber = Number(level);
     if (Number.isNaN(levelNumber)) {
-      return term;
+      return term.endsWith('-') ? term.slice(0, -1) : term;
     }
 
     if (levelNumber === 0) {
-      if (useDashes) {
-        term += '0-';
-        if (sublevel !== '') {
-          term += normalizeNumberValue(sublevel);
-        }
-        return term;
-      }
+      const mode = resolveLevelZeroMode({ side, sublevel, levelZeroMode });
       term += '0';
-      if (sublevel !== '') {
+      if (mode === 'side' && side) {
+        term += side;
+      } else if (mode === 'sublevel' && sublevel !== '') {
         term += normalizeNumberValue(sublevel);
       }
       return term;
     }
 
     term += String(levelNumber);
-    if (useDashes) term += '-';
     if (side) {
       term += side;
     }
@@ -172,14 +199,16 @@
     const levelEl = document.getElementById(ids.levelId);
     const sideEl = document.getElementById(ids.sideId);
     const sublevelEl = ids.sublevelId ? document.getElementById(ids.sublevelId) : null;
+    const modeEl = ids.levelZeroModeId ? document.getElementById(ids.levelZeroModeId) : null;
 
     const street = streetEl ? streetEl.value.trim().toUpperCase() : '';
     const building = buildingEl ? normalizeNumberValue(buildingEl.value.trim()) : '';
     const level = levelEl ? normalizeNumberValue(levelEl.value.trim()) : '';
     const side = sideEl ? sideEl.value.trim().toUpperCase() : '';
     const sublevel = sublevelEl ? normalizeNumberValue(sublevelEl.value.trim()) : '';
+    const levelZeroMode = modeEl ? String(modeEl.value || '').trim().toLowerCase() : '';
 
-    return { street, building, level, side, sublevel };
+    return { street, building, level, side, sublevel, levelZeroMode };
   }
 
   function setLocationParts(ids, parts) {
@@ -188,42 +217,62 @@
     const levelEl = document.getElementById(ids.levelId);
     const sideEl = document.getElementById(ids.sideId);
     const sublevelEl = ids.sublevelId ? document.getElementById(ids.sublevelId) : null;
+    const modeEl = ids.levelZeroModeId ? document.getElementById(ids.levelZeroModeId) : null;
 
     if (streetEl) streetEl.value = parts.street || '';
     if (buildingEl) buildingEl.value = parts.building !== '' ? parts.building : '';
     if (levelEl) levelEl.value = parts.level !== '' ? parts.level : '';
     if (sideEl) sideEl.value = parts.side || '';
     if (sublevelEl) sublevelEl.value = parts.sublevel !== '' ? parts.sublevel : '';
+    if (modeEl) {
+      const inferredMode = parts.levelZeroMode
+        || (parts.level === '0' || Number(parts.level) === 0
+          ? (parts.side ? 'side' : (parts.sublevel !== '' ? 'sublevel' : ''))
+          : '');
+      modeEl.value = inferredMode;
+    }
   }
 
   function updateLevelDependentFields(ids) {
     const levelEl = document.getElementById(ids.levelId);
     const sideGroupEl = ids.sideGroupId ? document.getElementById(ids.sideGroupId) : null;
     const sublevelGroupEl = ids.sublevelGroupId ? document.getElementById(ids.sublevelGroupId) : null;
+    const modeGroupEl = ids.levelZeroModeGroupId ? document.getElementById(ids.levelZeroModeGroupId) : null;
     const sideEl = document.getElementById(ids.sideId);
     const sublevelEl = ids.sublevelId ? document.getElementById(ids.sublevelId) : null;
+    const modeEl = ids.levelZeroModeId ? document.getElementById(ids.levelZeroModeId) : null;
     const levelRaw = levelEl ? levelEl.value.trim() : '';
     const levelNumber = levelRaw === '' ? null : Number(levelRaw);
     const isGroundLevel = levelNumber === 0;
     const hasUpperLevel = levelNumber != null && levelNumber > 0;
+    const mode = modeEl ? String(modeEl.value || '').trim().toLowerCase() : '';
+    const useSide = hasUpperLevel || (isGroundLevel && mode === 'side');
+    const useSublevel = isGroundLevel && mode === 'sublevel';
+
+    if (modeGroupEl) {
+      modeGroupEl.style.display = isGroundLevel ? '' : 'none';
+    }
+    if (!isGroundLevel && modeEl) {
+      modeEl.value = '';
+    }
 
     if (sideGroupEl) {
-      sideGroupEl.style.display = hasUpperLevel ? '' : 'none';
+      sideGroupEl.style.display = useSide ? '' : 'none';
     }
     if (sublevelGroupEl) {
-      sublevelGroupEl.style.display = isGroundLevel ? '' : 'none';
+      sublevelGroupEl.style.display = useSublevel ? '' : 'none';
     }
 
     if (sideEl) {
-      sideEl.required = hasUpperLevel;
-      if (!hasUpperLevel) {
+      sideEl.required = useSide;
+      if (!useSide) {
         sideEl.value = '';
       }
     }
 
     if (sublevelEl) {
-      sublevelEl.required = isGroundLevel;
-      if (!isGroundLevel) {
+      sublevelEl.required = useSublevel;
+      if (!useSublevel) {
         sublevelEl.value = '';
       }
     }
@@ -247,7 +296,8 @@
       parts.building !== '' ||
       parts.level !== '' ||
       parts.side ||
-      parts.sublevel !== ''
+      parts.sublevel !== '' ||
+      parts.levelZeroMode
     );
 
     if (options.allowDirectCodeEntry && !hasComponentInput) {
@@ -255,8 +305,8 @@
     }
 
     const composed = options.allowPartial
-      ? (composeLocationCode(parts, options) || buildPartialSearchTerm(parts, options))
-      : composeLocationCode(parts, options);
+      ? (composeLocationCode(parts) || buildPartialSearchTerm(parts))
+      : composeLocationCode(parts);
 
     codeEl.value = composed;
     return composed;
@@ -268,7 +318,8 @@
       ids.buildingId,
       ids.levelId,
       ids.sideId,
-      ids.sublevelId
+      ids.sublevelId,
+      ids.levelZeroModeId
     ].filter(Boolean);
 
     fieldIds.forEach((fieldId) => {
@@ -309,7 +360,14 @@
     }
 
     if (levelNumber === 0) {
-      if (parts.sublevel === '' || Number.isNaN(sublevelNumber) || sublevelNumber < 0) {
+      const mode = resolveLevelZeroMode(parts);
+      if (mode !== 'side' && mode !== 'sublevel') {
+        errors.levelZeroMode = 'Select Side or Sublevel when level is 0';
+      } else if (mode === 'side') {
+        if (!/^[RLM]$/.test(parts.side)) {
+          errors.side = 'Select R, L or M for level 0 Side';
+        }
+      } else if (parts.sublevel === '' || Number.isNaN(sublevelNumber) || sublevelNumber < 0) {
         errors.sublevel = 'Enter a valid sublevel number when level is 0';
       }
     } else if (levelNumber > 0 && !/^[RLM]$/.test(parts.side)) {
