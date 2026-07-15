@@ -695,15 +695,21 @@ document.addEventListener('DOMContentLoaded', () => {
         };
     }
 
-    function openBinLabelPrintWindow(code, layout, assets) {
+    function openBinLabelPrintWindow(code, layout, assets, existingWindow = null) {
         const markup = buildBinLabelMarkup(layout, assets);
         const { widthMm, heightMm, pageLandscape } = layout;
         const { safeCode } = assets;
 
-        const w = window.open('', '_blank', 'width=900,height=520');
+        const w = existingWindow || window.open('', '_blank', 'width=900,height=560');
         if (!w) {
             alert('Allow popups to print the bin location label.');
             return;
+        }
+
+        try {
+            w.document.open();
+        } catch {
+            // ignore
         }
 
         w.document.write(`<!DOCTYPE html>
@@ -721,7 +727,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     ${markup.css}
     .no-print { text-align: center; margin-top: 14px; color: #555; font-size: 13px; }
-    .no-print button { padding: 10px 18px; font-size: 14px; cursor: pointer; }
     @media print {
       body { padding: 0; }
       .no-print { display: none !important; }
@@ -733,14 +738,38 @@ document.addEventListener('DOMContentLoaded', () => {
   ${markup.body}
   <div class="no-print">
     <div>Size: ${widthMm} × ${heightMm} mm</div>
-    <button type="button" onclick="window.print()">Print</button>
   </div>
   <script>
-    setTimeout(function () { window.focus(); window.print(); }, 250);
+    (function () {
+      function tryPrint() {
+        try {
+          window.focus();
+          window.print();
+        } catch (e) {
+          console.error(e);
+        }
+      }
+      if (document.readyState === 'complete') {
+        setTimeout(tryPrint, 150);
+      } else {
+        window.addEventListener('load', function () { setTimeout(tryPrint, 150); });
+      }
+    })();
   <\/script>
 </body>
 </html>`);
         w.document.close();
+
+        setTimeout(() => {
+            try {
+                if (!w.closed) {
+                    w.focus();
+                    w.print();
+                }
+            } catch (err) {
+                console.error('Print trigger error:', err);
+            }
+        }, 400);
     }
 
     async function downloadBinLabelPng(code, layout, assets) {
@@ -897,7 +926,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    async function exportBinLocationLabel(locationCode, sizeOptions = {}, mode = 'print') {
+    async function exportBinLocationLabel(locationCode, sizeOptions = {}, mode = 'print', printWindow = null) {
         const code = String(locationCode || '').trim().toUpperCase();
         if (!code) {
             alert('Location code is missing.');
@@ -919,10 +948,13 @@ document.addEventListener('DOMContentLoaded', () => {
             if (mode === 'download') {
                 await downloadBinLabelPng(code, layout, assets);
             } else {
-                openBinLabelPrintWindow(code, layout, assets);
+                openBinLabelPrintWindow(code, layout, assets, printWindow);
             }
         } catch (err) {
             console.error('Bin label export error:', err);
+            if (printWindow && !printWindow.closed) {
+                try { printWindow.close(); } catch { /* ignore */ }
+            }
             alert((mode === 'download' ? 'Download' : 'Print') + ' failed: ' + (err.message || 'Unknown error'));
         }
     }
@@ -940,8 +972,25 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         if (printBinLabelSizeError) printBinLabelSizeError.style.display = 'none';
         const code = pendingPrintLocationCode;
+
+        // Open print window immediately on user click (required for Windows print dialog).
+        let printWindow = null;
+        if (mode === 'print') {
+            printWindow = window.open('', '_blank', 'width=900,height=560');
+            if (!printWindow) {
+                alert('Allow popups for this site so the printer dialog can open.');
+                return;
+            }
+            try {
+                printWindow.document.write('<!DOCTYPE html><html><head><title>Preparing label...</title></head><body style="font-family:Arial,sans-serif;padding:24px;"><p>Preparing bin location label...</p></body></html>');
+                printWindow.document.close();
+            } catch {
+                // ignore
+            }
+        }
+
         closePrintBinLabelModal();
-        exportBinLocationLabel(code, size, mode);
+        exportBinLocationLabel(code, size, mode, printWindow);
     }
 
     if (printBinLabelPreset) {
