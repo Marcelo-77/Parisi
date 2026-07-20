@@ -124,6 +124,12 @@ async function initDatabase() {
     `);
     console.log('✅ warehouse_items.barcode adicionada/verificada');
 
+    await query(`
+      ALTER TABLE warehouse_items
+      ADD COLUMN IF NOT EXISTS subcategoria VARCHAR(50)
+    `);
+    console.log('✅ warehouse_items.subcategoria adicionada/verificada');
+
     // Criar tabela de movimentações do warehouse
     await query(`
       CREATE TABLE IF NOT EXISTS warehouse_movements (
@@ -645,6 +651,9 @@ async function initDatabase() {
     `);
     await query(`
       CREATE INDEX IF NOT EXISTS idx_warehouse_items_barcode ON warehouse_items(barcode)
+    `);
+    await query(`
+      CREATE INDEX IF NOT EXISTS idx_warehouse_items_subcategoria ON warehouse_items(subcategoria)
     `);
     await query(`
       CREATE INDEX IF NOT EXISTS idx_warehouse_movements_item_id ON warehouse_movements(item_id)

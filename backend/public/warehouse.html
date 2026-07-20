@@ -195,6 +195,10 @@
                 </div>
             </div>
 
+            <div id="searchResultsMeta" class="warehouse-search-results-meta" style="display: none;">
+                <span id="warehouseSearchResultsCount">0 records</span>
+            </div>
+
             <!-- Tabela de Itens -->
             <div class="table-container">
                 <table class="warehouse-table">
@@ -225,99 +229,184 @@
         <!-- Modal de Adicionar/Editar Item -->
         <div id="itemModal" class="modal">
             <div class="modal-content modal-large item-modal-content">
-                <div class="modal-header success">
+                <div class="modal-header success" id="itemModalHeader">
                     <h3 id="modalTitle"><i class="fas fa-box"></i> New Item</h3>
+                    <p id="modalSubtitle" class="item-modal-subtitle" style="display: none;"></p>
                     <button class="modal-close" id="closeModal">&times;</button>
                 </div>
                 <form id="itemForm" class="warehouse-form item-modal-form">
                     <div class="modal-body item-modal-body">
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label for="codigo">
-                                    <i class="fas fa-barcode"></i> Item Code *
-                                </label>
-                                <input type="text" id="codigo" name="codigo" required 
-                                       placeholder="Ex: PROD-001" 
-                                       pattern="[A-Z0-9\-.]+">
-                                <span class="error-message" id="codigo-error"></span>
+                        <div id="itemEditSummary" class="item-edit-summary" style="display: none;" aria-live="polite">
+                            <div class="item-edit-summary-main">
+                                <div class="item-edit-summary-icon" aria-hidden="true">
+                                    <i class="fas fa-box-open"></i>
+                                </div>
+                                <div class="item-edit-summary-text">
+                                    <div class="item-edit-summary-top">
+                                        <span id="editSummaryCode" class="item-edit-summary-code">-</span>
+                                        <span id="editSummaryStatus" class="status-badge available">Available</span>
+                                    </div>
+                                    <p id="editSummaryName" class="item-edit-summary-name">-</p>
+                                    <p id="editSummaryMeta" class="item-edit-summary-meta">-</p>
+                                </div>
                             </div>
-                            <div class="form-group">
-                                <label for="nome">
-                                    <i class="fas fa-tag"></i> Item Name *
-                                </label>
-                                <input type="text" id="nome" name="nome" required 
-                                       placeholder="Product name" 
-                                       minlength="2" maxlength="100">
-                                <span class="error-message" id="nome-error"></span>
-                            </div>
-                        </div>
-
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label for="categoria">
-                                    <i class="fas fa-folder"></i> Category *
-                                </label>
-                                <select id="categoria" name="categoria" required>
-                                    <option value="">Select category</option>
-                                    <option value="TAPWARE">Tapware</option>
-                                    <option value="BATHWARE">BathWare</option>
-                                    <option value="WAREHOUSE2">Warehouse2</option>
-                                    <option value="FURNITUREWARE">Furniture</option>
-                                    <option value="DOORWARE">Doorware</option>
-                                    <option value="OTHER">Other</option>
-                                </select>
-                                <span class="error-message" id="categoria-error"></span>
-                            </div>
-                            <div class="form-group">
-                                <label for="barcode">
-                                    <i class="fas fa-barcode"></i> Barcode
-                                </label>
-                                <input type="text" id="barcode" name="barcode"
-                                       placeholder="Up to 20 digits"
-                                       maxlength="20" pattern="[0-9]+">
-                                <span class="error-message" id="barcode-error"></span>
+                            <div class="item-edit-summary-stats">
+                                <div class="item-edit-stat">
+                                    <span class="item-edit-stat-label">Current Stock</span>
+                                    <strong id="editSummaryQuantity">0</strong>
+                                </div>
+                                <div class="item-edit-stat">
+                                    <span class="item-edit-stat-label">Min. Quantity</span>
+                                    <strong id="editSummaryMinQty">0</strong>
+                                </div>
                             </div>
                         </div>
 
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label for="peso">
-                                    <i class="fas fa-weight-hanging"></i> Weight (kg)
-                                </label>
-                                <input type="number" id="peso" name="peso"
-                                       placeholder="Ex: 1.25" min="0" step="0.01">
-                                <span class="error-message" id="peso-error"></span>
+                        <div id="itemNewIntro" class="item-new-intro" style="display: none;" aria-live="polite">
+                            <div class="item-new-intro-main">
+                                <div class="item-new-intro-icon" aria-hidden="true">
+                                    <i class="fas fa-plus-circle"></i>
+                                </div>
+                                <div class="item-new-intro-text">
+                                    <h4 class="item-new-intro-title">Register New Product</h4>
+                                    <p>Complete the sections below to add a product to the warehouse catalogue. Required fields are marked with *.</p>
+                                </div>
+                            </div>
+                            <div class="item-new-intro-steps">
+                                <div class="item-new-step">
+                                    <span class="item-new-step-number">1</span>
+                                    <span class="item-new-step-label">Product Identity</span>
+                                </div>
+                                <div class="item-new-step">
+                                    <span class="item-new-step-number">2</span>
+                                    <span class="item-new-step-label">Classification</span>
+                                </div>
+                                <div class="item-new-step">
+                                    <span class="item-new-step-number">3</span>
+                                    <span class="item-new-step-label">Stock &amp; Notes</span>
+                                </div>
                             </div>
                         </div>
 
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label for="quantidade">
-                                    <i class="fas fa-boxes"></i> Quantity *
-                                </label>
-                                <input type="number" id="quantidade" name="quantidade" required 
-                                       placeholder="0" min="0" step="1">
-                                <span class="error-message" id="quantidade-error"></span>
-                            </div>
-                            <div class="form-group">
-                                <label for="quantidadeMinima">
-                                    <i class="fas fa-exclamation-triangle"></i> Minimum Quantity *
-                                </label>
-                                <input type="number" id="quantidadeMinima" name="quantidadeMinima" required 
-                                       placeholder="0" min="0" step="1">
-                                <span class="error-message" id="quantidadeMinima-error"></span>
-                            </div>
-                        </div>
+                        <div id="itemFormSections">
+                            <section class="item-form-section" id="itemSectionIdentity">
+                                <h4 class="item-form-section-title"><i class="fas fa-id-card"></i> Product Identity</h4>
+                                <div class="form-row">
+                                    <div class="form-group" id="codigoGroup">
+                                        <label for="codigo">
+                                            <i class="fas fa-barcode"></i> Item Code *
+                                        </label>
+                                        <input type="text" id="codigo" name="codigo" required 
+                                               placeholder="Ex: PROD-001" 
+                                               pattern="[A-Z0-9\-.]+">
+                                        <span class="field-hint" id="codigoHint" style="display: none;">Product code cannot be changed after creation.</span>
+                                        <span class="field-hint" id="codigoNewHint" style="display: none;">Use a unique code with letters, numbers, dash or dot (e.g. PROD-001).</span>
+                                        <span class="error-message" id="codigo-error"></span>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="nome">
+                                            <i class="fas fa-tag"></i> Item Name *
+                                        </label>
+                                        <input type="text" id="nome" name="nome" required 
+                                               placeholder="Product name" 
+                                               minlength="2" maxlength="100">
+                                        <span class="error-message" id="nome-error"></span>
+                                    </div>
+                                </div>
+                            </section>
 
-                        <div class="form-row">
-                            <div class="form-group full-width">
-                                <label for="descricao">
-                                    <i class="fas fa-align-left"></i> Description
-                                </label>
-                                <textarea id="descricao" name="descricao" rows="2" 
-                                          placeholder="Detailed item description" 
-                                          maxlength="500"></textarea>
-                            </div>
+                            <section class="item-form-section">
+                                <h4 class="item-form-section-title"><i class="fas fa-folder-tree"></i> Classification</h4>
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="categoria">
+                                            <i class="fas fa-folder"></i> Category *
+                                        </label>
+                                        <select id="categoria" name="categoria" required>
+                                            <option value="">Select category</option>
+                                            <option value="TAPWARE">Tapware</option>
+                                            <option value="BATHWARE">BathWare</option>
+                                            <option value="WAREHOUSE2">Warehouse2</option>
+                                            <option value="FURNITUREWARE">Furniture</option>
+                                            <option value="DOORWARE">Doorware</option>
+                                            <option value="OTHER">Other</option>
+                                        </select>
+                                        <span class="error-message" id="categoria-error"></span>
+                                    </div>
+                                    <div class="form-group" id="subcategoriaGroup" style="display: none;">
+                                        <label for="subcategoria">
+                                            <i class="fas fa-layer-group"></i> Subcategory
+                                        </label>
+                                        <select id="subcategoria" name="subcategoria">
+                                            <option value="">Select subcategory</option>
+                                            <option value="FLAMINIA">Flaminia</option>
+                                            <option value="TECLA">Tecla</option>
+                                            <option value="VALDAMA">Valdama</option>
+                                        </select>
+                                        <span class="error-message" id="subcategoria-error"></span>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="barcode">
+                                            <i class="fas fa-barcode"></i> Barcode
+                                        </label>
+                                        <input type="text" id="barcode" name="barcode"
+                                               placeholder="Up to 20 digits"
+                                               maxlength="20" pattern="[0-9]+">
+                                        <span class="error-message" id="barcode-error"></span>
+                                    </div>
+                                </div>
+                            </section>
+
+                            <section class="item-form-section">
+                                <h4 class="item-form-section-title"><i class="fas fa-boxes"></i> Stock</h4>
+                                <p id="stockEditHint" class="item-form-section-hint" style="display: none;">
+                                    <i class="fas fa-info-circle"></i> To increase or decrease stock, use the <strong>Move</strong> action in search results.
+                                </p>
+                                <p id="stockNewHint" class="item-form-section-hint item-form-section-hint--info" style="display: none;">
+                                    <i class="fas fa-info-circle"></i> Set the opening stock for this product. You can adjust quantities later using the <strong>Move</strong> action.
+                                </p>
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="quantidade">
+                                            <i class="fas fa-boxes"></i> Quantity *
+                                        </label>
+                                        <input type="number" id="quantidade" name="quantidade" required 
+                                               placeholder="0" min="0" step="1">
+                                        <span class="error-message" id="quantidade-error"></span>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="quantidadeMinima">
+                                            <i class="fas fa-exclamation-triangle"></i> Minimum Quantity *
+                                        </label>
+                                        <input type="number" id="quantidadeMinima" name="quantidadeMinima" required 
+                                               placeholder="0" min="0" step="1">
+                                        <span class="error-message" id="quantidadeMinima-error"></span>
+                                    </div>
+                                    <div class="form-group" id="pesoGroup">
+                                        <label for="peso">
+                                            <i class="fas fa-weight-hanging"></i> Weight (kg)
+                                        </label>
+                                        <input type="number" id="peso" name="peso"
+                                               placeholder="Ex: 1.25" min="0" step="0.01">
+                                        <span class="error-message" id="peso-error"></span>
+                                    </div>
+                                </div>
+                            </section>
+
+                            <section class="item-form-section">
+                                <h4 class="item-form-section-title"><i class="fas fa-align-left"></i> Description</h4>
+                                <div class="form-row">
+                                    <div class="form-group full-width">
+                                        <label for="descricao">
+                                            <i class="fas fa-align-left"></i> Notes
+                                        </label>
+                                        <textarea id="descricao" name="descricao" rows="3" 
+                                                  placeholder="Detailed item description" 
+                                                  maxlength="500"></textarea>
+                                        <span class="field-hint"><span id="descricaoCount">0</span> / 500 characters</span>
+                                    </div>
+                                </div>
+                            </section>
                         </div>
                     </div>
                     <div class="modal-footer item-modal-footer form-actions">
@@ -325,7 +414,7 @@
                             <i class="fas fa-times"></i> Cancel
                         </button>
                         <button type="submit" id="saveItemBtn" class="btn btn-primary">
-                            <i class="fas fa-save"></i> Save
+                            <i class="fas fa-save"></i> <span id="saveItemBtnLabel">Create Product</span>
                         </button>
                     </div>
                 </form>
@@ -446,6 +535,7 @@
         });
     </script>
     <script src="section-options.js"></script>
+    <script src="bathware-subcategory-options.js"></script>
     <script src="warehouse-script.js"></script>
 </body>
 </html>

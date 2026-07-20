@@ -1,4 +1,4 @@
-// Configuração da API
+// Configura˜˜o da API
 const API_BASE_URL = '/api/warehouse';
 
 function escapeHtml(text) {
@@ -7,7 +7,7 @@ function escapeHtml(text) {
     return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
-// Mapeamento categoria (valor no BD) ? texto de exibição
+// Mapeamento categoria (valor no BD) ? texto de exibi˜˜o
 function formatCategory(categoria) {
     if (typeof SectionOptions !== 'undefined') {
         return SectionOptions.formatSectionLabel(categoria);
@@ -16,11 +16,40 @@ function formatCategory(categoria) {
     return categoria;
 }
 
-// Estado da aplicação
+function formatSubcategory(subcategoria) {
+    if (typeof BathwareSubcategoryOptions !== 'undefined') {
+        return BathwareSubcategoryOptions.formatBathwareSubcategoryLabel(subcategoria);
+    }
+    if (!subcategoria) return '';
+    return subcategoria;
+}
+
+function formatCategoryDisplay(item) {
+    const category = formatCategory(item.categoria);
+    if (String(item.categoria || '').toUpperCase() === 'BATHWARE' && item.subcategoria) {
+        return `${category} ˜ ${formatSubcategory(item.subcategoria)}`;
+    }
+    return category;
+}
+
+function toggleSubcategoriaField() {
+    const categoriaEl = document.getElementById('categoria');
+    const subcategoriaGroup = document.getElementById('subcategoriaGroup');
+    const subcategoriaEl = document.getElementById('subcategoria');
+    if (!categoriaEl || !subcategoriaGroup || !subcategoriaEl) return;
+
+    const isBathware = String(categoriaEl.value || '').toUpperCase() === 'BATHWARE';
+    subcategoriaGroup.style.display = isBathware ? '' : 'none';
+    if (!isBathware) {
+        subcategoriaEl.value = '';
+    }
+}
+
+// Estado da aplica˜˜o
 let items = [];
 let currentItemId = null;
 let currentItem = null;
-let hasSearched = false; // true após o usuário clicar em Search
+let hasSearched = false; // true ap˜s o usu˜rio clicar em Search
 
 // Elementos do DOM
 const itemModal = document.getElementById('itemModal');
@@ -56,14 +85,16 @@ const filterStatus = document.getElementById('filterStatus');
 const sortBy = document.getElementById('sortBy');
 const clearSearch = document.getElementById('clearSearch');
 const searchBtn = document.getElementById('searchBtn');
+const searchResultsMeta = document.getElementById('searchResultsMeta');
+const warehouseSearchResultsCount = document.getElementById('warehouseSearchResultsCount');
 
-// Estatísticas
+// Estat˜sticas
 const totalItemsEl = document.getElementById('totalItems');
 const lowStockItemsEl = document.getElementById('lowStockItems');
 const totalEntradasEl = document.getElementById('totalEntradas');
 const totalSaidasEl = document.getElementById('totalSaidas');
 
-// Definir função printReport globalmente ANTES do DOMContentLoaded
+// Definir fun˜˜o printReport globalmente ANTES do DOMContentLoaded
 window.printReport = function(itemId) {
     console.log('========================================');
     console.log('?? PRINT REPORT FUNCTION CALLED');
@@ -116,7 +147,7 @@ window.printReport = function(itemId) {
                 <h3>${item.nome}</h3>
                 <p><strong>Code:</strong> ${item.codigo}</p>
                 <p><strong>Barcode:</strong> ${item.barcode || '-'}</p>
-                <p><strong>Category:</strong> ${formatCategory(item.categoria)}</p>
+                <p><strong>Category:</strong> ${formatCategoryDisplay(item)}</p>
                 <p><strong>Quantity:</strong> ${item.quantidade}</p>
             </div>
             <div class="print-codes">
@@ -135,7 +166,7 @@ window.printReport = function(itemId) {
         </div>
     `;
     
-    // Para impressão, usar barcode do produto para Barcode e QRCode
+    // Para impress˜o, usar barcode do produto para Barcode e QRCode
     const barcodeValue = String(item.barcode || '').trim();
     console.log('?? Barcode to generate:', barcodeValue);
     console.log('Barcode type:', typeof barcodeValue);
@@ -157,7 +188,7 @@ window.printReport = function(itemId) {
     printModal.style.display = 'block';
     console.log('? Modal displayed');
     
-    // Função para gerar códigos com retry
+    // Fun˜˜o para gerar c˜digos com retry
     function generateCodes() {
         const svgElement = document.getElementById(uniqueId);
         const qrContainer = document.getElementById(qrId);
@@ -196,7 +227,7 @@ window.printReport = function(itemId) {
         if (qrcodeReady && qrContainer) {
             try {
                 console.log('?? Generating QR code for:', barcodeValue);
-                // Limpar conteúdo anterior
+                // Limpar conte˜do anterior
                 qrContainer.innerHTML = '';
                 
                 // Usar a API do qrcodejs
@@ -219,7 +250,7 @@ window.printReport = function(itemId) {
         }
     }
     
-    // Aguardar e tentar gerar códigos
+    // Aguardar e tentar gerar c˜digos
     let attempts = 0;
     const maxAttempts = 10;
     
@@ -244,7 +275,7 @@ window.printReport = function(itemId) {
         }
     }
     
-    // Começar tentativas após um pequeno delay
+    // Come˜ar tentativas ap˜s um pequeno delay
     setTimeout(tryGenerateCodes, 300);
     
     console.log('========================================');
@@ -252,7 +283,7 @@ window.printReport = function(itemId) {
     console.log('========================================');
 };
 
-// Definir função closePrintModal globalmente
+// Definir fun˜˜o closePrintModal globalmente
 window.closePrintModal = function() {
     const printModal = document.getElementById('printModal');
     const printContent = document.getElementById('printContent');
@@ -271,7 +302,7 @@ document.addEventListener('DOMContentLoaded', () => {
     setupEventListeners();
     attachActionButtonListeners();
     loadStatistics();
-    // Não carrega todos os itens na abertura; usuário deve usar Search
+    // N˜o carrega todos os itens na abertura; usu˜rio deve usar Search
 });
 
 function handleWarehouseLandingAction() {
@@ -527,8 +558,16 @@ function setupEventListeners() {
     document.getElementById('closeModal').addEventListener('click', () => closeItemModal());
     document.getElementById('cancelBtn').addEventListener('click', () => closeItemModal());
     itemForm.addEventListener('submit', handleItemSubmit);
+    const categoriaEl = document.getElementById('categoria');
+    if (categoriaEl) {
+        categoriaEl.addEventListener('change', toggleSubcategoriaField);
+    }
+    const descricaoEl = document.getElementById('descricao');
+    if (descricaoEl) {
+        descricaoEl.addEventListener('input', updateDescricaoCount);
+    }
     
-    // Modal de Movimentação
+    // Modal de Movimenta˜˜o
     document.getElementById('closeMovementModal').addEventListener('click', () => closeMovementModal());
     document.getElementById('cancelMovementBtn').addEventListener('click', () => closeMovementModal());
     movementForm.addEventListener('submit', handleMovementSubmit);
@@ -536,7 +575,7 @@ function setupEventListeners() {
     // Modal de Detalhes
     document.getElementById('closeDetailsModal').addEventListener('click', () => closeDetailsModal());
     
-    // Modal de Impressão
+    // Modal de Impress˜o
     const closePrintModalBtn = document.getElementById('closePrintModal');
     const closePrintBtn = document.getElementById('closePrintBtn');
     const printBtn = document.getElementById('printBtn');
@@ -551,14 +590,14 @@ function setupEventListeners() {
         printBtn.addEventListener('click', () => window.print());
     }
     
-    // Botão Search - carrega itens da API com filtros
+    // Bot˜o Search - carrega itens da API com filtros
     if (searchBtn) {
         searchBtn.addEventListener('click', handleSearchClick);
     }
     searchInput.addEventListener('keypress', (e) => {
         if (e.key === 'Enter') handleSearchClick();
     });
-    // Filtros aplicados nos itens já carregados (client-side)
+    // Filtros aplicados nos itens j˜ carregados (client-side)
     searchInput.addEventListener('input', filterItems);
     if (searchByField) searchByField.addEventListener('change', filterItems);
     filterCategoria.addEventListener('change', filterItems);
@@ -580,7 +619,7 @@ function setupEventListeners() {
     });
 }
 
-// Retorna os filtros atuais da tela (para Search e para refresh após save/delete/move)
+// Retorna os filtros atuais da tela (para Search e para refresh ap˜s save/delete/move)
 function getCurrentFilters() {
     const term = searchInput.value.trim();
     const searchBy = searchByField ? searchByField.value : 'codigo';
@@ -597,10 +636,21 @@ function getCurrentFilters() {
     };
 }
 
+function updateSearchResultsCount(count) {
+    if (!searchResultsMeta || !warehouseSearchResultsCount) return;
+    if (!hasSearched) {
+        searchResultsMeta.style.display = 'none';
+        return;
+    }
+    searchResultsMeta.style.display = 'flex';
+    warehouseSearchResultsCount.textContent = count === 1 ? '1 record' : `${count} records`;
+}
+
 // Exibe o estado inicial da tabela (sem itens carregados)
 function showEmptyStateInitial() {
     hasSearched = false;
     items = [];
+    updateSearchResultsCount(0);
     itemsTableBody.innerHTML = `
         <tr>
             <td colspan="6" class="empty-state">
@@ -611,7 +661,7 @@ function showEmptyStateInitial() {
     `;
 }
 
-// Clique no botão Search: valida filtros e chama loadItems com parâmetros
+// Clique no bot˜o Search: valida filtros e chama loadItems com par˜metros
 function handleSearchClick() {
     const term = searchInput.value.trim();
     const categoria = filterCategoria.value;
@@ -622,7 +672,7 @@ function handleSearchClick() {
     loadItems(getCurrentFilters());
 }
 
-// Carregar estatísticas do servidor (sem carregar a lista de itens)
+// Carregar estat˜sticas do servidor (sem carregar a lista de itens)
 async function loadStatistics() {
     try {
         const response = await fetch(API_BASE_URL + '/estatisticas');
@@ -643,7 +693,7 @@ async function loadStatistics() {
     }
 }
 
-// Carregar itens do servidor (com filtros opcionais; sem filtros não carrega todos)
+// Carregar itens do servidor (com filtros opcionais; sem filtros n˜o carrega todos)
 async function loadItems(filtros) {
     const params = filtros && (filtros.nome || filtros.codigo || filtros.barcode || filtros.categoria)
         ? filtros
@@ -691,6 +741,8 @@ async function loadItems(filtros) {
 
 // Exibir itens na tabela
 function displayItems(itemsToDisplay) {
+    updateSearchResultsCount(itemsToDisplay.length);
+
     if (itemsToDisplay.length === 0) {
         const message = hasSearched
             ? 'No items found.'
@@ -715,7 +767,7 @@ function displayItems(itemsToDisplay) {
             <tr class="item-data-row">
                 <td><strong>${item.codigo}</strong></td>
                 <td>${item.nome}</td>
-                <td>${formatCategory(item.categoria)}</td>
+                <td>${formatCategoryDisplay(item)}</td>
                 <td>${item.barcode != null ? item.barcode : '-'}</td>
                 <td>
                     <strong>${item.quantidade}</strong>
@@ -749,7 +801,7 @@ function displayItems(itemsToDisplay) {
         `;
     }).join('');
     
-    // Event listeners já estão configurados via event delegation, não precisa chamar novamente
+    // Event listeners j˜ est˜o configurados via event delegation, n˜o precisa chamar novamente
 }
 
 // Attach event listeners to action buttons using event delegation
@@ -757,7 +809,7 @@ let actionButtonHandler = null;
 let listenersAttached = false;
 
 function attachActionButtonListeners() {
-    // Evitar adicionar múltiplos listeners
+    // Evitar adicionar m˜ltiplos listeners
     if (listenersAttached) return;
     
     actionButtonHandler = (e) => {
@@ -857,7 +909,7 @@ function filterItems() {
     displayItems(filtered);
 }
 
-// Atualizar estatísticas
+// Atualizar estat˜sticas
 function updateStatistics() {
     const total = items.length;
     const lowStock = items.filter(item => {
@@ -865,7 +917,7 @@ function updateStatistics() {
         return status === 'Low Stock' || status === 'Out of Stock';
     }).length;
     
-    // Simular movimentações do dia (em produção, viria do backend)
+    // Simular movimenta˜˜es do dia (em produ˜˜o, viria do backend)
     const today = new Date().toISOString().split('T')[0];
     const entradas = items.filter(item => item.ultimaEntrada === today).length || 0;
     const saidas = items.filter(item => item.ultimaSaida === today).length || 0;
@@ -876,26 +928,126 @@ function updateStatistics() {
     totalSaidasEl.textContent = saidas;
 }
 
+function updateDescricaoCount() {
+    const descricaoEl = document.getElementById('descricao');
+    const countEl = document.getElementById('descricaoCount');
+    if (!descricaoEl || !countEl) return;
+    countEl.textContent = String(descricaoEl.value || '').length;
+}
+
+function populateEditSummary(item) {
+    const summaryEl = document.getElementById('itemEditSummary');
+    const codeEl = document.getElementById('editSummaryCode');
+    const nameEl = document.getElementById('editSummaryName');
+    const metaEl = document.getElementById('editSummaryMeta');
+    const statusEl = document.getElementById('editSummaryStatus');
+    const qtyEl = document.getElementById('editSummaryQuantity');
+    const minQtyEl = document.getElementById('editSummaryMinQty');
+    if (!summaryEl || !item) return;
+
+    const status = getItemStatus(item);
+    const statusClass = status.toLowerCase().replace(/\s+/g, '-');
+    const metaParts = [formatCategoryDisplay(item)];
+    if (item.barcode) metaParts.push(`Barcode: ${item.barcode}`);
+
+    codeEl.textContent = item.codigo || '-';
+    nameEl.textContent = item.nome || '-';
+    metaEl.textContent = metaParts.join(' ˜ ');
+    statusEl.textContent = status;
+    statusEl.className = `status-badge ${statusClass}`;
+    qtyEl.textContent = item.quantidade ?? 0;
+    minQtyEl.textContent = item.quantidadeMinima ?? 0;
+    summaryEl.style.display = '';
+}
+
+function setItemModalMode(mode, item = null) {
+    const isEdit = mode === 'edit';
+    const isNew = mode === 'new';
+    const modalHeader = document.getElementById('itemModalHeader');
+    const modalTitle = document.getElementById('modalTitle');
+    const modalSubtitle = document.getElementById('modalSubtitle');
+    const summaryEl = document.getElementById('itemEditSummary');
+    const newIntroEl = document.getElementById('itemNewIntro');
+    const codigoInput = document.getElementById('codigo');
+    const codigoHint = document.getElementById('codigoHint');
+    const codigoNewHint = document.getElementById('codigoNewHint');
+    const stockHint = document.getElementById('stockEditHint');
+    const stockNewHint = document.getElementById('stockNewHint');
+    const saveLabel = document.getElementById('saveItemBtnLabel');
+    const quantidadeInput = document.getElementById('quantidade');
+
+    itemModal.classList.toggle('item-modal--edit', isEdit);
+    itemModal.classList.toggle('item-modal--new', isNew);
+    if (modalHeader) {
+        modalHeader.classList.toggle('edit-mode', isEdit);
+        modalHeader.classList.toggle('new-mode', isNew);
+    }
+
+    if (isEdit && item) {
+        modalTitle.innerHTML = '<i class="fas fa-edit"></i> Edit Product';
+        if (modalSubtitle) {
+            modalSubtitle.textContent = 'Update product details below. Stock quantity is read-only.';
+            modalSubtitle.style.display = '';
+        }
+        if (newIntroEl) newIntroEl.style.display = 'none';
+        populateEditSummary(item);
+        if (codigoInput) {
+            codigoInput.readOnly = true;
+            codigoInput.classList.add('input-readonly');
+        }
+        if (codigoHint) codigoHint.style.display = '';
+        if (codigoNewHint) codigoNewHint.style.display = 'none';
+        if (stockHint) stockHint.style.display = '';
+        if (stockNewHint) stockNewHint.style.display = 'none';
+        if (saveLabel) saveLabel.textContent = 'Save Changes';
+        if (quantidadeInput) {
+            quantidadeInput.readOnly = true;
+            quantidadeInput.classList.add('input-readonly');
+        }
+        return;
+    }
+
+    modalTitle.innerHTML = '<i class="fas fa-box"></i> New Product';
+    if (modalSubtitle) {
+        modalSubtitle.textContent = 'Add a new item to the warehouse catalogue.';
+        modalSubtitle.style.display = '';
+    }
+    if (summaryEl) summaryEl.style.display = 'none';
+    if (newIntroEl) newIntroEl.style.display = '';
+    if (codigoInput) {
+        codigoInput.readOnly = false;
+        codigoInput.classList.remove('input-readonly');
+    }
+    if (codigoHint) codigoHint.style.display = 'none';
+    if (codigoNewHint) codigoNewHint.style.display = '';
+    if (stockHint) stockHint.style.display = 'none';
+    if (stockNewHint) stockNewHint.style.display = '';
+    if (saveLabel) saveLabel.textContent = 'Create Product';
+    if (quantidadeInput) {
+        quantidadeInput.readOnly = false;
+        quantidadeInput.classList.remove('input-readonly');
+    }
+}
+
 // Abrir modal de item
 function openItemModal(itemId = null) {
     currentItemId = itemId;
-    const modalTitle = document.getElementById('modalTitle');
-    const quantidadeInput = document.getElementById('quantidade');
 
     if (itemId) {
-        modalTitle.innerHTML = '<i class="fas fa-edit"></i> Edit Item';
         const item = items.find(i => i.id === itemId);
         if (item) {
             fillItemForm(item);
+            setItemModalMode('edit', item);
+        } else {
+            setItemModalMode('new');
         }
-        // Quantity só exibição ao editar – não pode ser alterada
-        quantidadeInput.readOnly = true;
-        quantidadeInput.classList.add('input-readonly');
     } else {
-        modalTitle.innerHTML = '<i class="fas fa-box"></i> New Item';
         itemForm.reset();
-        quantidadeInput.readOnly = false;
-        quantidadeInput.classList.remove('input-readonly');
+        document.getElementById('quantidade').value = 0;
+        document.getElementById('quantidadeMinima').value = 0;
+        updateDescricaoCount();
+        toggleSubcategoriaField();
+        setItemModalMode('new');
     }
 
     itemModal.style.display = 'block';
@@ -907,24 +1059,28 @@ function closeItemModal() {
     itemForm.reset();
     currentItemId = null;
     clearFormErrors();
-    const quantidadeInput = document.getElementById('quantidade');
-    quantidadeInput.readOnly = false;
-    quantidadeInput.classList.remove('input-readonly');
+    updateDescricaoCount();
+    const newIntroEl = document.getElementById('itemNewIntro');
+    if (newIntroEl) newIntroEl.style.display = 'none';
+    setItemModalMode('new');
 }
 
-// Preencher formulário com dados do item
+// Preencher formul˜rio com dados do item
 function fillItemForm(item) {
     document.getElementById('codigo').value = item.codigo || '';
     document.getElementById('nome').value = item.nome || '';
     document.getElementById('categoria').value = item.categoria || '';
+    document.getElementById('subcategoria').value = item.subcategoria || '';
+    toggleSubcategoriaField();
     document.getElementById('barcode').value = item.barcode != null ? String(item.barcode) : '';
     document.getElementById('quantidade').value = item.quantidade || 0;
     document.getElementById('quantidadeMinima').value = item.quantidadeMinima || 0;
     document.getElementById('peso').value = item.peso != null ? item.peso : '';
     document.getElementById('descricao').value = item.descricao || '';
+    updateDescricaoCount();
 }
 
-// Submeter formulário de item
+// Submeter formul˜rio de item
 async function handleItemSubmit(e) {
     e.preventDefault();
     
@@ -932,6 +1088,7 @@ async function handleItemSubmit(e) {
         codigo: document.getElementById('codigo').value.trim(),
         nome: document.getElementById('nome').value.trim(),
         categoria: document.getElementById('categoria').value,
+        subcategoria: document.getElementById('subcategoria').value || null,
         barcode: document.getElementById('barcode').value.trim() || null,
         quantidade: parseInt(document.getElementById('quantidade').value) || 0,
         quantidadeMinima: parseInt(document.getElementById('quantidadeMinima').value) || 0,
@@ -939,7 +1096,7 @@ async function handleItemSubmit(e) {
         descricao: document.getElementById('descricao').value.trim()
     };
     
-    // Validação básica
+    // Valida˜˜o b˜sica
     if (!validateItemForm(formData)) {
         return;
     }
@@ -969,7 +1126,7 @@ async function handleItemSubmit(e) {
     } catch (error) {
         console.error('Error saving item:', error);
         showError('Error connecting to server');
-        // Simular sucesso para demonstração
+        // Simular sucesso para demonstra˜˜o
         if (!currentItemId) {
             formData.id = Date.now().toString();
             items.push(formData);
@@ -988,7 +1145,7 @@ async function handleItemSubmit(e) {
     }
 }
 
-// Validar formulário
+// Validar formul˜rio
 function validateItemForm(data) {
     clearFormErrors();
     let isValid = true;
@@ -1041,7 +1198,7 @@ function showFieldError(fieldName, message) {
     }
 }
 
-// Limpar erros do formulário
+// Limpar erros do formul˜rio
 function clearFormErrors() {
     document.querySelectorAll('.error-message').forEach(el => {
         el.classList.remove('show');
@@ -1067,7 +1224,7 @@ async function viewItem(itemId) {
             <p><span class="detail-label">Code:</span> ${item.codigo}</p>
             <p><span class="detail-label">Name:</span> ${item.nome}</p>
             <p><span class="detail-label">Barcode:</span> ${item.barcode || '-'}</p>
-            <p><span class="detail-label">Category:</span> ${formatCategory(item.categoria)}</p>
+            <p><span class="detail-label">Category:</span> ${formatCategoryDisplay(item)}</p>
             <p><span class="detail-label">Status:</span> <span class="status-badge ${getItemStatus(item).toLowerCase().replace(/\s+/g, '-')}">${getItemStatus(item)}</span></p>
         </div>
         <div class="detail-section">
@@ -1135,7 +1292,7 @@ function editItem(itemId) {
     openItemModal(itemId);
 }
 
-// Abrir modal de movimentação
+// Abrir modal de movimenta˜˜o
 function openMovementModal(itemId) {
     currentItemId = itemId;
     const item = items.find(i => i.id === itemId);
@@ -1147,7 +1304,7 @@ function openMovementModal(itemId) {
     }
 }
 
-// Fechar modal de movimentação
+// Fechar modal de movimenta˜˜o
 function closeMovementModal() {
     movementModal.style.display = 'none';
     movementForm.reset();
@@ -1155,7 +1312,7 @@ function closeMovementModal() {
     currentItem = null;
 }
 
-// Submeter movimentação
+// Submeter movimenta˜˜o
 async function handleMovementSubmit(e) {
     e.preventDefault();
     
@@ -1207,7 +1364,7 @@ async function handleMovementSubmit(e) {
         }
     } catch (error) {
         console.error('Error registering movement:', error);
-        // Simular sucesso para demonstração
+        // Simular sucesso para demonstra˜˜o
         const index = items.findIndex(i => i.id === currentItemId);
         if (index !== -1) {
             items[index].quantidade = novaQuantidade;
@@ -1261,13 +1418,13 @@ async function deleteItem(itemId) {
     }
 }
 
-// Funções auxiliares
+// Fun˜˜es auxiliares
 function showLoading() {
-    // Implementar loading se necessário
+    // Implementar loading se necess˜rio
 }
 
 function hideLoading() {
-    // Implementar hide loading se necessário
+    // Implementar hide loading se necess˜rio
 }
 
 function showSuccess(message) {

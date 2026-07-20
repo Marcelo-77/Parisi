@@ -1,5 +1,10 @@
 // Warehouse service using PostgreSQL
 const { query } = require('../config/database');
+const {
+  BATHWARE_SUBCATEGORIES,
+  isValidBathwareSubcategory,
+  normalizeBathwareSubcategory
+} = require('../constants/bathwareSubcategories');
 
 class WarehouseService {
   constructor() {
@@ -22,8 +27,8 @@ class WarehouseService {
 
     const insertQuery = `
       INSERT INTO ${this.tableName} 
-      (codigo, barcode, nome, categoria, quantidade, quantidade_minima, localizacao, preco_unitario, fornecedor, descricao)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+      (codigo, barcode, nome, categoria, subcategoria, quantidade, quantidade_minima, localizacao, preco_unitario, fornecedor, descricao)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
       RETURNING *
     `;
 
@@ -32,6 +37,7 @@ class WarehouseService {
       dados.barcode ? String(dados.barcode) : null,
       dados.nome,
       dados.categoria,
+      this.resolveSubcategoria(dados.categoria, dados.subcategoria),
       dados.quantidade || 0,
       dados.quantidadeMinima || 0,
       dados.localizacao || null,
@@ -60,6 +66,11 @@ class WarehouseService {
     if (filtros.categoria) {
       whereClauses.push(`categoria = $${paramIndex++}`);
       queryParams.push(filtros.categoria);
+    }
+
+    if (filtros.subcategoria) {
+      whereClauses.push(`subcategoria = $${paramIndex++}`);
+      queryParams.push(filtros.subcategoria);
     }
 
     if (filtros.codigo) {
@@ -184,6 +195,7 @@ class WarehouseService {
       barcode: 'barcode',
       nome: 'nome',
       categoria: 'categoria',
+      subcategoria: 'subcategoria',
       quantidade: 'quantidade',
       quantidadeMinima: 'quantidade_minima',
       descricao: 'descricao'
@@ -191,9 +203,21 @@ class WarehouseService {
 
     for (const [key, dbColumn] of Object.entries(camposPermitidos)) {
       if (dados[key] !== undefined) {
+        let value = dados[key];
+        if (key === 'subcategoria') {
+          const categoria = dados.categoria !== undefined
+            ? dados.categoria
+            : (await this.buscarPorId(id))?.categoria;
+          value = this.resolveSubcategoria(categoria, value);
+        }
         updateFields.push(`${dbColumn} = $${paramIndex++}`);
-        values.push(dados[key]);
+        values.push(value);
       }
+    }
+
+    if (dados.categoria !== undefined && dados.subcategoria === undefined) {
+      updateFields.push(`subcategoria = $${paramIndex++}`);
+      values.push(this.resolveSubcategoria(dados.categoria, null));
     }
 
     if (updateFields.length === 0) {
@@ -361,6 +385,14 @@ class WarehouseService {
     }
   }
 
+  resolveSubcategoria(categoria, subcategoria) {
+    const category = String(categoria || '').trim().toUpperCase();
+    if (category !== 'BATHWARE') {
+      return null;
+    }
+    return normalizeBathwareSubcategory(subcategoria);
+  }
+
   // Validate data
   validar(dados, isUpdate = false) {
     const erros = [];
@@ -397,6 +429,9 @@ class WarehouseService {
       }
     }
 
+    if (dados.subcategoria !== undefined && !isValidBathwareSubcategory(dados.subcategoria)) {
+      erros.push(`Subcategory must be one of: ${BATHWARE_SUBCATEGORIES.join(', ')}`);
+    }
 
     return erros;
   }
@@ -409,6 +444,7 @@ class WarehouseService {
       barcode: row.barcode != null ? String(row.barcode) : null,
       nome: row.nome,
       categoria: row.categoria,
+      subcategoria: row.subcategoria || null,
       quantidade: parseInt(row.quantidade) || 0,
       quantidadeMinima: parseInt(row.quantidade_minima) || 0,
       localizacao: row.localizacao,

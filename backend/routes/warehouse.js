@@ -1,6 +1,7 @@
 const express = require('express');
 const { body, param, query, validationResult } = require('express-validator');
 const warehouseService = require('../services/warehouseService');
+const { BATHWARE_SUBCATEGORIES } = require('../constants/bathwareSubcategories');
 
 const router = express.Router();
 
@@ -31,6 +32,10 @@ const validarItem = [
     .isLength({ min: 1, max: 50 })
     .withMessage('Category is required')
     .trim(),
+  body('subcategoria')
+    .optional({ nullable: true, checkFalsy: true })
+    .isIn(BATHWARE_SUBCATEGORIES)
+    .withMessage(`Subcategory must be one of: ${BATHWARE_SUBCATEGORIES.join(', ')}`),
   body('barcode')
     .optional({ nullable: true, checkFalsy: true })
     .matches(/^\d{1,20}$/)
@@ -67,6 +72,7 @@ const validarMovimentacao = [
 // GET /api/warehouse - Listar todos os itens
 router.get('/', [
   query('categoria').optional().isLength({ min: 1 }).trim(),
+  query('subcategoria').optional().isIn(BATHWARE_SUBCATEGORIES),
   query('codigo').optional().isLength({ min: 1 }).trim(),
   query('nome').optional().isLength({ min: 1 }).trim(),
   query('barcode').optional().isLength({ min: 1 }).trim(),
@@ -78,6 +84,7 @@ router.get('/', [
   try {
     const filtros = {
       categoria: req.query.categoria,
+      subcategoria: req.query.subcategoria,
       codigo: req.query.codigo,
       nome: req.query.nome,
       barcode: req.query.barcode,
