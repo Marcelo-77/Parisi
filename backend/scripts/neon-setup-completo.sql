@@ -149,6 +149,7 @@ CREATE TABLE IF NOT EXISTS warehouse_items (
 );
 
 ALTER TABLE warehouse_items ADD COLUMN IF NOT EXISTS barcode NUMERIC(20);
+ALTER TABLE warehouse_items ADD COLUMN IF NOT EXISTS subcategoria VARCHAR(50);
 
 CREATE TABLE IF NOT EXISTS warehouse_movements (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -517,6 +518,7 @@ WHERE NOT EXISTS (SELECT 1 FROM customer WHERE cust_cd_code = 'CUST010');
 CREATE INDEX IF NOT EXISTS idx_warehouse_items_codigo ON warehouse_items(codigo);
 CREATE INDEX IF NOT EXISTS idx_warehouse_items_categoria ON warehouse_items(categoria);
 CREATE INDEX IF NOT EXISTS idx_warehouse_items_barcode ON warehouse_items(barcode);
+CREATE INDEX IF NOT EXISTS idx_warehouse_items_subcategoria ON warehouse_items(subcategoria);
 CREATE INDEX IF NOT EXISTS idx_warehouse_movements_item_id ON warehouse_movements(item_id);
 CREATE INDEX IF NOT EXISTS idx_warehouse_movements_data ON warehouse_movements(data_movimentacao);
 CREATE INDEX IF NOT EXISTS idx_warehouse_locations_location ON warehouse_locations(location);

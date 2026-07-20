@@ -225,5 +225,8 @@ async function runBathwareImport({ brandLabel, subcategoria, defaultFile, argv =
 }
 
 module.exports = {
-  runBathwareImport
+  runBathwareImport,
+  loadRowsFromExcel,
+  TABLE_NAME,
+  CATEGORIA
 };
