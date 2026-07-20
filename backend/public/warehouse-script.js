@@ -574,6 +574,19 @@ function setupEventListeners() {
     
     // Modal de Detalhes
     document.getElementById('closeDetailsModal').addEventListener('click', () => closeDetailsModal());
+    const closeDetailsFooterBtn = document.getElementById('closeDetailsFooterBtn');
+    if (closeDetailsFooterBtn) {
+        closeDetailsFooterBtn.addEventListener('click', () => closeDetailsModal());
+    }
+    const editFromDetailsBtn = document.getElementById('editFromDetailsBtn');
+    if (editFromDetailsBtn) {
+        editFromDetailsBtn.addEventListener('click', () => {
+            if (currentItem && currentItem.id) {
+                closeDetailsModal();
+                editItem(currentItem.id);
+            }
+        });
+    }
     
     // Modal de Impress˜o
     const closePrintModalBtn = document.getElementById('closePrintModal');
@@ -1209,43 +1222,80 @@ function clearFormErrors() {
     });
 }
 
+function buildItemDetailsHtml(item, status, statusClass) {
+    const barcodeText = item.barcode != null ? escapeHtml(String(item.barcode)) : '-';
+    const subcategoryBlock = item.subcategoria
+        ? `<p><span class="detail-label">Subcategory:</span> ${escapeHtml(formatSubcategory(item.subcategoria))}</p>`
+        : '';
+    const descriptionBlock = item.descricao
+        ? `<div class="detail-section detail-section--full"><h4><i class="fas fa-align-left"></i> Description</h4><p>${escapeHtml(item.descricao)}</p></div>`
+        : '';
+
+    return `
+        <div class="item-edit-summary">
+            <div class="item-edit-summary-main">
+                <div class="item-edit-summary-icon" aria-hidden="true"><i class="fas fa-box-open"></i></div>
+                <div class="item-edit-summary-text">
+                    <div class="item-edit-summary-top">
+                        <span class="item-edit-summary-code">${escapeHtml(item.codigo || '-')}</span>
+                        <span class="status-badge ${statusClass}">${status}</span>
+                    </div>
+                    <p class="item-edit-summary-name">${escapeHtml(item.nome || '-')}</p>
+                    <p class="item-edit-summary-meta">${escapeHtml(formatCategoryDisplay(item))}${item.barcode ? ` · Barcode: ${barcodeText}` : ''}</p>
+                </div>
+            </div>
+            <div class="item-edit-summary-stats">
+                <div class="item-edit-stat"><span class="item-edit-stat-label">Current Stock</span><strong>${item.quantidade ?? 0}</strong></div>
+                <div class="item-edit-stat"><span class="item-edit-stat-label">Min. Quantity</span><strong>${item.quantidadeMinima ?? 0}</strong></div>
+                <div class="item-edit-stat"><span class="item-edit-stat-label">Weight (kg)</span><strong>${item.peso != null ? item.peso : '-'}</strong></div>
+            </div>
+        </div>
+        <div class="item-details-grid">
+            <div class="detail-section">
+                <h4><i class="fas fa-id-card"></i> Product Identity</h4>
+                <p><span class="detail-label">Code:</span> ${escapeHtml(item.codigo || '-')}</p>
+                <p><span class="detail-label">Name:</span> ${escapeHtml(item.nome || '-')}</p>
+                <p><span class="detail-label">Barcode:</span> ${barcodeText}</p>
+            </div>
+            <div class="detail-section">
+                <h4><i class="fas fa-folder-tree"></i> Classification</h4>
+                <p><span class="detail-label">Category:</span> ${escapeHtml(formatCategoryDisplay(item))}</p>
+                ${subcategoryBlock}
+                <p><span class="detail-label">Status:</span> <span class="status-badge ${statusClass}">${status}</span></p>
+            </div>
+            <div class="detail-section product-location detail-section--full" id="productLocationSection">
+                <h4><i class="fas fa-map-marker-alt"></i> Product Location</h4>
+                <p class="product-location-desc">Locations with situation Full and stat_cd_id = A</p>
+                <div id="productLocationContent"><span class="loading-text">Loading...</span></div>
+            </div>
+            ${descriptionBlock}
+        </div>
+    `;
+}
+
 // Visualizar item
 async function viewItem(itemId) {
     const item = items.find(i => i.id === itemId);
     if (!item) return;
-    
+
     currentItem = item;
     const detailsEl = document.getElementById('itemDetails');
+    const detailsTitle = document.getElementById('detailsModalTitle');
+    const detailsSubtitle = document.getElementById('detailsModalSubtitle');
     const apiBase = (typeof window !== 'undefined' && window.location && window.location.origin) ? window.location.origin : 'http://localhost:3000';
-    
-    detailsEl.innerHTML = `
-        <div class="detail-section">
-            <h4><i class="fas fa-info-circle"></i> Basic Information</h4>
-            <p><span class="detail-label">Code:</span> ${item.codigo}</p>
-            <p><span class="detail-label">Name:</span> ${item.nome}</p>
-            <p><span class="detail-label">Barcode:</span> ${item.barcode || '-'}</p>
-            <p><span class="detail-label">Category:</span> ${formatCategoryDisplay(item)}</p>
-            <p><span class="detail-label">Status:</span> <span class="status-badge ${getItemStatus(item).toLowerCase().replace(/\s+/g, '-')}">${getItemStatus(item)}</span></p>
-        </div>
-        <div class="detail-section">
-            <h4><i class="fas fa-boxes"></i> Stock</h4>
-            <p><span class="detail-label">Current Quantity:</span> ${item.quantidade}</p>
-            <p><span class="detail-label">Minimum Quantity:</span> ${item.quantidadeMinima || 0}</p>
-            <p><span class="detail-label">Weight (kg):</span> ${item.peso != null ? item.peso : '-'}</p>
-        </div>
-        <div class="detail-section product-location" id="productLocationSection">
-            <h4><i class="fas fa-map-marker-alt"></i> Product Location</h4>
-            <p class="product-location-desc">Locations with situation Full and stat_cd_id = A</p>
-            <div id="productLocationContent"><span class="loading-text">Loading...</span></div>
-        </div>
-        ${item.descricao ? `
-        <div class="detail-section">
-            <h4><i class="fas fa-align-left"></i> Description</h4>
-            <p>${item.descricao}</p>
-        </div>
-        ` : ''}
-    `;
-    
+    const status = getItemStatus(item);
+    const statusClass = status.toLowerCase().replace(/\s+/g, '-');
+
+    if (detailsTitle) {
+        detailsTitle.innerHTML = '<i class="fas fa-info-circle"></i> Item Details';
+    }
+    if (detailsSubtitle) {
+        detailsSubtitle.textContent = `${item.codigo || '-'} · ${item.nome || '-'}`;
+        detailsSubtitle.style.display = '';
+    }
+
+    detailsEl.innerHTML = buildItemDetailsHtml(item, status, statusClass);
+
     detailsModal.style.display = 'block';
 
     const contentEl = document.getElementById('productLocationContent');

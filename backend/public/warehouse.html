@@ -470,13 +470,22 @@
 
         <!-- Modal de Detalhes -->
         <div id="detailsModal" class="modal">
-            <div class="modal-content">
-                <div class="modal-header success">
-                    <h3><i class="fas fa-info-circle"></i> Item Details</h3>
+            <div class="modal-content modal-large item-details-modal-content">
+                <div class="modal-header success item-details-modal-header" id="detailsModalHeader">
+                    <h3 id="detailsModalTitle"><i class="fas fa-info-circle"></i> Item Details</h3>
+                    <p id="detailsModalSubtitle" class="item-modal-subtitle" style="display: none;"></p>
                     <button class="modal-close" id="closeDetailsModal">&times;</button>
                 </div>
-                <div class="modal-body">
+                <div class="modal-body item-details-modal-body">
                     <div id="itemDetails" class="item-details"></div>
+                </div>
+                <div class="modal-footer item-modal-footer form-actions item-details-modal-footer">
+                    <button type="button" id="closeDetailsFooterBtn" class="btn btn-secondary">
+                        <i class="fas fa-times"></i> Close
+                    </button>
+                    <button type="button" id="editFromDetailsBtn" class="btn btn-primary">
+                        <i class="fas fa-edit"></i> Edit Product
+                    </button>
                 </div>
             </div>
         </div>
