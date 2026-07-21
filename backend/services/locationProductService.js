@@ -196,12 +196,12 @@ async function buscarTodos(filtros = {}) {
   let idx = 1;
 
   if (filtros.locationCode) {
-    whereClauses.push(`lp.location_code ILIKE $${idx++}`);
-    values.push(`%${filtros.locationCode}%`);
+    whereClauses.push(`TRIM(LOWER(lp.location_code)) = TRIM(LOWER($${idx++}))`);
+    values.push(String(filtros.locationCode).trim());
   }
   if (filtros.productCode) {
-    whereClauses.push(`lp.product_code ILIKE $${idx++}`);
-    values.push(`%${filtros.productCode}%`);
+    whereClauses.push(`TRIM(LOWER(lp.product_code)) = TRIM(LOWER($${idx++}))`);
+    values.push(String(filtros.productCode).trim());
   }
   if (filtros.siprSqNumber) {
     whereClauses.push(`lp.sipr_sq_number = $${idx++}`);

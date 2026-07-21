@@ -15,8 +15,21 @@
         .print-location-code-item input { margin-right: 8px; }
         .print-modal-actions .checkbox-label { cursor: pointer; }
         input.input-readonly { background: #e9ecef; color: #495057; cursor: not-allowed; }
-        .new-records-panel { margin-top: 20px; display: none; }
-        .new-records-panel.show { display: block; }
+        .new-records-panel {
+            width: 100%;
+            height: 560px;
+            margin-top: 20px;
+            display: none;
+            overflow: hidden;
+        }
+        .new-records-panel.show { display: flex; flex-direction: column; }
+        .new-records-panel > .filters-header { flex: 0 0 auto; }
+        .new-records-panel > .filters-content.show {
+            display: flex;
+            flex: 1 1 auto;
+            flex-direction: column;
+            min-height: 0;
+        }
         .new-records-panel .panel-desc { color: #64748b; margin: 0 0 16px; }
         .new-records-entry-meta {
             display: flex;
@@ -35,8 +48,20 @@
             border-radius: 6px;
             font-size: 0.95rem;
         }
+        .new-records-panel .table-container {
+            flex: 1 1 auto;
+            min-height: 0;
+            overflow: auto;
+        }
+        .new-records-table { width: 100%; table-layout: fixed; }
+        .new-records-table th:nth-child(1),
+        .new-records-table th:nth-child(2) { width: 27%; }
+        .new-records-table th:nth-child(3) { width: 23%; }
+        .new-records-table th:nth-child(4) { width: 16%; }
+        .new-records-table th:nth-child(5) { width: 7%; }
         .new-records-table td { vertical-align: middle; }
         .new-records-actions {
+            flex: 0 0 auto;
             display: flex;
             flex-wrap: wrap;
             gap: 10px;
@@ -45,6 +70,9 @@
         .btn-remove-row {
             min-width: 36px;
             padding: 6px 10px;
+        }
+        @media (max-width: 768px) {
+            .new-records-panel { height: calc(100vh - 32px); min-height: 520px; }
         }
     </style>
 </head>
@@ -181,10 +209,7 @@
                         <div class="filters-grid">
                             <div class="filter-group">
                                 <label for="filterLocationCode"><i class="fas fa-map-marker-alt"></i> Location Code</label>
-                                <div class="location-code-picker">
-                                    <input type="text" id="filterLocationCode" placeholder="Type or select location" autocomplete="off">
-                                    <span class="location-code-picker-icon" aria-hidden="true"><i class="fas fa-chevron-down"></i></span>
-                                </div>
+                                <input type="text" id="filterLocationCode" placeholder="Code location" autocomplete="off">
                             </div>
                             <div class="filter-group">
                                 <label for="filterProductCode"><i class="fas fa-barcode"></i> Product Code</label>

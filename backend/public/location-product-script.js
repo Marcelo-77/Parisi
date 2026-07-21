@@ -217,7 +217,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const prodList = document.getElementById('productCodesList');
     if (locList) {
       locList.innerHTML = locations
-        .map((l) => `<option value="${escapeHtml(l.location)}"></option>`)
+        .map((location) => {
+          const code = getLocationCode(location);
+          const details = [
+            location.section,
+            location.accessType || location.access_type
+          ].filter(Boolean).join(' · ');
+          return `<option value="${escapeHtml(code)}">${escapeHtml(details)}</option>`;
+        })
         .join('');
     }
     if (prodList) {
@@ -233,131 +240,12 @@ document.addEventListener('DOMContentLoaded', () => {
       .toUpperCase();
   }
 
-  function getLocationOptionLabel(location) {
-    const details = [
-      location?.section,
-      location?.accessType || location?.access_type,
-      location?.status
-    ].filter(Boolean);
-    return details.join(' · ');
-  }
-
-  function attachLocationPicker(input) {
-    if (!input || input.dataset.locationPickerReady === 'true') return;
-    input.dataset.locationPickerReady = 'true';
-    input.removeAttribute('list');
-    input.setAttribute('role', 'combobox');
-    input.setAttribute('aria-autocomplete', 'list');
-    input.setAttribute('aria-expanded', 'false');
-
-    const wrapper = input.closest('.location-code-picker') || input.parentElement;
-    wrapper.classList.add('location-code-picker');
-
-    const dropdown = document.createElement('div');
-    dropdown.className = 'location-code-options';
-    dropdown.setAttribute('role', 'listbox');
-    dropdown.hidden = true;
-    wrapper.appendChild(dropdown);
-
-    let highlightedIndex = -1;
-    let matches = [];
-
-    function renderOptions() {
-      const search = input.value.trim().toUpperCase();
-      matches = locations
-        .filter((location) => {
-          const code = getLocationCode(location);
-          const label = getLocationOptionLabel(location).toUpperCase();
-          return code && (!search || code.includes(search) || label.includes(search));
-        })
-        .sort((a, b) => getLocationCode(a).localeCompare(getLocationCode(b)))
-        .slice(0, 12);
-
-      highlightedIndex = -1;
-      if (!matches.length) {
-        dropdown.innerHTML = '<div class="location-code-no-results">No location found</div>';
-      } else {
-        dropdown.innerHTML = matches.map((location, index) => {
-          const code = getLocationCode(location);
-          const label = getLocationOptionLabel(location);
-          return `
-            <button type="button" class="location-code-option" role="option" data-index="${index}">
-              <span class="location-code-option-code"><i class="fas fa-map-marker-alt"></i>${escapeHtml(code)}</span>
-              <span class="location-code-option-meta">${escapeHtml(label || 'Location')}</span>
-            </button>
-          `;
-        }).join('');
-      }
-
-      dropdown.hidden = false;
-      input.setAttribute('aria-expanded', 'true');
-    }
-
-    function closeOptions() {
-      dropdown.hidden = true;
-      input.setAttribute('aria-expanded', 'false');
-      highlightedIndex = -1;
-    }
-
-    function selectOption(index) {
-      const location = matches[index];
-      if (!location) return;
-      input.value = getLocationCode(location);
-      input.classList.remove('location-code-invalid');
-      closeOptions();
-      input.dispatchEvent(new Event('change', { bubbles: true }));
-    }
-
-    function updateHighlight(nextIndex) {
-      const options = Array.from(dropdown.querySelectorAll('.location-code-option'));
-      if (!options.length) return;
-      highlightedIndex = Math.max(0, Math.min(nextIndex, options.length - 1));
-      options.forEach((option, index) => {
-        option.classList.toggle('is-highlighted', index === highlightedIndex);
-      });
-      options[highlightedIndex]?.scrollIntoView({ block: 'nearest' });
-    }
-
-    input.addEventListener('focus', renderOptions);
-    input.addEventListener('input', () => {
-      input.value = input.value.toUpperCase();
-      input.classList.remove('location-code-invalid');
-      renderOptions();
-    });
-    input.addEventListener('keydown', (event) => {
-      if (event.key === 'ArrowDown') {
-        event.preventDefault();
-        if (dropdown.hidden) renderOptions();
-        updateHighlight(highlightedIndex + 1);
-      } else if (event.key === 'ArrowUp') {
-        event.preventDefault();
-        updateHighlight(highlightedIndex <= 0 ? matches.length - 1 : highlightedIndex - 1);
-      } else if (event.key === 'Enter' && !dropdown.hidden && highlightedIndex >= 0) {
-        event.preventDefault();
-        selectOption(highlightedIndex);
-      } else if (event.key === 'Escape') {
-        closeOptions();
-      }
-    });
-    input.addEventListener('blur', () => {
-      window.setTimeout(closeOptions, 150);
-    });
-    dropdown.addEventListener('mousedown', (event) => {
-      event.preventDefault();
-      const option = event.target.closest('.location-code-option');
-      if (option) selectOption(Number(option.dataset.index));
-    });
-  }
-
   function createNewRecordRow(defaults = {}) {
     const tr = document.createElement('tr');
     tr.className = 'new-record-row';
     tr.innerHTML = `
       <td>
-        <div class="location-code-picker">
-          <input type="text" class="new-row-location" placeholder="Type or select location" value="${escapeHtml(defaults.locationCode || '')}" style="text-transform:uppercase;" autocomplete="off">
-          <span class="location-code-picker-icon" aria-hidden="true"><i class="fas fa-chevron-down"></i></span>
-        </div>
+        <input type="text" class="new-row-location" list="locationCodesList" placeholder="Location code" value="${escapeHtml(defaults.locationCode || '')}" style="text-transform:uppercase;" autocomplete="off">
       </td>
       <td>
         <input type="text" class="new-row-product" list="productCodesList" placeholder="Product code" value="${escapeHtml(defaults.productCode || '')}" style="text-transform:uppercase;" autocomplete="off">
@@ -375,7 +263,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const locationInput = tr.querySelector('.new-row-location');
     const productInput = tr.querySelector('.new-row-product');
-    attachLocationPicker(locationInput);
     [locationInput, productInput].forEach((input) => {
       if (!input) return;
       input.addEventListener('input', () => {
@@ -705,7 +592,19 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   document.getElementById('newRecordBtn').addEventListener('click', openNewRecordsPanel);
-  document.getElementById('addNewRecordLineBtn')?.addEventListener('click', () => addNewRecordLine());
+  document.getElementById('addNewRecordLineBtn')?.addEventListener('click', () => {
+    const rows = newRecordsBody?.querySelectorAll('.new-record-row');
+    const lastRow = rows?.length ? rows[rows.length - 1] : null;
+    const lastLocationCode = lastRow
+      ?.querySelector('.new-row-location')
+      ?.value.trim().toUpperCase() || '';
+
+    addNewRecordLine({ locationCode: lastLocationCode });
+
+    const newRow = newRecordsBody?.lastElementChild;
+    const productInput = newRow?.querySelector('.new-row-product');
+    productInput?.focus();
+  });
   document.getElementById('saveNewRecordsBtn')?.addEventListener('click', saveAllNewRecords);
   document.getElementById('cancelNewRecordsBtn')?.addEventListener('click', closeNewRecordsPanel);
   document.getElementById('closeEditQuantityCurrentModal').addEventListener('click', closeEditQuantityCurrentModal);
@@ -1070,7 +969,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
   (async () => {
     await Promise.all([loadLocations(), loadProducts(), loadSituations()]);
-    attachLocationPicker(filterLocationCode);
     fillFilterSituation();
     renderTable();
   })();
