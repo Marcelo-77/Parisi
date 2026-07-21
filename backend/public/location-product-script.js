@@ -227,12 +227,137 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
+  function getLocationCode(location) {
+    return String(location?.location || location?.locationCode || location?.location_code || '')
+      .trim()
+      .toUpperCase();
+  }
+
+  function getLocationOptionLabel(location) {
+    const details = [
+      location?.section,
+      location?.accessType || location?.access_type,
+      location?.status
+    ].filter(Boolean);
+    return details.join(' · ');
+  }
+
+  function attachLocationPicker(input) {
+    if (!input || input.dataset.locationPickerReady === 'true') return;
+    input.dataset.locationPickerReady = 'true';
+    input.removeAttribute('list');
+    input.setAttribute('role', 'combobox');
+    input.setAttribute('aria-autocomplete', 'list');
+    input.setAttribute('aria-expanded', 'false');
+
+    const wrapper = input.closest('.location-code-picker') || input.parentElement;
+    wrapper.classList.add('location-code-picker');
+
+    const dropdown = document.createElement('div');
+    dropdown.className = 'location-code-options';
+    dropdown.setAttribute('role', 'listbox');
+    dropdown.hidden = true;
+    wrapper.appendChild(dropdown);
+
+    let highlightedIndex = -1;
+    let matches = [];
+
+    function renderOptions() {
+      const search = input.value.trim().toUpperCase();
+      matches = locations
+        .filter((location) => {
+          const code = getLocationCode(location);
+          const label = getLocationOptionLabel(location).toUpperCase();
+          return code && (!search || code.includes(search) || label.includes(search));
+        })
+        .sort((a, b) => getLocationCode(a).localeCompare(getLocationCode(b)))
+        .slice(0, 12);
+
+      highlightedIndex = -1;
+      if (!matches.length) {
+        dropdown.innerHTML = '<div class="location-code-no-results">No location found</div>';
+      } else {
+        dropdown.innerHTML = matches.map((location, index) => {
+          const code = getLocationCode(location);
+          const label = getLocationOptionLabel(location);
+          return `
+            <button type="button" class="location-code-option" role="option" data-index="${index}">
+              <span class="location-code-option-code"><i class="fas fa-map-marker-alt"></i>${escapeHtml(code)}</span>
+              <span class="location-code-option-meta">${escapeHtml(label || 'Location')}</span>
+            </button>
+          `;
+        }).join('');
+      }
+
+      dropdown.hidden = false;
+      input.setAttribute('aria-expanded', 'true');
+    }
+
+    function closeOptions() {
+      dropdown.hidden = true;
+      input.setAttribute('aria-expanded', 'false');
+      highlightedIndex = -1;
+    }
+
+    function selectOption(index) {
+      const location = matches[index];
+      if (!location) return;
+      input.value = getLocationCode(location);
+      input.classList.remove('location-code-invalid');
+      closeOptions();
+      input.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+
+    function updateHighlight(nextIndex) {
+      const options = Array.from(dropdown.querySelectorAll('.location-code-option'));
+      if (!options.length) return;
+      highlightedIndex = Math.max(0, Math.min(nextIndex, options.length - 1));
+      options.forEach((option, index) => {
+        option.classList.toggle('is-highlighted', index === highlightedIndex);
+      });
+      options[highlightedIndex]?.scrollIntoView({ block: 'nearest' });
+    }
+
+    input.addEventListener('focus', renderOptions);
+    input.addEventListener('input', () => {
+      input.value = input.value.toUpperCase();
+      input.classList.remove('location-code-invalid');
+      renderOptions();
+    });
+    input.addEventListener('keydown', (event) => {
+      if (event.key === 'ArrowDown') {
+        event.preventDefault();
+        if (dropdown.hidden) renderOptions();
+        updateHighlight(highlightedIndex + 1);
+      } else if (event.key === 'ArrowUp') {
+        event.preventDefault();
+        updateHighlight(highlightedIndex <= 0 ? matches.length - 1 : highlightedIndex - 1);
+      } else if (event.key === 'Enter' && !dropdown.hidden && highlightedIndex >= 0) {
+        event.preventDefault();
+        selectOption(highlightedIndex);
+      } else if (event.key === 'Escape') {
+        closeOptions();
+      }
+    });
+    input.addEventListener('blur', () => {
+      window.setTimeout(closeOptions, 150);
+    });
+    dropdown.addEventListener('mousedown', (event) => {
+      event.preventDefault();
+      const option = event.target.closest('.location-code-option');
+      if (option) selectOption(Number(option.dataset.index));
+    });
+  }
+
   function createNewRecordRow(defaults = {}) {
     const tr = document.createElement('tr');
     tr.className = 'new-record-row';
     tr.innerHTML = `
       <td>
-        <input type="text" class="new-row-location" list="locationCodesList" placeholder="Ex: B11M" value="${escapeHtml(defaults.locationCode || '')}" style="text-transform:uppercase;" autocomplete="off">
+        <div class="location-code-picker">
+          <input type="text" class="new-row-location" placeholder="Type or select location" value="${escapeHtml(defaults.locationCode || '')}" style="text-transform:uppercase;" autocomplete="off">
+          <span class="location-code-picker-icon" aria-hidden="true"><i class="fas fa-chevron-down"></i></span>
+        </div>
       </td>
       <td>
         <input type="text" class="new-row-product" list="productCodesList" placeholder="Product code" value="${escapeHtml(defaults.productCode || '')}" style="text-transform:uppercase;" autocomplete="off">
@@ -250,6 +375,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const locationInput = tr.querySelector('.new-row-location');
     const productInput = tr.querySelector('.new-row-product');
+    attachLocationPicker(locationInput);
     [locationInput, productInput].forEach((input) => {
       if (!input) return;
       input.addEventListener('input', () => {
@@ -483,6 +609,20 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
+    const unknownLocationRow = rows.find((row) =>
+      !locations.some((location) => getLocationCode(location) === row.locationCode)
+    );
+    if (unknownLocationRow) {
+      const input = newRecordsBody
+        ?.querySelectorAll('.new-record-row')
+        ?.[unknownLocationRow.lineNumber - 1]
+        ?.querySelector('.new-row-location');
+      input?.classList.add('location-code-invalid');
+      input?.focus();
+      alert(`Line ${unknownLocationRow.lineNumber}: select a valid Location Code from the list.`);
+      return;
+    }
+
     const saveBtn = document.getElementById('saveNewRecordsBtn');
     if (saveBtn) saveBtn.disabled = true;
 
@@ -585,6 +725,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const closePrintModalBtn2 = document.getElementById('closePrintModalBtn');
   const doPrintBtn = document.getElementById('doPrintBtn');
   const printLocationCodesList = document.getElementById('printLocationCodesList');
+  let printLocationOptions = [];
 
   function getRecordProductCode(record) {
     return record.productCode != null ? record.productCode : record.product_code || '';
@@ -639,8 +780,86 @@ document.addEventListener('DOMContentLoaded', () => {
     return false;
   }
 
+  function renderPrintLocationOptions(searchTerm = '', showEmpty = false) {
+    if (!printLocationCodesList) return;
+    const search = normalizeLocationCode(searchTerm);
+    const filtered = search
+      ? printLocationOptions.filter((option) => {
+          if (!showEmpty && !option.hasStock) return false;
+          return option.code.includes(search) ||
+            option.section.toUpperCase().includes(search) ||
+            option.accessType.toUpperCase().includes(search);
+        })
+      : [];
+
+    const selected = getSelectedLocationCode();
+    const optionsHtml = !search
+      ? `
+          <div class="print-location-empty">
+            <i class="fas fa-keyboard"></i>
+            <p>Type a Location Code to see matching results.</p>
+          </div>
+        `
+      : filtered.length
+        ? filtered.map((option) => `
+          <label class="print-location-card${option.code === selected ? ' is-selected' : ''}">
+            <input type="radio" name="printLocationCode" value="${escapeHtml(option.code)}"${option.code === selected ? ' checked' : ''}>
+            <span class="print-location-card-icon"><i class="fas fa-map-marker-alt"></i></span>
+            <span class="print-location-card-content">
+              <strong>${escapeHtml(option.code)}</strong>
+              <small>${escapeHtml([option.section, option.accessType].filter(Boolean).join(' · ') || 'Location')}</small>
+            </span>
+            <span class="print-location-stock ${option.hasStock ? 'has-stock' : 'no-stock'}">
+              ${option.hasStock ? '<i class="fas fa-box"></i> In stock' : 'No stock'}
+            </span>
+          </label>
+          `).join('')
+        : '<div class="print-location-empty"><i class="fas fa-search"></i><p>No matching locations found.</p></div>';
+
+    const stockCount = printLocationOptions.filter((option) => option.hasStock).length;
+    printLocationCodesList.innerHTML = `
+      <div class="print-location-picker-toolbar">
+        <div class="print-location-search">
+          <i class="fas fa-search"></i>
+          <input id="printLocationSearch" type="search" placeholder="Search location code, section or access type" value="${escapeHtml(searchTerm)}" autocomplete="off">
+        </div>
+        <label class="print-location-empty-toggle">
+          <input id="showEmptyPrintLocations" type="checkbox"${showEmpty ? ' checked' : ''}>
+          Show locations without stock
+        </label>
+      </div>
+      <div class="print-location-picker-summary">
+        <span><strong>${stockCount}</strong> locations with stock</span>
+        <span>${search ? `${filtered.length} shown` : 'Enter a search to begin'}</span>
+      </div>
+      <div class="print-location-cards" role="radiogroup" aria-label="Select Location Code">
+        ${optionsHtml}
+      </div>
+    `;
+
+    const searchInput = document.getElementById('printLocationSearch');
+    const showEmptyInput = document.getElementById('showEmptyPrintLocations');
+    searchInput?.focus();
+    searchInput?.setSelectionRange(searchInput.value.length, searchInput.value.length);
+    searchInput?.addEventListener('input', () => {
+      renderPrintLocationOptions(searchInput.value, Boolean(showEmptyInput?.checked));
+    });
+    showEmptyInput?.addEventListener('change', () => {
+      renderPrintLocationOptions(searchInput?.value || '', showEmptyInput.checked);
+    });
+    printLocationCodesList.querySelectorAll('input[name="printLocationCode"]').forEach((radio) => {
+      radio.addEventListener('change', () => {
+        printLocationCodesList.querySelectorAll('.print-location-card').forEach((card) => {
+          card.classList.toggle('is-selected', card.querySelector('input')?.checked);
+        });
+      });
+    });
+  }
+
   async function openPrintModal() {
     if (!printModal || !printLocationCodesList) return;
+    const printBarcodesCheckbox = document.getElementById('printBarcodesCheckbox');
+    if (printBarcodesCheckbox) printBarcodesCheckbox.checked = true;
     printModal.classList.add('show');
     printLocationCodesList.innerHTML = '<p>Loading...</p>';
     try {
@@ -654,42 +873,27 @@ document.addEventListener('DOMContentLoaded', () => {
           .filter(Boolean)
       );
 
-      const codes = locations
-        .map((loc) => loc.location || loc.locationCode || loc.location_code)
-        .filter((code) => code != null && String(code).trim() !== '')
+      printLocationOptions = locations
+        .map((location) => ({
+          code: getLocationCode(location),
+          section: String(location.section || ''),
+          accessType: String(location.accessType || location.access_type || ''),
+          hasStock: withQty.has(getLocationCode(location))
+        }))
+        .filter((option) => option.code)
         .sort((a, b) => {
-          const aKey = normalizeLocationCode(a);
-          const bKey = normalizeLocationCode(b);
-          const aHasQty = withQty.has(aKey) ? 0 : 1;
-          const bHasQty = withQty.has(bKey) ? 0 : 1;
+          const aHasQty = a.hasStock ? 0 : 1;
+          const bHasQty = b.hasStock ? 0 : 1;
           if (aHasQty !== bHasQty) return aHasQty - bHasQty;
-          return String(a).localeCompare(String(b), undefined, { sensitivity: 'base' });
+          return a.code.localeCompare(b.code, undefined, { sensitivity: 'base' });
         });
 
-      if (codes.length === 0) {
+      if (printLocationOptions.length === 0) {
         printLocationCodesList.innerHTML = '<p class="empty-state">No location codes found. Register locations first.</p>';
         return;
       }
 
-      const optionsHtml = codes
-        .map((code) => {
-          const label = withQty.has(normalizeLocationCode(code))
-            ? String(code)
-            : `${code} (no stock)`;
-          return `<option value="${escapeHtml(String(code))}">${escapeHtml(label)}</option>`;
-        })
-        .join('');
-
-      printLocationCodesList.innerHTML = `
-        <label for="printLocationCodeSelect" class="print-location-code-item">
-          Location code:
-          <select id="printLocationCodeSelect" class="form-control" style="margin-left:8px; min-width: 220px;">
-            <option value="">Select location code</option>
-            ${optionsHtml}
-          </select>
-        </label>
-        <p class="print-modal-desc" style="margin-top:10px;">Locations with products appear first. Empty locations show "(no stock)".</p>
-      `;
+      renderPrintLocationOptions();
     } catch (e) {
       console.error('Print modal error:', e);
       printLocationCodesList.innerHTML = '<p class="error-message">Error loading locations. Check console and ensure the server is running.</p>';
@@ -701,8 +905,9 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function getSelectedLocationCode() {
-    const sel = document.getElementById('printLocationCodeSelect');
-    return sel && sel.value ? sel.value : null;
+    const selected = printLocationCodesList
+      ?.querySelector('input[name="printLocationCode"]:checked');
+    return selected?.value || null;
   }
 
   if (printBtn) printBtn.addEventListener('click', openPrintModal);
@@ -734,99 +939,80 @@ document.addEventListener('DOMContentLoaded', () => {
           alert('No products with quantity at this location. Choose a location without "(no stock)".');
           return;
         }
-        let accessType = '';
-        try {
-          const locRes = await fetch(API_LOCATIONS + '/code/' + encodeURIComponent(selected));
-          if (locRes.ok) {
-            const locData = await locRes.json();
-            accessType = (locData.success && locData.data && locData.data.accessType) ? locData.data.accessType : '';
-          }
-        } catch (e) {}
-        const printDate = new Date().toLocaleString();
-        const reportData = {
-          locationCode: selected,
-          printDate,
-          products: records.map(r => ({
-            productCode: getRecordProductCode(r),
-            barcode: getRecordBarcode(r),
-            quantityCurrent: r.quantityCurrent != null ? r.quantityCurrent : r.quantity_current
-          }))
-        };
-        if (typeof JsBarcode === 'undefined' || typeof QRCode === 'undefined') {
-          alert('Barcode/QR libraries not loaded. Refresh the page and try again.');
+        const printBarcodes = document.getElementById('printBarcodesCheckbox')?.checked !== false;
+        if (printBarcodes && typeof JsBarcode === 'undefined') {
+          alert('Barcode library not loaded. Refresh the page and try again.');
           return;
         }
+
         const tempId = 'printTemp_' + Date.now();
         const temp = document.createElement('div');
         temp.id = tempId;
         temp.style.cssText = 'position:absolute;left:-9999px;top:0;visibility:hidden;';
         document.body.appendChild(temp);
+
         const barcodeSvgs = [];
         const barcodePrefix = 'bcPrint_' + Date.now() + '_';
-        for (let i = 0; i < records.length; i++) {
-          const barcodeValue = getRecordBarcode(records[i]);
-          if (!barcodeValue) {
-            barcodeSvgs.push('');
-            continue;
-          }
-          const svgId = barcodePrefix + i;
-          const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-          svg.setAttribute('class', 'report-barcode');
-          svg.id = svgId;
-          temp.appendChild(svg);
-          if (renderBarcodeSvg(svgId, barcodeValue)) {
-            barcodeSvgs.push(svg.outerHTML);
-          } else {
-            barcodeSvgs.push('');
-          }
-          temp.removeChild(svg);
-        }
-        const qrPayload = {
-          locationCode: selected,
-          printDate,
-          itemCount: records.length,
-          products: records.map((r) => ({
-            productCode: getRecordProductCode(r),
-            barcode: getRecordBarcode(r),
-            quantityCurrent: r.quantityCurrent != null ? r.quantityCurrent : r.quantity_current
-          }))
-        };
-        const qrText = JSON.stringify(qrPayload);
-        const qrDiv = document.createElement('div');
-        temp.appendChild(qrDiv);
-        let qrDataUrl = '';
-        try {
-          new QRCode(qrDiv, { text: qrText, width: 180, height: 180, correctLevel: QRCode.CorrectLevel.M });
-        } catch (e) {}
-        const finishReport = () => {
-          try {
-            const canvas = qrDiv.querySelector('canvas');
-            if (canvas) qrDataUrl = canvas.toDataURL('image/png');
-            if (!qrDataUrl) {
-              const img = qrDiv.querySelector('img');
-              if (img && img.src) qrDataUrl = img.src;
+        if (printBarcodes) {
+          for (let i = 0; i < records.length; i++) {
+            const barcodeValue = getRecordBarcode(records[i]);
+            if (!barcodeValue) {
+              barcodeSvgs.push('');
+              continue;
             }
-          } catch (e2) {}
-          document.body.removeChild(temp);
-          const rowsHtml = records.map((r, i) => {
-            const pc = escapeHtml(String(getRecordProductCode(r)));
-            const qc = r.quantityCurrent != null ? r.quantityCurrent : (r.quantity_current ?? 0);
-            const barcodeValue = getRecordBarcode(r);
-            const barcodeHtml = barcodeSvgs[i]
-              ? `<div class="report-barcode-wrapper">${barcodeSvgs[i]}</div>`
-              : (barcodeValue
-                ? `<div class="report-barcode-wrapper"><span>${escapeHtml(barcodeValue)}</span></div>`
-                : '<div class="report-barcode-wrapper"><span>-</span></div>');
-            return `<tr>
-              <td><div class="report-product-code">${pc}</div></td>
-              <td>${qc}</td>
-            </tr>
+            const svgId = barcodePrefix + i;
+            const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+            svg.setAttribute('class', 'report-barcode');
+            svg.id = svgId;
+            temp.appendChild(svg);
+            barcodeSvgs.push(renderBarcodeSvg(svgId, barcodeValue) ? svg.outerHTML : '');
+            temp.removeChild(svg);
+          }
+        }
+
+        let locationBarcodeSvg = '';
+        if (printBarcodes) {
+          const locationSvgId = 'locationBarcode_' + Date.now();
+          const locationSvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+          locationSvg.setAttribute('class', 'report-location-barcode');
+          locationSvg.id = locationSvgId;
+          temp.appendChild(locationSvg);
+          if (renderBarcodeSvg(locationSvgId, selected)) {
+            locationBarcodeSvg = locationSvg.outerHTML;
+          }
+          temp.removeChild(locationSvg);
+        }
+
+        document.body.removeChild(temp);
+        const rowsHtml = records.map((r, i) => {
+          const productCode = escapeHtml(String(getRecordProductCode(r)));
+          const quantityCurrent = r.quantityCurrent != null ? r.quantityCurrent : (r.quantity_current ?? 0);
+          const productBarcode = getRecordBarcode(r);
+          const barcodeHtml = printBarcodes
+            ? (barcodeSvgs[i]
+                ? `<div class="report-barcode-wrapper">${barcodeSvgs[i]}</div>`
+                : (productBarcode
+                    ? `<div class="report-barcode-fallback">${escapeHtml(productBarcode)}</div>`
+                    : ''))
+            : '';
+          return `
             <tr>
-              <td colspan="2">${barcodeHtml}</td>
-            </tr>`;
-          }).join('');
-        const qrImgHtml = qrDataUrl ? '<img src="' + qrDataUrl.replace(/"/g, '&quot;') + '" alt="QR Code" width="180" height="180" />' : '<span>QR not generated</span>';
-        const w = window.open('', '_blank', 'width=800,height=700');
+              <td>
+                <div class="report-product-row">
+                  ${barcodeHtml}
+                  <div class="report-product-code">${productCode}</div>
+                </div>
+              </td>
+              <td class="report-quantity">${quantityCurrent}</td>
+            </tr>
+          `;
+        }).join('');
+
+        const locationBarcodeHtml = printBarcodes && locationBarcodeSvg
+          ? `<div class="report-location-barcode-wrapper">${locationBarcodeSvg}</div>`
+          : '';
+        const printDate = new Date().toLocaleString();
+        const w = window.open('', '_blank', 'width=1100,height=750');
         if (!w) {
           alert('Allow popups to print.');
           return;
@@ -834,58 +1020,43 @@ document.addEventListener('DOMContentLoaded', () => {
         w.document.write(`
 <!DOCTYPE html><html><head><meta charset="UTF-8"><title>Report - ${escapeHtml(selected)}</title>
 <style>
-  body{font-family:sans-serif;padding:20px;font-size:14px;}
-  .report-header{text-align:center;margin-bottom:20px;border-bottom:1px solid #ccc;padding-bottom:10px;}
-  table{width:100%;border-collapse:collapse;margin-bottom:30px;}
-  th,td{border:1px solid #ddd;padding:10px;text-align:left;}
-  th{background:#f5f5f5;font-size:32px;font-weight:bold;text-align:center;}
-  th:nth-child(1){width:80%;}
-  th:nth-child(2){width:20%;}
-  td{font-size:20px;}
-  .report-product-code{font-size:72px;font-weight:bold;margin-bottom:8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;}
-  .report-barcode-wrapper{margin-top:4px;max-width:100%;overflow:hidden;}
-  .report-barcode{display:block;max-width:100%;height:auto;}
-  td:nth-child(2){font-size:72px;text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;}
-  .report-footer{margin-top:30px;padding-top:15px;border-top:1px solid #ccc;font-size:30px;}
-  .report-footer .row{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:15px;}
-  .report-location-code{font-size:40px;font-weight:bold;}
+  @page{size:landscape;margin:10mm;}
+  *{box-sizing:border-box;}
+  body{font-family:Arial,sans-serif;margin:0;padding:0;color:#111;}
+  .report-header{position:relative;display:flex;justify-content:center;align-items:center;gap:18px;min-height:84px;margin-bottom:14px;border-bottom:2px solid #222;padding:8px 0 12px;}
+  .report-print-date{position:absolute;top:0;left:0;font-size:10px;font-weight:400;color:#555;white-space:nowrap;}
+  .report-location-text{text-align:center;}
+  .report-location-title{font-size:18px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;}
+  .report-location-code{display:block;margin-top:3px;font-size:64px;font-weight:800;line-height:1.05;}
+  .report-location-barcode-wrapper{display:flex;align-items:center;max-height:72px;overflow:hidden;}
+  .report-location-barcode{display:block;max-width:360px;height:68px;}
+  table{width:100%;border-collapse:collapse;}
+  td{border:1px solid #aaa;padding:8px 12px;vertical-align:middle;}
+  td:first-child{width:82%;}
+  .report-product-row{display:flex;align-items:center;gap:16px;min-width:0;}
+  .report-product-code{flex:1 1 auto;min-width:0;max-width:100%;font-size:64px;font-weight:800;line-height:1.05;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .report-barcode-wrapper{display:flex;align-items:center;flex-shrink:0;max-width:430px;height:64px;overflow:hidden;}
+  .report-barcode{display:block;max-width:430px;height:62px;}
+  .report-barcode-fallback{font-size:14px;font-family:monospace;flex-shrink:0;}
+  .report-quantity{width:18%;font-size:52px;font-weight:800;text-align:center;white-space:nowrap;}
 </style>
 </head><body>
-<div class="report-header"></div>
-<table>
-  <thead><tr><th>Product Code</th><th>QTY Current</th></tr></thead>
-  <tbody>${rowsHtml}</tbody>
-</table>
-<div class="report-footer">
-  <div class="row">
-    <div>
-      <strong>Print date:</strong> ${escapeHtml(printDate)}<br>
-      <strong>Location code: <span class="report-location-code">${escapeHtml(selected)}</span></strong><br>
-      <strong>Access type: ${escapeHtml(accessType || '-')}</strong>
-    </div>
-    <div>${qrImgHtml}</div>
+<div class="report-header">
+  <div class="report-print-date">${escapeHtml(printDate)}</div>
+  ${locationBarcodeHtml}
+  <div class="report-location-text">
+    <div class="report-location-title">Location Code</div>
+    <span class="report-location-code">${escapeHtml(selected)}</span>
   </div>
 </div>
+<table>
+  <tbody>${rowsHtml}</tbody>
+</table>
 </body></html>
         `);
         w.document.close();
         w.focus();
         setTimeout(function() { w.print(); }, 800);
-        };
-        const waitForQr = (attemptsLeft, cb) => {
-          const canvas = qrDiv.querySelector('canvas');
-          const img = qrDiv.querySelector('img');
-          if (canvas || (img && img.src)) {
-            cb();
-            return;
-          }
-          if (attemptsLeft <= 0) {
-            cb();
-            return;
-          }
-          setTimeout(() => waitForQr(attemptsLeft - 1, cb), 100);
-        };
-        waitForQr(15, finishReport);
       } catch (e) {
         console.error(e);
         alert('Error loading report data.');
@@ -899,6 +1070,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   (async () => {
     await Promise.all([loadLocations(), loadProducts(), loadSituations()]);
+    attachLocationPicker(filterLocationCode);
     fillFilterSituation();
     renderTable();
   })();

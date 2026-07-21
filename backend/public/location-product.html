@@ -181,7 +181,10 @@
                         <div class="filters-grid">
                             <div class="filter-group">
                                 <label for="filterLocationCode"><i class="fas fa-map-marker-alt"></i> Location Code</label>
-                                <input type="text" id="filterLocationCode" placeholder="Code location">
+                                <div class="location-code-picker">
+                                    <input type="text" id="filterLocationCode" placeholder="Type or select location" autocomplete="off">
+                                    <span class="location-code-picker-icon" aria-hidden="true"><i class="fas fa-chevron-down"></i></span>
+                                </div>
                             </div>
                             <div class="filter-group">
                                 <label for="filterProductCode"><i class="fas fa-barcode"></i> Product Code</label>
@@ -301,7 +304,7 @@
     </div>
 
     <!-- Modal Print - Seleção de Location Codes (quantity informed > 0) -->
-    <div id="printModal" class="modal">
+    <div id="printModal" class="modal location-product-print-modal">
         <div class="modal-content modal-large">
             <div class="modal-header success">
                 <h3><i class="fas fa-print"></i> Print - Select Location Codes</h3>
@@ -309,6 +312,14 @@
             </div>
             <div class="modal-body">
                 <p class="print-modal-desc">Select a location from Location module, then print product code, quantity and barcode.</p>
+                <label class="print-barcode-option" for="printBarcodesCheckbox">
+                    <input type="checkbox" id="printBarcodesCheckbox" checked>
+                    <span class="print-barcode-option-icon"><i class="fas fa-barcode"></i></span>
+                    <span>
+                        <strong>Print barcodes</strong>
+                        <small>Include the Location Code barcode and each Product barcode.</small>
+                    </span>
+                </label>
                 <div id="printLocationCodesList" class="print-location-codes-list"></div>
                 <div class="form-actions" style="margin-top:20px;">
                     <button type="button" class="btn btn-secondary" id="closePrintModalBtn">Close</button>
@@ -347,7 +358,6 @@
     </div>
 
     <script src="jsbarcode.min.js"></script>
-    <script src="qrcode.min.js"></script>
     <script src="location-product-script.js"></script>
 </body>
 </html>
