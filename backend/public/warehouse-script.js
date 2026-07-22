@@ -1,4 +1,4 @@
-// Configuraòòo da API
+// Configuraùùo da API
 const API_BASE_URL = '/api/warehouse';
 
 function escapeHtml(text) {
@@ -7,7 +7,7 @@ function escapeHtml(text) {
     return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
-// Mapeamento categoria (valor no BD) ? texto de exibiòòo
+// Mapeamento categoria (valor no BD) ? texto de exibiùùo
 function formatCategory(categoria) {
     if (typeof SectionOptions !== 'undefined') {
         return SectionOptions.formatSectionLabel(categoria);
@@ -27,7 +27,7 @@ function formatSubcategory(subcategoria) {
 function formatCategoryDisplay(item) {
     const category = formatCategory(item.categoria);
     if (String(item.categoria || '').toUpperCase() === 'BATHWARE' && item.subcategoria) {
-        return `${category} ò ${formatSubcategory(item.subcategoria)}`;
+        return `${category} ù ${formatSubcategory(item.subcategoria)}`;
     }
     return category;
 }
@@ -45,11 +45,25 @@ function toggleSubcategoriaField() {
     }
 }
 
-// Estado da aplicaòòo
+function categoryHasSubcategories(categoria) {
+    return String(categoria || '').toUpperCase() === 'BATHWARE';
+}
+
+function toggleFilterSubcategoriaField() {
+    if (!filterCategoria || !filterSubcategoria) return;
+
+    const showSubcategory = categoryHasSubcategories(filterCategoria.value);
+    filterSubcategoria.style.display = showSubcategory ? '' : 'none';
+    if (!showSubcategory) {
+        filterSubcategoria.value = '';
+    }
+}
+
+// Estado da aplicaùùo
 let items = [];
 let currentItemId = null;
 let currentItem = null;
-let hasSearched = false; // true apòs o usuòrio clicar em Search
+let hasSearched = false; // true apùs o usuùrio clicar em Search
 
 // Elementos do DOM
 const itemModal = document.getElementById('itemModal');
@@ -81,6 +95,7 @@ const itemsTableBody = document.getElementById('itemsTableBody');
 const searchInput = document.getElementById('searchInput');
 const searchByField = document.getElementById('searchByField');
 const filterCategoria = document.getElementById('filterCategoria');
+const filterSubcategoria = document.getElementById('filterSubcategoria');
 const filterStatus = document.getElementById('filterStatus');
 const sortBy = document.getElementById('sortBy');
 const clearSearch = document.getElementById('clearSearch');
@@ -88,13 +103,13 @@ const searchBtn = document.getElementById('searchBtn');
 const searchResultsMeta = document.getElementById('searchResultsMeta');
 const warehouseSearchResultsCount = document.getElementById('warehouseSearchResultsCount');
 
-// Estatòsticas
+// Estatùsticas
 const totalItemsEl = document.getElementById('totalItems');
 const lowStockItemsEl = document.getElementById('lowStockItems');
 const totalEntradasEl = document.getElementById('totalEntradas');
 const totalSaidasEl = document.getElementById('totalSaidas');
 
-// Definir funòòo printReport globalmente ANTES do DOMContentLoaded
+// Definir funùùo printReport globalmente ANTES do DOMContentLoaded
 window.printReport = function(itemId) {
     console.log('========================================');
     console.log('?? PRINT REPORT FUNCTION CALLED');
@@ -166,7 +181,7 @@ window.printReport = function(itemId) {
         </div>
     `;
     
-    // Para impressòo, usar barcode do produto para Barcode e QRCode
+    // Para impressùo, usar barcode do produto para Barcode e QRCode
     const barcodeValue = String(item.barcode || '').trim();
     console.log('?? Barcode to generate:', barcodeValue);
     console.log('Barcode type:', typeof barcodeValue);
@@ -188,7 +203,7 @@ window.printReport = function(itemId) {
     printModal.style.display = 'block';
     console.log('? Modal displayed');
     
-    // Funòòo para gerar còdigos com retry
+    // Funùùo para gerar cùdigos com retry
     function generateCodes() {
         const svgElement = document.getElementById(uniqueId);
         const qrContainer = document.getElementById(qrId);
@@ -227,7 +242,7 @@ window.printReport = function(itemId) {
         if (qrcodeReady && qrContainer) {
             try {
                 console.log('?? Generating QR code for:', barcodeValue);
-                // Limpar conteòdo anterior
+                // Limpar conteùdo anterior
                 qrContainer.innerHTML = '';
                 
                 // Usar a API do qrcodejs
@@ -250,7 +265,7 @@ window.printReport = function(itemId) {
         }
     }
     
-    // Aguardar e tentar gerar còdigos
+    // Aguardar e tentar gerar cùdigos
     let attempts = 0;
     const maxAttempts = 10;
     
@@ -275,7 +290,7 @@ window.printReport = function(itemId) {
         }
     }
     
-    // Comeòar tentativas apòs um pequeno delay
+    // Comeùar tentativas apùs um pequeno delay
     setTimeout(tryGenerateCodes, 300);
     
     console.log('========================================');
@@ -283,7 +298,7 @@ window.printReport = function(itemId) {
     console.log('========================================');
 };
 
-// Definir funòòo closePrintModal globalmente
+// Definir funùùo closePrintModal globalmente
 window.closePrintModal = function() {
     const printModal = document.getElementById('printModal');
     const printContent = document.getElementById('printContent');
@@ -302,7 +317,7 @@ document.addEventListener('DOMContentLoaded', () => {
     setupEventListeners();
     attachActionButtonListeners();
     loadStatistics();
-    // Nòo carrega todos os itens na abertura; usuòrio deve usar Search
+    // Nùo carrega todos os itens na abertura; usuùrio deve usar Search
 });
 
 function handleWarehouseLandingAction() {
@@ -567,7 +582,7 @@ function setupEventListeners() {
         descricaoEl.addEventListener('input', updateDescricaoCount);
     }
     
-    // Modal de Movimentaòòo
+    // Modal de Movimentaùùo
     document.getElementById('closeMovementModal').addEventListener('click', () => closeMovementModal());
     document.getElementById('cancelMovementBtn').addEventListener('click', () => closeMovementModal());
     movementForm.addEventListener('submit', handleMovementSubmit);
@@ -588,7 +603,7 @@ function setupEventListeners() {
         });
     }
     
-    // Modal de Impressòo
+    // Modal de Impressùo
     const closePrintModalBtn = document.getElementById('closePrintModal');
     const closePrintBtn = document.getElementById('closePrintBtn');
     const printBtn = document.getElementById('printBtn');
@@ -603,22 +618,48 @@ function setupEventListeners() {
         printBtn.addEventListener('click', () => window.print());
     }
     
-    // Botòo Search - carrega itens da API com filtros
+    // Botùo Search - carrega itens da API com filtros
     if (searchBtn) {
         searchBtn.addEventListener('click', handleSearchClick);
     }
     searchInput.addEventListener('keypress', (e) => {
         if (e.key === 'Enter') handleSearchClick();
     });
-    // Filtros aplicados nos itens jò carregados (client-side)
+    // Filtros aplicados nos itens jù carregados (client-side)
     searchInput.addEventListener('input', filterItems);
     if (searchByField) searchByField.addEventListener('change', filterItems);
-    filterCategoria.addEventListener('change', filterItems);
+    if (filterSubcategoria && typeof BathwareSubcategoryOptions !== 'undefined') {
+        BathwareSubcategoryOptions.populateBathwareSubcategorySelect(filterSubcategoria, {
+            emptyLabel: 'All Subcategory',
+            emptyValue: ''
+        });
+    }
+    toggleFilterSubcategoriaField();
+    filterCategoria.addEventListener('change', () => {
+        toggleFilterSubcategoriaField();
+        if (hasSearched) {
+            loadItems(getCurrentFilters());
+        } else {
+            filterItems();
+        }
+    });
+    if (filterSubcategoria) {
+        filterSubcategoria.addEventListener('change', () => {
+            if (hasSearched) {
+                loadItems(getCurrentFilters());
+            } else {
+                filterItems();
+            }
+        });
+    }
     filterStatus.addEventListener('change', filterItems);
     sortBy.addEventListener('change', filterItems);
     clearSearch.addEventListener('click', () => {
         searchInput.value = '';
         if (searchByField) searchByField.value = 'codigo';
+        if (filterCategoria) filterCategoria.value = '';
+        if (filterSubcategoria) filterSubcategoria.value = '';
+        toggleFilterSubcategoriaField();
         filterItems();
     });
     
@@ -632,18 +673,24 @@ function setupEventListeners() {
     });
 }
 
-// Retorna os filtros atuais da tela (para Search e para refresh apòs save/delete/move)
+// Retorna os filtros atuais da tela (para Search e para refresh apùs save/delete/move)
 function getCurrentFilters() {
     const term = searchInput.value.trim();
     const searchBy = searchByField ? searchByField.value : 'codigo';
     const byCode = term && searchBy === 'codigo' ? term : undefined;
     const byName = term && searchBy === 'nome' ? term : undefined;
     const byBarcode = term && searchBy === 'barcode' ? term : undefined;
+    const categoria = searchBy === 'barcode' ? undefined : (filterCategoria.value || undefined);
+    const subcategoria =
+        categoria && categoryHasSubcategories(categoria) && filterSubcategoria?.value
+            ? filterSubcategoria.value
+            : undefined;
     return {
         codigo: byCode,
         nome: byName,
         barcode: byBarcode,
-        categoria: searchBy === 'barcode' ? undefined : (filterCategoria.value || undefined),
+        categoria,
+        subcategoria,
         ordenarPor: sortBy.value || 'nome',
         direcao: 'asc'
     };
@@ -674,7 +721,7 @@ function showEmptyStateInitial() {
     `;
 }
 
-// Clique no botòo Search: valida filtros e chama loadItems com paròmetros
+// Clique no botùo Search: valida filtros e chama loadItems com parùmetros
 function handleSearchClick() {
     const term = searchInput.value.trim();
     const categoria = filterCategoria.value;
@@ -685,7 +732,7 @@ function handleSearchClick() {
     loadItems(getCurrentFilters());
 }
 
-// Carregar estatòsticas do servidor (sem carregar a lista de itens)
+// Carregar estatùsticas do servidor (sem carregar a lista de itens)
 async function loadStatistics() {
     try {
         const response = await fetch(API_BASE_URL + '/estatisticas');
@@ -706,12 +753,12 @@ async function loadStatistics() {
     }
 }
 
-// Carregar itens do servidor (com filtros opcionais; sem filtros nòo carrega todos)
+// Carregar itens do servidor (com filtros opcionais; sem filtros nùo carrega todos)
 async function loadItems(filtros) {
-    const params = filtros && (filtros.nome || filtros.codigo || filtros.barcode || filtros.categoria)
+    const params = filtros && (filtros.nome || filtros.codigo || filtros.barcode || filtros.categoria || filtros.subcategoria)
         ? filtros
         : getCurrentFilters();
-    const hasFilters = params.nome || params.codigo || params.barcode || params.categoria;
+    const hasFilters = params.nome || params.codigo || params.barcode || params.categoria || params.subcategoria;
 
     if (!hasFilters) {
         showEmptyStateInitial();
@@ -725,6 +772,7 @@ async function loadItems(filtros) {
         if (params.nome) query.set('nome', params.nome);
         if (params.codigo) query.set('codigo', params.codigo);
         if (params.categoria) query.set('categoria', params.categoria);
+        if (params.subcategoria) query.set('subcategoria', params.subcategoria);
         if (params.barcode) query.set('barcode', params.barcode);
         if (params.ordenarPor) query.set('ordenarPor', params.ordenarPor);
         if (params.direcao) query.set('direcao', params.direcao);
@@ -814,7 +862,7 @@ function displayItems(itemsToDisplay) {
         `;
     }).join('');
     
-    // Event listeners jò estòo configurados via event delegation, nòo precisa chamar novamente
+    // Event listeners jù estùo configurados via event delegation, nùo precisa chamar novamente
 }
 
 // Attach event listeners to action buttons using event delegation
@@ -822,7 +870,7 @@ let actionButtonHandler = null;
 let listenersAttached = false;
 
 function attachActionButtonListeners() {
-    // Evitar adicionar mòltiplos listeners
+    // Evitar adicionar mùltiplos listeners
     if (listenersAttached) return;
     
     actionButtonHandler = (e) => {
@@ -877,6 +925,7 @@ function filterItems() {
     const searchTerm = searchInput.value.toLowerCase();
     const searchBy = searchByField ? searchByField.value : 'codigo';
     const categoriaFilter = filterCategoria.value;
+    const subcategoriaFilter = filterSubcategoria ? filterSubcategoria.value : '';
     const statusFilter = filterStatus.value;
     const sortField = sortBy.value;
     
@@ -894,11 +943,14 @@ function filterItems() {
         }
         
         const matchesCategoria = !categoriaFilter || item.categoria === categoriaFilter;
+        const matchesSubcategoria =
+            !subcategoriaFilter ||
+            String(item.subcategoria || '').toUpperCase() === String(subcategoriaFilter).toUpperCase();
         
         const itemStatus = getItemStatus(item).toLowerCase().replace(/\s+/g, '-');
         const matchesStatus = !statusFilter || itemStatus === statusFilter;
         
-        return matchesSearch && matchesCategoria && matchesStatus;
+        return matchesSearch && matchesCategoria && matchesSubcategoria && matchesStatus;
     });
     
     // Ordenar
@@ -922,7 +974,7 @@ function filterItems() {
     displayItems(filtered);
 }
 
-// Atualizar estatòsticas
+// Atualizar estatùsticas
 function updateStatistics() {
     const total = items.length;
     const lowStock = items.filter(item => {
@@ -930,7 +982,7 @@ function updateStatistics() {
         return status === 'Low Stock' || status === 'Out of Stock';
     }).length;
     
-    // Simular movimentaòòes do dia (em produòòo, viria do backend)
+    // Simular movimentaùùes do dia (em produùùo, viria do backend)
     const today = new Date().toISOString().split('T')[0];
     const entradas = items.filter(item => item.ultimaEntrada === today).length || 0;
     const saidas = items.filter(item => item.ultimaSaida === today).length || 0;
@@ -965,7 +1017,7 @@ function populateEditSummary(item) {
 
     codeEl.textContent = item.codigo || '-';
     nameEl.textContent = item.nome || '-';
-    metaEl.textContent = metaParts.join(' ò ');
+    metaEl.textContent = metaParts.join(' ù ');
     statusEl.textContent = status;
     statusEl.className = `status-badge ${statusClass}`;
     qtyEl.textContent = item.quantidade ?? 0;
@@ -1078,7 +1130,7 @@ function closeItemModal() {
     setItemModalMode('new');
 }
 
-// Preencher formulòrio com dados do item
+// Preencher formulùrio com dados do item
 function fillItemForm(item) {
     document.getElementById('codigo').value = item.codigo || '';
     document.getElementById('nome').value = item.nome || '';
@@ -1093,7 +1145,7 @@ function fillItemForm(item) {
     updateDescricaoCount();
 }
 
-// Submeter formulòrio de item
+// Submeter formulùrio de item
 async function handleItemSubmit(e) {
     e.preventDefault();
     
@@ -1109,7 +1161,7 @@ async function handleItemSubmit(e) {
         descricao: document.getElementById('descricao').value.trim()
     };
     
-    // Validaòòo bòsica
+    // Validaùùo bùsica
     if (!validateItemForm(formData)) {
         return;
     }
@@ -1139,7 +1191,7 @@ async function handleItemSubmit(e) {
     } catch (error) {
         console.error('Error saving item:', error);
         showError('Error connecting to server');
-        // Simular sucesso para demonstraòòo
+        // Simular sucesso para demonstraùùo
         if (!currentItemId) {
             formData.id = Date.now().toString();
             items.push(formData);
@@ -1158,7 +1210,7 @@ async function handleItemSubmit(e) {
     }
 }
 
-// Validar formulòrio
+// Validar formulùrio
 function validateItemForm(data) {
     clearFormErrors();
     let isValid = true;
@@ -1211,7 +1263,7 @@ function showFieldError(fieldName, message) {
     }
 }
 
-// Limpar erros do formulòrio
+// Limpar erros do formulùrio
 function clearFormErrors() {
     document.querySelectorAll('.error-message').forEach(el => {
         el.classList.remove('show');
@@ -1241,7 +1293,7 @@ function buildItemDetailsHtml(item, status, statusClass) {
                         <span class="status-badge ${statusClass}">${status}</span>
                     </div>
                     <p class="item-edit-summary-name">${escapeHtml(item.nome || '-')}</p>
-                    <p class="item-edit-summary-meta">${escapeHtml(formatCategoryDisplay(item))}${item.barcode ? ` ∑ Barcode: ${barcodeText}` : ''}</p>
+                    <p class="item-edit-summary-meta">${escapeHtml(formatCategoryDisplay(item))}${item.barcode ? ` ù Barcode: ${barcodeText}` : ''}</p>
                 </div>
             </div>
             <div class="item-edit-summary-stats">
@@ -1290,7 +1342,7 @@ async function viewItem(itemId) {
         detailsTitle.innerHTML = '<i class="fas fa-info-circle"></i> Item Details';
     }
     if (detailsSubtitle) {
-        detailsSubtitle.textContent = `${item.codigo || '-'} ∑ ${item.nome || '-'}`;
+        detailsSubtitle.textContent = `${item.codigo || '-'} ù ${item.nome || '-'}`;
         detailsSubtitle.style.display = '';
     }
 
@@ -1342,7 +1394,7 @@ function editItem(itemId) {
     openItemModal(itemId);
 }
 
-// Abrir modal de movimentaòòo
+// Abrir modal de movimentaùùo
 function openMovementModal(itemId) {
     currentItemId = itemId;
     const item = items.find(i => i.id === itemId);
@@ -1354,7 +1406,7 @@ function openMovementModal(itemId) {
     }
 }
 
-// Fechar modal de movimentaòòo
+// Fechar modal de movimentaùùo
 function closeMovementModal() {
     movementModal.style.display = 'none';
     movementForm.reset();
@@ -1362,7 +1414,7 @@ function closeMovementModal() {
     currentItem = null;
 }
 
-// Submeter movimentaòòo
+// Submeter movimentaùùo
 async function handleMovementSubmit(e) {
     e.preventDefault();
     
@@ -1414,7 +1466,7 @@ async function handleMovementSubmit(e) {
         }
     } catch (error) {
         console.error('Error registering movement:', error);
-        // Simular sucesso para demonstraòòo
+        // Simular sucesso para demonstraùùo
         const index = items.findIndex(i => i.id === currentItemId);
         if (index !== -1) {
             items[index].quantidade = novaQuantidade;
@@ -1468,13 +1520,13 @@ async function deleteItem(itemId) {
     }
 }
 
-// Funòòes auxiliares
+// Funùùes auxiliares
 function showLoading() {
-    // Implementar loading se necessòrio
+    // Implementar loading se necessùrio
 }
 
 function hideLoading() {
-    // Implementar hide loading se necessòrio
+    // Implementar hide loading se necessùrio
 }
 
 function showSuccess(message) {
