@@ -1359,21 +1359,55 @@
         height: calc(100dvh - 16px);
         max-height: calc(100dvh - 16px);
         margin: 8px auto !important;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .location-product-print-modal .modal-header {
+        flex: 0 0 auto;
+        padding: 14px 16px;
     }
 
     .location-product-print-modal .modal-body {
-        padding: 14px 16px 16px;
+        flex: 1 1 auto;
+        min-height: 0;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        padding: 10px 12px 12px;
+    }
+
+    .location-product-print-modal .print-modal-desc {
+        flex: 0 0 auto;
+        margin-bottom: 8px;
+        font-size: 0.84rem;
+        line-height: 1.35;
+    }
+
+    .location-product-print-modal .print-barcode-option {
+        flex: 0 0 auto;
+        margin-top: 0;
+        padding: 10px 12px;
+        gap: 10px;
+    }
+
+    .location-product-print-modal .print-barcode-option small {
+        display: none;
     }
 
     .location-product-print-modal .print-location-codes-list {
-        min-height: 240px;
+        flex: 1 1 auto;
+        min-height: calc(100dvh - 360px);
         max-height: none;
+        margin-top: 10px;
+        overflow: hidden;
     }
 
     .print-location-picker-toolbar {
         align-items: stretch;
         flex-direction: column;
         gap: 10px;
+        flex: 0 0 auto;
     }
 
     .print-location-search input {
@@ -1389,6 +1423,7 @@
     }
 
     .print-location-picker-summary {
+        flex: 0 0 auto;
         flex-direction: column;
         align-items: flex-start;
         gap: 4px;
@@ -1399,6 +1434,11 @@
         grid-template-columns: 1fr;
         gap: 12px;
         padding: 2px 0 6px;
+        flex: 1 1 auto;
+        min-height: 0;
+        max-height: none;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
     }
 
     .print-location-card {
@@ -1445,18 +1485,27 @@
         padding: 6px 10px;
     }
 
+    .location-product-print-modal .print-font-size-option {
+        flex: 0 0 auto;
+        margin-top: 10px;
+        padding: 10px 12px;
+    }
+
     .print-font-size-radios {
         display: grid;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 8px;
     }
 
     .print-font-size-radio {
         justify-content: center;
-        padding: 12px 10px;
+        padding: 10px 6px;
     }
 
     .location-product-print-modal .form-actions {
+        flex: 0 0 auto;
         flex-direction: column;
+        margin-top: 10px !important;
     }
 
     .location-product-print-modal .form-actions .btn {
@@ -1468,6 +1517,14 @@
 @media (max-width: 480px) {
     .location-product-print-modal .modal-header h3 {
         font-size: 1rem;
+    }
+
+    .location-product-print-modal .print-modal-desc {
+        display: none;
+    }
+
+    .location-product-print-modal .print-location-codes-list {
+        min-height: calc(100dvh - 320px);
     }
 
     .print-location-card-content strong {
