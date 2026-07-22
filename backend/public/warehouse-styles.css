@@ -1078,6 +1078,11 @@
     flex: 1 1 auto;
     flex-direction: column;
     min-height: 0;
+    border: 1px solid #e1e5e9;
+    border-radius: 8px;
+    padding: 12px;
+    background: #fafafa;
+    -webkit-overflow-scrolling: touch;
 }
 
 .print-barcode-option {
@@ -1350,18 +1355,123 @@
 
 @media (max-width: 768px) {
     .location-product-print-modal .modal-content {
-        width: calc(100vw - 24px);
-        height: calc(100vh - 24px);
-        max-height: calc(100vh - 24px);
+        width: calc(100vw - 16px);
+        height: calc(100dvh - 16px);
+        max-height: calc(100dvh - 16px);
+        margin: 8px auto !important;
+    }
+
+    .location-product-print-modal .modal-body {
+        padding: 14px 16px 16px;
+    }
+
+    .location-product-print-modal .print-location-codes-list {
+        min-height: 240px;
+        max-height: none;
     }
 
     .print-location-picker-toolbar {
         align-items: stretch;
         flex-direction: column;
+        gap: 10px;
+    }
+
+    .print-location-search input {
+        font-size: 16px;
+        min-height: 48px;
+        padding: 12px 14px 12px 42px;
+    }
+
+    .print-location-empty-toggle {
+        white-space: normal;
+        font-size: 0.92rem;
+        line-height: 1.35;
+    }
+
+    .print-location-picker-summary {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 4px;
+        font-size: 0.88rem;
     }
 
     .print-location-cards {
         grid-template-columns: 1fr;
+        gap: 12px;
+        padding: 2px 0 6px;
+    }
+
+    .print-location-card {
+        grid-template-columns: 28px 1fr;
+        grid-template-rows: auto auto;
+        gap: 8px 12px;
+        padding: 14px 16px;
+    }
+
+    .print-location-card > input {
+        grid-row: 1 / 3;
+        align-self: center;
+        width: 24px;
+        height: 24px;
+    }
+
+    .print-location-card-icon {
+        display: none;
+    }
+
+    .print-location-card-content {
+        grid-column: 2;
+        grid-row: 1;
+    }
+
+    .print-location-card-content strong {
+        font-size: 1.4rem;
+        font-weight: 800;
+        line-height: 1.2;
+        word-break: break-word;
+    }
+
+    .print-location-card-content small {
+        white-space: normal;
+        font-size: 0.88rem;
+        margin-top: 4px;
+    }
+
+    .print-location-stock {
+        grid-column: 2;
+        grid-row: 2;
+        justify-self: start;
+        font-size: 0.82rem;
+        padding: 6px 10px;
+    }
+
+    .print-font-size-radios {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .print-font-size-radio {
+        justify-content: center;
+        padding: 12px 10px;
+    }
+
+    .location-product-print-modal .form-actions {
+        flex-direction: column;
+    }
+
+    .location-product-print-modal .form-actions .btn {
+        width: 100%;
+        min-height: 48px;
+    }
+}
+
+@media (max-width: 480px) {
+    .location-product-print-modal .modal-header h3 {
+        font-size: 1rem;
+    }
+
+    .print-location-card-content strong {
+        font-size: 1.5rem;
     }
 }
 
