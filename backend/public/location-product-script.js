@@ -759,6 +759,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!printModal || !printLocationCodesList) return;
     const printBarcodesCheckbox = document.getElementById('printBarcodesCheckbox');
     if (printBarcodesCheckbox) printBarcodesCheckbox.checked = true;
+    resetPrintFontSize();
     printModal.classList.add('show');
     printLocationCodesList.innerHTML = '<p>Loading...</p>';
     try {
@@ -809,6 +810,17 @@ document.addEventListener('DOMContentLoaded', () => {
     return selected?.value || null;
   }
 
+  function getPrintFontSize() {
+    const selected = document.querySelector('input[name="printFontSize"]:checked');
+    const size = selected ? parseInt(selected.value, 10) : 64;
+    return [64, 70, 80, 85].includes(size) ? size : 64;
+  }
+
+  function resetPrintFontSize() {
+    const defaultSize = document.querySelector('input[name="printFontSize"][value="64"]');
+    if (defaultSize) defaultSize.checked = true;
+  }
+
   if (printBtn) printBtn.addEventListener('click', openPrintModal);
   if (closePrintModalBtn) closePrintModalBtn.addEventListener('click', closePrintModal);
   if (closePrintModalBtn2) closePrintModalBtn2.addEventListener('click', closePrintModal);
@@ -839,6 +851,7 @@ document.addEventListener('DOMContentLoaded', () => {
           return;
         }
         const printBarcodes = document.getElementById('printBarcodesCheckbox')?.checked !== false;
+        const printFontSize = getPrintFontSize();
         if (printBarcodes && typeof JsBarcode === 'undefined') {
           alert('Barcode library not loaded. Refresh the page and try again.');
           return;
@@ -926,18 +939,18 @@ document.addEventListener('DOMContentLoaded', () => {
   .report-print-date{position:absolute;top:0;left:0;font-size:10px;font-weight:400;color:#555;white-space:nowrap;}
   .report-location-text{text-align:center;}
   .report-location-title{font-size:18px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;}
-  .report-location-code{display:block;margin-top:3px;font-size:64px;font-weight:800;line-height:1.05;}
+  .report-location-code{display:block;margin-top:3px;font-size:${printFontSize}px;font-weight:800;line-height:1.05;}
   .report-location-barcode-wrapper{display:flex;align-items:center;max-height:72px;overflow:hidden;}
   .report-location-barcode{display:block;max-width:360px;height:68px;}
   table{width:100%;border-collapse:collapse;}
   td{border:1px solid #aaa;padding:8px 12px;vertical-align:middle;}
   td:first-child{width:82%;}
   .report-product-row{display:flex;align-items:center;gap:16px;min-width:0;}
-  .report-product-code{flex:1 1 auto;min-width:0;max-width:100%;font-size:64px;font-weight:800;line-height:1.05;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .report-product-code{flex:1 1 auto;min-width:0;max-width:100%;font-size:${printFontSize}px;font-weight:800;line-height:1.05;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
   .report-barcode-wrapper{display:flex;align-items:center;flex-shrink:0;max-width:430px;height:64px;overflow:hidden;}
   .report-barcode{display:block;max-width:430px;height:62px;}
   .report-barcode-fallback{font-size:14px;font-family:monospace;flex-shrink:0;}
-  .report-quantity{width:18%;font-size:52px;font-weight:800;text-align:center;white-space:nowrap;}
+  .report-quantity{width:18%;font-size:${printFontSize}px;font-weight:800;text-align:center;white-space:nowrap;}
 </style>
 </head><body>
 <div class="report-header">
