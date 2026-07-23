@@ -126,6 +126,20 @@ function setupHeaderDropdowns() {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
+  function revealLocationProductPanel() {
+    const target = document.getElementById('locationProductPanel');
+    if (!target) return;
+    const offset = 8;
+    const top = target.getBoundingClientRect().top + window.pageYOffset - offset;
+    window.scrollTo({ top: Math.max(0, top), behavior: 'auto' });
+  }
+
+  requestAnimationFrame(() => {
+    revealLocationProductPanel();
+    setTimeout(revealLocationProductPanel, 50);
+  });
+  window.addEventListener('load', revealLocationProductPanel);
+
   const tableBody = document.getElementById('tableBody');
   const newRecordsPanel = document.getElementById('newRecordsPanel');
   const newRecordsBody = document.getElementById('newRecordsBody');
@@ -979,6 +993,44 @@ document.addEventListener('DOMContentLoaded', () => {
 
   recordModal.addEventListener('click', (e) => { if (e.target === recordModal) closeRecordModal(); });
   editQuantityCurrentModal.addEventListener('click', (e) => { if (e.target === editQuantityCurrentModal) closeEditQuantityCurrentModal(); });
+
+  const locationHelpBtn = document.getElementById('locationHelpBtn');
+  const locationHelpModal = document.getElementById('locationHelpModal');
+  const closeLocationHelpModal = document.getElementById('closeLocationHelpModal');
+  const closeLocationHelpBtn = document.getElementById('closeLocationHelpBtn');
+
+  function openLocationHelp() {
+    if (!locationHelpModal) return;
+    locationHelpModal.classList.add('is-open');
+    locationHelpModal.style.display = 'flex';
+    closeLocationHelpBtn?.focus();
+  }
+
+  function closeLocationHelp() {
+    if (!locationHelpModal) return;
+    locationHelpModal.classList.remove('is-open');
+    locationHelpModal.style.display = 'none';
+  }
+
+  if (locationHelpBtn) locationHelpBtn.addEventListener('click', openLocationHelp);
+  if (closeLocationHelpModal) closeLocationHelpModal.addEventListener('click', closeLocationHelp);
+  if (closeLocationHelpBtn) closeLocationHelpBtn.addEventListener('click', closeLocationHelp);
+  if (locationHelpModal) {
+    locationHelpModal.addEventListener('click', (e) => {
+      if (e.target === locationHelpModal) closeLocationHelp();
+    });
+  }
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'F1') {
+      e.preventDefault();
+      openLocationHelp();
+      return;
+    }
+    if (e.key === 'Escape' && locationHelpModal?.classList.contains('is-open')) {
+      closeLocationHelp();
+    }
+  });
 
   (async () => {
     await Promise.all([loadLocations(), loadProducts(), loadSituations()]);

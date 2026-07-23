@@ -9,6 +9,109 @@
     <link rel="stylesheet" href="pesquisa-styles.css">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
+        body.location-product-page .container {
+            padding-top: 10px;
+        }
+
+        body.location-product-page .header {
+            margin-bottom: 12px;
+        }
+
+        body.location-product-page .form-container {
+            margin-top: 8px;
+            scroll-margin-top: 8px;
+        }
+
+        .location-product-filters-header {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+        }
+
+        .location-product-filters-header h2 {
+            margin: 0;
+        }
+
+        .location-help-modal {
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+        }
+
+        .location-help-modal.is-open {
+            display: flex !important;
+        }
+
+        .location-help-modal .modal-content {
+            max-width: 640px;
+            width: min(640px, calc(100vw - 24px));
+            max-height: calc(100vh - 32px);
+            margin: 0 auto !important;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .location-help-modal .modal-body {
+            overflow-y: auto;
+            flex: 1 1 auto;
+            min-height: 0;
+        }
+
+        .location-help-modal .modal-footer {
+            flex: 0 0 auto;
+            padding: 16px 24px;
+            display: flex;
+            justify-content: center;
+            border-top: 1px solid #eef2f7;
+        }
+
+        .location-help-body {
+            color: #334155;
+            font-size: 0.95rem;
+            line-height: 1.55;
+        }
+
+        .location-help-body h4 {
+            margin: 18px 0 8px;
+            color: #1e293b;
+            font-size: 1rem;
+        }
+
+        .location-help-body h4:first-child {
+            margin-top: 0;
+        }
+
+        .location-help-body ul {
+            margin: 0 0 8px;
+            padding-left: 1.2rem;
+        }
+
+        .location-help-body li {
+            margin-bottom: 6px;
+        }
+
+        .location-help-examples {
+            margin: 10px 0 0;
+            padding: 12px 14px;
+            border-radius: 10px;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+        }
+
+        .location-help-examples code {
+            display: inline-block;
+            margin: 2px 0;
+            padding: 2px 6px;
+            border-radius: 4px;
+            background: #eef2ff;
+            color: #3730a3;
+            font-weight: 700;
+        }
+
         .print-modal-desc { margin-bottom: 12px; color: #555; }
         .print-location-code-item { display: block; padding: 6px 0; cursor: pointer; }
         .print-location-code-item input { margin-right: 8px; }
@@ -75,7 +178,7 @@
         }
     </style>
 </head>
-<body>
+<body class="location-product-page">
     <script src="auth-check.js"></script>
     <script src="header-menu.js"></script>
     <script src="menu-access.js"></script>
@@ -199,10 +302,13 @@
         </header>
 
         <main class="main-content">
-            <div class="form-container" style="width:100%;max-width:none;">
+            <div class="form-container" id="locationProductPanel" style="width:100%;max-width:none;">
                 <div class="filters-container">
-                    <div class="filters-header">
+                    <div class="filters-header location-product-filters-header">
                         <h2><i class="fas fa-filter"></i> Filters</h2>
+                        <button type="button" id="locationHelpBtn" class="btn btn-secondary" title="How to use Location Product (F1)">
+                            <i class="fas fa-circle-question"></i> Help
+                        </button>
                     </div>
                     <div class="filters-content show">
                         <div class="filters-grid">
@@ -366,10 +472,10 @@
                         </label>
                     </div>
                 </fieldset>
-                <div class="form-actions" style="margin-top:20px;">
-                    <button type="button" class="btn btn-secondary" id="closePrintModalBtn">Close</button>
-                    <button type="button" class="btn btn-primary" id="doPrintBtn"><i class="fas fa-print"></i> Print</button>
-                </div>
+            </div>
+            <div class="modal-footer location-product-print-footer form-actions">
+                <button type="button" class="btn btn-secondary" id="closePrintModalBtn">Close</button>
+                <button type="button" class="btn btn-primary" id="doPrintBtn"><i class="fas fa-print"></i> Print</button>
             </div>
         </div>
     </div>
@@ -398,6 +504,63 @@
                         <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Update</button>
                     </div>
                 </form>
+            </div>
+        </div>
+    </div>
+
+    <div id="locationHelpModal" class="modal location-help-modal">
+        <div class="modal-content">
+            <div class="modal-header success">
+                <h3><i class="fas fa-circle-question"></i> How to use Location Product</h3>
+                <button type="button" class="modal-close" id="closeLocationHelpModal">&times;</button>
+            </div>
+            <div class="modal-body location-help-body">
+                <h4>What this screen does</h4>
+                <p>
+                    <strong>Location Product</strong> links products to warehouse bins (locations),
+                    tracks quantity in each bin, and lets you print location stock reports.
+                </p>
+
+                <h4>Search records</h4>
+                <ul>
+                    <li>Use filters: <strong>Location Code</strong>, <strong>Product Code</strong>, <strong>Situation</strong>, and entry date range.</li>
+                    <li>Click <strong>Search</strong> to load records. Results are not loaded until you search.</li>
+                    <li>Click <strong>Clear</strong> to reset filters and the result list.</li>
+                </ul>
+
+                <h4>New Record</h4>
+                <ul>
+                    <li>Click <strong>New Record</strong> to open the line-entry panel.</li>
+                    <li>Enter <strong>Location Code</strong>, <strong>Product Code</strong>, <strong>Situation</strong> and <strong>Qty Informed</strong>.</li>
+                    <li>Use <strong>Add Line</strong> for more rows, then <strong>Save All Lines</strong>.</li>
+                    <li>When Situation is <strong>Full</strong>, quantity updates warehouse stock.</li>
+                </ul>
+
+                <h4>Edit and Delete</h4>
+                <ul>
+                    <li><strong>Edit</strong> — change Quantity Current for a record.</li>
+                    <li><strong>Delete</strong> — remove a location-product record (may adjust stock).</li>
+                </ul>
+
+                <h4>Print</h4>
+                <ul>
+                    <li>Click <strong>Print</strong>, search and select a location, choose font size and barcode option.</li>
+                    <li>On mobile, <strong>Close</strong> and <strong>Print</strong> stay fixed at the bottom of the dialog.</li>
+                </ul>
+
+                <div class="location-help-examples">
+                    <strong>Tips</strong>
+                    <ul>
+                        <li>Location and Product codes are matched exactly (case-insensitive).</li>
+                        <li>Search only shows records with quantity current greater than zero.</li>
+                        <li>Press <strong>F1</strong> anytime to open this Help.</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary" id="closeLocationHelpBtn">
+                    <i class="fas fa-check"></i> Ok
+                </button>
             </div>
         </div>
     </div>
