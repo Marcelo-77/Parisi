@@ -991,8 +991,11 @@ document.addEventListener('DOMContentLoaded', () => {
   }
   if (printModal) printModal.addEventListener('click', (e) => { if (e.target === printModal) closePrintModal(); });
 
-  recordModal.addEventListener('click', (e) => { if (e.target === recordModal) closeRecordModal(); });
-  editQuantityCurrentModal.addEventListener('click', (e) => { if (e.target === editQuantityCurrentModal) closeEditQuantityCurrentModal(); });
+  if (editQuantityCurrentModal) {
+    editQuantityCurrentModal.addEventListener('click', (e) => {
+      if (e.target === editQuantityCurrentModal) closeEditQuantityCurrentModal();
+    });
+  }
 
   const locationHelpBtn = document.getElementById('locationHelpBtn');
   const locationHelpModal = document.getElementById('locationHelpModal');
