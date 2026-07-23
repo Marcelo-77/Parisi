@@ -327,6 +327,22 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     LocationCodeUtils.setupLocationComposition(EDIT_FIELD_IDS);
 
+    let hasSearched = false;
+
+    function revealSearchPanel() {
+        const target = document.getElementById('locationSearchPanel');
+        if (!target) return;
+        const offset = 8;
+        const top = target.getBoundingClientRect().top + window.pageYOffset - offset;
+        window.scrollTo({ top: Math.max(0, top), behavior: 'auto' });
+    }
+
+    requestAnimationFrame(() => {
+        revealSearchPanel();
+        setTimeout(revealSearchPanel, 50);
+    });
+    window.addEventListener('load', revealSearchPanel);
+
     const searchLocationInput = document.getElementById('searchLocation');
     const filterStatusSelect = document.getElementById('filterLocationStatus');
     const filterAccessSelect = document.getElementById('filterAccessType');
@@ -338,9 +354,32 @@ document.addEventListener('DOMContentLoaded', () => {
     const closeEditBtn = document.getElementById('closeEditLocationModal');
     const cancelEditBtn = document.getElementById('cancelEditLocation');
 
+    function showEmptyStateInitial() {
+        hasSearched = false;
+        locations = [];
+        filteredLocations = [];
+        const tbody = document.getElementById('locationsTableBody');
+        if (tbody) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="5" class="empty-state">
+                        <i class="fas fa-search"></i>
+                        <p>Use filters and click <strong>Search</strong> to load locations.</p>
+                    </td>
+                </tr>
+            `;
+        }
+        if (resultsCountEl) resultsCountEl.textContent = '';
+    }
+
     function renderLocations(list) {
         const tbody = document.getElementById('locationsTableBody');
         if (!tbody) return;
+
+        if (!hasSearched) {
+            showEmptyStateInitial();
+            return;
+        }
 
         if (!list.length) {
             tbody.innerHTML = `
@@ -1099,22 +1138,24 @@ document.addEventListener('DOMContentLoaded', () => {
             .then(result => {
                 if (result.success && Array.isArray(result.data)) {
                     locations = result.data;
-                    filterLocations();
                 } else {
                     locations = [];
-                    filteredLocations = [];
-                    renderLocations([]);
                 }
+                return locations;
             })
             .catch(err => {
                 console.error('Error loading locations:', err);
                 locations = [];
-                filteredLocations = [];
-                renderLocations([]);
+                return locations;
             });
     }
 
     function filterLocations() {
+        if (!hasSearched) {
+            showEmptyStateInitial();
+            return;
+        }
+
         LocationCodeUtils.updateComposedLocation(SEARCH_FIELD_IDS, {
             allowPartial: true,
             allowDirectCodeEntry: true
@@ -1132,6 +1173,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
         filteredLocations = filtered;
         renderLocations(filtered);
+    }
+
+    async function runSearch() {
+        hasSearched = true;
+        await loadLocations();
+        filterLocations();
     }
 
     // Edit form submit
@@ -1175,7 +1222,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (result.success) {
                         alert('Location updated successfully.');
                         closeEditModal();
-                        loadLocations();
+                        if (hasSearched) runSearch();
                     } else {
                         alert('Error: ' + (result.message || result.error || 'Failed to update'));
                     }
@@ -1198,7 +1245,7 @@ document.addEventListener('DOMContentLoaded', () => {
             .then(result => {
                 if (result.success) {
                     alert('Location deleted successfully.');
-                    loadLocations();
+                    if (hasSearched) runSearch();
                 } else {
                     alert('Error: ' + (result.message || result.error || 'Failed to delete'));
                 }
@@ -1217,26 +1264,40 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Initial load
-    loadLocations();
+    // Do not load result set on open — wait for Search
+    showEmptyStateInitial();
 
     ['searchLocationStreet', 'searchLocationBuilding', 'searchLocationLevel', 'searchLocationSide', 'searchLocationSublevel'].forEach((fieldId) => {
         const field = document.getElementById(fieldId);
         if (field) {
-            field.addEventListener('input', filterLocations);
-            field.addEventListener('change', filterLocations);
+            field.addEventListener('input', () => {
+                if (hasSearched) filterLocations();
+            });
+            field.addEventListener('change', () => {
+                if (hasSearched) filterLocations();
+            });
         }
     });
 
     if (searchLocationInput) {
         searchLocationInput.addEventListener('input', () => {
             searchLocationInput.value = searchLocationInput.value.toUpperCase();
-            filterLocations();
+            if (hasSearched) filterLocations();
+        });
+        searchLocationInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                runSearch();
+            }
         });
     }
 
-    filterStatusSelect.addEventListener('change', filterLocations);
-    filterAccessSelect.addEventListener('change', filterLocations);
+    filterStatusSelect.addEventListener('change', () => {
+        if (hasSearched) filterLocations();
+    });
+    filterAccessSelect.addEventListener('change', () => {
+        if (hasSearched) filterLocations();
+    });
     clearSearchBtn.addEventListener('click', () => {
         document.getElementById('searchLocationStreet').value = '';
         document.getElementById('searchLocationBuilding').value = '';
@@ -1250,11 +1311,18 @@ document.addEventListener('DOMContentLoaded', () => {
         });
         filterStatusSelect.value = '';
         filterAccessSelect.value = '';
-        filterLocations();
+        showEmptyStateInitial();
     });
 
     if (applySearchBtn) {
-        applySearchBtn.addEventListener('click', filterLocations);
+        applySearchBtn.addEventListener('click', runSearch);
+    }
+
+    const cancelSearchBtn = document.getElementById('cancelLocationSearch');
+    if (cancelSearchBtn) {
+        cancelSearchBtn.addEventListener('click', () => {
+            window.location.href = 'warehouse.html';
+        });
     }
 
     const downloadExcelBtn = document.getElementById('downloadLocationsExcel');
@@ -1265,9 +1333,49 @@ document.addEventListener('DOMContentLoaded', () => {
                 allowDirectCodeEntry: true
             });
             await loadLocations();
+            hasSearched = true;
+            filterLocations();
             await downloadLocationsExcel(filteredLocations);
         });
     }
+
+    const locationHelpBtn = document.getElementById('locationHelpBtn');
+    const locationHelpModal = document.getElementById('locationHelpModal');
+    const closeLocationHelpModal = document.getElementById('closeLocationHelpModal');
+    const closeLocationHelpBtn = document.getElementById('closeLocationHelpBtn');
+
+    function openLocationHelp() {
+        if (!locationHelpModal) return;
+        locationHelpModal.classList.add('is-open');
+        locationHelpModal.style.display = 'flex';
+        closeLocationHelpBtn?.focus();
+    }
+
+    function closeLocationHelp() {
+        if (!locationHelpModal) return;
+        locationHelpModal.classList.remove('is-open');
+        locationHelpModal.style.display = 'none';
+    }
+
+    if (locationHelpBtn) locationHelpBtn.addEventListener('click', openLocationHelp);
+    if (closeLocationHelpModal) closeLocationHelpModal.addEventListener('click', closeLocationHelp);
+    if (closeLocationHelpBtn) closeLocationHelpBtn.addEventListener('click', closeLocationHelp);
+    if (locationHelpModal) {
+        locationHelpModal.addEventListener('click', (e) => {
+            if (e.target === locationHelpModal) closeLocationHelp();
+        });
+    }
+
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'F1') {
+            e.preventDefault();
+            openLocationHelp();
+            return;
+        }
+        if (e.key === 'Escape' && locationHelpModal?.classList.contains('is-open')) {
+            closeLocationHelp();
+        }
+    });
 
     getLoggedUserExportPrefix();
 });

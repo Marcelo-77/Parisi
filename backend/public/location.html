@@ -8,8 +8,258 @@
     <link rel="stylesheet" href="warehouse-styles.css">
     <link rel="stylesheet" href="pesquisa-styles.css">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        #locationForm .location-row-3 {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 16px;
+            align-items: start;
+        }
+
+        #locationForm .location-row-address {
+            display: grid;
+            grid-template-columns: 7fr 3fr;
+            gap: 20px;
+            align-items: start;
+        }
+
+        #locationForm .location-address-half {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 10px;
+            align-items: start;
+            min-width: 0;
+        }
+
+        #locationForm .location-address-half--right {
+            padding-left: 16px;
+            border-left: 1px solid #e5e7eb;
+        }
+
+        #locationForm .location-row-address .form-group {
+            margin-bottom: 0;
+            min-width: 0;
+        }
+
+        #locationForm .location-row-address .form-group label {
+            font-size: 0.95rem;
+            font-weight: 600;
+            margin-bottom: 8px;
+            white-space: nowrap;
+        }
+
+        #locationForm .location-row-address .form-group label i {
+            margin-right: 8px;
+        }
+
+        #locationForm .location-row-compact .form-group input,
+        #locationForm .location-row-compact .form-group select {
+            width: 100%;
+            padding: 8px 10px;
+            font-size: 0.9rem;
+            min-height: 38px;
+        }
+
+        #locationForm .location-code-row {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 4px;
+        }
+
+        #locationForm .location-code-group {
+            width: min(320px, 100%);
+            text-align: center;
+            padding: 14px 16px;
+            border-radius: 14px;
+            border: none;
+            background: transparent;
+        }
+
+        #locationForm .location-code-group label {
+            display: block;
+            text-align: center;
+            font-size: 0.85rem;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #4338ca;
+        }
+
+        #locationForm .location-code-group #locationCode {
+            text-align: center;
+            font-size: 1.7rem;
+            font-weight: 800;
+            letter-spacing: 0.04em;
+            min-height: 48px;
+            padding: 8px 12px;
+            color: #1e1b4b;
+            border-color: #c7d2fe;
+            background: #fff;
+        }
+
+        #locationForm .location-code-group .error-message {
+            text-align: center;
+        }
+
+        .location-form-header {
+            position: relative;
+            display: block;
+            text-align: center;
+            margin-bottom: 8px;
+            padding-right: 100px;
+            padding-left: 100px;
+        }
+
+        .location-form-header .form-header {
+            margin: 0;
+            padding: 0;
+            border: none;
+            background: transparent;
+            text-align: center;
+        }
+
+        .location-form-header .form-header h2 {
+            justify-content: center;
+            text-align: center;
+        }
+
+        .location-form-header .form-header p {
+            text-align: center;
+        }
+
+        .location-form-header #locationHelpBtn {
+            position: absolute;
+            top: 0;
+            right: 0;
+        }
+
+        @media (max-width: 700px) {
+            .location-form-header {
+                padding-left: 0;
+                padding-right: 0;
+                padding-top: 48px;
+            }
+
+            .location-form-header #locationHelpBtn {
+                top: 0;
+                right: 0;
+            }
+        }
+
+        .location-help-modal {
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+        }
+
+        .location-help-modal.is-open {
+            display: flex !important;
+        }
+
+        .location-help-modal .modal-content {
+            max-width: 640px;
+            width: min(640px, calc(100vw - 24px));
+            max-height: calc(100vh - 32px);
+            margin: 0 auto !important;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .location-help-modal .modal-body {
+            overflow-y: auto;
+            flex: 1 1 auto;
+            min-height: 0;
+        }
+
+        .location-help-modal .modal-footer {
+            flex: 0 0 auto;
+            padding: 16px 24px;
+            display: flex;
+            justify-content: center;
+            border-top: 1px solid #eef2f7;
+        }
+
+        .location-help-body {
+            color: #334155;
+            font-size: 0.95rem;
+            line-height: 1.55;
+        }
+
+        .location-help-body h4 {
+            margin: 18px 0 8px;
+            color: #1e293b;
+            font-size: 1rem;
+        }
+
+        .location-help-body h4:first-child {
+            margin-top: 0;
+        }
+
+        .location-help-body ul {
+            margin: 0 0 8px;
+            padding-left: 1.2rem;
+        }
+
+        .location-help-body li {
+            margin-bottom: 6px;
+        }
+
+        .location-help-examples {
+            margin: 10px 0 0;
+            padding: 12px 14px;
+            border-radius: 10px;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+        }
+
+        .location-help-examples code {
+            display: inline-block;
+            margin: 2px 0;
+            padding: 2px 6px;
+            border-radius: 4px;
+            background: #eef2ff;
+            color: #3730a3;
+            font-weight: 700;
+        }
+
+        @media (max-width: 900px) {
+            #locationForm .location-row-address {
+                grid-template-columns: 1fr;
+                gap: 14px;
+            }
+
+            #locationForm .location-address-half--right {
+                padding-left: 0;
+                border-left: none;
+                padding-top: 12px;
+                border-top: 1px solid #e5e7eb;
+            }
+        }
+
+        @media (max-width: 768px) {
+            #locationForm .location-row-3,
+            #locationForm .location-address-half {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Bring the form into view with less empty header space above */
+        body.location-page .container {
+            padding-top: 10px;
+        }
+
+        body.location-page .header {
+            margin-bottom: 12px;
+        }
+
+        body.location-page .form-container {
+            margin-top: 8px;
+            scroll-margin-top: 8px;
+        }
+    </style>
 </head>
-<body>
+<body class="location-page">
     <script src="auth-check.js"></script>
     <script src="header-menu.js"></script>
     <script src="menu-access.js"></script>
@@ -133,75 +383,20 @@
         </header>
 
         <main class="main-content">
-            <div class="form-container">
-                <div class="form-header">
-                    <h2><i class="fas fa-plus-circle"></i> Create New Location</h2>
-                    <p>Fill in the fields below to register a new warehouse location</p>
+            <div class="form-container" id="locationFormPanel" style="width:100%;max-width:none;">
+                <div class="location-form-header">
+                    <div class="form-header">
+                        <h2><i class="fas fa-plus-circle"></i> Create New Location</h2>
+                        <p>Fill in the fields below to register a new warehouse location</p>
+                    </div>
+                    <button type="button" id="locationHelpBtn" class="btn btn-secondary" title="How to create a location (F1)">
+                        <i class="fas fa-circle-question"></i> Help
+                    </button>
                 </div>
 
                 <form id="locationForm" class="funcionario-form">
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="locationStreet">
-                                <i class="fas fa-road"></i> Street *
-                            </label>
-                            <input type="text" id="locationStreet" name="locationStreet" required
-                                   placeholder="Ex: A"
-                                   maxlength="1" autocomplete="off"
-                                   style="text-transform: uppercase;">
-                            <span class="error-message" id="locationStreet-error"></span>
-                        </div>
-                        <div class="form-group">
-                            <label for="locationBuilding">
-                                <i class="fas fa-building"></i> Building *
-                            </label>
-                            <input type="number" id="locationBuilding" name="locationBuilding" required
-                                   placeholder="Ex: 7" min="0" step="1" inputmode="numeric">
-                            <span class="error-message" id="locationBuilding-error"></span>
-                        </div>
-                        <div class="form-group">
-                            <label for="locationLevel">
-                                <i class="fas fa-layer-group"></i> Level *
-                            </label>
-                            <input type="number" id="locationLevel" name="locationLevel" required
-                                   placeholder="Ex: 1" min="0" step="1" inputmode="numeric">
-                            <span class="error-message" id="locationLevel-error"></span>
-                        </div>
-                        <div class="form-group" id="locationLevelZeroModeGroup" style="display:none;">
-                            <label for="locationLevelZeroMode">
-                                <i class="fas fa-sliders"></i> Level 0 type *
-                            </label>
-                            <select id="locationLevelZeroMode" name="locationLevelZeroMode">
-                                <option value="">Select type</option>
-                                <option value="side">Side</option>
-                                <option value="sublevel">Sublevel</option>
-                            </select>
-                            <span class="error-message" id="locationLevelZeroMode-error"></span>
-                        </div>
-                        <div class="form-group" id="locationSublevelGroup" style="display:none;">
-                            <label for="locationSublevel">
-                                <i class="fas fa-sort-numeric-down"></i> Sublevel *
-                            </label>
-                            <input type="number" id="locationSublevel" name="locationSublevel"
-                                   placeholder="Ex: 0" min="0" step="1" inputmode="numeric">
-                            <span class="error-message" id="locationSublevel-error"></span>
-                        </div>
-                        <div class="form-group" id="locationSideGroup" style="display:none;">
-                            <label for="locationSide">
-                                <i class="fas fa-arrows-left-right"></i> Side *
-                            </label>
-                            <select id="locationSide" name="locationSide">
-                                <option value="">Select side</option>
-                                <option value="R">R - Right</option>
-                                <option value="L">L - Left</option>
-                                <option value="M">M - Middle</option>
-                            </select>
-                            <span class="error-message" id="locationSide-error"></span>
-                        </div>
-                    </div>
-
-                    <div class="form-row">
-                        <div class="form-group full-width">
+                    <div class="form-row location-code-row">
+                        <div class="form-group location-code-group">
                             <label for="locationCode">
                                 <i class="fas fa-map-marker-alt"></i> Location *
                             </label>
@@ -212,7 +407,71 @@
                         </div>
                     </div>
 
-                    <div class="form-row">
+                    <div class="form-row location-row-address location-row-compact">
+                        <div class="location-address-half location-address-half--left">
+                            <div class="form-group">
+                                <label for="locationStreet">
+                                    <i class="fas fa-road"></i> Street *
+                                </label>
+                                <input type="text" id="locationStreet" name="locationStreet" required
+                                       placeholder="Ex: A"
+                                       maxlength="1" autocomplete="off"
+                                       style="text-transform: uppercase;">
+                                <span class="error-message" id="locationStreet-error"></span>
+                            </div>
+                            <div class="form-group">
+                                <label for="locationBuilding">
+                                    <i class="fas fa-building"></i> Building *
+                                </label>
+                                <input type="number" id="locationBuilding" name="locationBuilding" required
+                                       placeholder="Ex: 7" min="0" step="1" inputmode="numeric">
+                                <span class="error-message" id="locationBuilding-error"></span>
+                            </div>
+                            <div class="form-group">
+                                <label for="locationLevel">
+                                    <i class="fas fa-layer-group"></i> Level *
+                                </label>
+                                <input type="number" id="locationLevel" name="locationLevel" required
+                                       placeholder="Ex: 1" min="0" step="1" inputmode="numeric">
+                                <span class="error-message" id="locationLevel-error"></span>
+                            </div>
+                        </div>
+                        <div class="location-address-half location-address-half--right" id="locationLevelZeroRow">
+                            <div class="form-group" id="locationLevelZeroModeGroup" style="display:none;">
+                                <label for="locationLevelZeroMode">
+                                    <i class="fas fa-sliders"></i> Level 0 type *
+                                </label>
+                                <select id="locationLevelZeroMode" name="locationLevelZeroMode">
+                                    <option value="">Select type</option>
+                                    <option value="side">Side</option>
+                                    <option value="sublevel">Sublevel</option>
+                                </select>
+                                <span class="error-message" id="locationLevelZeroMode-error"></span>
+                            </div>
+                            <div class="form-group" id="locationSublevelGroup" style="display:none;">
+                                <label for="locationSublevel">
+                                    <i class="fas fa-sort-numeric-down"></i> Sublevel *
+                                </label>
+                                <input type="number" id="locationSublevel" name="locationSublevel"
+                                       placeholder="Ex: 0" min="0" step="1" inputmode="numeric">
+                                <span class="error-message" id="locationSublevel-error"></span>
+                            </div>
+                            <div class="form-group" id="locationSideGroup" style="display:none;">
+                                <label for="locationSide">
+                                    <i class="fas fa-arrows-left-right"></i> Side *
+                                </label>
+                                <select id="locationSide" name="locationSide">
+                                    <option value="">Select side</option>
+                                    <option value="R">R - Right</option>
+                                    <option value="L">L - Left</option>
+                                    <option value="M">M - Middle</option>
+                                </select>
+                                <span class="error-message" id="locationSide-error"></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-row location-row-3">
                         <div class="form-group">
                             <label for="locationSection">
                                 <i class="fas fa-folder"></i> Section *
@@ -229,16 +488,6 @@
                             <span class="error-message" id="locationSection-error"></span>
                         </div>
                         <div class="form-group">
-                            <label for="locationStatus">
-                                <i class="fas fa-toggle-on"></i> Status *
-                            </label>
-                            <select id="locationStatus" name="locationStatus" required>
-                                <option value="active" selected>Active</option>
-                                <option value="inactive">Inactive</option>
-                            </select>
-                            <span class="error-message" id="locationStatus-error"></span>
-                        </div>
-                        <div class="form-group">
                             <label for="accessType">
                                 <i class="fas fa-truck-loading"></i> Access Type *
                             </label>
@@ -250,9 +499,22 @@
                             </select>
                             <span class="error-message" id="accessType-error"></span>
                         </div>
+                        <div class="form-group">
+                            <label for="locationStatus">
+                                <i class="fas fa-toggle-on"></i> Status *
+                            </label>
+                            <select id="locationStatus" name="locationStatus" required>
+                                <option value="active" selected>Active</option>
+                                <option value="inactive">Inactive</option>
+                            </select>
+                            <span class="error-message" id="locationStatus-error"></span>
+                        </div>
                     </div>
 
                     <div class="form-actions">
+                        <button type="button" id="cancelLocationBtn" class="btn btn-secondary">
+                            <i class="fas fa-times"></i> Cancel
+                        </button>
                         <button type="button" id="clearLocationBtn" class="btn btn-secondary">
                             <i class="fas fa-eraser"></i> Clear
                         </button>
@@ -267,6 +529,62 @@
         <footer class="footer">
             <p>&copy; 2026 Double-Y IT Systems. All rights reserved.</p>
         </footer>
+    </div>
+
+    <div id="locationHelpModal" class="modal location-help-modal">
+        <div class="modal-content">
+            <div class="modal-header success">
+                <h3><i class="fas fa-circle-question"></i> How to create a Location</h3>
+                <button type="button" class="modal-close" id="closeLocationHelpModal">&times;</button>
+            </div>
+            <div class="modal-body location-help-body">
+                <h4>What is Location?</h4>
+                <p>
+                    The <strong>Location</strong> code is generated automatically from Street, Building and Level.
+                    You cannot type it manually. It updates at the top of the form as you fill the fields.
+                </p>
+
+                <h4>Required address fields</h4>
+                <ul>
+                    <li><strong>Street</strong> — one letter (A–Z), for example <code>A</code> or <code>B</code>.</li>
+                    <li><strong>Building</strong> — a number, for example <code>7</code> or <code>15</code>.</li>
+                    <li><strong>Level</strong> — shelf/rack level number. Use <code>0</code> for ground level, or <code>1</code>, <code>2</code>, etc. for upper levels.</li>
+                </ul>
+
+                <h4>When Level is 0</h4>
+                <p>Choose a <strong>Level 0 type</strong>:</p>
+                <ul>
+                    <li><strong>Side</strong> — then select <strong>R</strong> (Right), <strong>L</strong> (Left) or <strong>M</strong> (Middle).</li>
+                    <li><strong>Sublevel</strong> — then enter a sublevel number (for example <code>0</code>).</li>
+                </ul>
+
+                <h4>When Level is greater than 0</h4>
+                <p>
+                    Select the <strong>Side</strong> (R / L / M). Level 0 type and Sublevel are not used.
+                </p>
+
+                <h4>Classification</h4>
+                <ul>
+                    <li><strong>Section</strong> — warehouse area (Tapware, BathWare, Furniture, etc.).</li>
+                    <li><strong>Access Type</strong> — how the bin is reached (by Hand, Wave or Fork).</li>
+                    <li><strong>Status</strong> — Active or Inactive.</li>
+                </ul>
+
+                <div class="location-help-examples">
+                    <strong>Examples</strong>
+                    <ul>
+                        <li>Street <code>B</code>, Building <code>1</code>, Level <code>0</code>, Sublevel <code>0</code> → <code>B1-00</code></li>
+                        <li>Street <code>B</code>, Building <code>15</code>, Level <code>1</code>, Side <code>L</code> → <code>B15-1L</code></li>
+                        <li>Street <code>A</code>, Building <code>7</code>, Level <code>2</code>, Side <code>R</code> → <code>A7-2R</code></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary" id="closeLocationHelpBtn">
+                    <i class="fas fa-check"></i> Ok
+                </button>
+            </div>
+        </div>
     </div>
 
     <script src="location-code-utils.js"></script>

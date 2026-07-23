@@ -8,8 +8,112 @@
     <link rel="stylesheet" href="warehouse-styles.css">
     <link rel="stylesheet" href="pesquisa-styles.css">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body.location-search-page .container {
+            padding-top: 10px;
+        }
+
+        body.location-search-page .header {
+            margin-bottom: 12px;
+        }
+
+        body.location-search-page .form-container {
+            margin-top: 8px;
+            scroll-margin-top: 8px;
+        }
+
+        .location-search-filters-header {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+        }
+
+        .location-search-filters-header h2 {
+            margin: 0;
+        }
+
+        .location-help-modal {
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+        }
+
+        .location-help-modal.is-open {
+            display: flex !important;
+        }
+
+        .location-help-modal .modal-content {
+            max-width: 640px;
+            width: min(640px, calc(100vw - 24px));
+            max-height: calc(100vh - 32px);
+            margin: 0 auto !important;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .location-help-modal .modal-body {
+            overflow-y: auto;
+            flex: 1 1 auto;
+            min-height: 0;
+        }
+
+        .location-help-modal .modal-footer {
+            flex: 0 0 auto;
+            padding: 16px 24px;
+            display: flex;
+            justify-content: center;
+            border-top: 1px solid #eef2f7;
+        }
+
+        .location-help-body {
+            color: #334155;
+            font-size: 0.95rem;
+            line-height: 1.55;
+        }
+
+        .location-help-body h4 {
+            margin: 18px 0 8px;
+            color: #1e293b;
+            font-size: 1rem;
+        }
+
+        .location-help-body h4:first-child {
+            margin-top: 0;
+        }
+
+        .location-help-body ul {
+            margin: 0 0 8px;
+            padding-left: 1.2rem;
+        }
+
+        .location-help-body li {
+            margin-bottom: 6px;
+        }
+
+        .location-help-examples {
+            margin: 10px 0 0;
+            padding: 12px 14px;
+            border-radius: 10px;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+        }
+
+        .location-help-examples code {
+            display: inline-block;
+            margin: 2px 0;
+            padding: 2px 6px;
+            border-radius: 4px;
+            background: #eef2ff;
+            color: #3730a3;
+            font-weight: 700;
+        }
+    </style>
 </head>
-<body>
+<body class="location-search-page">
     <script src="auth-check.js"></script>
     <script src="header-menu.js"></script>
     <script src="menu-access.js"></script>
@@ -133,10 +237,13 @@
         </header>
 
         <main class="main-content">
-            <div class="form-container" style="width:100%;max-width:none;">
+            <div class="form-container" id="locationSearchPanel" style="width:100%;max-width:none;">
                 <div class="filters-container">
-                    <div class="filters-header">
+                    <div class="filters-header location-search-filters-header">
                         <h2><i class="fas fa-filter"></i> Search Filters</h2>
+                        <button type="button" id="locationHelpBtn" class="btn btn-secondary" title="How to search locations (F1)">
+                            <i class="fas fa-circle-question"></i> Help
+                        </button>
                     </div>
 
                     <div class="filters-content show">
@@ -216,6 +323,9 @@
                         </div>
 
                         <div class="filters-actions">
+                            <button id="cancelLocationSearch" class="btn btn-secondary" type="button">
+                                <i class="fas fa-times"></i> Cancel
+                            </button>
                             <button id="applyLocationSearch" class="btn btn-primary" type="button">
                                 <i class="fas fa-search"></i> Search
                             </button>
@@ -259,8 +369,8 @@
                                 <tbody id="locationsTableBody">
                                     <tr>
                                         <td colspan="5" class="empty-state">
-                                            <i class="fas fa-search-location"></i>
-                                            <p>No locations found.</p>
+                                            <i class="fas fa-search"></i>
+                                            <p>Use filters and click <strong>Search</strong> to load locations.</p>
                                         </td>
                                     </tr>
                                 </tbody>
@@ -402,6 +512,61 @@
                 </button>
                 <button type="button" class="btn btn-primary" id="confirmPrintBinLabel">
                     <i class="fas fa-print"></i> Print
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div id="locationHelpModal" class="modal location-help-modal">
+        <div class="modal-content">
+            <div class="modal-header success">
+                <h3><i class="fas fa-circle-question"></i> How to search Locations</h3>
+                <button type="button" class="modal-close" id="closeLocationHelpModal">&times;</button>
+            </div>
+            <div class="modal-body location-help-body">
+                <h4>What this screen does</h4>
+                <p>
+                    Use <strong>Search Location</strong> to find warehouse bins, edit their details,
+                    print or download bin labels, and export results to Excel.
+                </p>
+
+                <h4>How to search</h4>
+                <ul>
+                    <li>Fill one or more filters, then click <strong>Search</strong>.</li>
+                    <li>You can search by <strong>Street</strong>, <strong>Building</strong>, <strong>Level</strong>, Side/Sublevel, full <strong>Location</strong> code, <strong>Status</strong>, <strong>Section</strong> or <strong>Access Type</strong>.</li>
+                    <li>The <strong>Location</strong> field can be typed directly (example: <code>B15-1L</code>) or built from Street/Building/Level.</li>
+                    <li>Click <strong>Clear Filters</strong> to reset all search fields.</li>
+                </ul>
+
+                <h4>Level 0 filters</h4>
+                <ul>
+                    <li>When <strong>Level</strong> is <code>0</code>, choose <strong>Level 0 type</strong>: Side or Sublevel.</li>
+                    <li>When Level is greater than <code>0</code>, use <strong>Side</strong> (R / L / M).</li>
+                </ul>
+
+                <h4>Results and actions</h4>
+                <ul>
+                    <li><strong>Edit</strong> — change Status, Access Type, Section or rebuild the Location code.</li>
+                    <li><strong>Print</strong> — print a bin label (choose label size first).</li>
+                    <li><strong>Download</strong> — export the current search results to Excel.</li>
+                </ul>
+
+                <div class="location-help-examples">
+                    <strong>Examples</strong>
+                    <ul>
+                        <li>Street <code>B</code> only → all locations starting with B</li>
+                        <li>Location <code>B1-00</code> → exact (or matching) bin code</li>
+                        <li>Status <code>Active</code> + Section <code>BathWare</code> → active BathWare bins</li>
+                    </ul>
+                </div>
+
+                <p style="margin-top:14px;color:#64748b;font-size:0.88rem;">
+                    Tip: press <strong>F1</strong> anytime on this page to open this Help.
+                </p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary" id="closeLocationHelpBtn">
+                    <i class="fas fa-check"></i> Ok
                 </button>
             </div>
         </div>

@@ -133,8 +133,24 @@ function setupHeaderDropdowns() {
 document.addEventListener('DOMContentLoaded', () => {
     LocationCodeUtils.setupLocationComposition(LOCATION_FIELD_IDS);
 
+    function revealLocationForm() {
+        const target = document.getElementById('locationFormPanel');
+        if (!target) return;
+        const offset = 8;
+        const top = target.getBoundingClientRect().top + window.pageYOffset - offset;
+        window.scrollTo({ top: Math.max(0, top), behavior: 'auto' });
+    }
+
+    // Scroll so Create New Location fills the screen (past the large header)
+    requestAnimationFrame(() => {
+        revealLocationForm();
+        setTimeout(revealLocationForm, 50);
+    });
+    window.addEventListener('load', revealLocationForm);
+
     const form = document.getElementById('locationForm');
     const clearBtn = document.getElementById('clearLocationBtn');
+    const cancelBtn = document.getElementById('cancelLocationBtn');
     const saveBtn = document.getElementById('saveLocationBtn');
 
     function showError(fieldId, message) {
@@ -266,6 +282,50 @@ document.addEventListener('DOMContentLoaded', () => {
 
     clearBtn.addEventListener('click', () => {
         resetLocationForm();
+    });
+
+    if (cancelBtn) {
+        cancelBtn.addEventListener('click', () => {
+            window.location.href = 'warehouse.html';
+        });
+    }
+
+    const locationHelpBtn = document.getElementById('locationHelpBtn');
+    const locationHelpModal = document.getElementById('locationHelpModal');
+    const closeLocationHelpModal = document.getElementById('closeLocationHelpModal');
+    const closeLocationHelpBtn = document.getElementById('closeLocationHelpBtn');
+
+    function openLocationHelp() {
+        if (!locationHelpModal) return;
+        locationHelpModal.classList.add('is-open');
+        locationHelpModal.style.display = 'flex';
+        closeLocationHelpBtn?.focus();
+    }
+
+    function closeLocationHelp() {
+        if (!locationHelpModal) return;
+        locationHelpModal.classList.remove('is-open');
+        locationHelpModal.style.display = 'none';
+    }
+
+    if (locationHelpBtn) locationHelpBtn.addEventListener('click', openLocationHelp);
+    if (closeLocationHelpModal) closeLocationHelpModal.addEventListener('click', closeLocationHelp);
+    if (closeLocationHelpBtn) closeLocationHelpBtn.addEventListener('click', closeLocationHelp);
+    if (locationHelpModal) {
+        locationHelpModal.addEventListener('click', (e) => {
+            if (e.target === locationHelpModal) closeLocationHelp();
+        });
+    }
+
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'F1') {
+            e.preventDefault();
+            openLocationHelp();
+            return;
+        }
+        if (e.key === 'Escape' && locationHelpModal?.classList.contains('is-open')) {
+            closeLocationHelp();
+        }
     });
 
 });
