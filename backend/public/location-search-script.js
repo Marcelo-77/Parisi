@@ -1150,22 +1150,71 @@ document.addEventListener('DOMContentLoaded', () => {
             });
     }
 
+    function getLocationSearchPrefix() {
+        const direct = String(searchLocationInput?.value || '')
+            .trim()
+            .toUpperCase()
+            .replace(/-+$/g, '');
+        if (direct) return direct;
+
+        const parts = LocationCodeUtils.getLocationParts(SEARCH_FIELD_IDS);
+        let term = '';
+        if (parts.street) term += parts.street;
+        if (parts.building !== '') term += String(parts.building);
+        if (parts.level !== '') {
+            term += `-${parts.level}`;
+            if (Number(parts.level) === 0) {
+                const mode = parts.levelZeroMode
+                    || (parts.side ? 'side' : (parts.sublevel !== '' ? 'sublevel' : ''));
+                if (mode === 'side' && parts.side) term += parts.side;
+                else if (mode === 'sublevel' && parts.sublevel !== '') term += String(parts.sublevel);
+            } else if (parts.side) {
+                term += parts.side;
+            }
+        }
+        return term.toUpperCase();
+    }
+
+    function locationMatchesSearchTerm(locationCode, term) {
+        const code = String(locationCode || '').trim().toUpperCase();
+        const needle = String(term || '').trim().toUpperCase().replace(/-+$/g, '');
+        if (!needle) return true;
+        if (!code) return false;
+
+        // Prefix match: C9 → C9-00, C91L, C9-1R
+        if (code.startsWith(needle)) return true;
+
+        // Also accept codes that start with "C9-" when user typed "C9"
+        if (code.startsWith(`${needle}-`)) return true;
+
+        // Conjunto match (Street + Building), covers legacy codes like C21L for term C2
+        const conjunto = needle.match(/^([A-Z])(\d+)$/);
+        if (conjunto) {
+            const parts = LocationCodeUtils.parseLocationCode(code);
+            if (
+                parts.street === conjunto[1] &&
+                parts.building !== '' &&
+                String(Number(parts.building)) === String(Number(conjunto[2]))
+            ) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     function filterLocations() {
         if (!hasSearched) {
             showEmptyStateInitial();
             return;
         }
 
-        LocationCodeUtils.updateComposedLocation(SEARCH_FIELD_IDS, {
-            allowPartial: true,
-            allowDirectCodeEntry: true
-        });
-        const term = searchLocationInput.value.trim().toLowerCase();
+        const term = getLocationSearchPrefix();
         const status = filterStatusSelect.value;
         const access = filterAccessSelect.value;
 
         const filtered = locations.filter(loc => {
-            const matchesTerm = !term || (loc.location || '').toLowerCase().includes(term);
+            const matchesTerm = locationMatchesSearchTerm(loc.location, term);
             const matchesStatus = !status || loc.status === status;
             const matchesAccess = !access || loc.accessType === access;
             return matchesTerm && matchesStatus && matchesAccess;
@@ -1281,7 +1330,21 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (searchLocationInput) {
         searchLocationInput.addEventListener('input', () => {
-            searchLocationInput.value = searchLocationInput.value.toUpperCase();
+            searchLocationInput.value = searchLocationInput.value.toUpperCase().replace(/[^A-Z0-9-]/g, '');
+            // Direct Location typing wins: clear address parts so composition does not overwrite it
+            const streetEl = document.getElementById('searchLocationStreet');
+            const buildingEl = document.getElementById('searchLocationBuilding');
+            const levelEl = document.getElementById('searchLocationLevel');
+            const sideEl = document.getElementById('searchLocationSide');
+            const sublevelEl = document.getElementById('searchLocationSublevel');
+            const modeEl = document.getElementById('searchLocationLevelZeroMode');
+            if (streetEl) streetEl.value = '';
+            if (buildingEl) buildingEl.value = '';
+            if (levelEl) levelEl.value = '';
+            if (sideEl) sideEl.value = '';
+            if (sublevelEl) sublevelEl.value = '';
+            if (modeEl) modeEl.value = '';
+            LocationCodeUtils.updateLevelDependentFields(SEARCH_FIELD_IDS);
             if (hasSearched) filterLocations();
         });
         searchLocationInput.addEventListener('keypress', (e) => {
@@ -1328,10 +1391,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const downloadExcelBtn = document.getElementById('downloadLocationsExcel');
     if (downloadExcelBtn) {
         downloadExcelBtn.addEventListener('click', async () => {
-            LocationCodeUtils.updateComposedLocation(SEARCH_FIELD_IDS, {
-                allowPartial: true,
-                allowDirectCodeEntry: true
-            });
             await loadLocations();
             hasSearched = true;
             filterLocations();

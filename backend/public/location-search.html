@@ -196,6 +196,7 @@
                         <div class="location-dropdown-menu" id="locationDropdownMenu" aria-hidden="true">
                             <a href="location.html" class="dropdown-item"><i class="fas fa-plus"></i> New Location</a>
                             <a href="location-search.html" class="dropdown-item"><i class="fas fa-search"></i> Search Location</a>
+                            <a href="location-smart.html" class="dropdown-item"><i class="fas fa-wand-magic-sparkles"></i> Location Smart</a>
                             <a href="location-product.html" class="dropdown-item"><i class="fas fa-boxes-stacked"></i> Location Product</a>
                             <a href="log-location-product.html" class="dropdown-item"><i class="fas fa-history"></i> Log Location Product</a>
                         </div>
@@ -534,7 +535,7 @@
                 <ul>
                     <li>Fill one or more filters, then click <strong>Search</strong>.</li>
                     <li>You can search by <strong>Street</strong>, <strong>Building</strong>, <strong>Level</strong>, Side/Sublevel, full <strong>Location</strong> code, <strong>Status</strong>, <strong>Section</strong> or <strong>Access Type</strong>.</li>
-                    <li>The <strong>Location</strong> field can be typed directly (example: <code>B15-1L</code>) or built from Street/Building/Level.</li>
+                    <li>The <strong>Location</strong> field matches codes that <strong>start with</strong> what you type (example: <code>C9</code> finds <code>C9-00</code>, <code>C9-1R</code>, …).</li>
                     <li>Click <strong>Clear Filters</strong> to reset all search fields.</li>
                 </ul>
 
@@ -555,7 +556,8 @@
                     <strong>Examples</strong>
                     <ul>
                         <li>Street <code>B</code> only → all locations starting with B</li>
-                        <li>Location <code>B1-00</code> → exact (or matching) bin code</li>
+                        <li>Location <code>C9</code> → all locations starting with C9</li>
+                        <li>Location <code>B1-00</code> → exact bin code (prefix match)</li>
                         <li>Status <code>Active</code> + Section <code>BathWare</code> → active BathWare bins</li>
                     </ul>
                 </div>

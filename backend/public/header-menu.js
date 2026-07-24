@@ -44,6 +44,7 @@
                                 <div class="dropdown-submenu" aria-hidden="true">
                                     <a href="location.html" class="dropdown-item" data-app="location.html"><i class="fas fa-plus"></i> New Location</a>
                                     <a href="location-search.html" class="dropdown-item" data-app="location-search.html"><i class="fas fa-search"></i> Search Location</a>
+                                    <a href="location-smart.html" class="dropdown-item" data-app="location-smart.html"><i class="fas fa-wand-magic-sparkles"></i> Location Smart</a>
                                     <a href="location-product.html" class="dropdown-item" data-app="location-product.html"><i class="fas fa-boxes-stacked"></i> Location Product</a>
                                     <a href="log-location-product.html" class="dropdown-item" data-app="log-location-product.html"><i class="fas fa-history"></i> Log Location Product</a>
                                 </div>
