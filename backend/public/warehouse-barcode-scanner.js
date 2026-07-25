@@ -11,7 +11,8 @@
     if (typeof window.matchMedia === 'function' && window.matchMedia('(max-width: 768px)').matches) {
       return true;
     }
-    if (navigator.maxTouchPoints > 1 && Math.min(window.innerWidth, window.innerHeight) <= 900) {
+    const touchPoints = Number(navigator.maxTouchPoints) || 0;
+    if (touchPoints > 0 && Math.min(window.innerWidth, window.innerHeight) <= 1024) {
       return true;
     }
     return /Android|iPhone|iPad|iPod|Mobile|IEMobile|Opera Mini/i.test(navigator.userAgent || '');

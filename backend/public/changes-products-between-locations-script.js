@@ -226,12 +226,24 @@ function closeHelp() {
   modal.style.display = 'none';
 }
 
-function updateScanButtonsVisibility() {
-  const show = window.WarehouseBarcodeScanner
+function isScanCapableDevice() {
+  if (window.WarehouseBarcodeScanner
     && typeof window.WarehouseBarcodeScanner.isMobileDevice === 'function'
-    && window.WarehouseBarcodeScanner.isMobileDevice();
+    && window.WarehouseBarcodeScanner.isMobileDevice()) {
+    return true;
+  }
+  // Extra fallback for phones/tablets that report desktop-like width
+  if (navigator.maxTouchPoints > 0 && /Android|iPhone|iPad|iPod|Mobile|IEMobile|Opera Mini/i.test(navigator.userAgent || '')) {
+    return true;
+  }
+  return false;
+}
+
+function updateScanButtonsVisibility() {
+  const show = isScanCapableDevice();
   document.querySelectorAll('.move-scan-btn').forEach((btn) => {
-    btn.style.display = show ? '' : 'none';
+    if (show) btn.classList.remove('is-hidden');
+    else btn.classList.add('is-hidden');
   });
 }
 
@@ -252,7 +264,7 @@ function scanInto(inputId) {
   });
 }
 
-document.addEventListener('DOMContentLoaded', () => {
+function initMoveLocationsPage() {
   const previewBtn = document.getElementById('previewMoveBtn');
   const clearBtn = document.getElementById('clearMoveBtn');
   const cancelBtn = document.getElementById('cancelMoveBtn');
@@ -299,5 +311,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
   updateScanButtonsVisibility();
   window.addEventListener('resize', updateScanButtonsVisibility);
+  window.addEventListener('orientationchange', updateScanButtonsVisibility);
   clearPreviewState();
-});
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initMoveLocationsPage);
+} else {
+  initMoveLocationsPage();
+}

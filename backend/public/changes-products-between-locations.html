@@ -54,7 +54,10 @@
         .move-scan-btn {
             flex: 0 0 auto;
             white-space: nowrap;
-            display: none;
+        }
+
+        .move-scan-btn.is-hidden {
+            display: none !important;
         }
 
         .move-arrow {
@@ -233,7 +236,7 @@
                                 </label>
                                 <div class="move-location-row">
                                     <input type="text" id="sourceLocationCode" maxlength="50" placeholder="Ex: C9-1R" autocomplete="off">
-                                    <button type="button" id="scanSourceLocationBtn" class="btn btn-secondary move-scan-btn" title="Scan source location">
+                                    <button type="button" id="scanSourceLocationBtn" class="btn btn-secondary move-scan-btn is-hidden" title="Scan source location">
                                         <i class="fas fa-camera"></i> Scan
                                     </button>
                                 </div>
@@ -247,7 +250,7 @@
                                 </label>
                                 <div class="move-location-row">
                                     <input type="text" id="destinationLocationCode" maxlength="50" placeholder="Ex: C9-2R" autocomplete="off">
-                                    <button type="button" id="scanDestinationLocationBtn" class="btn btn-secondary move-scan-btn" title="Scan destination location">
+                                    <button type="button" id="scanDestinationLocationBtn" class="btn btn-secondary move-scan-btn is-hidden" title="Scan destination location">
                                         <i class="fas fa-camera"></i> Scan
                                     </button>
                                 </div>
