@@ -3,7 +3,7 @@ const crypto = require('crypto');
 const AUTH_SECRET = process.env.AUTH_SECRET || 'double-y-auth-secret';
 const APP_PASSWORD = process.env.APP_PASSWORD || 'yahusha';
 const ROOT_USER = 'root';
-const UNIVERSAL_APPLICATIONS = ['change-password.html'];
+const UNIVERSAL_APPLICATIONS = ['change-password.html', 'warehouse.html'];
 const SESSION_COOKIE = 'doubley_session';
 const SESSION_PAYLOAD_SEPARATOR = ':';
 
@@ -134,10 +134,45 @@ function verifyPassword(password) {
   return crypto.timingSafeEqual(expected, provided);
 }
 
+const PASSWORD_HASH_PREFIX = 'scrypt$';
+const PASSWORD_HASH_KEYLEN = 64;
+
+function isHashedPassword(storedPassword) {
+  return typeof storedPassword === 'string' && storedPassword.startsWith(PASSWORD_HASH_PREFIX);
+}
+
+function hashPassword(password) {
+  if (password == null || typeof password !== 'string' || !password) {
+    throw new Error('Password is required for hashing');
+  }
+  const salt = crypto.randomBytes(16).toString('hex');
+  const derived = crypto.scryptSync(password, salt, PASSWORD_HASH_KEYLEN);
+  return `${PASSWORD_HASH_PREFIX}${salt}$${Buffer.from(derived).toString('hex')}`;
+}
+
 function verifyStoredPassword(storedPassword, providedPassword) {
   if (!storedPassword || !providedPassword) return false;
   if (typeof storedPassword !== 'string' || typeof providedPassword !== 'string') return false;
 
+  if (isHashedPassword(storedPassword)) {
+    const parts = storedPassword.split('$');
+    if (parts.length !== 3) return false;
+    const salt = parts[1];
+    const expectedHex = parts[2];
+    if (!salt || !expectedHex) return false;
+
+    try {
+      const derived = crypto.scryptSync(providedPassword, salt, PASSWORD_HASH_KEYLEN);
+      const expected = Buffer.from(expectedHex, 'hex');
+      const provided = Buffer.from(derived);
+      if (expected.length !== provided.length) return false;
+      return crypto.timingSafeEqual(expected, provided);
+    } catch {
+      return false;
+    }
+  }
+
+  // Legacy plaintext passwords (migrated to hash on next successful login)
   const expected = Buffer.from(storedPassword);
   const provided = Buffer.from(providedPassword);
   if (expected.length !== provided.length) return false;
@@ -214,7 +249,11 @@ async function protectPages(req, res, next) {
       }
 
       const accessibleApps = await userApplicationService.listAccessibleApplications(userId);
-      const firstApp = accessibleApps[0] && accessibleApps[0].syapNmApplication;
+      const appNames = accessibleApps.map((app) => app.syapNmApplication).filter(Boolean);
+      if (appNames.includes('warehouse.html')) {
+        return res.redirect('/warehouse.html');
+      }
+      const firstApp = appNames[0];
       if (firstApp) {
         return res.redirect(`/${firstApp}`);
       }
@@ -253,6 +292,8 @@ module.exports = {
   clearSessionCookie,
   verifyPassword,
   verifyStoredPassword,
+  hashPassword,
+  isHashedPassword,
   verifyRootLogin,
   getSessionUserId,
   getSessionUserKey,

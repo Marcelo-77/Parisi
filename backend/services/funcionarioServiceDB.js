@@ -1,7 +1,7 @@
 // Employee service using PostgreSQL
 const { query, getClient } = require('../config/database');
 const Funcionario = require('../models/Funcionario');
-const { verifyStoredPassword } = require('../middleware/auth');
+const { verifyStoredPassword, hashPassword, isHashedPassword } = require('../middleware/auth');
 const companyService = require('./companyService');
 
 class FuncionarioServiceDB {
@@ -48,7 +48,7 @@ class FuncionarioServiceDB {
       funcionario.dataAdmissao,
       funcionario.photo || null,
       funcionario.ativo,
-      funcionario.password || null,
+      funcionario.password ? hashPassword(String(funcionario.password)) : null,
       funcionario.companyId || dados.companyId || null,
       funcionario.sector || dados.sector || null
     ];
@@ -204,6 +204,20 @@ class FuncionarioServiceDB {
         return null;
       }
 
+      // Upgrade legacy plaintext passwords to scrypt hash after successful login
+      if (row.password && !isHashedPassword(row.password)) {
+        try {
+          await query(
+            `UPDATE ${this.tableName}
+             SET password = $1, atualizado_em = CURRENT_TIMESTAMP
+             WHERE id = $2`,
+            [hashPassword(password), row.id]
+          );
+        } catch (upgradeError) {
+          console.error('⚠️ Password hash upgrade failed:', upgradeError.message);
+        }
+      }
+
       return this.mapRowToFuncionario(row);
     } catch (error) {
       console.error('❌ Error authenticating employee:', error);
@@ -264,7 +278,7 @@ class FuncionarioServiceDB {
         RETURNING id
       `;
 
-      await query(updateQuery, [String(novaSenha), id]);
+      await query(updateQuery, [hashPassword(String(novaSenha)), id]);
       console.log(`✅ Password changed for employee: ${id}`);
       return true;
     } catch (error) {
@@ -307,6 +321,15 @@ class FuncionarioServiceDB {
     let paramCount = 0;
 
     const allowedFields = ['nome', 'email', 'telefone', 'cargo', 'departamento', 'sector', 'dataAdmissao', 'photo', 'ativo', 'password', 'companyId'];
+
+    if (dados.password !== undefined) {
+      const rawPassword = dados.password == null ? '' : String(dados.password);
+      if (!rawPassword.trim()) {
+        delete dados.password;
+      } else {
+        dados.password = hashPassword(rawPassword);
+      }
+    }
     
     allowedFields.forEach(field => {
       if (dados[field] !== undefined) {

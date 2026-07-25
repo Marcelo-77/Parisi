@@ -13,7 +13,7 @@
         <div class="login-card">
             <div class="double-y-wordmark double-y-wordmark--login login-wordmark" aria-label="Double Y"><img src="doubley-glyph.png" alt="" class="double-y-glyph" aria-hidden="true"><span class="double-y-name">Double Y</span><img src="doubley-glyph-bottom.png" alt="" class="double-y-glyph double-y-glyph-bottom" aria-hidden="true"></div>
             <h1><i class="fas fa-lock"></i> System Access</h1>
-            <p class="login-subtitle">Sign in with your email and password, or use the root super user account.</p>
+            <p class="login-subtitle">Enter your information to sign in.</p>
 
             <form id="loginForm" class="login-form" autocomplete="off">
                 <div class="form-group">
@@ -39,12 +39,38 @@
                         autocomplete="current-password"
                     >
                 </div>
+
+                <div id="captchaPanel" class="login-captcha-panel" hidden>
+                    <div class="login-captcha-title">
+                        <i class="fas fa-robot"></i>
+                        Verify you are not a robot
+                    </div>
+                    <p id="captchaQuestion" class="login-captcha-question">Solve the challenge below.</p>
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label for="captchaAnswer"><i class="fas fa-shield-halved"></i> Answer</label>
+                        <div class="login-captcha-row">
+                            <input
+                                type="text"
+                                id="captchaAnswer"
+                                name="captchaAnswer"
+                                inputmode="numeric"
+                                autocomplete="off"
+                                placeholder="Type the result"
+                            >
+                            <button type="button" class="btn btn-secondary" id="refreshCaptchaBtn" title="New challenge">
+                                <i class="fas fa-sync-alt"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <input type="hidden" id="captchaId" value="">
+                </div>
+
                 <div id="loginError" class="login-error" role="alert" hidden>
                     <i class="fas fa-exclamation-circle"></i>
                     <span id="loginErrorText">Invalid email or password.</span>
                 </div>
                 <button type="submit" class="btn btn-primary login-btn" id="loginBtn">
-                    <i class="fas fa-sign-in-alt"></i> Enter System
+                    <i class="fas fa-sign-in-alt"></i> Sign In
                 </button>
             </form>
         </div>

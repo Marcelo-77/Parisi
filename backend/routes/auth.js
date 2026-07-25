@@ -16,6 +16,7 @@ const funcionarioServiceDB = require('../services/funcionarioServiceDB');
 const userApplicationService = require('../services/userApplicationService');
 const systemApplicationService = require('../services/systemApplicationService');
 const userSessionService = require('../services/userSessionService');
+const loginProtectionService = require('../services/loginProtectionService');
 
 const router = express.Router();
 
@@ -138,8 +139,17 @@ router.get('/menu-access', async (req, res) => {
   }
 });
 
+router.get('/captcha', (req, res) => {
+  const challenge = loginProtectionService.createCaptchaChallenge();
+  return res.json({
+    success: true,
+    ...challenge
+  });
+});
+
 router.post('/login', async (req, res) => {
-  const { email, password } = req.body || {};
+  const { email, password, captchaId, captchaAnswer } = req.body || {};
+  const clientIp = getClientIp(req);
 
   if (!email || !password) {
     return res.status(400).json({
@@ -148,8 +158,31 @@ router.post('/login', async (req, res) => {
     });
   }
 
+  const captchaRequired = loginProtectionService.isCaptchaRequired(clientIp, email);
+  if (captchaRequired) {
+    const captchaResult = loginProtectionService.consumeCaptcha(captchaId, captchaAnswer);
+    if (!captchaResult.ok) {
+      const challenge = loginProtectionService.createCaptchaChallenge();
+      const message = captchaResult.reason === 'missing'
+        ? 'Please complete the verification to confirm you are not a robot.'
+        : captchaResult.reason === 'expired'
+          ? 'Verification expired. Please solve the new challenge.'
+          : 'Incorrect verification answer. Please try again.';
+      return res.status(429).json({
+        success: false,
+        error: 'Captcha required',
+        message,
+        captchaRequired: true,
+        failedAttempts: loginProtectionService.getAttemptRecord(clientIp, email).count,
+        maxFailedAttempts: loginProtectionService.MAX_FAILED_ATTEMPTS,
+        captcha: challenge
+      });
+    }
+  }
+
   try {
     if (verifyRootLogin(email, password)) {
+      loginProtectionService.clearFailedAttempts(clientIp, email);
       const user = {
         id: ROOT_USER,
         nome: 'Root',
@@ -169,12 +202,23 @@ router.post('/login', async (req, res) => {
     const user = await funcionarioServiceDB.autenticar(email, password);
 
     if (!user) {
-      return res.status(401).json({
+      const attempt = loginProtectionService.registerFailedAttempt(clientIp, email);
+      const payload = {
         error: 'Invalid credentials',
-        message: 'Invalid email or password. Please try again.',
-      });
+        message: attempt.captchaRequired
+          ? 'Too many failed attempts. Please confirm you are not a robot.'
+          : 'Invalid email or password. Please try again.',
+        failedAttempts: attempt.count,
+        maxFailedAttempts: loginProtectionService.MAX_FAILED_ATTEMPTS,
+        captchaRequired: attempt.captchaRequired
+      };
+      if (attempt.captchaRequired) {
+        payload.captcha = loginProtectionService.createCaptchaChallenge();
+      }
+      return res.status(401).json(payload);
     }
 
+    loginProtectionService.clearFailedAttempts(clientIp, email);
     const fullUser = await funcionarioServiceDB.buscarPorId(user.id);
     const profile = typeof fullUser.toJSON === 'function' ? fullUser.toJSON() : fullUser;
     const sessionUser = {
