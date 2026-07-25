@@ -149,6 +149,18 @@
                                 <input type="text" id="filterProductCode" placeholder="Product code">
                             </div>
                             <div class="filter-group">
+                                <label for="filterCategoria"><i class="fas fa-tags"></i> Category</label>
+                                <select id="filterCategoria" class="filter-select">
+                                    <option value="">All Category</option>
+                                </select>
+                            </div>
+                            <div class="filter-group" id="filterSubcategoriaGroup" style="display: none;">
+                                <label for="filterSubcategoria"><i class="fas fa-tag"></i> Subcategory</label>
+                                <select id="filterSubcategoria" class="filter-select" aria-label="Filter by subcategory">
+                                    <option value="">All Subcategory</option>
+                                </select>
+                            </div>
+                            <div class="filter-group">
                                 <label for="filterEntryFrom"><i class="fas fa-calendar"></i> Entry From</label>
                                 <input type="datetime-local" id="filterEntryFrom">
                             </div>
@@ -179,6 +191,8 @@
                                 <tr>
                                     <th>Location Code</th>
                                     <th>Product Code</th>
+                                    <th>Category</th>
+                                    <th>Subcategory</th>
                                     <th>Entry Date/Time</th>
                                     <th>Situation</th>
                                     <th>Operation</th>
@@ -189,7 +203,7 @@
                             </thead>
                             <tbody id="logTableBody">
                                 <tr>
-                                    <td colspan="8" class="empty-state">
+                                    <td colspan="10" class="empty-state">
                                         <i class="fas fa-search"></i>
                                         <p>Use filters and click <strong>Search</strong> to load log records.</p>
                                     </td>
@@ -206,6 +220,8 @@
         </footer>
     </div>
 
+    <script src="section-options.js"></script>
+    <script src="bathware-subcategory-options.js"></script>
     <script src="log-location-product-script.js"></script>
 </body>
 </html>

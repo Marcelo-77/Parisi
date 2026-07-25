@@ -49,7 +49,9 @@ router.get(
     query('productCodeLog').optional().trim(),
     query('entryFrom').optional().trim(),
     query('entryTo').optional().trim(),
-    query('siprSqNumber').optional().isInt()
+    query('siprSqNumber').optional().isInt(),
+    query('categoria').optional().trim(),
+    query('subcategoria').optional().trim()
   ],
   handleValidationErrors,
   async (req, res) => {
@@ -59,7 +61,9 @@ router.get(
         productCodeLog: req.query.productCodeLog,
         entryFrom: req.query.entryFrom,
         entryTo: req.query.entryTo,
-        siprSqNumber: req.query.siprSqNumber ? parseInt(req.query.siprSqNumber) : undefined
+        siprSqNumber: req.query.siprSqNumber ? parseInt(req.query.siprSqNumber) : undefined,
+        categoria: req.query.categoria ? String(req.query.categoria).trim() : undefined,
+        subcategoria: req.query.subcategoria ? String(req.query.subcategoria).trim() : undefined
       };
       const list = await locationProductService.buscarLog(filtros);
       res.json({ success: true, data: list, total: list.length });

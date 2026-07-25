@@ -801,11 +801,11 @@ async function buscarLog(filtros = {}) {
   let idx = 1;
   if (filtros.locationCodeLog) {
     whereClauses.push(`l.location_code_log ILIKE $${idx++}`);
-    values.push(`%${filtros.locationCodeLog}%`);
+    values.push(`%${String(filtros.locationCodeLog).trim()}%`);
   }
   if (filtros.productCodeLog) {
     whereClauses.push(`l.product_code_log ILIKE $${idx++}`);
-    values.push(`%${filtros.productCodeLog}%`);
+    values.push(`%${String(filtros.productCodeLog).trim()}%`);
   }
   if (filtros.entryFrom) {
     whereClauses.push(`l.entry_datetime_log >= $${idx++}`);
@@ -819,12 +819,38 @@ async function buscarLog(filtros = {}) {
     whereClauses.push(`l.sipr_sq_number = $${idx++}`);
     values.push(parseInt(filtros.siprSqNumber, 10));
   }
+
+  const categoria = filtros.categoria != null ? String(filtros.categoria).trim() : '';
+  const subcategoria = filtros.subcategoria != null ? String(filtros.subcategoria).trim() : '';
+  if (categoria || subcategoria) {
+    const existsParts = [
+      'TRIM(LOWER(wi.codigo)) = TRIM(LOWER(l.product_code_log))'
+    ];
+    if (categoria) {
+      existsParts.push(`UPPER(TRIM(COALESCE(wi.categoria, ''))) = UPPER(TRIM($${idx++}))`);
+      values.push(categoria);
+    }
+    if (subcategoria) {
+      existsParts.push(`UPPER(TRIM(COALESCE(wi.subcategoria, ''))) = UPPER(TRIM($${idx++}))`);
+      values.push(subcategoria);
+    }
+    whereClauses.push(
+      `EXISTS (
+        SELECT 1
+        FROM warehouse_items wi
+        WHERE ${existsParts.join(' AND ')}
+      )`
+    );
+  }
+
   const where = whereClauses.length ? `WHERE ${whereClauses.join(' AND ')}` : '';
   const sql = `
     SELECT l.location_code_log, l.product_code_log, l.entry_datetime_log,
            l.quantity_current_prev_log, l.quantity_current_log, l.sipr_sq_number,
            l.usuario_alterou_log, l.operation_log,
            sp.sipr_nm_description AS situation_description,
+           wi.categoria AS product_categoria,
+           wi.subcategoria AS product_subcategoria,
            CASE
              WHEN LOWER(TRIM(COALESCE(l.usuario_alterou_log, ''))) = 'root' THEN 'Root'
              ELSE f.nome
@@ -832,6 +858,7 @@ async function buscarLog(filtros = {}) {
     FROM ${TABLE_LOG} l
     LEFT JOIN situation_product sp ON sp.sipr_sq_number = l.sipr_sq_number
     LEFT JOIN funcionarios f ON f.id::text = l.usuario_alterou_log
+    LEFT JOIN warehouse_items wi ON TRIM(LOWER(wi.codigo)) = TRIM(LOWER(l.product_code_log))
     ${where}
     ORDER BY l.location_code_log ASC, l.product_code_log ASC, l.entry_datetime_log ASC
   `;
@@ -847,6 +874,8 @@ async function buscarLog(filtros = {}) {
       situationDescription: row.sipr_nm_description != null ? String(row.sipr_nm_description).trim() : '',
       operationLog: row.operation_log || null,
       operationLabel: formatOperationLabel(row.operation_log),
+      categoria: row.product_categoria != null ? String(row.product_categoria).trim() : '',
+      subcategoria: row.product_subcategoria != null ? String(row.product_subcategoria).trim() : '',
       usuarioAlterouLog: row.usuario_alterou_log || null,
       usuarioAlterouNome: resolveUsuarioAlterouNome(row)
     }));
