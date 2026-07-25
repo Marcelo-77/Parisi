@@ -489,6 +489,311 @@ function formatOperationLabel(operation) {
   return value || '-';
 }
 
+async function resolveWarehouseLocationCode(clientOrNull, locationCode) {
+  const code = locationCode != null ? String(locationCode).trim() : '';
+  if (!code) return null;
+  const sql = `
+    SELECT location
+    FROM warehouse_locations
+    WHERE TRIM(LOWER(location)) = TRIM(LOWER($1))
+    LIMIT 1
+  `;
+  const result = clientOrNull
+    ? await clientOrNull.query(sql, [code])
+    : await query(sql, [code]);
+  if (!result.rows.length) return null;
+  return String(result.rows[0].location).trim();
+}
+
+async function fetchActiveBalancesAtLocation(clientOrNull, locationCode) {
+  const sql = `
+    SELECT lp.*, sp.sipr_nm_description, wi.barcode
+    FROM ${TABLE} lp
+    LEFT JOIN situation_product sp ON sp.sipr_sq_number = lp.sipr_sq_number
+    LEFT JOIN warehouse_items wi ON TRIM(LOWER(wi.codigo)) = TRIM(LOWER(lp.product_code))
+    WHERE TRIM(LOWER(lp.location_code)) = TRIM(LOWER($1))
+      AND TRIM(COALESCE(lp.stat_cd_id, '')) = 'A'
+      AND lp.quantity_current > 0
+    ORDER BY lp.product_code, lp.sipr_sq_number
+  `;
+  const result = clientOrNull
+    ? await clientOrNull.query(sql, [locationCode])
+    : await query(sql, [locationCode]);
+  return (result.rows || []).map((row) => ({
+    ...mapRow(row),
+    situationDescription: row.sipr_nm_description != null
+      ? String(row.sipr_nm_description).trim()
+      : ''
+  }));
+}
+
+function buildMovePreviewRows(sourceRows, destinationRows) {
+  const destMap = new Map();
+  destinationRows.forEach((row) => {
+    const key = `${String(row.productCode).trim().toLowerCase()}|${row.siprSqNumber}`;
+    destMap.set(key, row);
+  });
+
+  return sourceRows.map((source) => {
+    const key = `${String(source.productCode).trim().toLowerCase()}|${source.siprSqNumber}`;
+    const existing = destMap.get(key) || null;
+    const moveQty = parseInt(source.quantityCurrent, 10) || 0;
+    const destBeforeQty = existing ? (parseInt(existing.quantityCurrent, 10) || 0) : 0;
+    const destAfterQty = destBeforeQty + moveQty;
+    return {
+      productCode: source.productCode,
+      barcode: source.barcode || null,
+      siprSqNumber: source.siprSqNumber,
+      situationDescription: source.situationDescription || '',
+      quantityInformed: parseInt(source.quantityInformed, 10) || 0,
+      quantityCurrent: moveQty,
+      sourceQuantityBefore: moveQty,
+      sourceQuantityAfter: 0,
+      destinationQuantityBefore: destBeforeQty,
+      destinationQuantityAfter: destAfterQty,
+      action: existing ? 'merge' : 'insert',
+      actionLabel: existing ? 'Merge (UPDATE dest + DELETE source)' : 'INSERT dest + DELETE source'
+    };
+  });
+}
+
+function buildAfterDestinationRows(destinationRows, moveRows) {
+  const byKey = new Map();
+  destinationRows.forEach((row) => {
+    const key = `${String(row.productCode).trim().toLowerCase()}|${row.siprSqNumber}`;
+    byKey.set(key, { ...row });
+  });
+
+  moveRows.forEach((move) => {
+    const key = `${String(move.productCode).trim().toLowerCase()}|${move.siprSqNumber}`;
+    const existing = byKey.get(key);
+    if (existing) {
+      existing.quantityCurrent = (parseInt(existing.quantityCurrent, 10) || 0)
+        + (parseInt(move.quantityCurrent, 10) || 0);
+      existing.quantityInformed = (parseInt(existing.quantityInformed, 10) || 0)
+        + (parseInt(move.quantityInformed, 10) || 0);
+    } else {
+      byKey.set(key, {
+        locationCode: null,
+        productCode: move.productCode,
+        barcode: move.barcode || null,
+        siprSqNumber: move.siprSqNumber,
+        situationDescription: move.situationDescription || '',
+        quantityInformed: parseInt(move.quantityInformed, 10) || 0,
+        quantityCurrent: parseInt(move.quantityCurrent, 10) || 0,
+        statCdId: 'A'
+      });
+    }
+  });
+
+  return Array.from(byKey.values()).sort((a, b) => {
+    const pc = String(a.productCode).localeCompare(String(b.productCode));
+    if (pc !== 0) return pc;
+    return (parseInt(a.siprSqNumber, 10) || 0) - (parseInt(b.siprSqNumber, 10) || 0);
+  });
+}
+
+/** Preview before/after for moving all product balances from source location to destination. */
+async function previewMoveBetweenLocations(sourceLocationCode, destinationLocationCode) {
+  const sourceInput = sourceLocationCode != null ? String(sourceLocationCode).trim() : '';
+  const destInput = destinationLocationCode != null ? String(destinationLocationCode).trim() : '';
+
+  if (!sourceInput) throw new Error('Source location code is required');
+  if (!destInput) throw new Error('Destination location code is required');
+  if (sourceInput.toLowerCase() === destInput.toLowerCase()) {
+    throw new Error('Source and destination locations must be different');
+  }
+
+  const sourceResolved = await resolveWarehouseLocationCode(null, sourceInput);
+  const destResolved = await resolveWarehouseLocationCode(null, destInput);
+
+  if (!sourceResolved) {
+    throw new Error(`Source location "${sourceInput}" was not found`);
+  }
+  if (!destResolved) {
+    throw new Error(`Destination location "${destInput}" was not found`);
+  }
+
+  const sourceRows = await fetchActiveBalancesAtLocation(null, sourceResolved);
+  const destinationRows = await fetchActiveBalancesAtLocation(null, destResolved);
+  const moves = buildMovePreviewRows(sourceRows, destinationRows);
+  const afterDestination = buildAfterDestinationRows(destinationRows, moves).map((row) => ({
+    ...row,
+    locationCode: destResolved
+  }));
+
+  return {
+    sourceLocationCode: sourceResolved,
+    destinationLocationCode: destResolved,
+    moveCount: moves.length,
+    before: {
+      source: sourceRows,
+      destination: destinationRows
+    },
+    after: {
+      source: [],
+      destination: afterDestination
+    },
+    moves
+  };
+}
+
+/**
+ * Move all active product balances from source to destination.
+ * Logs DELETE on source and INSERT (or UPDATE when merging) on destination.
+ * Does not change warehouse_items stock (net zero relocation).
+ */
+async function moveBetweenLocations(sourceLocationCode, destinationLocationCode, usuario) {
+  const preview = await previewMoveBetweenLocations(sourceLocationCode, destinationLocationCode);
+  if (!preview.moveCount) {
+    throw new Error(`No product balances to move from location "${preview.sourceLocationCode}"`);
+  }
+
+  const userKey = usuario != null ? String(usuario).trim() : '';
+  if (!userKey) {
+    throw new Error('Logged-in user is required to move products between locations');
+  }
+
+  const client = await getClient();
+  try {
+    await client.query('BEGIN');
+
+    const sourceResolved = preview.sourceLocationCode;
+    const destResolved = preview.destinationLocationCode;
+
+    const sourceResult = await client.query(
+      `SELECT lp.location_code, lp.product_code, lp.sipr_sq_number, lp.quantity_informed,
+              lp.quantity_current, lp.stat_cd_id, lp.entry_datetime
+       FROM ${TABLE} lp
+       WHERE TRIM(LOWER(lp.location_code)) = TRIM(LOWER($1))
+         AND TRIM(COALESCE(lp.stat_cd_id, '')) = 'A'
+         AND lp.quantity_current > 0
+       ORDER BY lp.product_code, lp.sipr_sq_number
+       FOR UPDATE`,
+      [sourceResolved]
+    );
+
+    if (!sourceResult.rows.length) {
+      throw new Error(`No product balances to move from location "${sourceResolved}"`);
+    }
+
+    let moved = 0;
+    let inserted = 0;
+    let merged = 0;
+
+    for (const sourceRow of sourceResult.rows) {
+      const productCode = String(sourceRow.product_code).trim();
+      const siprSqNumber = sourceRow.sipr_sq_number;
+      const qtyCurrent = parseInt(sourceRow.quantity_current, 10) || 0;
+      const qtyInformed = parseInt(sourceRow.quantity_informed, 10) || 0;
+      const sourceLocationExact = sourceRow.location_code;
+
+      const destExisting = await client.query(
+        `SELECT location_code, product_code, sipr_sq_number, quantity_informed, quantity_current
+         FROM ${TABLE}
+         WHERE TRIM(LOWER(location_code)) = TRIM(LOWER($1))
+           AND TRIM(LOWER(product_code)) = TRIM(LOWER($2))
+           AND sipr_sq_number = $3
+         FOR UPDATE`,
+        [destResolved, productCode, siprSqNumber]
+      );
+
+      if (destExisting.rows.length) {
+        const destRow = destExisting.rows[0];
+        const oldDestQty = parseInt(destRow.quantity_current, 10) || 0;
+        const newDestQty = oldDestQty + qtyCurrent;
+        const newDestInformed = (parseInt(destRow.quantity_informed, 10) || 0) + qtyInformed;
+
+        await client.query(
+          `UPDATE ${TABLE}
+           SET quantity_current = $1,
+               quantity_informed = $2
+           WHERE location_code = $3 AND product_code = $4 AND sipr_sq_number = $5`,
+          [newDestQty, newDestInformed, destRow.location_code, destRow.product_code, destRow.sipr_sq_number]
+        );
+
+        await insertLogEntry(client, {
+          operation: 'UPDATE',
+          locationCode: destRow.location_code,
+          productCode: destRow.product_code,
+          siprSqNumber: destRow.sipr_sq_number,
+          quantityPrev: oldDestQty,
+          quantityCurrent: newDestQty,
+          usuario: userKey
+        });
+        merged += 1;
+      } else {
+        await client.query(
+          `INSERT INTO ${TABLE}
+            (location_code, product_code, entry_datetime, sipr_sq_number,
+             quantity_informed, quantity_current, stat_cd_id, usuario_inseriu)
+           VALUES ($1, $2, CURRENT_TIMESTAMP, $3, $4, $5, $6, $7)`,
+          [
+            destResolved,
+            productCode,
+            siprSqNumber,
+            qtyInformed,
+            qtyCurrent,
+            sourceRow.stat_cd_id != null ? String(sourceRow.stat_cd_id).substring(0, 1) : 'A',
+            userKey
+          ]
+        );
+
+        await insertLogEntry(client, {
+          operation: 'INSERT',
+          locationCode: destResolved,
+          productCode,
+          siprSqNumber,
+          quantityPrev: null,
+          quantityCurrent: qtyCurrent,
+          usuario: userKey
+        });
+        inserted += 1;
+      }
+
+      await client.query(
+        `DELETE FROM ${TABLE}
+         WHERE location_code = $1 AND product_code = $2 AND sipr_sq_number = $3`,
+        [sourceLocationExact, sourceRow.product_code, siprSqNumber]
+      );
+
+      await insertLogEntry(client, {
+        operation: 'DELETE',
+        locationCode: sourceLocationExact,
+        productCode: sourceRow.product_code,
+        siprSqNumber,
+        quantityPrev: qtyCurrent,
+        quantityCurrent: 0,
+        usuario: userKey
+      });
+
+      moved += 1;
+    }
+
+    await client.query('COMMIT');
+
+    const afterPreview = await previewMoveBetweenLocations(sourceResolved, destResolved);
+    return {
+      sourceLocationCode: sourceResolved,
+      destinationLocationCode: destResolved,
+      moved,
+      inserted,
+      merged,
+      before: preview.before,
+      after: {
+        source: afterPreview.before.source,
+        destination: afterPreview.before.destination
+      }
+    };
+  } catch (error) {
+    await client.query('ROLLBACK').catch(() => {});
+    console.error('❌ Error moving products between locations:', error);
+    throw new Error(error.message || 'Error moving products between locations');
+  } finally {
+    client.release();
+  }
+}
+
 /** Pesquisa em location_product_log com filtros opcionais */
 async function buscarLog(filtros = {}) {
   const whereClauses = [];
@@ -559,5 +864,7 @@ module.exports = {
   listarLocationCodesComQuantidadeInformed,
   listarProductCodesComQuantidadeAtiva,
   buscarPorProdutoFullStatus,
-  buscarLog
+  buscarLog,
+  previewMoveBetweenLocations,
+  moveBetweenLocations
 };

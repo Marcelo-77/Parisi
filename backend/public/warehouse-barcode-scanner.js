@@ -5,6 +5,7 @@
   let html5QrCodeInstance = null;
   let barcodeCameraPromptShown = false;
   let html5QrcodeLoader = null;
+  let customDetectHandler = null;
 
   function isMobileDevice() {
     if (typeof window.matchMedia === 'function' && window.matchMedia('(max-width: 768px)').matches) {
@@ -57,19 +58,24 @@
     return html5QrcodeLoader;
   }
 
-  async function openBarcodeScanner() {
+  async function openBarcodeScanner(options = {}) {
     const modal = document.getElementById('barcodeScannerModal');
-    if (!modal) return;
-    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-      alert('This device does not support camera barcode scanning.');
+    if (!modal) {
+      alert('Camera scanner is not available on this page.');
       return;
     }
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      alert('This device does not support camera scanning.');
+      return;
+    }
+
+    customDetectHandler = typeof options.onDetect === 'function' ? options.onDetect : null;
 
     modal.classList.add('show');
     modal.setAttribute('aria-hidden', 'false');
     modal.style.display = 'flex';
     barcodeScannerActive = true;
-    setBarcodeScannerStatus('Starting camera...');
+    setBarcodeScannerStatus(options.statusText || 'Starting camera...');
 
     try {
       if ('BarcodeDetector' in window) {
@@ -79,6 +85,7 @@
       }
     } catch (error) {
       console.error('Barcode scanner error:', error);
+      customDetectHandler = null;
       setBarcodeScannerStatus('Unable to open camera. Check camera permission.');
       alert('Unable to open the camera. Please allow camera access and try again.');
       closeBarcodeScanner();
@@ -167,18 +174,26 @@
     if (!value) return;
 
     barcodeScannerActive = false;
-    setBarcodeScannerStatus(`Barcode read: ${value}`);
+    setBarcodeScannerStatus(`Code read: ${value}`);
 
-    const searchByField = document.getElementById('searchByField');
-    const searchInput = document.getElementById('searchInput');
-    if (searchByField) searchByField.value = 'barcode';
-    if (searchInput) {
-      searchInput.value = value;
-      searchInput.dispatchEvent(new Event('input', { bubbles: true }));
-    }
-    updateBarcodeScanButtonVisibility();
+    const handler = customDetectHandler;
+    customDetectHandler = null;
 
     closeBarcodeScanner().finally(() => {
+      if (typeof handler === 'function') {
+        handler(value);
+        return;
+      }
+
+      const searchByField = document.getElementById('searchByField');
+      const searchInput = document.getElementById('searchInput');
+      if (searchByField) searchByField.value = 'barcode';
+      if (searchInput) {
+        searchInput.value = value;
+        searchInput.dispatchEvent(new Event('input', { bubbles: true }));
+      }
+      updateBarcodeScanButtonVisibility();
+
       if (typeof global.handleSearchClick === 'function') {
         global.handleSearchClick();
       } else {
@@ -190,6 +205,7 @@
 
   async function closeBarcodeScanner() {
     barcodeScannerActive = false;
+    customDetectHandler = null;
 
     if (barcodeScannerLoopId) {
       clearTimeout(barcodeScannerLoopId);

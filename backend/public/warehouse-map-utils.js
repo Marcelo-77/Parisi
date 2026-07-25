@@ -1072,12 +1072,16 @@
             const levelNum = parsed.level === '' ? NaN : Number(parsed.level);
             const hasPositiveLevel = parsed.level !== '' && !Number.isNaN(levelNum) && levelNum > 0;
 
+            // Always include Street+Building (map bins are like D15, not D15-1R)
+            if (parsed.building !== '') {
+                keys.add(street + parsed.building);
+                keys.add(street + String(Number(parsed.building)));
+            }
+
+            // Also keep level variants for any finer map keys that may exist
             if (parsed.building !== '' && hasPositiveLevel) {
                 keys.add(street + parsed.building + parsed.level);
                 keys.add(street + String(Number(parsed.building)) + String(Number(parsed.level)));
-            } else if (parsed.building !== '') {
-                keys.add(street + parsed.building);
-                keys.add(street + String(Number(parsed.building)));
             }
         }
 

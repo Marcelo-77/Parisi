@@ -104,6 +104,71 @@ router.get('/by-product-full/:productCode', async (req, res) => {
   }
 });
 
+// POST /api/location-product/move-between-locations/preview
+router.post(
+  '/move-between-locations/preview',
+  [
+    body('sourceLocationCode').isLength({ min: 1, max: 50 }).trim(),
+    body('destinationLocationCode').isLength({ min: 1, max: 50 }).trim()
+  ],
+  handleValidationErrors,
+  async (req, res) => {
+    try {
+      const preview = await locationProductService.previewMoveBetweenLocations(
+        req.body.sourceLocationCode,
+        req.body.destinationLocationCode
+      );
+      res.json({ success: true, data: preview });
+    } catch (error) {
+      console.error('Error previewing move between locations:', error);
+      res.status(400).json({
+        success: false,
+        error: 'Error previewing move',
+        message: error.message
+      });
+    }
+  }
+);
+
+// POST /api/location-product/move-between-locations
+router.post(
+  '/move-between-locations',
+  [
+    body('sourceLocationCode').isLength({ min: 1, max: 50 }).trim(),
+    body('destinationLocationCode').isLength({ min: 1, max: 50 }).trim()
+  ],
+  handleValidationErrors,
+  async (req, res) => {
+    try {
+      const userKey = getSessionUserKey(req);
+      if (!userKey) {
+        return res.status(401).json({
+          success: false,
+          error: 'Authentication required',
+          message: 'Logged-in user is required'
+        });
+      }
+      const result = await locationProductService.moveBetweenLocations(
+        req.body.sourceLocationCode,
+        req.body.destinationLocationCode,
+        userKey
+      );
+      res.json({
+        success: true,
+        message: `Moved ${result.moved} product balance(s) from ${result.sourceLocationCode} to ${result.destinationLocationCode}`,
+        data: result
+      });
+    } catch (error) {
+      console.error('Error moving products between locations:', error);
+      res.status(400).json({
+        success: false,
+        error: 'Error moving products',
+        message: error.message
+      });
+    }
+  }
+);
+
 // GET /api/location-product
 router.get(
   '/',

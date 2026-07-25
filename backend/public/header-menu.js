@@ -49,6 +49,15 @@
                                     <a href="log-location-product.html" class="dropdown-item" data-app="log-location-product.html"><i class="fas fa-history"></i> Log Location Product</a>
                                 </div>
                             </div>
+                            <div class="dropdown-submenu-group" data-submenu="location-movement">
+                                <button type="button" class="dropdown-submenu-trigger" aria-haspopup="true" aria-expanded="false">
+                                    <span><i class="fas fa-exchange-alt"></i> Location Movement</span>
+                                    <i class="fas fa-chevron-right submenu-chevron" aria-hidden="true"></i>
+                                </button>
+                                <div class="dropdown-submenu" aria-hidden="true">
+                                    <a href="changes-products-between-locations.html" class="dropdown-item" data-app="changes-products-between-locations.html"><i class="fas fa-exchange-alt"></i> Changes Between Locations</a>
+                                </div>
+                            </div>
                         </div>
                     </div>
                     <div class="applications-dropdown">
