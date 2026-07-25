@@ -76,8 +76,6 @@ function hideMessage() {
   el.className = 'change-password-message';
 }
 
-let originalEmail = '';
-
 async function loadLoggedUser() {
   const infoEl = document.getElementById('loggedUserInfo');
   const form = document.getElementById('changePasswordForm');
@@ -101,9 +99,10 @@ async function loadLoggedUser() {
       return;
     }
 
-    originalEmail = data.user.email ? String(data.user.email).trim().toLowerCase() : '';
-    if (emailInput) emailInput.value = data.user.email || '';
-
+    if (emailInput) {
+      emailInput.value = data.user.email || '';
+      emailInput.readOnly = true;
+    }
     if (infoEl) {
       const position = data.user.cargo ? ` · ${data.user.cargo}` : '';
       const company = data.user.companyName ? ` · ${data.user.companyName}` : '';
@@ -156,43 +155,26 @@ async function handleSubmit(event) {
   hideMessage();
 
   const currentPassword = document.getElementById('currentPassword').value;
-  const accountEmail = document.getElementById('accountEmail').value.trim();
   const newPassword = document.getElementById('newPassword').value;
   const confirmPassword = document.getElementById('confirmPassword').value;
   const saveBtn = document.getElementById('savePasswordBtn');
 
-  if (!accountEmail) {
-    showMessage('Registered email is required.', 'error');
+  if (!newPassword && !confirmPassword) {
+    showMessage('Enter a new password before saving.', 'error');
     return;
   }
 
-  const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  if (!emailPattern.test(accountEmail)) {
-    showMessage('Please enter a valid email address.', 'error');
+  if (!newPassword || !confirmPassword) {
+    showMessage('Enter and confirm the new password.', 'error');
     return;
   }
-
-  const wantsPasswordChange = Boolean(newPassword || confirmPassword);
-  const wantsEmailChange = accountEmail.toLowerCase() !== originalEmail;
-
-  if (!wantsPasswordChange && !wantsEmailChange) {
-    showMessage('Change your email and/or enter a new password before saving.', 'error');
+  if (newPassword !== confirmPassword) {
+    showMessage('New password and confirmation do not match.', 'error');
     return;
   }
-
-  if (wantsPasswordChange) {
-    if (!newPassword || !confirmPassword) {
-      showMessage('Enter and confirm the new password.', 'error');
-      return;
-    }
-    if (newPassword !== confirmPassword) {
-      showMessage('New password and confirmation do not match.', 'error');
-      return;
-    }
-    if (newPassword.length < 6) {
-      showMessage('New password must have at least 6 characters.', 'error');
-      return;
-    }
+  if (newPassword.length < 6) {
+    showMessage('New password must have at least 6 characters.', 'error');
+    return;
   }
 
   if (saveBtn) saveBtn.disabled = true;
@@ -203,9 +185,8 @@ async function handleSubmit(event) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         currentPassword,
-        email: accountEmail,
-        newPassword: wantsPasswordChange ? newPassword : undefined,
-        confirmPassword: wantsPasswordChange ? confirmPassword : undefined
+        newPassword,
+        confirmPassword
       })
     });
     const data = await res.json().catch(() => ({}));
@@ -214,15 +195,8 @@ async function handleSubmit(event) {
       throw new Error(data.message || data.error || 'Unable to update account.');
     }
 
-    if (!data.emailChanged && !data.passwordChanged) {
+    if (!data.passwordChanged) {
       throw new Error('No changes were saved. Check your current password and try again.');
-    }
-
-    if (data.emailChanged && data.user && data.user.email) {
-      originalEmail = String(data.user.email).trim().toLowerCase();
-      document.getElementById('accountEmail').value = data.user.email;
-    } else if (data.user && data.user.email) {
-      document.getElementById('accountEmail').value = data.user.email;
     }
 
     document.getElementById('currentPassword').value = '';
@@ -233,7 +207,7 @@ async function handleSubmit(event) {
       window.DoubleYMenuAccess.renderLoggedUserInfo(data.user);
     }
 
-    showPasswordSavedModal(data.message || 'Your account has been updated successfully.');
+    showPasswordSavedModal(data.message || 'Your password has been updated successfully.');
     if (saveBtn) saveBtn.disabled = false;
     return;
   } catch (error) {

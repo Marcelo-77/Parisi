@@ -1,4 +1,4 @@
-// Configuraùùo da API
+// Configura??o da API
 const API_BASE_URL = '/api/warehouse';
 
 function escapeHtml(text) {
@@ -7,7 +7,7 @@ function escapeHtml(text) {
     return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
-// Mapeamento categoria (valor no BD) ? texto de exibiùùo
+// Mapeamento categoria (valor no BD) ? texto de exibi??o
 function formatCategory(categoria) {
     if (typeof SectionOptions !== 'undefined') {
         return SectionOptions.formatSectionLabel(categoria);
@@ -27,7 +27,7 @@ function formatSubcategory(subcategoria) {
 function formatCategoryDisplay(item) {
     const category = formatCategory(item.categoria);
     if (String(item.categoria || '').toUpperCase() === 'BATHWARE' && item.subcategoria) {
-        return `${category} ù ${formatSubcategory(item.subcategoria)}`;
+        return `${category} ? ${formatSubcategory(item.subcategoria)}`;
     }
     return category;
 }
@@ -59,11 +59,11 @@ function toggleFilterSubcategoriaField() {
     }
 }
 
-// Estado da aplicaùùo
+// Estado da aplica??o
 let items = [];
 let currentItemId = null;
 let currentItem = null;
-let hasSearched = false; // true apùs o usuùrio clicar em Search
+let hasSearched = false; // true ap?s o usu?rio clicar em Search
 
 // Elementos do DOM
 const itemModal = document.getElementById('itemModal');
@@ -103,13 +103,13 @@ const searchBtn = document.getElementById('searchBtn');
 const searchResultsMeta = document.getElementById('searchResultsMeta');
 const warehouseSearchResultsCount = document.getElementById('warehouseSearchResultsCount');
 
-// Estatùsticas
+// Estat?sticas
 const totalItemsEl = document.getElementById('totalItems');
 const lowStockItemsEl = document.getElementById('lowStockItems');
 const totalEntradasEl = document.getElementById('totalEntradas');
 const totalSaidasEl = document.getElementById('totalSaidas');
 
-// Definir funùùo printReport globalmente ANTES do DOMContentLoaded
+// Definir fun??o printReport globalmente ANTES do DOMContentLoaded
 window.printReport = function(itemId) {
     console.log('========================================');
     console.log('?? PRINT REPORT FUNCTION CALLED');
@@ -181,7 +181,7 @@ window.printReport = function(itemId) {
         </div>
     `;
     
-    // Para impressùo, usar barcode do produto para Barcode e QRCode
+    // Para impress?o, usar barcode do produto para Barcode e QRCode
     const barcodeValue = String(item.barcode || '').trim();
     console.log('?? Barcode to generate:', barcodeValue);
     console.log('Barcode type:', typeof barcodeValue);
@@ -203,7 +203,7 @@ window.printReport = function(itemId) {
     printModal.style.display = 'block';
     console.log('? Modal displayed');
     
-    // Funùùo para gerar cùdigos com retry
+    // Fun??o para gerar c?digos com retry
     function generateCodes() {
         const svgElement = document.getElementById(uniqueId);
         const qrContainer = document.getElementById(qrId);
@@ -242,7 +242,7 @@ window.printReport = function(itemId) {
         if (qrcodeReady && qrContainer) {
             try {
                 console.log('?? Generating QR code for:', barcodeValue);
-                // Limpar conteùdo anterior
+                // Limpar conte?do anterior
                 qrContainer.innerHTML = '';
                 
                 // Usar a API do qrcodejs
@@ -265,7 +265,7 @@ window.printReport = function(itemId) {
         }
     }
     
-    // Aguardar e tentar gerar cùdigos
+    // Aguardar e tentar gerar c?digos
     let attempts = 0;
     const maxAttempts = 10;
     
@@ -290,7 +290,7 @@ window.printReport = function(itemId) {
         }
     }
     
-    // Comeùar tentativas apùs um pequeno delay
+    // Come?ar tentativas ap?s um pequeno delay
     setTimeout(tryGenerateCodes, 300);
     
     console.log('========================================');
@@ -298,7 +298,7 @@ window.printReport = function(itemId) {
     console.log('========================================');
 };
 
-// Definir funùùo closePrintModal globalmente
+// Definir fun??o closePrintModal globalmente
 window.closePrintModal = function() {
     const printModal = document.getElementById('printModal');
     const printContent = document.getElementById('printContent');
@@ -317,7 +317,7 @@ document.addEventListener('DOMContentLoaded', () => {
     setupEventListeners();
     attachActionButtonListeners();
     loadStatistics();
-    // Nùo carrega todos os itens na abertura; usuùrio deve usar Search
+    // N?o carrega todos os itens na abertura; usu?rio deve usar Search
 });
 
 function handleWarehouseLandingAction() {
@@ -582,7 +582,7 @@ function setupEventListeners() {
         descricaoEl.addEventListener('input', updateDescricaoCount);
     }
     
-    // Modal de Movimentaùùo
+    // Modal de Movimenta??o
     document.getElementById('closeMovementModal').addEventListener('click', () => closeMovementModal());
     document.getElementById('cancelMovementBtn').addEventListener('click', () => closeMovementModal());
     movementForm.addEventListener('submit', handleMovementSubmit);
@@ -603,7 +603,7 @@ function setupEventListeners() {
         });
     }
     
-    // Modal de Impressùo
+    // Modal de Impress?o
     const closePrintModalBtn = document.getElementById('closePrintModal');
     const closePrintBtn = document.getElementById('closePrintBtn');
     const printBtn = document.getElementById('printBtn');
@@ -618,14 +618,14 @@ function setupEventListeners() {
         printBtn.addEventListener('click', () => window.print());
     }
     
-    // Botùo Search - carrega itens da API com filtros
+    // Bot?o Search - carrega itens da API com filtros
     if (searchBtn) {
         searchBtn.addEventListener('click', handleSearchClick);
     }
     searchInput.addEventListener('keypress', (e) => {
         if (e.key === 'Enter') handleSearchClick();
     });
-    // Filtros aplicados nos itens jù carregados (client-side)
+    // Filtros aplicados nos itens j? carregados (client-side)
     searchInput.addEventListener('input', filterItems);
     if (searchByField) searchByField.addEventListener('change', filterItems);
     if (filterSubcategoria && typeof BathwareSubcategoryOptions !== 'undefined') {
@@ -673,7 +673,7 @@ function setupEventListeners() {
     });
 }
 
-// Retorna os filtros atuais da tela (para Search e para refresh apùs save/delete/move)
+// Retorna os filtros atuais da tela (para Search e para refresh ap?s save/delete/move)
 function getCurrentFilters() {
     const term = searchInput.value.trim();
     const searchBy = searchByField ? searchByField.value : 'codigo';
@@ -721,7 +721,7 @@ function showEmptyStateInitial() {
     `;
 }
 
-// Clique no botùo Search: valida filtros e chama loadItems com parùmetros
+// Clique no bot?o Search: valida filtros e chama loadItems com par?metros
 function handleSearchClick() {
     const term = searchInput.value.trim();
     const categoria = filterCategoria.value;
@@ -731,8 +731,9 @@ function handleSearchClick() {
     }
     loadItems(getCurrentFilters());
 }
+window.handleSearchClick = handleSearchClick;
 
-// Carregar estatùsticas do servidor (sem carregar a lista de itens)
+// Carregar estat?sticas do servidor (sem carregar a lista de itens)
 async function loadStatistics() {
     try {
         const response = await fetch(API_BASE_URL + '/estatisticas');
@@ -753,7 +754,7 @@ async function loadStatistics() {
     }
 }
 
-// Carregar itens do servidor (com filtros opcionais; sem filtros nùo carrega todos)
+// Carregar itens do servidor (com filtros opcionais; sem filtros n?o carrega todos)
 async function loadItems(filtros) {
     const params = filtros && (filtros.nome || filtros.codigo || filtros.barcode || filtros.categoria || filtros.subcategoria)
         ? filtros
@@ -862,7 +863,7 @@ function displayItems(itemsToDisplay) {
         `;
     }).join('');
     
-    // Event listeners jù estùo configurados via event delegation, nùo precisa chamar novamente
+    // Event listeners j? est?o configurados via event delegation, n?o precisa chamar novamente
 }
 
 // Attach event listeners to action buttons using event delegation
@@ -870,7 +871,7 @@ let actionButtonHandler = null;
 let listenersAttached = false;
 
 function attachActionButtonListeners() {
-    // Evitar adicionar mùltiplos listeners
+    // Evitar adicionar m?ltiplos listeners
     if (listenersAttached) return;
     
     actionButtonHandler = (e) => {
@@ -974,7 +975,7 @@ function filterItems() {
     displayItems(filtered);
 }
 
-// Atualizar estatùsticas
+// Atualizar estat?sticas
 function updateStatistics() {
     const total = items.length;
     const lowStock = items.filter(item => {
@@ -982,7 +983,7 @@ function updateStatistics() {
         return status === 'Low Stock' || status === 'Out of Stock';
     }).length;
     
-    // Simular movimentaùùes do dia (em produùùo, viria do backend)
+    // Simular movimenta??es do dia (em produ??o, viria do backend)
     const today = new Date().toISOString().split('T')[0];
     const entradas = items.filter(item => item.ultimaEntrada === today).length || 0;
     const saidas = items.filter(item => item.ultimaSaida === today).length || 0;
@@ -1017,7 +1018,7 @@ function populateEditSummary(item) {
 
     codeEl.textContent = item.codigo || '-';
     nameEl.textContent = item.nome || '-';
-    metaEl.textContent = metaParts.join(' ù ');
+    metaEl.textContent = metaParts.join(' ? ');
     statusEl.textContent = status;
     statusEl.className = `status-badge ${statusClass}`;
     qtyEl.textContent = item.quantidade ?? 0;
@@ -1130,7 +1131,7 @@ function closeItemModal() {
     setItemModalMode('new');
 }
 
-// Preencher formulùrio com dados do item
+// Preencher formul?rio com dados do item
 function fillItemForm(item) {
     document.getElementById('codigo').value = item.codigo || '';
     document.getElementById('nome').value = item.nome || '';
@@ -1145,7 +1146,7 @@ function fillItemForm(item) {
     updateDescricaoCount();
 }
 
-// Submeter formulùrio de item
+// Submeter formul?rio de item
 async function handleItemSubmit(e) {
     e.preventDefault();
     
@@ -1161,7 +1162,7 @@ async function handleItemSubmit(e) {
         descricao: document.getElementById('descricao').value.trim()
     };
     
-    // Validaùùo bùsica
+    // Valida??o b?sica
     if (!validateItemForm(formData)) {
         return;
     }
@@ -1191,7 +1192,7 @@ async function handleItemSubmit(e) {
     } catch (error) {
         console.error('Error saving item:', error);
         showError('Error connecting to server');
-        // Simular sucesso para demonstraùùo
+        // Simular sucesso para demonstra??o
         if (!currentItemId) {
             formData.id = Date.now().toString();
             items.push(formData);
@@ -1210,7 +1211,7 @@ async function handleItemSubmit(e) {
     }
 }
 
-// Validar formulùrio
+// Validar formul?rio
 function validateItemForm(data) {
     clearFormErrors();
     let isValid = true;
@@ -1263,7 +1264,7 @@ function showFieldError(fieldName, message) {
     }
 }
 
-// Limpar erros do formulùrio
+// Limpar erros do formul?rio
 function clearFormErrors() {
     document.querySelectorAll('.error-message').forEach(el => {
         el.classList.remove('show');
@@ -1293,7 +1294,7 @@ function buildItemDetailsHtml(item, status, statusClass) {
                         <span class="status-badge ${statusClass}">${status}</span>
                     </div>
                     <p class="item-edit-summary-name">${escapeHtml(item.nome || '-')}</p>
-                    <p class="item-edit-summary-meta">${escapeHtml(formatCategoryDisplay(item))}${item.barcode ? ` ù Barcode: ${barcodeText}` : ''}</p>
+                    <p class="item-edit-summary-meta">${escapeHtml(formatCategoryDisplay(item))}${item.barcode ? ` ? Barcode: ${barcodeText}` : ''}</p>
                 </div>
             </div>
             <div class="item-edit-summary-stats">
@@ -1342,7 +1343,7 @@ async function viewItem(itemId) {
         detailsTitle.innerHTML = '<i class="fas fa-info-circle"></i> Item Details';
     }
     if (detailsSubtitle) {
-        detailsSubtitle.textContent = `${item.codigo || '-'} ù ${item.nome || '-'}`;
+        detailsSubtitle.textContent = `${item.codigo || '-'} ? ${item.nome || '-'}`;
         detailsSubtitle.style.display = '';
     }
 
@@ -1394,7 +1395,7 @@ function editItem(itemId) {
     openItemModal(itemId);
 }
 
-// Abrir modal de movimentaùùo
+// Abrir modal de movimenta??o
 function openMovementModal(itemId) {
     currentItemId = itemId;
     const item = items.find(i => i.id === itemId);
@@ -1406,7 +1407,7 @@ function openMovementModal(itemId) {
     }
 }
 
-// Fechar modal de movimentaùùo
+// Fechar modal de movimenta??o
 function closeMovementModal() {
     movementModal.style.display = 'none';
     movementForm.reset();
@@ -1414,7 +1415,7 @@ function closeMovementModal() {
     currentItem = null;
 }
 
-// Submeter movimentaùùo
+// Submeter movimenta??o
 async function handleMovementSubmit(e) {
     e.preventDefault();
     
@@ -1466,7 +1467,7 @@ async function handleMovementSubmit(e) {
         }
     } catch (error) {
         console.error('Error registering movement:', error);
-        // Simular sucesso para demonstraùùo
+        // Simular sucesso para demonstra??o
         const index = items.findIndex(i => i.id === currentItemId);
         if (index !== -1) {
             items[index].quantidade = novaQuantidade;
@@ -1520,13 +1521,13 @@ async function deleteItem(itemId) {
     }
 }
 
-// Funùùes auxiliares
+// Fun??es auxiliares
 function showLoading() {
-    // Implementar loading se necessùrio
+    // Implementar loading se necess?rio
 }
 
 function hideLoading() {
-    // Implementar hide loading se necessùrio
+    // Implementar hide loading se necess?rio
 }
 
 function showSuccess(message) {

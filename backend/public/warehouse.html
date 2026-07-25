@@ -163,6 +163,9 @@
                         <option value="barcode">Search by Barcode</option>
                     </select>
                     <input type="text" id="searchInput" placeholder="Search by code, name or barcode...">
+                    <button id="scanBarcodeBtn" class="btn btn-secondary" type="button" title="Scan barcode with camera" style="display:none;">
+                        <i class="fas fa-camera"></i> Scan
+                    </button>
                     <button id="searchBtn" class="btn btn-primary" type="button" title="Search items">
                         <i class="fas fa-search"></i> Search
                     </button>
@@ -516,6 +519,31 @@
             </div>
         </div>
 
+        </div>
+
+        <!-- Mobile barcode camera scanner -->
+        <div id="barcodeScannerModal" class="modal barcode-scanner-modal" aria-hidden="true">
+            <div class="modal-content barcode-scanner-content">
+                <div class="modal-header success">
+                    <h3><i class="fas fa-camera"></i> Scan Barcode</h3>
+                    <button type="button" class="modal-close" id="closeBarcodeScannerModal" aria-label="Close">&times;</button>
+                </div>
+                <div class="modal-body barcode-scanner-body">
+                    <p class="barcode-scanner-hint">Point the camera at the barcode.</p>
+                    <div id="barcodeScannerViewport" class="barcode-scanner-viewport">
+                        <video id="barcodeScannerVideo" playsinline muted autoplay></video>
+                        <div id="html5QrcodeReader" class="html5-qrcode-reader"></div>
+                    </div>
+                    <p id="barcodeScannerStatus" class="barcode-scanner-status">Starting camera...</p>
+                </div>
+                <div class="modal-footer barcode-scanner-footer">
+                    <button type="button" class="btn btn-secondary" id="cancelBarcodeScannerBtn">
+                        <i class="fas fa-times"></i> Cancel
+                    </button>
+                </div>
+            </div>
+        </div>
+
         <footer class="footer">
             <p>&copy; 2026 Double-Y IT Systems. All rights reserved.</p>
         </footer>
@@ -549,5 +577,6 @@
     <script src="section-options.js"></script>
     <script src="bathware-subcategory-options.js"></script>
     <script src="warehouse-script.js"></script>
+    <script src="warehouse-barcode-scanner.js"></script>
 </body>
 </html>
