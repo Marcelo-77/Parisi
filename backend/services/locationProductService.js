@@ -196,7 +196,7 @@ async function buscarTodos(filtros = {}) {
   let idx = 1;
 
   if (filtros.locationCode) {
-    whereClauses.push(`TRIM(LOWER(lp.location_code)) = TRIM(LOWER($${idx++}))`);
+    whereClauses.push(`TRIM(LOWER(lp.location_code)) LIKE TRIM(LOWER($${idx++})) || '%'`);
     values.push(String(filtros.locationCode).trim());
   }
   if (filtros.productCode) {

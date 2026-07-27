@@ -129,6 +129,32 @@ CREATE TABLE IF NOT EXISTS news_read (
 
 CREATE INDEX IF NOT EXISTS idx_news_read_user ON news_read(user_key);
 
+CREATE SEQUENCE IF NOT EXISTS improvements_corrections_request_number_seq;
+
+CREATE TABLE IF NOT EXISTS improvements_corrections (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  request_number BIGINT UNIQUE NOT NULL DEFAULT nextval('improvements_corrections_request_number_seq'),
+  description TEXT NOT NULL,
+  request_type VARCHAR(30) NOT NULL,
+  application_name VARCHAR(100),
+  application_menu VARCHAR(150),
+  situation VARCHAR(30) NOT NULL DEFAULT 'NOT_STARTED',
+  request_date DATE,
+  finish_date DATE,
+  status VARCHAR(20) NOT NULL DEFAULT 'OPEN',
+  created_by UUID REFERENCES funcionarios(id) ON DELETE SET NULL,
+  created_by_name VARCHAR(100),
+  criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  atualizado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT improvements_corrections_type_chk
+    CHECK (request_type IN ('IMPROVEMENT', 'CORRECTION', 'NEW_FUNCTIONALITY')),
+  CONSTRAINT improvements_corrections_situation_chk
+    CHECK (situation IN ('NOT_STARTED', 'IN_DEVELOPMENT', 'IN_TESTING', 'IN_CLIENT_VALIDATION', 'LIVE', 'CANCELLED'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_improvements_corrections_criado ON improvements_corrections(criado_em DESC);
+CREATE INDEX IF NOT EXISTS idx_improvements_corrections_type ON improvements_corrections(request_type);
+
 -- =============================================================================
 -- 2) WAREHOUSE (produtos e movimentacoes simples)
 -- =============================================================================
@@ -319,6 +345,8 @@ FROM (VALUES
   ('System-settings.html', 'Applications_System_Settings'),
   ('News.html', 'Applications_News'),
   ('News-Search.html', 'Applications_News_Search'),
+  ('Improvements-and-Corrections-Control.html', 'Applications_Improvements_Corrections'),
+  ('Improvements-and-Corrections-Control-Search.html', 'Applications_Improvements_Corrections'),
   ('location.html', 'Location'),
   ('location-search.html', 'Location_Search'),
   ('location-smart.html', 'Location_Smart'),
@@ -357,6 +385,8 @@ FROM (VALUES
   ('System-settings.html', 'Applications_System_Settings'),
   ('News.html', 'Applications_News'),
   ('News-Search.html', 'Applications_News_Search'),
+  ('Improvements-and-Corrections-Control.html', 'Applications_Improvements_Corrections'),
+  ('Improvements-and-Corrections-Control-Search.html', 'Applications_Improvements_Corrections'),
   ('location.html', 'Location'),
   ('location-search.html', 'Location_Search'),
   ('location-smart.html', 'Location_Smart'),

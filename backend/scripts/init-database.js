@@ -362,6 +362,8 @@ async function initDatabase() {
       { application: 'System-settings.html', menuName: 'Applications_System_Settings' },
       { application: 'News.html', menuName: 'Applications_News' },
       { application: 'News-Search.html', menuName: 'Applications_News_Search' },
+      { application: 'Improvements-and-Corrections-Control.html', menuName: 'Applications_Improvements_Corrections' },
+      { application: 'Improvements-and-Corrections-Control-Search.html', menuName: 'Applications_Improvements_Corrections' },
       { application: 'location.html', menuName: 'Location' },
       { application: 'location-search.html', menuName: 'Location_Search' },
       { application: 'location-smart.html', menuName: 'Location_Smart' },
@@ -500,6 +502,34 @@ async function initDatabase() {
     `);
     await query(`CREATE INDEX IF NOT EXISTS idx_news_read_user ON news_read(user_key)`);
     console.log('✅ Tabelas news e news_documentation criadas/verificadas');
+
+    await query(`CREATE SEQUENCE IF NOT EXISTS improvements_corrections_request_number_seq`);
+
+    await query(`
+      CREATE TABLE IF NOT EXISTS improvements_corrections (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        request_number BIGINT UNIQUE NOT NULL DEFAULT nextval('improvements_corrections_request_number_seq'),
+        description TEXT NOT NULL,
+        request_type VARCHAR(30) NOT NULL,
+        application_name VARCHAR(100),
+        application_menu VARCHAR(150),
+        situation VARCHAR(30) NOT NULL DEFAULT 'NOT_STARTED',
+        request_date DATE,
+        finish_date DATE,
+        status VARCHAR(20) NOT NULL DEFAULT 'OPEN',
+        created_by UUID REFERENCES funcionarios(id) ON DELETE SET NULL,
+        created_by_name VARCHAR(100),
+        criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        atualizado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        CONSTRAINT improvements_corrections_type_chk
+          CHECK (request_type IN ('IMPROVEMENT', 'CORRECTION', 'NEW_FUNCTIONALITY')),
+        CONSTRAINT improvements_corrections_situation_chk
+          CHECK (situation IN ('NOT_STARTED', 'IN_DEVELOPMENT', 'IN_TESTING', 'IN_CLIENT_VALIDATION', 'LIVE', 'CANCELLED'))
+      )
+    `);
+    await query(`CREATE INDEX IF NOT EXISTS idx_improvements_corrections_criado ON improvements_corrections(criado_em DESC)`);
+    await query(`CREATE INDEX IF NOT EXISTS idx_improvements_corrections_type ON improvements_corrections(request_type)`);
+    console.log('✅ Tabela improvements_corrections criada/verificada');
 
     await query(`
       CREATE TABLE IF NOT EXISTS system_settings (

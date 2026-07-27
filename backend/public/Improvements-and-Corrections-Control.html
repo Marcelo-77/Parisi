@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Double-Y Warehouse System - Improvements and Corrections Control</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="warehouse-styles.css">
+    <link rel="stylesheet" href="pesquisa-styles.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body.improvements-page .container { padding-top: 10px; }
+        body.improvements-page .header { margin-bottom: 12px; }
+        .improvements-hint {
+            margin: 0 0 14px;
+            color: #475569;
+            font-size: 0.95rem;
+            line-height: 1.5;
+        }
+        .improvements-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+            margin-top: 8px;
+        }
+        .improvements-message {
+            margin-top: 12px;
+            min-height: 1.2em;
+            text-align: center;
+            font-size: 0.95rem;
+        }
+        .improvements-message.show.success { color: #15803d; }
+        .improvements-message.show.error { color: #b91c1c; }
+        .improvements-message.show.info { color: #1d4ed8; }
+        .char-count {
+            display: block;
+            margin-top: 6px;
+            color: #64748b;
+            font-size: 0.85rem;
+            text-align: right;
+        }
+        #applicationGroup.is-hidden,
+        #requestedByDisplay.is-hidden,
+        #requestedBySelect.is-hidden { display: none; }
+
+        .improvements-meta-row {
+            display: grid;
+            grid-template-columns: repeat(6, minmax(0, 1fr));
+            gap: 16px;
+            margin-bottom: 20px;
+        }
+        @media (max-width: 1200px) {
+            .improvements-meta-row {
+                grid-template-columns: repeat(3, minmax(0, 1fr));
+            }
+        }
+        @media (max-width: 700px) {
+            .improvements-meta-row {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .situation-not-started { color: #64748b; font-weight: 700; }
+        .situation-in-development { color: #2563eb; font-weight: 700; }
+        .situation-in-testing { color: #d97706; font-weight: 700; }
+        .situation-in-client-validation { color: #7c3aed; font-weight: 700; }
+        .situation-live { color: #15803d; font-weight: 700; }
+        .situation-cancelled { color: #b91c1c; font-weight: 700; }
+    </style>
+</head>
+<body class="improvements-page">
+    <script src="auth-check.js"></script>
+    <script src="header-menu.js"></script>
+    <script src="menu-access.js"></script>
+    <script src="double-y-logo-effect.js"></script>
+    <script src="dev-environment-badge.js"></script>
+    <div class="container">
+        <header class="header">
+            <div class="header-stats-row">
+                <div class="header-stats-left">
+                    <div class="header-stat header-stat-total">
+                        <span class="header-stat-value" id="totalItems">0</span>
+                        <span class="header-stat-label">Total Items</span>
+                    </div>
+                    <div class="header-stat header-stat-low">
+                        <span class="header-stat-value" id="lowStockItems">0</span>
+                        <span class="header-stat-label">Low Stock</span>
+                    </div>
+                </div>
+                <div class="double-y-wordmark" aria-label="Double Y"><img src="doubley-glyph.png" alt="" class="double-y-glyph" aria-hidden="true"><span class="double-y-name">Double Y</span><img src="doubley-glyph-bottom.png" alt="" class="double-y-glyph double-y-glyph-bottom" aria-hidden="true"></div>
+                <div class="header-stats-right">
+                    <div class="header-stat header-stat-entries">
+                        <span class="header-stat-value" id="totalEntradas">0</span>
+                        <span class="header-stat-label">Entries Today</span>
+                    </div>
+                    <div class="header-stat header-stat-exits">
+                        <span class="header-stat-value" id="totalSaidas">0</span>
+                        <span class="header-stat-label">Exits Today</span>
+                    </div>
+                </div>
+            </div>
+            <div class="header-content">
+                <h1><i class="fas fa-warehouse"></i> Double-Y Warehouse System</h1>
+                <p class="header-search-users-label">Improvements and Corrections Control</p>
+                <div class="header-actions">
+                    <!-- Replaced by header-menu.js -->
+                </div>
+            </div>
+        </header>
+
+        <main class="main-content">
+            <div class="form-container" style="width:100%;max-width:none;">
+                <div class="filters-container">
+                    <div class="filters-header">
+                        <h2><i class="fas fa-clipboard-list"></i> Improvements and Corrections Control</h2>
+                    </div>
+                    <div class="filters-content show">
+                        <p class="improvements-hint">
+                            Describe what you are requesting and select the request type.
+                            For Improvements or Corrections, choose the related application.
+                        </p>
+
+                        <form id="improvementsForm" novalidate>
+                            <div class="improvements-meta-row">
+                                <div class="filter-group">
+                                    <label for="requestNumberDisplay"><i class="fas fa-hashtag"></i> Request number</label>
+                                    <input type="text" id="requestNumberDisplay" readonly class="input-readonly" placeholder="(auto)">
+                                </div>
+
+                                <div class="filter-group">
+                                    <label for="requestType"><i class="fas fa-list"></i> Request type *</label>
+                                    <select id="requestType" required>
+                                        <option value="">Select type…</option>
+                                        <option value="IMPROVEMENT">Improvements</option>
+                                        <option value="CORRECTION">Corrections</option>
+                                        <option value="NEW_FUNCTIONALITY">New Functionality</option>
+                                    </select>
+                                </div>
+
+                                <div class="filter-group">
+                                    <label for="requestSituation"><i class="fas fa-flag"></i> Situation</label>
+                                    <select id="requestSituation">
+                                        <option value="NOT_STARTED">Not started</option>
+                                        <option value="IN_DEVELOPMENT">In development</option>
+                                        <option value="IN_TESTING">In testing</option>
+                                        <option value="IN_CLIENT_VALIDATION">In client validation</option>
+                                        <option value="LIVE">Live</option>
+                                        <option value="CANCELLED">Cancelled</option>
+                                    </select>
+                                </div>
+
+                                <div class="filter-group">
+                                    <label for="requestDate"><i class="fas fa-calendar"></i> Request date</label>
+                                    <input type="date" id="requestDate">
+                                </div>
+
+                                <div class="filter-group">
+                                    <label for="requestedByDisplay"><i class="fas fa-user"></i> Requested by</label>
+                                    <input type="text" id="requestedByDisplay" readonly class="input-readonly" placeholder="(auto)">
+                                    <select id="requestedBySelect" class="is-hidden">
+                                        <option value="">Select user…</option>
+                                    </select>
+                                </div>
+
+                                <div class="filter-group">
+                                    <label for="finishDate"><i class="fas fa-calendar-check"></i> Finish date</label>
+                                    <input type="date" id="finishDate">
+                                </div>
+                            </div>
+
+                            <div class="filters-grid">
+                                <div class="filter-group is-hidden" id="applicationGroup">
+                                    <label for="requestApplication"><i class="fas fa-window-restore"></i> Application *</label>
+                                    <select id="requestApplication">
+                                        <option value="">Select application…</option>
+                                    </select>
+                                </div>
+
+                                <div class="filter-group" style="grid-column: 1 / -1;">
+                                    <label for="requestDescription"><i class="fas fa-align-left"></i> Request description *</label>
+                                    <textarea id="requestDescription" rows="6" maxlength="4000" required
+                                        placeholder="Explain what you are requesting..."
+                                        style="width:100%;padding:10px 12px;border:1px solid #cbd5e1;border-radius:8px;resize:vertical;font:inherit;"></textarea>
+                                    <span id="descriptionCount" class="char-count">0 / 4000</span>
+                                </div>
+                            </div>
+
+                            <div class="improvements-actions">
+                                <button type="button" id="clearRequestBtn" class="btn btn-secondary">
+                                    <i class="fas fa-eraser"></i> Clear
+                                </button>
+                                <button type="submit" id="saveRequestBtn" class="btn btn-primary">
+                                    <i class="fas fa-save"></i> Save request
+                                </button>
+                            </div>
+                            <div id="requestMessage" class="improvements-message" role="status" aria-live="polite"></div>
+                        </form>
+                    </div>
+                </div>
+
+                <div class="results-container" style="margin-top:20px;">
+                    <div class="results-header">
+                        <h3>Recent requests</h3>
+                        <span id="resultsCount">0 records</span>
+                    </div>
+                    <div class="table-container">
+                        <table class="warehouse-table">
+                            <thead>
+                                <tr>
+                                    <th>Request #</th>
+                                    <th>Request Date</th>
+                                    <th>Finish Date</th>
+                                    <th>Type</th>
+                                    <th>Application</th>
+                                    <th>Description</th>
+                                    <th>Requested by</th>
+                                    <th>Situation</th>
+                                </tr>
+                            </thead>
+                            <tbody id="requestsTableBody">
+                                <tr>
+                                    <td colspan="8" class="empty-state">
+                                        <i class="fas fa-inbox"></i>
+                                        <p>No requests yet.</p>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <footer class="footer">
+            <p>&copy; 2026 Double-Y IT Systems. All rights reserved.</p>
+        </footer>
+    </div>
+
+    <script src="improvements-and-corrections-control-script.js"></script>
+</body>
+</html>

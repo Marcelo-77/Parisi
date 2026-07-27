@@ -99,6 +99,20 @@
                                     <a href="News-Search.html" class="dropdown-item" data-app="News-Search.html"><i class="fas fa-search"></i> Search News</a>
                                 </div>
                             </div>
+                            <div class="dropdown-submenu-group" data-submenu="improvements-and-corrections-control">
+                                <button type="button" class="dropdown-submenu-trigger" aria-haspopup="true" aria-expanded="false">
+                                    <span><i class="fas fa-clipboard-list"></i> Improvements and Corrections Control</span>
+                                    <i class="fas fa-chevron-right submenu-chevron" aria-hidden="true"></i>
+                                </button>
+                                <div class="dropdown-submenu" aria-hidden="true">
+                                    <a href="Improvements-and-Corrections-Control.html" class="dropdown-item" data-app="Improvements-and-Corrections-Control.html">
+                                        <i class="fas fa-clipboard-list"></i> Control
+                                    </a>
+                                    <a href="Improvements-and-Corrections-Control-Search.html" class="dropdown-item" data-app="Improvements-and-Corrections-Control-Search.html">
+                                        <i class="fas fa-search"></i> Search
+                                    </a>
+                                </div>
+                            </div>
                         </div>
                     </div>
                     <div class="movement-dropdown">

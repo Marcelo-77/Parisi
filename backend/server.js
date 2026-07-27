@@ -23,6 +23,7 @@ const systemDocumentationRoutes = require('./routes/systemDocumentation');
 const newsRoutes = require('./routes/news');
 const systemSettingsRoutes = require('./routes/systemSettings');
 const loggedInUsersRoutes = require('./routes/loggedInUsers');
+const improvementsCorrectionsRoutes = require('./routes/improvementsCorrections');
 const systemSettingsService = require('./services/systemSettingsService');
 const { isAuthenticated, protectPages, requireAuth } = require('./middleware/auth');
 const funcionarioServiceDB = require('./services/funcionarioServiceDB');
@@ -109,6 +110,7 @@ app.use('/api/picking', pickingRoutes);
 app.use('/api/warehouse-map', warehouseMapRoutes);
 app.use('/api/system-documentation', systemDocumentationRoutes);
 app.use('/api/news', newsRoutes);
+app.use('/api/improvements-corrections', improvementsCorrectionsRoutes);
 app.use('/api/system-settings', systemSettingsRoutes);
 app.use('/api/logged-in-users', loggedInUsersRoutes);
 

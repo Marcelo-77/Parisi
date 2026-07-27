@@ -11,6 +11,8 @@ const systemApplicationMenus = [
   { application: 'System-Documentation.html', menuName: 'Applications_System_Documentation' },
   { application: 'System-Documentation-Search.html', menuName: 'Applications_System_Documentation_Search' },
   { application: 'System-settings.html', menuName: 'Applications_System_Settings' },
+  { application: 'Improvements-and-Corrections-Control.html', menuName: 'Applications_Improvements_Corrections' },
+  { application: 'Improvements-and-Corrections-Control-Search.html', menuName: 'Applications_Improvements_Corrections' },
   { application: 'location.html', menuName: 'Location' },
   { application: 'location-search.html', menuName: 'Location_Search' },
   { application: 'location-smart.html', menuName: 'Location_Smart' },
