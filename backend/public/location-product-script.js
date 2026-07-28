@@ -268,7 +268,7 @@ document.addEventListener('DOMContentLoaded', () => {
         <select class="new-row-situation" required>${getSituationOptionsHtml(defaults.siprSqNumber ?? getDefaultSituationValue())}</select>
       </td>
       <td>
-        <input type="number" class="new-row-qty-informed" min="0" step="1" value="${Number(defaults.quantityInformed ?? 0)}">
+        <input type="number" class="new-row-qty-informed" min="1" step="1" value="${Number(defaults.quantityInformed ?? 1)}">
       </td>
       <td class="td-actions">
         <button type="button" class="btn btn-delete btn-remove-row" title="Remove line"><i class="fas fa-times"></i></button>
@@ -375,7 +375,13 @@ document.addEventListener('DOMContentLoaded', () => {
         continue;
       }
       if (!/^\d+$/.test(qtyRaw)) {
-        errors.push(`Line ${row.lineNumber} - Quantity "${qtyRaw}": must be an integer >= 0.`);
+        errors.push(`Line ${row.lineNumber} - Quantity "${qtyRaw}": must be a positive integer (> 0).`);
+        markFieldError(row.rowElement, '.new-row-qty-informed');
+        continue;
+      }
+      const qtyValue = parseInt(qtyRaw, 10);
+      if (Number.isNaN(qtyValue) || qtyValue <= 0) {
+        errors.push(`Line ${row.lineNumber} - Quantity "${qtyRaw}": must be greater than 0.`);
         markFieldError(row.rowElement, '.new-row-qty-informed');
         continue;
       }
@@ -552,6 +558,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const siprSqNumber = parseInt(document.getElementById('editSiprSqNumber').value, 10);
     const quantityInformed = parseInt(document.getElementById('editQuantityInformed').value, 10) || 0;
     const quantityCurrent = parseInt(document.getElementById('editQuantityCurrent').value, 10) || 0;
+    if (quantityInformed <= 0) {
+      alert('Quantity Informed must be greater than 0.');
+      return;
+    }
 
     try {
       const res = await fetch(API_LOCATION_PRODUCT, {

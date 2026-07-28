@@ -394,8 +394,8 @@ function validar(dados) {
   if (dados.siprSqNumber == null || dados.siprSqNumber === '') {
     erros.push('Situation is required');
   }
-  if (dados.quantityInformed != null && (isNaN(dados.quantityInformed) || dados.quantityInformed < 0)) {
-    erros.push('Quantity informed must be a non-negative number');
+  if (dados.quantityInformed != null && (isNaN(dados.quantityInformed) || dados.quantityInformed <= 0)) {
+    erros.push('Quantity informed must be greater than 0');
   }
   if (dados.quantityCurrent != null && (isNaN(dados.quantityCurrent) || dados.quantityCurrent < 0)) {
     erros.push('Quantity current must be a non-negative number');

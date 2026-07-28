@@ -22,7 +22,7 @@ const validarCreate = [
   body('productCode').isLength({ min: 1, max: 50 }).trim(),
   body('entryDatetime').notEmpty().withMessage('Entry date/time is required'),
   body('siprSqNumber').isInt({ min: 1 }).withMessage('Situation is required'),
-  body('quantityInformed').optional().isInt({ min: 0 }),
+  body('quantityInformed').optional().isInt({ min: 1 }),
   body('quantityCurrent').optional().isInt({ min: 0 })
 ];
 
@@ -237,7 +237,7 @@ router.put(
     body('productCode').isLength({ min: 1 }).trim(),
     body('entryDatetime').notEmpty(),
     body('siprSqNumber').isInt({ min: 1 }),
-    body('quantityInformed').optional().isInt({ min: 0 }),
+    body('quantityInformed').optional().isInt({ min: 1 }),
     body('quantityCurrent').optional().isInt({ min: 0 })
   ],
   handleValidationErrors,
