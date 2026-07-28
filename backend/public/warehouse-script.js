@@ -348,6 +348,10 @@ function setupEventListeners() {
             productSearchSection.style.display = 'flex';
             productSearchSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
+        if (window.WarehouseBarcodeScanner
+          && typeof window.WarehouseBarcodeScanner.updateButtonVisibility === 'function') {
+            window.WarehouseBarcodeScanner.updateButtonVisibility();
+        }
     }
     function openNewProductModal() {
         closeProductDropdown();

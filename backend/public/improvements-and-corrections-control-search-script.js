@@ -4,6 +4,9 @@
     : 'http://localhost:3000';
   const REQUESTS_API = API_BASE + '/api/improvements-corrections';
   const APPS_API = API_BASE + '/api/system-applications';
+  const MENU_ACCESS_API = API_BASE + '/api/auth/menu-access';
+  const USERS_API = API_BASE + '/api/funcionarios';
+  const ROOT_REQUESTER_VALUE = 'root';
 
   const requestNumberInput = document.getElementById('searchRequestNumber');
   const requestTypeSelect = document.getElementById('searchRequestType');
@@ -18,10 +21,38 @@
 
   const applyBtn = document.getElementById('applySearchBtn');
   const clearBtn = document.getElementById('clearSearchBtn');
-
-  const messageEl = document.getElementById('requestMessage');
   const tableBody = document.getElementById('requestsSearchTableBody');
   const resultsCount = document.getElementById('resultsCount');
+
+  const editModal = document.getElementById('editRequestModal');
+  const editForm = document.getElementById('editRequestForm');
+  const editRequestId = document.getElementById('editRequestId');
+  const editRequestNumber = document.getElementById('editRequestNumber');
+  const editRequestType = document.getElementById('editRequestType');
+  const editApplicationGroup = document.getElementById('editApplicationGroup');
+  const editRequestApplication = document.getElementById('editRequestApplication');
+  const editRequestSituation = document.getElementById('editRequestSituation');
+  const editRequestDate = document.getElementById('editRequestDate');
+  const editFinishDate = document.getElementById('editFinishDate');
+  const editRequestedByDisplay = document.getElementById('editRequestedByDisplay');
+  const editRequestedBySelect = document.getElementById('editRequestedBySelect');
+  const editRequestDescription = document.getElementById('editRequestDescription');
+  const editRequestMessage = document.getElementById('editRequestMessage');
+  const closeEditBtn = document.getElementById('closeEditRequestModal');
+  const cancelEditBtn = document.getElementById('cancelEditRequestBtn');
+  const saveEditBtn = document.getElementById('saveEditRequestBtn');
+
+  const editSummaryRequestNumber = document.getElementById('editSummaryRequestNumber');
+  const editSummarySituation = document.getElementById('editSummarySituation');
+  const editSummaryType = document.getElementById('editSummaryType');
+  const editSummaryMeta = document.getElementById('editSummaryMeta');
+  const editSummaryRequestedBy = document.getElementById('editSummaryRequestedBy');
+  const editSummaryRequestDate = document.getElementById('editSummaryRequestDate');
+  const editRequestModalSubtitle = document.getElementById('editRequestModalSubtitle');
+
+  let accessibleApplications = [];
+  let isRootUser = false;
+  let loadedUsers = [];
 
   function escapeHtml(value) {
     return String(value == null ? '' : value)
@@ -67,15 +98,49 @@
 
   function formatDate(value) {
     if (!value) return '-';
+    if (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}/.test(value)) {
+      const d = new Date(value.slice(0, 10) + 'T00:00:00');
+      if (!Number.isNaN(d.getTime())) return d.toLocaleDateString();
+    }
     const d = new Date(value);
     if (Number.isNaN(d.getTime())) return '-';
     return d.toLocaleDateString();
   }
 
-  function populateApplications(list) {
-    if (!applicationSelect) return;
+  function toDateInputValue(value) {
+    if (!value) return '';
+    if (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}/.test(value)) {
+      return value.slice(0, 10);
+    }
+    const d = new Date(value);
+    if (Number.isNaN(d.getTime())) return '';
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return y + '-' + m + '-' + day;
+  }
+
+  function requiresApplication(type) {
+    return type === 'IMPROVEMENT' || type === 'CORRECTION';
+  }
+
+  function showEditMessage(text, type) {
+    if (!editRequestMessage) return;
+    editRequestMessage.textContent = text || '';
+    editRequestMessage.className = 'ic-edit-message show ' + (type || 'info');
+  }
+
+  function clearEditMessage() {
+    if (!editRequestMessage) return;
+    editRequestMessage.textContent = '';
+    editRequestMessage.className = 'ic-edit-message';
+  }
+
+  function buildApplicationOptions(list, includeAllOption) {
     const apps = Array.isArray(list) ? list.slice() : [];
-    const options = ['<option value="">All applications</option>']
+    const options = [includeAllOption
+      ? '<option value="">All applications</option>'
+      : '<option value="">Select application…</option>']
       .concat(apps.map((app) => {
         const name = app.syapNmApplication || app.syap_nm_application || '';
         const menu = app.syapDsDetailed || app.syap_ds_detailed || name;
@@ -85,17 +150,109 @@
         return '<option value="' + escapeHtml(name) + '" data-menu="' + escapeHtml(menu) + '">'
           + escapeHtml(label) + '</option>';
       }));
-    applicationSelect.innerHTML = options.join('');
+    return options.join('');
+  }
+
+  function populateApplications(list) {
+    accessibleApplications = Array.isArray(list) ? list.slice() : [];
+    if (applicationSelect) {
+      applicationSelect.innerHTML = buildApplicationOptions(accessibleApplications, true);
+    }
+    if (editRequestApplication) {
+      editRequestApplication.innerHTML = buildApplicationOptions(accessibleApplications, false);
+    }
+  }
+
+  function populateUsers(list) {
+    loadedUsers = Array.isArray(list) ? list.slice() : [];
+    if (!editRequestedBySelect) return;
+    const options = ['<option value="">Select user…</option>',
+      '<option value="' + ROOT_REQUESTER_VALUE + '">Root</option>'
+    ].concat(loadedUsers.map((user) => {
+      const name = user.nome || user.name || user.email || 'User';
+      const email = user.email || '';
+      const label = email ? (name + ' (' + email + ')') : name;
+      return '<option value="' + escapeHtml(user.id) + '">' + escapeHtml(label) + '</option>';
+    }));
+    editRequestedBySelect.innerHTML = options.join('');
+  }
+
+  function toggleEditApplicationField() {
+    const type = editRequestType ? editRequestType.value : '';
+    const show = requiresApplication(type);
+    if (editApplicationGroup) {
+      if (show) editApplicationGroup.classList.remove('is-hidden');
+      else editApplicationGroup.classList.add('is-hidden');
+    }
+    if (editRequestApplication) {
+      editRequestApplication.required = show;
+      if (!show) editRequestApplication.value = '';
+    }
+  }
+
+  function toggleEditRequestedByField() {
+    if (editRequestedByDisplay) {
+      editRequestedByDisplay.style.display = isRootUser ? 'none' : '';
+      editRequestedByDisplay.classList.toggle('is-hidden', isRootUser);
+    }
+    if (editRequestedBySelect) {
+      editRequestedBySelect.classList.toggle('is-hidden', !isRootUser);
+      editRequestedBySelect.style.display = isRootUser ? 'block' : 'none';
+      editRequestedBySelect.required = isRootUser;
+    }
+  }
+
+  async function loadUsersForRoot() {
+    try {
+      const res = await fetch(USERS_API + '?ativo=true&ordenarPor=nome&direcao=asc', { credentials: 'include' });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error((data && data.error) || 'Unable to load users');
+      }
+      populateUsers(data.data || []);
+    } catch (error) {
+      console.error(error);
+    }
   }
 
   async function loadApplications() {
     try {
-      const res = await fetch(APPS_API, { credentials: 'include' });
-      const data = await res.json();
-      if (!res.ok || !data.success) {
-        throw new Error((data && data.error) || 'Unable to load applications');
+      const [appsRes, accessRes] = await Promise.all([
+        fetch(APPS_API, { credentials: 'include' }),
+        fetch(MENU_ACCESS_API, { credentials: 'include' })
+      ]);
+
+      const appsData = await appsRes.json();
+      if (!appsRes.ok || !appsData.success) {
+        throw new Error((appsData && appsData.error) || 'Unable to load applications');
       }
-      populateApplications(data.data || []);
+
+      let list = appsData.data || [];
+      if (accessRes.ok) {
+        const accessData = await accessRes.json().catch(() => null);
+        if (accessData && accessData.success) {
+          isRootUser = Boolean(accessData.isRoot || (accessData.user && accessData.user.isRoot));
+          if (!isRootUser) {
+            const allowed = new Set(
+              (accessData.applications || [])
+                .map((name) => String(name || '').trim().toLowerCase())
+                .filter(Boolean)
+            );
+            list = list.filter((app) => {
+              const name = String(app.syapNmApplication || app.syap_nm_application || '')
+                .trim()
+                .toLowerCase();
+              return name && allowed.has(name);
+            });
+          }
+        }
+      }
+
+      populateApplications(list);
+      toggleEditRequestedByField();
+      if (isRootUser) {
+        await loadUsersForRoot();
+      }
     } catch (error) {
       console.error(error);
     }
@@ -139,7 +296,7 @@
       if (!tableBody) return;
 
       if (!list.length) {
-        tableBody.innerHTML = '<tr><td colspan="8" class="empty-state"><p>No requests found.</p></td></tr>';
+        tableBody.innerHTML = '<tr><td colspan="9" class="empty-state"><p>No requests found.</p></td></tr>';
         return;
       }
 
@@ -150,8 +307,9 @@
         const desc = String(row.description || '');
         const shortDesc = desc.length > 120 ? desc.slice(0, 117) + '…' : desc;
         const sitClass = situationCssClass(row.situation);
+        const id = row.id || '';
 
-        return '<tr>'
+        return '<tr data-id="' + escapeHtml(id) + '">'
           + '<td>' + escapeHtml(row.requestNumber || '-') + '</td>'
           + '<td>' + escapeHtml(formatDate(row.requestDate || row.criadoEm)) + '</td>'
           + '<td>' + escapeHtml(formatDate(row.finishDate || row.finish_date || null)) + '</td>'
@@ -160,12 +318,18 @@
           + '<td title="' + escapeHtml(desc) + '">' + escapeHtml(shortDesc) + '</td>'
           + '<td>' + escapeHtml(row.createdByName || '-') + '</td>'
           + '<td class="' + sitClass + '">' + escapeHtml(formatSituation(row.situation)) + '</td>'
+          + '<td class="td-actions">'
+          + '<button type="button" class="btn-action btn-edit btn btn-sm edit-request-btn" data-id="' + escapeHtml(id) + '" title="Edit">'
+          + '<i class="fas fa-edit"></i></button> '
+          + '<button type="button" class="btn-action btn-delete btn btn-sm delete-request-btn" data-id="' + escapeHtml(id) + '" title="Delete">'
+          + '<i class="fas fa-trash"></i></button>'
+          + '</td>'
           + '</tr>';
       }).join('');
     } catch (error) {
       console.error(error);
       if (tableBody) {
-        tableBody.innerHTML = '<tr><td colspan="8" class="empty-state"><p class="error-state">Error loading requests.</p></td></tr>';
+        tableBody.innerHTML = '<tr><td colspan="9" class="empty-state"><p class="error-state">Error loading requests.</p></td></tr>';
       }
     }
   }
@@ -183,6 +347,245 @@
     if (descriptionInput) descriptionInput.value = '';
   }
 
+  function openEditModal() {
+    if (!editModal) return;
+    editModal.classList.add('show');
+    editModal.setAttribute('aria-hidden', 'false');
+  }
+
+  function closeEditModal() {
+    if (!editModal) return;
+    editModal.classList.remove('show');
+    editModal.setAttribute('aria-hidden', 'true');
+    clearEditMessage();
+  }
+
+  function getSelectedApplicationLabel() {
+    if (!editRequestApplication || !editRequestApplication.value) {
+      return editRequestType && editRequestType.value === 'NEW_FUNCTIONALITY'
+        ? 'New Functionality'
+        : '-';
+    }
+    const selected = editRequestApplication.options[editRequestApplication.selectedIndex];
+    const menu = selected ? selected.getAttribute('data-menu') : '';
+    return (menu || selected.textContent || editRequestApplication.value || '-').replace(/_/g, ' ');
+  }
+
+  function getEditRequestedByLabel() {
+    if (isRootUser && editRequestedBySelect && !editRequestedBySelect.classList.contains('is-hidden')) {
+      const selected = editRequestedBySelect.options[editRequestedBySelect.selectedIndex];
+      return (selected && selected.textContent) ? selected.textContent.trim() : '-';
+    }
+    return editRequestedByDisplay ? (editRequestedByDisplay.value || '-') : '-';
+  }
+
+  function updateEditSummary(item) {
+    const fromItem = !!(item && typeof item === 'object');
+    const requestNumber = fromItem
+      ? item.requestNumber
+      : (editRequestNumber ? editRequestNumber.value : '');
+    const situation = fromItem
+      ? (item.situation || 'NOT_STARTED')
+      : (editRequestSituation ? editRequestSituation.value : 'NOT_STARTED');
+    const requestType = fromItem
+      ? (item.requestType || '')
+      : (editRequestType ? editRequestType.value : '');
+    const finishDate = fromItem
+      ? item.finishDate
+      : (editFinishDate ? editFinishDate.value : '');
+    const requestDate = fromItem
+      ? (item.requestDate || item.criadoEm)
+      : (editRequestDate ? editRequestDate.value : '');
+    const appLabel = fromItem
+      ? (item.applicationMenu
+        ? String(item.applicationMenu).replace(/_/g, ' ')
+        : (item.applicationName || (item.requestType === 'NEW_FUNCTIONALITY' ? 'New Functionality' : '-')))
+      : getSelectedApplicationLabel();
+    const requestedBy = fromItem
+      ? (item.createdByName || '-')
+      : getEditRequestedByLabel();
+
+    if (editSummaryRequestNumber) {
+      editSummaryRequestNumber.textContent = requestNumber !== '' && requestNumber != null
+        ? ('#' + requestNumber)
+        : '#-';
+    }
+    if (editSummarySituation) {
+      editSummarySituation.textContent = formatSituation(situation);
+      editSummarySituation.className = 'status-badge ' + situationCssClass(situation);
+    }
+    if (editSummaryType) {
+      editSummaryType.textContent = formatRequestType(requestType);
+    }
+    if (editSummaryMeta) {
+      editSummaryMeta.textContent = 'Application: ' + appLabel
+        + ' · Finish: ' + formatDate(finishDate || null);
+    }
+    if (editSummaryRequestedBy) {
+      editSummaryRequestedBy.textContent = requestedBy || '-';
+    }
+    if (editSummaryRequestDate) {
+      editSummaryRequestDate.textContent = formatDate(requestDate);
+    }
+    if (editRequestModalSubtitle) {
+      editRequestModalSubtitle.textContent = requestNumber !== '' && requestNumber != null
+        ? ('Editing request #' + requestNumber)
+        : 'Update request details and situation';
+    }
+  }
+
+  function refreshEditSummaryFromForm() {
+    updateEditSummary(null);
+  }
+
+  async function openEditRequest(id) {
+    clearEditMessage();
+    try {
+      const res = await fetch(REQUESTS_API + '/' + encodeURIComponent(id), { credentials: 'include' });
+      const data = await res.json();
+      if (!res.ok || !data.success || !data.data) {
+        throw new Error((data && data.error) || 'Unable to load request');
+      }
+      const item = data.data;
+
+      if (editRequestId) editRequestId.value = item.id || '';
+      if (editRequestNumber) editRequestNumber.value = item.requestNumber != null ? item.requestNumber : '';
+      if (editRequestType) editRequestType.value = item.requestType || '';
+      if (editRequestSituation) editRequestSituation.value = item.situation || 'NOT_STARTED';
+      if (editRequestDate) editRequestDate.value = toDateInputValue(item.requestDate);
+      if (editFinishDate) editFinishDate.value = toDateInputValue(item.finishDate);
+      if (editRequestDescription) editRequestDescription.value = item.description || '';
+
+      toggleEditApplicationField();
+      if (editRequestApplication) {
+        editRequestApplication.value = item.applicationName || '';
+        if (item.applicationName && !editRequestApplication.value) {
+          const option = document.createElement('option');
+          option.value = item.applicationName;
+          option.setAttribute('data-menu', item.applicationMenu || item.applicationName);
+          option.textContent = (item.applicationMenu || item.applicationName).replace(/_/g, ' ');
+          editRequestApplication.appendChild(option);
+          editRequestApplication.value = item.applicationName;
+        }
+      }
+
+      toggleEditRequestedByField();
+      if (isRootUser && editRequestedBySelect) {
+        if (item.createdBy) {
+          editRequestedBySelect.value = item.createdBy;
+        } else if (String(item.createdByName || '').toLowerCase() === 'root') {
+          editRequestedBySelect.value = ROOT_REQUESTER_VALUE;
+        } else {
+          editRequestedBySelect.value = '';
+        }
+      } else if (editRequestedByDisplay) {
+        editRequestedByDisplay.value = item.createdByName || '-';
+      }
+
+      updateEditSummary(item);
+      openEditModal();
+    } catch (error) {
+      console.error(error);
+      alert(error.message || 'Unable to open request for edit');
+    }
+  }
+
+  async function saveEditRequest(event) {
+    event.preventDefault();
+    clearEditMessage();
+
+    const id = editRequestId ? editRequestId.value : '';
+    if (!id) {
+      showEditMessage('Missing request id.', 'error');
+      return;
+    }
+
+    const requestType = editRequestType ? editRequestType.value : '';
+    const applicationOption = editRequestApplication && editRequestApplication.selectedOptions
+      ? editRequestApplication.selectedOptions[0]
+      : null;
+    const applicationName = editRequestApplication ? editRequestApplication.value.trim() : '';
+    const applicationMenu = applicationOption
+      ? (applicationOption.getAttribute('data-menu') || '').trim()
+      : '';
+    const description = editRequestDescription ? editRequestDescription.value.trim() : '';
+    const situation = editRequestSituation ? editRequestSituation.value : 'NOT_STARTED';
+    const requestDate = editRequestDate ? editRequestDate.value : '';
+    const finishDate = editFinishDate ? editFinishDate.value : '';
+
+    if (!description) {
+      showEditMessage('Please enter the description.', 'error');
+      return;
+    }
+    if (!requestType) {
+      showEditMessage('Please select the request type.', 'error');
+      return;
+    }
+    if (requiresApplication(requestType) && !applicationName) {
+      showEditMessage('Please select the application.', 'error');
+      return;
+    }
+    if (isRootUser && editRequestedBySelect && !editRequestedBySelect.value) {
+      showEditMessage('Please select the user who requested this.', 'error');
+      return;
+    }
+
+    const payload = {
+      description,
+      requestType,
+      applicationName: requiresApplication(requestType) ? applicationName : null,
+      applicationMenu: requiresApplication(requestType) ? applicationMenu : null,
+      situation,
+      requestDate: requestDate || null,
+      finishDate: finishDate || null
+    };
+    if (isRootUser && editRequestedBySelect && editRequestedBySelect.value) {
+      payload.createdBy = editRequestedBySelect.value;
+    }
+
+    if (saveEditBtn) saveEditBtn.disabled = true;
+    try {
+      const res = await fetch(REQUESTS_API + '/' + encodeURIComponent(id), {
+        method: 'PUT',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error((data && (data.error || data.message)) || 'Unable to update request');
+      }
+      showEditMessage(data.message || 'Request updated successfully.', 'success');
+      await runSearch();
+      setTimeout(closeEditModal, 500);
+    } catch (error) {
+      showEditMessage(error.message || 'Unable to update request', 'error');
+    } finally {
+      if (saveEditBtn) saveEditBtn.disabled = false;
+    }
+  }
+
+  async function deleteRequest(id) {
+    if (!id) return;
+    const confirmed = window.confirm('Delete this request? This action cannot be undone.');
+    if (!confirmed) return;
+
+    try {
+      const res = await fetch(REQUESTS_API + '/' + encodeURIComponent(id), {
+        method: 'DELETE',
+        credentials: 'include'
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.success) {
+        throw new Error((data && (data.error || data.message)) || 'Unable to delete request');
+      }
+      await runSearch();
+    } catch (error) {
+      console.error(error);
+      alert(error.message || 'Unable to delete request');
+    }
+  }
+
   function init() {
     if (applyBtn) applyBtn.addEventListener('click', runSearch);
     if (clearBtn) clearBtn.addEventListener('click', () => {
@@ -190,8 +593,51 @@
       runSearch();
     });
 
+    if (editRequestType) {
+      editRequestType.addEventListener('change', () => {
+        toggleEditApplicationField();
+        refreshEditSummaryFromForm();
+      });
+    }
+    if (editRequestSituation) {
+      editRequestSituation.addEventListener('change', refreshEditSummaryFromForm);
+    }
+    if (editRequestApplication) {
+      editRequestApplication.addEventListener('change', refreshEditSummaryFromForm);
+    }
+    if (editRequestDate) {
+      editRequestDate.addEventListener('change', refreshEditSummaryFromForm);
+    }
+    if (editFinishDate) {
+      editFinishDate.addEventListener('change', refreshEditSummaryFromForm);
+    }
+    if (editRequestedBySelect) {
+      editRequestedBySelect.addEventListener('change', refreshEditSummaryFromForm);
+    }
+    if (editForm) editForm.addEventListener('submit', saveEditRequest);
+    if (closeEditBtn) closeEditBtn.addEventListener('click', closeEditModal);
+    if (cancelEditBtn) cancelEditBtn.addEventListener('click', closeEditModal);
+    if (editModal) {
+      editModal.addEventListener('click', (event) => {
+        if (event.target === editModal) closeEditModal();
+      });
+    }
+
+    if (tableBody) {
+      tableBody.addEventListener('click', (event) => {
+        const editBtn = event.target.closest('.edit-request-btn');
+        if (editBtn) {
+          openEditRequest(editBtn.getAttribute('data-id'));
+          return;
+        }
+        const deleteBtn = event.target.closest('.delete-request-btn');
+        if (deleteBtn) {
+          deleteRequest(deleteBtn.getAttribute('data-id'));
+        }
+      });
+    }
+
     loadApplications().finally(() => {
-      // Load initial results without filters.
       runSearch();
     });
   }
@@ -202,4 +648,3 @@
     init();
   }
 })();
-

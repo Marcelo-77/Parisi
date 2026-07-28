@@ -7,37 +7,84 @@
   let html5QrcodeLoader = null;
   let customDetectHandler = null;
 
+  function isIosDevice() {
+    const ua = String(navigator.userAgent || '');
+    if (/iPhone|iPad|iPod/i.test(ua)) return true;
+    // iOS 13+ desktop mode spoofs Macintosh
+    return (/Macintosh/i.test(ua) || navigator.platform === 'MacIntel')
+      && (Number(navigator.maxTouchPoints) || 0) > 1;
+  }
+
   function isMobileDevice() {
-    if (typeof window.matchMedia === 'function' && window.matchMedia('(max-width: 768px)').matches) {
-      return true;
+    if (navigator.userAgentData && typeof navigator.userAgentData.mobile === 'boolean') {
+      if (navigator.userAgentData.mobile) return true;
     }
+
+    const ua = String(navigator.userAgent || navigator.vendor || '');
     const touchPoints = Number(navigator.maxTouchPoints) || 0;
-    if (touchPoints > 0 && Math.min(window.innerWidth, window.innerHeight) <= 1024) {
-      return true;
+
+    if (/iPhone|iPod/i.test(ua)) return true;
+    if (/Android/i.test(ua) && /Mobile/i.test(ua)) return true;
+    if (/Windows Phone|IEMobile|BlackBerry|Opera Mini/i.test(ua)) return true;
+
+    const isTouchMac = (/Macintosh/i.test(ua) || navigator.platform === 'MacIntel') && touchPoints > 1;
+    if (isTouchMac) {
+      const shortest = Math.min(Number(screen.width) || 0, Number(screen.height) || 0);
+      if (shortest > 0 && shortest <= 520) return true;
     }
-    return /Android|iPhone|iPad|iPod|Mobile|IEMobile|Opera Mini/i.test(navigator.userAgent || '');
+
+    if (/Mobile/i.test(ua) && !/iPad|Tablet|Kindle|Silk/i.test(ua)) return true;
+
+    const narrow = typeof window.matchMedia === 'function'
+      && window.matchMedia('(max-width: 768px)').matches;
+    const coarse = typeof window.matchMedia === 'function'
+      && window.matchMedia('(pointer: coarse)').matches;
+    return !!(narrow && coarse && touchPoints > 0);
+  }
+
+  function canUseBarcodeScan() {
+    const searchByField = document.getElementById('searchByField');
+    return isMobileDevice() && !!searchByField && searchByField.value === 'barcode';
   }
 
   function updateBarcodeScanButtonVisibility() {
     const scanBarcodeBtn = document.getElementById('scanBarcodeBtn');
-    const searchByField = document.getElementById('searchByField');
     if (!scanBarcodeBtn) return;
-    const show = isMobileDevice() && searchByField && searchByField.value === 'barcode';
-    scanBarcodeBtn.style.display = show ? '' : 'none';
+    scanBarcodeBtn.style.display = canUseBarcodeScan() ? 'inline-flex' : 'none';
   }
 
   function maybeAskToUseBarcodeCamera() {
-    if (!isMobileDevice() || barcodeCameraPromptShown) return;
+    if (!canUseBarcodeScan() || barcodeCameraPromptShown) return;
     barcodeCameraPromptShown = true;
-    const useCamera = window.confirm('Use the phone camera to scan the barcode?');
-    if (useCamera) {
-      openBarcodeScanner();
-    }
+    // Do NOT open the camera from confirm() — iOS loses the user-gesture
+    // and then getUserMedia fails even when Settings permission is on.
+    window.alert('Tap the Scan button to open the camera and read the barcode.');
   }
 
   function setBarcodeScannerStatus(message) {
     const el = document.getElementById('barcodeScannerStatus');
     if (el) el.textContent = message || '';
+  }
+
+  function cameraErrorMessage(error) {
+    const name = error && error.name ? String(error.name) : '';
+    const msg = error && error.message ? String(error.message) : '';
+    if (!window.isSecureContext) {
+      return 'Camera requires HTTPS. Open the site with https:// and try again.';
+    }
+    if (name === 'NotAllowedError' || name === 'PermissionDeniedError') {
+      return 'Camera permission was blocked. In iPhone Settings → Safari (or Chrome) → Camera, allow access for this site, then tap Scan again.';
+    }
+    if (name === 'NotFoundError' || name === 'DevicesNotFoundError') {
+      return 'No camera was found on this device.';
+    }
+    if (name === 'NotReadableError' || name === 'TrackStartError') {
+      return 'Camera is in use by another app. Close it and try again.';
+    }
+    if (name === 'OverconstrainedError' || name === 'ConstraintNotSatisfiedError') {
+      return 'Could not start the rear camera. Trying again with default camera may help.';
+    }
+    return msg || name || 'Unable to open the camera.';
   }
 
   function loadHtml5QrcodeLibrary() {
@@ -59,10 +106,66 @@
     return html5QrcodeLoader;
   }
 
+  async function getCameraStream() {
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      throw new Error('This device does not support camera scanning.');
+    }
+
+    const attempts = [
+      { audio: false, video: { facingMode: { ideal: 'environment' } } },
+      { audio: false, video: { facingMode: 'environment' } },
+      { audio: false, video: true }
+    ];
+
+    let lastError = null;
+    for (let i = 0; i < attempts.length; i += 1) {
+      try {
+        return await navigator.mediaDevices.getUserMedia(attempts[i]);
+      } catch (error) {
+        lastError = error;
+        console.warn('getUserMedia attempt failed:', attempts[i], error);
+      }
+    }
+    throw lastError || new Error('Unable to open camera');
+  }
+
+  async function isBarcodeDetectorUsable() {
+    if (!('BarcodeDetector' in window) || typeof window.BarcodeDetector !== 'function') {
+      return false;
+    }
+    try {
+      if (typeof window.BarcodeDetector.getSupportedFormats === 'function') {
+        const formats = await window.BarcodeDetector.getSupportedFormats();
+        return Array.isArray(formats) && formats.length > 0;
+      }
+      // Older implementations may not expose getSupportedFormats
+      return !isIosDevice();
+    } catch (_) {
+      return false;
+    }
+  }
+
+  function prepareVideoElement(video) {
+    if (!video) return;
+    video.setAttribute('playsinline', 'true');
+    video.setAttribute('webkit-playsinline', 'true');
+    video.muted = true;
+    video.autoplay = true;
+    video.playsInline = true;
+  }
+
   async function openBarcodeScanner(options = {}) {
     const modal = document.getElementById('barcodeScannerModal');
     if (!modal) {
       alert('Camera scanner is not available on this page.');
+      return;
+    }
+    if (!options.force && document.getElementById('scanBarcodeBtn') && !canUseBarcodeScan()) {
+      updateBarcodeScanButtonVisibility();
+      return;
+    }
+    if (!window.isSecureContext) {
+      alert('Camera requires HTTPS. Please open the site using https:// and try again.');
       return;
     }
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
@@ -79,42 +182,59 @@
     setBarcodeScannerStatus(options.statusText || 'Starting camera...');
 
     try {
-      if ('BarcodeDetector' in window) {
-        await startNativeBarcodeScanner();
+      // Request camera FIRST (still tied to the tap). Loading CDN before this
+      // breaks iOS Safari/Chrome and causes NotAllowedError.
+      barcodeScannerStream = await getCameraStream();
+
+      const useNative = await isBarcodeDetectorUsable();
+      if (useNative) {
+        await startNativeBarcodeScanner(barcodeScannerStream);
       } else {
-        await startHtml5BarcodeScanner();
+        await startHtml5BarcodeScanner(barcodeScannerStream);
       }
     } catch (error) {
       console.error('Barcode scanner error:', error);
       customDetectHandler = null;
-      setBarcodeScannerStatus('Unable to open camera. Check camera permission.');
-      alert('Unable to open the camera. Please allow camera access and try again.');
+      const friendly = cameraErrorMessage(error);
+      setBarcodeScannerStatus(friendly);
+      alert(friendly);
       closeBarcodeScanner();
     }
   }
 
-  async function startNativeBarcodeScanner() {
+  async function startNativeBarcodeScanner(stream) {
     const video = document.getElementById('barcodeScannerVideo');
     const html5Reader = document.getElementById('html5QrcodeReader');
     if (!video) throw new Error('Video element missing');
 
     if (html5Reader) html5Reader.style.display = 'none';
+    prepareVideoElement(video);
     video.style.display = 'block';
+    video.srcObject = stream;
+    barcodeScannerStream = stream;
 
-    barcodeScannerStream = await navigator.mediaDevices.getUserMedia({
-      audio: false,
-      video: {
-        facingMode: { ideal: 'environment' },
-        width: { ideal: 1280 },
-        height: { ideal: 720 }
+    try {
+      await video.play();
+    } catch (playError) {
+      console.warn('video.play() warning:', playError);
+    }
+
+    const preferredFormats = ['ean_13', 'ean_8', 'code_128', 'code_39', 'upc_a', 'upc_e', 'codabar', 'qr_code'];
+    let detector;
+    try {
+      let formats = preferredFormats;
+      if (typeof window.BarcodeDetector.getSupportedFormats === 'function') {
+        const supported = await window.BarcodeDetector.getSupportedFormats();
+        formats = preferredFormats.filter((f) => supported.indexOf(f) !== -1);
+        if (!formats.length) formats = supported;
       }
-    });
-    video.srcObject = barcodeScannerStream;
-    await video.play();
+      detector = new window.BarcodeDetector({ formats });
+    } catch (detectorError) {
+      console.warn('BarcodeDetector init failed, falling back:', detectorError);
+      await startHtml5BarcodeScanner(stream);
+      return;
+    }
 
-    const detector = new BarcodeDetector({
-      formats: ['ean_13', 'ean_8', 'code_128', 'code_39', 'upc_a', 'upc_e', 'codabar', 'qr_code']
-    });
     setBarcodeScannerStatus('Point the camera at the barcode...');
 
     const tick = async () => {
@@ -138,14 +258,21 @@
     tick();
   }
 
-  async function startHtml5BarcodeScanner() {
+  async function startHtml5BarcodeScanner(existingStream) {
     const video = document.getElementById('barcodeScannerVideo');
     const html5Reader = document.getElementById('html5QrcodeReader');
     if (!html5Reader) throw new Error('Scanner container missing');
 
+    // Keep permission warm: stop our preview stream only right before html5-qrcode starts
+    if (existingStream) {
+      existingStream.getTracks().forEach((track) => track.stop());
+      if (barcodeScannerStream === existingStream) barcodeScannerStream = null;
+    }
+
     if (video) {
-      video.style.display = 'none';
+      try { video.pause(); } catch (_) {}
       video.srcObject = null;
+      video.style.display = 'none';
     }
     html5Reader.style.display = 'block';
     html5Reader.innerHTML = '';
@@ -154,19 +281,53 @@
     html5QrCodeInstance = new Html5Qrcode('html5QrcodeReader');
     setBarcodeScannerStatus('Point the camera at the barcode...');
 
-    await html5QrCodeInstance.start(
+    const config = {
+      fps: 10,
+      qrbox: (viewfinderWidth, viewfinderHeight) => {
+        const width = Math.max(120, Math.floor(viewfinderWidth * 0.8));
+        const height = Math.max(80, Math.floor(viewfinderHeight * 0.35));
+        return { width, height };
+      }
+    };
+    // aspectRatio often breaks html5-qrcode camera start on iOS
+    if (!isIosDevice()) {
+      config.aspectRatio = 1.777;
+    }
+
+    const cameraConfigs = [
       { facingMode: 'environment' },
-      {
-        fps: 10,
-        qrbox: { width: 250, height: 140 },
-        aspectRatio: 1.777
-      },
-      (decodedText) => {
-        const raw = String(decodedText || '').trim();
-        if (raw) onBarcodeDetected(raw);
-      },
-      () => {}
-    );
+      { facingMode: { ideal: 'environment' } },
+      { facingMode: 'user' }
+    ];
+
+    let started = false;
+    let lastError = null;
+    for (let i = 0; i < cameraConfigs.length; i += 1) {
+      try {
+        await html5QrCodeInstance.start(
+          cameraConfigs[i],
+          config,
+          (decodedText) => {
+            const raw = String(decodedText || '').trim();
+            if (raw) onBarcodeDetected(raw);
+          },
+          () => {}
+        );
+        started = true;
+        break;
+      } catch (error) {
+        lastError = error;
+        console.warn('html5-qrcode start failed:', cameraConfigs[i], error);
+        try {
+          const state = html5QrCodeInstance.getState && html5QrCodeInstance.getState();
+          if (state === 2 || state === 3) await html5QrCodeInstance.stop();
+        } catch (_) {}
+      }
+    }
+
+    if (!started) {
+      throw lastError || new Error('Unable to start barcode scanner');
+    }
   }
 
   function onBarcodeDetected(rawValue) {
@@ -261,16 +422,25 @@
     const clearSearch = document.getElementById('clearSearch');
 
     if (searchByField) {
-      searchByField.addEventListener('change', () => {
+      const onSearchByChange = () => {
         updateBarcodeScanButtonVisibility();
-        if (searchByField.value === 'barcode' && isMobileDevice()) {
+        if (canUseBarcodeScan()) {
           maybeAskToUseBarcodeCamera();
         }
-      });
+      };
+      searchByField.addEventListener('change', onSearchByChange);
+      searchByField.addEventListener('input', onSearchByChange);
     }
 
     if (scanBarcodeBtn) {
-      scanBarcodeBtn.addEventListener('click', () => openBarcodeScanner());
+      scanBarcodeBtn.addEventListener('click', (event) => {
+        event.preventDefault();
+        if (!canUseBarcodeScan()) {
+          updateBarcodeScanButtonVisibility();
+          return;
+        }
+        openBarcodeScanner();
+      });
     }
     if (closeBarcodeScannerModalBtn) {
       closeBarcodeScannerModalBtn.addEventListener('click', closeBarcodeScanner);
@@ -291,6 +461,9 @@
 
     updateBarcodeScanButtonVisibility();
     window.addEventListener('resize', updateBarcodeScanButtonVisibility);
+    window.addEventListener('orientationchange', () => {
+      setTimeout(updateBarcodeScanButtonVisibility, 100);
+    });
   }
 
   global.WarehouseBarcodeScanner = {
@@ -298,6 +471,7 @@
     open: openBarcodeScanner,
     close: closeBarcodeScanner,
     isMobileDevice,
+    canUseBarcodeScan,
     updateButtonVisibility: updateBarcodeScanButtonVisibility
   };
 

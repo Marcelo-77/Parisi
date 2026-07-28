@@ -5,6 +5,7 @@
   const REQUESTS_API = API_BASE + '/api/improvements-corrections';
   const APPS_API = API_BASE + '/api/system-applications';
   const AUTH_API = API_BASE + '/api/auth/check';
+  const MENU_ACCESS_API = API_BASE + '/api/auth/menu-access';
   const USERS_API = API_BASE + '/api/funcionarios';
   const ROOT_REQUESTER_VALUE = 'root';
 
@@ -133,12 +134,38 @@
 
   async function loadApplications() {
     try {
-      const res = await fetch(APPS_API, { credentials: 'include' });
-      const data = await res.json();
-      if (!res.ok || !data.success) {
-        throw new Error((data && data.error) || 'Unable to load applications');
+      const [appsRes, accessRes] = await Promise.all([
+        fetch(APPS_API, { credentials: 'include' }),
+        fetch(MENU_ACCESS_API, { credentials: 'include' })
+      ]);
+
+      const appsData = await appsRes.json();
+      if (!appsRes.ok || !appsData.success) {
+        throw new Error((appsData && appsData.error) || 'Unable to load applications');
       }
-      populateApplications(data.data || []);
+
+      let list = appsData.data || [];
+      if (accessRes.ok) {
+        const accessData = await accessRes.json().catch(() => null);
+        if (accessData && accessData.success) {
+          const isRoot = Boolean(accessData.isRoot || (accessData.user && accessData.user.isRoot));
+          if (!isRoot) {
+            const allowed = new Set(
+              (accessData.applications || [])
+                .map((name) => String(name || '').trim().toLowerCase())
+                .filter(Boolean)
+            );
+            list = list.filter((app) => {
+              const name = String(app.syapNmApplication || app.syap_nm_application || '')
+                .trim()
+                .toLowerCase();
+              return name && allowed.has(name);
+            });
+          }
+        }
+      }
+
+      populateApplications(list);
     } catch (error) {
       console.error(error);
     }

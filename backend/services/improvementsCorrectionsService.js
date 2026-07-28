@@ -206,10 +206,81 @@ async function listar(filtros = {}) {
   return (result.rows || []).map(mapRow);
 }
 
+async function buscarPorId(id) {
+  await ensureTable();
+  const result = await query(`SELECT * FROM ${TABLE} WHERE id = $1`, [id]);
+  return mapRow(result.rows[0] || null);
+}
+
+async function atualizar(id, dados) {
+  await ensureTable();
+  const existing = await buscarPorId(id);
+  if (!existing) {
+    throw new Error('Request not found');
+  }
+
+  const { erros, description, requestType, applicationName, situation, requestDate, finishDate } = validate(dados);
+  if (erros.length) {
+    throw new Error(erros.join(', '));
+  }
+
+  const applicationMenu = dados.applicationMenu != null
+    ? String(dados.applicationMenu).trim().substring(0, 150)
+    : null;
+
+  const createdBy = Object.prototype.hasOwnProperty.call(dados, 'createdBy')
+    ? (dados.createdBy || null)
+    : existing.createdBy;
+  const createdByName = Object.prototype.hasOwnProperty.call(dados, 'createdByName')
+    ? (dados.createdByName || null)
+    : existing.createdByName;
+
+  const result = await query(
+    `UPDATE ${TABLE} SET
+      description = $1,
+      request_type = $2,
+      application_name = $3,
+      application_menu = $4,
+      situation = $5,
+      request_date = $6,
+      finish_date = $7,
+      created_by = $8,
+      created_by_name = $9,
+      atualizado_em = CURRENT_TIMESTAMP
+     WHERE id = $10
+     RETURNING *`,
+    [
+      description,
+      requestType,
+      requiresApplication(requestType) ? applicationName.substring(0, 100) : null,
+      requiresApplication(requestType) ? (applicationMenu || null) : null,
+      situation,
+      requestDate,
+      finishDate,
+      createdBy,
+      createdByName,
+      id
+    ]
+  );
+  return mapRow(result.rows[0]);
+}
+
+async function excluir(id) {
+  await ensureTable();
+  const result = await query(`DELETE FROM ${TABLE} WHERE id = $1 RETURNING *`, [id]);
+  if (!result.rows[0]) {
+    throw new Error('Request not found');
+  }
+  return mapRow(result.rows[0]);
+}
+
 module.exports = {
   ensureTable,
   criar,
   listar,
+  buscarPorId,
+  atualizar,
+  excluir,
   REQUEST_TYPES,
   normalizeRequestType,
   requiresApplication,

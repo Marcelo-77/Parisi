@@ -15,6 +15,152 @@
         .situation-in-client-validation { color: #7c3aed; font-weight: 700; }
         .situation-live { color: #15803d; font-weight: 700; }
         .situation-cancelled { color: #b91c1c; font-weight: 700; }
+
+        #editApplicationGroup.is-hidden,
+        #editRequestedByDisplay.is-hidden,
+        #editRequestedBySelect.is-hidden { display: none; }
+
+        #editRequestModal .item-modal-content.modal-large {
+            width: min(calc(100vw - 40px), 1640px);
+            max-width: min(calc(100vw - 40px), 1640px);
+            margin: 2vh auto !important;
+        }
+
+        #editRequestModal .item-modal-content {
+            display: flex;
+            flex-direction: column;
+            max-height: 92vh;
+            overflow: hidden;
+        }
+
+        #editRequestModal .item-modal-form {
+            display: flex;
+            flex-direction: column;
+            flex: 1 1 auto;
+            min-height: 0;
+            gap: 0;
+            padding: 0;
+        }
+
+        #editRequestModal .item-modal-body {
+            overflow-y: auto;
+            flex: 1 1 auto;
+            min-height: 0;
+            text-align: left;
+            padding: 18px 24px;
+        }
+
+        #editRequestModal .item-modal-footer {
+            flex-shrink: 0;
+            margin-top: 0;
+            padding: 14px 24px 18px;
+            border-top: 2px solid #f0f0f0;
+        }
+
+        #editRequestModal .modal-header {
+            padding: 14px 24px;
+            background: linear-gradient(135deg, #4facfe 0%, #00c6fb 100%);
+            color: #fff;
+        }
+
+        #editRequestModal .modal-header h3 {
+            font-size: 1.15rem;
+            margin: 0;
+        }
+
+        #editRequestModal .form-row {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 12px;
+        }
+
+        #editRequestModal .form-group.full-width {
+            grid-column: 1 / -1;
+        }
+
+        #editRequestModal .form-group label {
+            display: block;
+            margin-bottom: 4px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: #333;
+        }
+
+        #editRequestModal .form-group input,
+        #editRequestModal .form-group select,
+        #editRequestModal .form-group textarea {
+            width: 100%;
+            padding: 8px 12px;
+            font-size: 0.95rem;
+            border: 2px solid #e1e5e9;
+            border-radius: 8px;
+            background: #fafafa;
+            box-sizing: border-box;
+        }
+
+        #editRequestModal .form-group input:focus,
+        #editRequestModal .form-group select:focus,
+        #editRequestModal .form-group textarea:focus {
+            outline: none;
+            border-color: #667eea;
+            background: #fff;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        #editRequestModal .ic-edit-message {
+            min-height: 1.2em;
+            margin: 0 24px 8px;
+            text-align: center;
+            font-size: 0.95rem;
+        }
+        #editRequestModal .ic-edit-message.show.success { color: #15803d; }
+        #editRequestModal .ic-edit-message.show.error { color: #b91c1c; }
+        #editRequestModal .ic-edit-message.show.info { color: #1d4ed8; }
+
+        #editRequestModal .status-badge {
+            text-transform: none;
+            letter-spacing: 0;
+            font-size: 0.78rem;
+        }
+        #editRequestModal .status-badge.situation-not-started {
+            background: #e2e8f0;
+            color: #475569;
+        }
+        #editRequestModal .status-badge.situation-in-development {
+            background: #dbeafe;
+            color: #1d4ed8;
+        }
+        #editRequestModal .status-badge.situation-in-testing {
+            background: #fef3c7;
+            color: #b45309;
+        }
+        #editRequestModal .status-badge.situation-in-client-validation {
+            background: #ede9fe;
+            color: #6d28d9;
+        }
+        #editRequestModal .status-badge.situation-live {
+            background: #dcfce7;
+            color: #15803d;
+        }
+        #editRequestModal .status-badge.situation-cancelled {
+            background: #fee2e2;
+            color: #b91c1c;
+        }
+
+        @media (max-width: 1100px) {
+            #editRequestModal .form-row {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+        }
+
+        @media (max-width: 768px) {
+            #editRequestModal .form-row {
+                grid-template-columns: 1fr;
+            }
+            #editRequestModal .item-edit-summary-stats {
+                grid-template-columns: 1fr;
+            }
+        }
     </style>
 </head>
 <body>
@@ -163,11 +309,12 @@
                                     <th>Description</th>
                                     <th>Requested by</th>
                                     <th>Situation</th>
+                                    <th class="th-actions">Actions</th>
                                 </tr>
                             </thead>
                             <tbody id="requestsSearchTableBody">
                                 <tr>
-                                    <td colspan="8" class="empty-state">
+                                    <td colspan="9" class="empty-state">
                                         <i class="fas fa-search"></i>
                                         <p>Use filters and click <strong>Search</strong> to load requests.</p>
                                     </td>
@@ -178,6 +325,128 @@
                 </div>
             </div>
         </main>
+
+        <div id="editRequestModal" class="modal" aria-hidden="true">
+            <div class="modal-content modal-large item-modal-content">
+                <div class="modal-header success edit-mode" id="editRequestModalHeader">
+                    <h3 id="editRequestModalTitle"><i class="fas fa-edit"></i> Edit Request</h3>
+                    <p id="editRequestModalSubtitle" class="item-modal-subtitle">Update request details and situation</p>
+                    <button type="button" class="modal-close" id="closeEditRequestModal" aria-label="Close">&times;</button>
+                </div>
+                <form id="editRequestForm" class="warehouse-form item-modal-form">
+                    <input type="hidden" id="editRequestId">
+                    <div class="modal-body item-modal-body">
+                        <div id="editRequestSummary" class="item-edit-summary" aria-live="polite">
+                            <div class="item-edit-summary-main">
+                                <div class="item-edit-summary-icon" aria-hidden="true">
+                                    <i class="fas fa-clipboard-list"></i>
+                                </div>
+                                <div class="item-edit-summary-text">
+                                    <div class="item-edit-summary-top">
+                                        <span id="editSummaryRequestNumber" class="item-edit-summary-code">#-</span>
+                                        <span id="editSummarySituation" class="status-badge available">Not started</span>
+                                    </div>
+                                    <p id="editSummaryType" class="item-edit-summary-name">-</p>
+                                    <p id="editSummaryMeta" class="item-edit-summary-meta">-</p>
+                                </div>
+                            </div>
+                            <div class="item-edit-summary-stats">
+                                <div class="item-edit-stat">
+                                    <span class="item-edit-stat-label">Requested by</span>
+                                    <strong id="editSummaryRequestedBy">-</strong>
+                                </div>
+                                <div class="item-edit-stat">
+                                    <span class="item-edit-stat-label">Request date</span>
+                                    <strong id="editSummaryRequestDate">-</strong>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id="editRequestFormSections">
+                            <section class="item-form-section">
+                                <h4 class="item-form-section-title"><i class="fas fa-id-card"></i> Request Identity</h4>
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="editRequestNumber"><i class="fas fa-hashtag"></i> Request number</label>
+                                        <input type="text" id="editRequestNumber" readonly class="input-readonly">
+                                        <span class="field-hint">Request number cannot be changed after creation.</span>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="editRequestType"><i class="fas fa-list"></i> Request type *</label>
+                                        <select id="editRequestType" required>
+                                            <option value="">Select type…</option>
+                                            <option value="IMPROVEMENT">Improvements</option>
+                                            <option value="CORRECTION">Corrections</option>
+                                            <option value="NEW_FUNCTIONALITY">New Functionality</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="editRequestSituation"><i class="fas fa-flag"></i> Situation</label>
+                                        <select id="editRequestSituation">
+                                            <option value="NOT_STARTED">Not started</option>
+                                            <option value="IN_DEVELOPMENT">In development</option>
+                                            <option value="IN_TESTING">In testing</option>
+                                            <option value="IN_CLIENT_VALIDATION">In client validation</option>
+                                            <option value="LIVE">Live</option>
+                                            <option value="CANCELLED">Cancelled</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="form-row">
+                                    <div class="form-group is-hidden" id="editApplicationGroup">
+                                        <label for="editRequestApplication"><i class="fas fa-window-restore"></i> Application *</label>
+                                        <select id="editRequestApplication">
+                                            <option value="">Select application…</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </section>
+
+                            <section class="item-form-section">
+                                <h4 class="item-form-section-title"><i class="fas fa-calendar-days"></i> Dates &amp; Requester</h4>
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="editRequestDate"><i class="fas fa-calendar"></i> Request date</label>
+                                        <input type="date" id="editRequestDate">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="editFinishDate"><i class="fas fa-calendar-check"></i> Finish date</label>
+                                        <input type="date" id="editFinishDate">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="editRequestedByDisplay"><i class="fas fa-user"></i> Requested by</label>
+                                        <input type="text" id="editRequestedByDisplay" readonly class="input-readonly">
+                                        <select id="editRequestedBySelect" class="is-hidden">
+                                            <option value="">Select user…</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </section>
+
+                            <section class="item-form-section">
+                                <h4 class="item-form-section-title"><i class="fas fa-align-left"></i> Description</h4>
+                                <div class="form-row">
+                                    <div class="form-group full-width">
+                                        <label for="editRequestDescription"><i class="fas fa-align-left"></i> Request description *</label>
+                                        <textarea id="editRequestDescription" rows="5" maxlength="4000" required
+                                            placeholder="Explain what is being requested..."></textarea>
+                                    </div>
+                                </div>
+                            </section>
+                        </div>
+                    </div>
+                    <div id="editRequestMessage" class="ic-edit-message" role="status" aria-live="polite"></div>
+                    <div class="modal-footer item-modal-footer form-actions">
+                        <button type="button" class="btn btn-secondary" id="cancelEditRequestBtn">
+                            <i class="fas fa-times"></i> Cancel
+                        </button>
+                        <button type="submit" class="btn btn-primary" id="saveEditRequestBtn">
+                            <i class="fas fa-save"></i> Save changes
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
 
         <footer class="footer">
             <p>&copy; 2026 Double-Y IT Systems. All rights reserved.</p>
