@@ -56,6 +56,7 @@
                                 </button>
                                 <div class="dropdown-submenu" aria-hidden="true">
                                     <a href="changes-products-between-locations.html" class="dropdown-item" data-app="changes-products-between-locations.html"><i class="fas fa-exchange-alt"></i> Changes Between Locations</a>
+                                    <a href="change-between-location-products.html" class="dropdown-item" data-app="change-between-location-products.html"><i class="fas fa-list-check"></i> Change Between Location Products</a>
                                 </div>
                             </div>
                         </div>

@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Double-Y Warehouse System - Change Between Location Products</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="warehouse-styles.css">
+    <link rel="stylesheet" href="pesquisa-styles.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .move-filters-header { display:flex; justify-content:space-between; align-items:center; gap:12px; }
+        .move-filters-header h2 { margin:0; }
+        .move-hint { margin:0 0 14px; color:#475569; font-size:.95rem; line-height:1.45; }
+        .move-section-title { margin:18px 0 8px; font-size:1.05rem; color:#1e293b; }
+        .move-summary { margin:12px 0 0; color:#334155; font-size:.95rem; }
+        .move-actions { display:flex; flex-wrap:wrap; gap:10px; margin-top:16px; justify-content:center; align-items:center; }
+        .action-insert { color:#15803d; font-weight:700; }
+        .action-merge { color:#b45309; font-weight:700; }
+        #sourceLocationCode, #destinationLocationCode { text-transform: uppercase; }
+    </style>
+</head>
+<body class="move-locations-page">
+    <script src="auth-check.js"></script>
+    <script src="header-menu.js"></script>
+    <script src="menu-access.js"></script>
+    <script src="double-y-logo-effect.js"></script>
+    <script src="dev-environment-badge.js"></script>
+    <div class="container">
+        <header class="header">
+            <div class="header-content">
+                <h1><i class="fas fa-warehouse"></i> Double-Y Warehouse System</h1>
+                <p class="header-search-users-label">Change Between Location Products</p>
+                <div class="header-actions"></div>
+            </div>
+        </header>
+
+        <main class="main-content">
+            <div class="form-container" style="width:100%;max-width:none;">
+                <div class="filters-container">
+                    <div class="filters-header move-filters-header">
+                        <h2><i class="fas fa-exchange-alt"></i> Change Between Location Products</h2>
+                    </div>
+                    <div class="filters-content show">
+                        <p class="move-hint">
+                            Load products from source location, select one or more lines, preview the movement, then confirm.
+                        </p>
+                        <div class="filters-grid">
+                            <div class="filter-group">
+                                <label for="sourceLocationCode"><i class="fas fa-map-marker-alt"></i> Source location</label>
+                                <input type="text" id="sourceLocationCode" maxlength="50" placeholder="Ex: C9-1R" autocomplete="off">
+                            </div>
+                            <div class="filter-group">
+                                <label for="destinationLocationCode"><i class="fas fa-map-marker-alt"></i> Destination location</label>
+                                <input type="text" id="destinationLocationCode" maxlength="50" placeholder="Ex: C9-2R" autocomplete="off">
+                            </div>
+                        </div>
+                        <div class="filters-actions">
+                            <button id="loadSourceProductsBtn" class="btn btn-secondary" type="button">
+                                <i class="fas fa-download"></i> Load source products
+                            </button>
+                            <button id="previewMoveBtn" class="btn btn-primary" type="button">
+                                <i class="fas fa-eye"></i> Preview
+                            </button>
+                            <button id="clearMoveBtn" class="btn btn-secondary" type="button">
+                                <i class="fas fa-eraser"></i> Clear
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <h3 class="move-section-title">
+                    <i class="fas fa-list-check"></i> Source products
+                    <small id="sourceProductsCount" style="margin-left:10px;color:#64748b;">0 selected / 0 available</small>
+                </h3>
+                <div class="filters-actions" style="margin:8px 0 12px;">
+                    <button id="selectAllProductsBtn" class="btn btn-secondary" type="button"><i class="fas fa-check-square"></i> Select all</button>
+                    <button id="unselectAllProductsBtn" class="btn btn-secondary" type="button"><i class="fas fa-square"></i> Unselect all</button>
+                </div>
+                <div class="results-container">
+                    <div class="results-content">
+                        <div class="table-container">
+                            <table class="warehouse-table">
+                                <thead>
+                                    <tr>
+                                        <th>Select</th>
+                                        <th>Product</th>
+                                        <th>Situation</th>
+                                        <th>Qty current</th>
+                                        <th>Qty informed</th>
+                                        <th>Location</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="sourceProductsBody">
+                                    <tr><td colspan="6" class="empty-state"><p>Load source products first.</p></td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <p id="moveSummary" class="move-summary" hidden></p>
+
+                <h3 class="move-section-title"><i class="fas fa-list"></i> Planned changes</h3>
+                <div class="results-container">
+                    <div class="results-content">
+                        <div class="table-container">
+                            <table class="warehouse-table">
+                                <thead>
+                                    <tr>
+                                        <th>Product</th>
+                                        <th>Situation</th>
+                                        <th>Qty move</th>
+                                        <th>Source before</th>
+                                        <th>Source after</th>
+                                        <th>Dest before</th>
+                                        <th>Dest after</th>
+                                        <th>Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="movePreviewBody">
+                                    <tr><td colspan="8" class="empty-state"><p>Load source products, select items and click Preview.</p></td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <h3 class="move-section-title"><i class="fas fa-clock"></i> Before — Source (selected)</h3>
+                <div class="results-container"><div class="results-content"><div class="table-container">
+                    <table class="warehouse-table"><thead><tr><th>Location</th><th>Product</th><th>Situation</th><th>Qty current</th><th>Qty informed</th></tr></thead>
+                        <tbody id="beforeSourceBody"><tr><td colspan="5" class="empty-state"><p>No preview yet.</p></td></tr></tbody>
+                    </table>
+                </div></div></div>
+
+                <h3 class="move-section-title"><i class="fas fa-clock"></i> Before — Destination</h3>
+                <div class="results-container"><div class="results-content"><div class="table-container">
+                    <table class="warehouse-table"><thead><tr><th>Location</th><th>Product</th><th>Situation</th><th>Qty current</th><th>Qty informed</th></tr></thead>
+                        <tbody id="beforeDestBody"><tr><td colspan="5" class="empty-state"><p>No preview yet.</p></td></tr></tbody>
+                    </table>
+                </div></div></div>
+
+                <h3 class="move-section-title"><i class="fas fa-check-circle"></i> After — Destination</h3>
+                <div class="results-container"><div class="results-content"><div class="table-container">
+                    <table class="warehouse-table"><thead><tr><th>Location</th><th>Product</th><th>Situation</th><th>Qty current</th><th>Qty informed</th></tr></thead>
+                        <tbody id="afterDestBody"><tr><td colspan="5" class="empty-state"><p>No preview yet.</p></td></tr></tbody>
+                    </table>
+                </div></div></div>
+
+                <div class="move-actions">
+                    <button id="cancelMoveBtn" class="btn btn-secondary" type="button"><i class="fas fa-times"></i> Cancel</button>
+                    <button id="confirmMoveBtn" class="btn btn-primary" type="button" disabled><i class="fas fa-save"></i> Confirm move</button>
+                </div>
+            </div>
+        </main>
+
+        <footer class="footer">
+            <p>&copy; 2026 Double-Y IT Systems. All rights reserved.</p>
+        </footer>
+    </div>
+
+    <script src="change-between-location-products-script.js"></script>
+</body>
+</html>

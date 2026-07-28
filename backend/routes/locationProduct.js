@@ -134,6 +134,99 @@ router.post(
   }
 );
 
+// POST /api/location-product/move-selected-products/source-balances
+router.post(
+  '/move-selected-products/source-balances',
+  [
+    body('sourceLocationCode').isLength({ min: 1, max: 50 }).trim()
+  ],
+  handleValidationErrors,
+  async (req, res) => {
+    try {
+      const result = await locationProductService.listarSaldosMovimentaveisDaOrigem(
+        req.body.sourceLocationCode
+      );
+      res.json({ success: true, data: result });
+    } catch (error) {
+      console.error('Error loading source balances for selected move:', error);
+      res.status(400).json({
+        success: false,
+        error: 'Error loading source balances',
+        message: error.message
+      });
+    }
+  }
+);
+
+// POST /api/location-product/move-selected-products/preview
+router.post(
+  '/move-selected-products/preview',
+  [
+    body('sourceLocationCode').isLength({ min: 1, max: 50 }).trim(),
+    body('destinationLocationCode').isLength({ min: 1, max: 50 }).trim(),
+    body('selectedBalances').isArray({ min: 1 }).withMessage('selectedBalances is required')
+  ],
+  handleValidationErrors,
+  async (req, res) => {
+    try {
+      const preview = await locationProductService.previewMoveSelectedProductsBetweenLocations(
+        req.body.sourceLocationCode,
+        req.body.destinationLocationCode,
+        req.body.selectedBalances
+      );
+      res.json({ success: true, data: preview });
+    } catch (error) {
+      console.error('Error previewing selected move between locations:', error);
+      res.status(400).json({
+        success: false,
+        error: 'Error previewing selected move',
+        message: error.message
+      });
+    }
+  }
+);
+
+// POST /api/location-product/move-selected-products
+router.post(
+  '/move-selected-products',
+  [
+    body('sourceLocationCode').isLength({ min: 1, max: 50 }).trim(),
+    body('destinationLocationCode').isLength({ min: 1, max: 50 }).trim(),
+    body('selectedBalances').isArray({ min: 1 }).withMessage('selectedBalances is required')
+  ],
+  handleValidationErrors,
+  async (req, res) => {
+    try {
+      const userKey = getSessionUserKey(req);
+      if (!userKey) {
+        return res.status(401).json({
+          success: false,
+          error: 'Authentication required',
+          message: 'Logged-in user is required'
+        });
+      }
+      const result = await locationProductService.moveSelectedProductsBetweenLocations(
+        req.body.sourceLocationCode,
+        req.body.destinationLocationCode,
+        req.body.selectedBalances,
+        userKey
+      );
+      res.json({
+        success: true,
+        message: `Moved ${result.moved} selected product balance(s) from ${result.sourceLocationCode} to ${result.destinationLocationCode}`,
+        data: result
+      });
+    } catch (error) {
+      console.error('Error moving selected products between locations:', error);
+      res.status(400).json({
+        success: false,
+        error: 'Error moving selected products',
+        message: error.message
+      });
+    }
+  }
+);
+
 // POST /api/location-product/move-between-locations
 router.post(
   '/move-between-locations',
