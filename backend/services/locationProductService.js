@@ -153,7 +153,7 @@ async function criar(dados) {
     ]);
     if (checkResult.rows.length > 0) {
       await client.query('ROLLBACK');
-      throw new Error('Já existe um registro ativo para este local, produto e situação. Não é permitido duplicar (ex.: mesmo Location + Product + Full).');
+      throw new Error('An active record already exists for this location, product, and situation. Duplicates are not allowed (for example, same Location + Product + Full).');
     }
     const result = await client.query(insertSql, values);
     const createdRow = result.rows[0];

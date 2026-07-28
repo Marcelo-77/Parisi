@@ -389,37 +389,43 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!text) return 'Failed to create record.';
     const lower = text.toLowerCase();
 
+    if (lower.includes('já existe') || lower.includes('ja existe') || lower.includes('duplic')) {
+      return 'An active record already exists for this location, product, and situation. Duplicates are not allowed.';
+    }
+
+    if (lower.includes('não encontrado') || lower.includes('nao encontrado') || lower.includes('not found')) {
+      if (lower.includes('location') || lower.includes('local')) return 'Location was not found.';
+      if (lower.includes('product') || lower.includes('produto')) return 'Product was not found.';
+      if (lower.includes('situation') || lower.includes('situa')) return 'Situation was not found.';
+      return 'Referenced data was not found.';
+    }
+
+    if (lower.includes('obrig') || lower.includes('required')) {
+      if (lower.includes('location') || lower.includes('local')) return 'Location is required.';
+      if (lower.includes('product') || lower.includes('produto')) return 'Product is required.';
+      if (lower.includes('quantity') || lower.includes('quant')) return 'Quantity is required.';
+      if (lower.includes('situation') || lower.includes('situa')) return 'Situation is required.';
+      return 'Required data is missing.';
+    }
+
     const dictionary = [
-      ['localizacao', 'location'],
       ['localização', 'location'],
+      ['localizacao', 'location'],
       ['produto', 'product'],
       ['quantidade', 'quantity'],
-      ['situacao', 'situation'],
       ['situação', 'situation'],
-      ['obrigatorio', 'required'],
-      ['obrigatória', 'required'],
-      ['obrigatorio.', 'required.'],
-      ['nao encontrado', 'not found'],
-      ['não encontrado', 'not found'],
-      ['ja existe', 'already exists'],
-      ['já existe', 'already exists'],
-      ['invalido', 'invalid'],
+      ['situacao', 'situation'],
       ['inválido', 'invalid'],
+      ['invalido', 'invalid'],
       ['erro', 'error'],
       ['falha ao criar', 'failed to create'],
       ['registro', 'record']
     ];
 
-    for (const [pt, en] of dictionary) {
-      if (lower.includes(pt)) {
-        return dictionary.reduce(
-          (translated, [ptWord, enWord]) => translated.replace(new RegExp(ptWord, 'gi'), enWord),
-          text
-        );
-      }
-    }
-
-    return text;
+    return dictionary.reduce(
+      (translated, [ptWord, enWord]) => translated.replace(new RegExp(ptWord, 'gi'), enWord),
+      text
+    );
   }
 
   function fillFilterSituation() {
