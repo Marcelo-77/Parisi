@@ -39,6 +39,7 @@ async function ensureTable() {
   await query(`ALTER TABLE ${TABLE} ADD COLUMN IF NOT EXISTS situation VARCHAR(30) NOT NULL DEFAULT 'NOT_STARTED'`).catch(() => {});
   await query(`ALTER TABLE ${TABLE} ADD COLUMN IF NOT EXISTS request_date DATE`).catch(() => {});
   await query(`ALTER TABLE ${TABLE} ADD COLUMN IF NOT EXISTS finish_date DATE`).catch(() => {});
+  await query(`ALTER TABLE ${TABLE} ADD COLUMN IF NOT EXISTS request_history TEXT`).catch(() => {});
   tableReady = true;
 }
 
@@ -54,12 +55,117 @@ function mapRow(row) {
     situation: row.situation || 'NOT_STARTED',
     requestDate: row.request_date || null,
     finishDate: row.finish_date || null,
+    requestHistory: row.request_history || '',
     status: row.status || 'OPEN',
     createdBy: row.created_by || null,
     createdByName: row.created_by_name || null,
     criadoEm: row.criado_em,
     atualizadoEm: row.atualizado_em
   };
+}
+
+function formatSituationLabel(situation) {
+  const value = normalizeSituation(situation);
+  if (value === 'NOT_STARTED') return 'Not started';
+  if (value === 'IN_DEVELOPMENT') return 'In development';
+  if (value === 'IN_TESTING') return 'In testing';
+  if (value === 'IN_CLIENT_VALIDATION') return 'In client validation';
+  if (value === 'LIVE') return 'Live';
+  if (value === 'CANCELLED') return 'Cancelled';
+  return situation || '-';
+}
+
+function formatRequestTypeLabel(type) {
+  const value = normalizeRequestType(type);
+  if (value === 'IMPROVEMENT') return 'Improvements';
+  if (value === 'CORRECTION') return 'Corrections';
+  if (value === 'NEW_FUNCTIONALITY') return 'New Functionality';
+  return type || '-';
+}
+
+function formatDateLabel(value) {
+  if (!value) return '-';
+  if (value instanceof Date && !Number.isNaN(value.getTime())) {
+    return value.toISOString().slice(0, 10);
+  }
+  const text = String(value);
+  if (/^\d{4}-\d{2}-\d{2}/.test(text)) return text.slice(0, 10);
+  return text;
+}
+
+function sameDate(a, b) {
+  return formatDateLabel(a) === formatDateLabel(b);
+}
+
+function historyTimestamp() {
+  const now = new Date();
+  const pad = (n) => String(n).padStart(2, '0');
+  return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}`;
+}
+
+function appendHistory(existing, lines) {
+  const previous = existing != null ? String(existing).trim() : '';
+  const nextLines = (Array.isArray(lines) ? lines : [lines])
+    .map((line) => String(line || '').trim())
+    .filter(Boolean);
+  if (!nextLines.length) return previous;
+  const stamped = nextLines.map((line) => `[${historyTimestamp()}] ${line}`);
+  return previous ? `${previous}\n${stamped.join('\n')}` : stamped.join('\n');
+}
+
+function buildCreateHistoryEntry(dados, createdByName) {
+  const actor = createdByName || 'Unknown';
+  const typeLabel = formatRequestTypeLabel(dados.requestType);
+  const situationLabel = formatSituationLabel(dados.situation);
+  const appLabel = dados.applicationMenu || dados.applicationName || (dados.requestType === 'NEW_FUNCTIONALITY' ? 'New Functionality' : '-');
+  return `Request created by ${actor} · Type: ${typeLabel} · Situation: ${situationLabel} · Application: ${appLabel} · Request date: ${formatDateLabel(dados.requestDate)}`;
+}
+
+function buildUpdateHistoryLines(existing, next, actorName) {
+  const actor = actorName || 'Unknown';
+  const lines = [];
+
+  if (normalizeRequestType(existing.requestType) !== normalizeRequestType(next.requestType)) {
+    lines.push(`Type changed by ${actor}: ${formatRequestTypeLabel(existing.requestType)} → ${formatRequestTypeLabel(next.requestType)}`);
+  }
+
+  if (normalizeSituation(existing.situation) !== normalizeSituation(next.situation)) {
+    lines.push(`Situation changed by ${actor}: ${formatSituationLabel(existing.situation)} → ${formatSituationLabel(next.situation)}`);
+  }
+
+  const prevApp = existing.applicationMenu || existing.applicationName || '-';
+  const nextApp = next.applicationMenu || next.applicationName || '-';
+  if (String(prevApp).trim() !== String(nextApp).trim()) {
+    lines.push(`Application changed by ${actor}: ${prevApp} → ${nextApp}`);
+  }
+
+  if (!sameDate(existing.requestDate, next.requestDate)) {
+    lines.push(`Request date changed by ${actor}: ${formatDateLabel(existing.requestDate)} → ${formatDateLabel(next.requestDate)}`);
+  }
+
+  if (!sameDate(existing.finishDate, next.finishDate)) {
+    lines.push(`Finish date changed by ${actor}: ${formatDateLabel(existing.finishDate)} → ${formatDateLabel(next.finishDate)}`);
+  }
+
+  if (String(existing.description || '').trim() !== String(next.description || '').trim()) {
+    lines.push(`Description updated by ${actor}`);
+  }
+
+  if (String(existing.createdByName || '') !== String(next.createdByName || '')
+    || String(existing.createdBy || '') !== String(next.createdBy || '')) {
+    lines.push(`Requester changed by ${actor}: ${existing.createdByName || '-'} → ${next.createdByName || '-'}`);
+  }
+
+  const note = next.historyNote != null ? String(next.historyNote).trim() : '';
+  if (note) {
+    lines.push(`Note by ${actor}: ${note}`);
+  }
+
+  if (!lines.length) {
+    lines.push(`Request saved by ${actor} (no field changes)`);
+  }
+
+  return lines;
 }
 
 function normalizeRequestType(value) {
@@ -115,11 +221,25 @@ async function criar(dados) {
     ? String(dados.applicationMenu).trim().substring(0, 150)
     : null;
 
+  const requestHistory = appendHistory(
+    '',
+    buildCreateHistoryEntry(
+      {
+        requestType,
+        situation,
+        applicationName,
+        applicationMenu,
+        requestDate
+      },
+      dados.createdByName
+    )
+  );
+
   const result = await query(
     `INSERT INTO ${TABLE} (
       description, request_type, application_name, application_menu,
-      situation, request_date, finish_date, status, created_by, created_by_name
-    ) VALUES ($1, $2, $3, $4, $5, $6, $7, 'OPEN', $8, $9)
+      situation, request_date, finish_date, request_history, status, created_by, created_by_name
+    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'OPEN', $9, $10)
     RETURNING *`,
     [
       description,
@@ -129,6 +249,7 @@ async function criar(dados) {
       situation,
       requestDate,
       finishDate,
+      requestHistory,
       dados.createdBy || null,
       dados.createdByName || null
     ]
@@ -235,6 +356,22 @@ async function atualizar(id, dados) {
     ? (dados.createdByName || null)
     : existing.createdByName;
 
+  const nextSnapshot = {
+    description,
+    requestType,
+    applicationName: requiresApplication(requestType) ? applicationName.substring(0, 100) : null,
+    applicationMenu: requiresApplication(requestType) ? (applicationMenu || null) : null,
+    situation,
+    requestDate,
+    finishDate,
+    createdBy,
+    createdByName,
+    historyNote: dados.historyNote
+  };
+
+  const historyLines = buildUpdateHistoryLines(existing, nextSnapshot, dados.updatedByName || 'Unknown');
+  const requestHistory = appendHistory(existing.requestHistory, historyLines);
+
   const result = await query(
     `UPDATE ${TABLE} SET
       description = $1,
@@ -246,19 +383,21 @@ async function atualizar(id, dados) {
       finish_date = $7,
       created_by = $8,
       created_by_name = $9,
+      request_history = $10,
       atualizado_em = CURRENT_TIMESTAMP
-     WHERE id = $10
+     WHERE id = $11
      RETURNING *`,
     [
       description,
       requestType,
-      requiresApplication(requestType) ? applicationName.substring(0, 100) : null,
-      requiresApplication(requestType) ? (applicationMenu || null) : null,
+      nextSnapshot.applicationName,
+      nextSnapshot.applicationMenu,
       situation,
       requestDate,
       finishDate,
       createdBy,
       createdByName,
+      requestHistory,
       id
     ]
   );

@@ -5,6 +5,19 @@ const { getSessionUserId, isRootSession, ROOT_USER } = require('../middleware/au
 
 const router = express.Router();
 
+async function getActorName(req) {
+  if (isRootSession(req)) {
+    return 'Root';
+  }
+
+  const userId = getSessionUserId(req);
+  if (!userId) return 'Unknown';
+
+  const user = await funcionarioServiceDB.buscarPorId(userId);
+  const profile = user && typeof user.toJSON === 'function' ? user.toJSON() : user;
+  return profile?.nome || profile?.email || 'User';
+}
+
 async function getCreatorInfo(req, body = {}) {
   if (isRootSession(req)) {
     const createdBy = body.createdBy != null ? String(body.createdBy).trim() : '';
@@ -118,7 +131,9 @@ router.put('/:id', async (req, res) => {
       applicationMenu: req.body.applicationMenu,
       situation: req.body.situation,
       requestDate: req.body.requestDate,
-      finishDate: req.body.finishDate
+      finishDate: req.body.finishDate,
+      historyNote: req.body.historyNote,
+      updatedByName: await getActorName(req)
     };
 
     if (isRootSession(req) && Object.prototype.hasOwnProperty.call(req.body, 'createdBy')) {

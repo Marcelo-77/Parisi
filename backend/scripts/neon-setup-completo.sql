@@ -146,6 +146,7 @@ CREATE TABLE IF NOT EXISTS improvements_corrections (
   created_by_name VARCHAR(100),
   criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   atualizado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  request_history TEXT,
   CONSTRAINT improvements_corrections_type_chk
     CHECK (request_type IN ('IMPROVEMENT', 'CORRECTION', 'NEW_FUNCTIONALITY')),
   CONSTRAINT improvements_corrections_situation_chk
@@ -154,6 +155,7 @@ CREATE TABLE IF NOT EXISTS improvements_corrections (
 
 CREATE INDEX IF NOT EXISTS idx_improvements_corrections_criado ON improvements_corrections(criado_em DESC);
 CREATE INDEX IF NOT EXISTS idx_improvements_corrections_type ON improvements_corrections(request_type);
+ALTER TABLE improvements_corrections ADD COLUMN IF NOT EXISTS request_history TEXT;
 
 -- =============================================================================
 -- 2) WAREHOUSE (produtos e movimentacoes simples)

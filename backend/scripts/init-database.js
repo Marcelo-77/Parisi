@@ -521,6 +521,7 @@ async function initDatabase() {
         created_by_name VARCHAR(100),
         criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         atualizado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        request_history TEXT,
         CONSTRAINT improvements_corrections_type_chk
           CHECK (request_type IN ('IMPROVEMENT', 'CORRECTION', 'NEW_FUNCTIONALITY')),
         CONSTRAINT improvements_corrections_situation_chk
@@ -529,6 +530,7 @@ async function initDatabase() {
     `);
     await query(`CREATE INDEX IF NOT EXISTS idx_improvements_corrections_criado ON improvements_corrections(criado_em DESC)`);
     await query(`CREATE INDEX IF NOT EXISTS idx_improvements_corrections_type ON improvements_corrections(request_type)`);
+    await query(`ALTER TABLE improvements_corrections ADD COLUMN IF NOT EXISTS request_history TEXT`).catch(() => {});
     console.log('✅ Tabela improvements_corrections criada/verificada');
 
     await query(`

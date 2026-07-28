@@ -24,8 +24,6 @@
   const clearBtn = document.getElementById('clearRequestBtn');
   const saveBtn = document.getElementById('saveRequestBtn');
   const messageEl = document.getElementById('requestMessage');
-  const tableBody = document.getElementById('requestsTableBody');
-  const resultsCount = document.getElementById('resultsCount');
 
   let applications = [];
   let isRootUser = false;
@@ -42,13 +40,13 @@
   function showMessage(text, type) {
     if (!messageEl) return;
     messageEl.textContent = text || '';
-    messageEl.className = 'improvements-message show ' + (type || 'info');
+    messageEl.className = 'ic-control-message show ' + (type || 'info');
   }
 
   function clearMessage() {
     if (!messageEl) return;
     messageEl.textContent = '';
-    messageEl.className = 'improvements-message';
+    messageEl.className = 'ic-control-message';
   }
 
   function updateDescriptionCount() {
@@ -58,43 +56,6 @@
 
   function requiresApplication(type) {
     return type === 'IMPROVEMENT' || type === 'CORRECTION';
-  }
-
-  function formatRequestType(type) {
-    const value = String(type || '').toUpperCase();
-    if (value === 'IMPROVEMENT') return 'Improvements';
-    if (value === 'CORRECTION') return 'Corrections';
-    if (value === 'NEW_FUNCTIONALITY') return 'New Functionality';
-    return value || '-';
-  }
-
-  function formatSituation(situation) {
-    const value = String(situation || '').toUpperCase().replace(/[\s-]+/g, '_');
-    if (value === 'NOT_STARTED') return 'Not started';
-    if (value === 'IN_DEVELOPMENT') return 'In development';
-    if (value === 'IN_TESTING') return 'In testing';
-    if (value === 'IN_CLIENT_VALIDATION') return 'In client validation';
-    if (value === 'LIVE') return 'Live';
-    if (value === 'CANCELLED') return 'Cancelled';
-    return situation || '-';
-  }
-
-  function situationCssClass(situation) {
-    const value = String(situation || '').toUpperCase().replace(/[\s-]+/g, '_');
-    if (value === 'NOT_STARTED') return 'situation-not-started';
-    if (value === 'IN_DEVELOPMENT') return 'situation-in-development';
-    if (value === 'IN_TESTING') return 'situation-in-testing';
-    if (value === 'IN_CLIENT_VALIDATION') return 'situation-in-client-validation';
-    if (value === 'LIVE') return 'situation-live';
-    if (value === 'CANCELLED') return 'situation-cancelled';
-    return '';
-  }
-
-  function formatDate(value) {
-    if (!value) return '-';
-    const d = new Date(value);
-    if (Number.isNaN(d.getTime())) return '-';
-    return d.toLocaleDateString();
   }
 
   function todayDateString() {
@@ -107,14 +68,14 @@
 
   function toggleApplicationField() {
     const type = requestTypeSelect ? requestTypeSelect.value : '';
-    const show = requiresApplication(type);
+    const needsApp = requiresApplication(type);
     if (applicationGroup) {
-      if (show) applicationGroup.classList.remove('is-hidden');
-      else applicationGroup.classList.add('is-hidden');
+      applicationGroup.classList.toggle('is-disabled', type === 'NEW_FUNCTIONALITY');
     }
     if (applicationSelect) {
-      applicationSelect.required = show;
-      if (!show) applicationSelect.value = '';
+      applicationSelect.disabled = type === 'NEW_FUNCTIONALITY';
+      applicationSelect.required = needsApp;
+      if (!needsApp) applicationSelect.value = '';
     }
   }
 
@@ -235,46 +196,6 @@
     } catch (_) {}
   }
 
-  async function loadRequests() {
-    try {
-      const res = await fetch(REQUESTS_API, { credentials: 'include' });
-      const data = await res.json();
-      if (!res.ok || !data.success) {
-        throw new Error((data && data.error) || 'Unable to load requests');
-      }
-      const list = data.data || [];
-      if (resultsCount) resultsCount.textContent = list.length + ' record(s)';
-      if (!tableBody) return;
-      if (!list.length) {
-        tableBody.innerHTML = '<tr><td colspan="8" class="empty-state"><i class="fas fa-inbox"></i><p>No requests yet.</p></td></tr>';
-        return;
-      }
-      tableBody.innerHTML = list.map((row) => {
-        const appLabel = row.applicationMenu
-          ? String(row.applicationMenu).replace(/_/g, ' ')
-          : (row.applicationName || (row.requestType === 'NEW_FUNCTIONALITY' ? '—' : '-'));
-        const desc = String(row.description || '');
-        const shortDesc = desc.length > 120 ? desc.slice(0, 117) + '…' : desc;
-        const sitClass = situationCssClass(row.situation);
-        return '<tr>'
-          + '<td>' + escapeHtml(row.requestNumber || '-') + '</td>'
-          + '<td>' + escapeHtml(formatDate(row.requestDate || row.criadoEm)) + '</td>'
-          + '<td>' + escapeHtml(formatDate(row.finishDate || row.finish_date || null)) + '</td>'
-          + '<td>' + escapeHtml(formatRequestType(row.requestType)) + '</td>'
-          + '<td>' + escapeHtml(appLabel) + '</td>'
-          + '<td title="' + escapeHtml(desc) + '">' + escapeHtml(shortDesc) + '</td>'
-          + '<td>' + escapeHtml(row.createdByName || '-') + '</td>'
-          + '<td class="' + sitClass + '">' + escapeHtml(formatSituation(row.situation)) + '</td>'
-          + '</tr>';
-      }).join('');
-    } catch (error) {
-      console.error(error);
-      if (tableBody) {
-        tableBody.innerHTML = '<tr><td colspan="8" class="empty-state"><p class="error-state">Error loading requests.</p></td></tr>';
-      }
-    }
-  }
-
   function clearForm({ keepRequestNumber = false } = {}) {
     if (descriptionInput) descriptionInput.value = '';
     if (requestTypeSelect) requestTypeSelect.value = '';
@@ -354,16 +275,45 @@
       if (!res.ok || !data.success) {
         throw new Error((data && (data.error || data.message)) || 'Unable to save request');
       }
-      showMessage(data.message || 'Request saved successfully.', 'success');
-      if (requestNumberDisplay && data.data && data.data.requestNumber != null) {
-        requestNumberDisplay.value = data.data.requestNumber;
+      const savedRequestNumber = data && data.data && data.data.requestNumber != null
+        ? String(data.data.requestNumber)
+        : '';
+      showMessage(
+        savedRequestNumber
+          ? ('Request #' + savedRequestNumber + ' saved successfully.')
+          : (data.message || 'Request saved successfully.'),
+        'success'
+      );
+      if (requestNumberDisplay && savedRequestNumber) {
+        requestNumberDisplay.value = savedRequestNumber;
       }
+      window.alert(
+        savedRequestNumber
+          ? ('Request #' + savedRequestNumber + ' was saved successfully.')
+          : 'Request saved successfully.'
+      );
       clearForm({ keepRequestNumber: true });
-      await loadRequests();
     } catch (error) {
       showMessage(error.message || 'Unable to save request', 'error');
     } finally {
       if (saveBtn) saveBtn.disabled = false;
+    }
+  }
+
+  function focusForm() {
+    const panel = document.getElementById('icControlFormPanel');
+    if (panel) {
+      const offset = 8;
+      const top = panel.getBoundingClientRect().top + window.pageYOffset - offset;
+      window.scrollTo({ top: Math.max(0, top), behavior: 'auto' });
+    }
+    const focusTarget = requestTypeSelect || descriptionInput;
+    if (focusTarget && typeof focusTarget.focus === 'function') {
+      try {
+        focusTarget.focus({ preventScroll: true });
+      } catch (_) {
+        focusTarget.focus();
+      }
     }
   }
 
@@ -374,7 +324,11 @@
     if (requestTypeSelect) {
       requestTypeSelect.addEventListener('change', toggleApplicationField);
     }
-    if (clearBtn) clearBtn.addEventListener('click', () => clearForm());
+    if (clearBtn) {
+      clearBtn.addEventListener('click', () => {
+        window.location.href = 'warehouse.html';
+      });
+    }
     if (form) form.addEventListener('submit', saveRequest);
 
     if (requestDateInput) requestDateInput.value = todayDateString();
@@ -382,7 +336,12 @@
     updateDescriptionCount();
     loadApplications();
     loadLoggedUser();
-    loadRequests();
+
+    // Bring form into view and focus first field (same idea as location.html)
+    requestAnimationFrame(() => {
+      focusForm();
+      setTimeout(focusForm, 50);
+    });
   }
 
   if (document.readyState === 'loading') {

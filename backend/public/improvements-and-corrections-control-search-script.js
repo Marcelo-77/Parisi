@@ -15,14 +15,15 @@
   const createdByInput = document.getElementById('searchCreatedByName');
   const requestDateFromInput = document.getElementById('searchRequestDateFrom');
   const requestDateToInput = document.getElementById('searchRequestDateTo');
-  const finishDateFromInput = document.getElementById('searchFinishDateFrom');
-  const finishDateToInput = document.getElementById('searchFinishDateTo');
   const descriptionInput = document.getElementById('searchDescription');
 
   const applyBtn = document.getElementById('applySearchBtn');
   const clearBtn = document.getElementById('clearSearchBtn');
   const tableBody = document.getElementById('requestsSearchTableBody');
   const resultsCount = document.getElementById('resultsCount');
+  const resultsTime = document.getElementById('resultsTime');
+  const loadingIndicator = document.getElementById('loadingIndicator');
+  const noResults = document.getElementById('noResults');
 
   const editModal = document.getElementById('editRequestModal');
   const editForm = document.getElementById('editRequestForm');
@@ -37,6 +38,8 @@
   const editRequestedByDisplay = document.getElementById('editRequestedByDisplay');
   const editRequestedBySelect = document.getElementById('editRequestedBySelect');
   const editRequestDescription = document.getElementById('editRequestDescription');
+  const editRequestHistory = document.getElementById('editRequestHistory');
+  const editHistoryNote = document.getElementById('editHistoryNote');
   const editRequestMessage = document.getElementById('editRequestMessage');
   const closeEditBtn = document.getElementById('closeEditRequestModal');
   const cancelEditBtn = document.getElementById('cancelEditRequestBtn');
@@ -270,8 +273,6 @@
     if (createdByInput && createdByInput.value.trim()) params.set('createdByName', createdByInput.value.trim());
     if (requestDateFromInput && requestDateFromInput.value) params.set('requestDateFrom', requestDateFromInput.value);
     if (requestDateToInput && requestDateToInput.value) params.set('requestDateTo', requestDateToInput.value);
-    if (finishDateFromInput && finishDateFromInput.value) params.set('finishDateFrom', finishDateFromInput.value);
-    if (finishDateToInput && finishDateToInput.value) params.set('finishDateTo', finishDateToInput.value);
     if (descriptionInput && descriptionInput.value.trim()) params.set('description', descriptionInput.value.trim());
 
     return params;
@@ -279,7 +280,12 @@
 
   async function runSearch() {
     try {
+      if (loadingIndicator) loadingIndicator.style.display = 'block';
+      if (noResults) noResults.style.display = 'none';
       if (resultsCount) resultsCount.textContent = 'Loading...';
+      if (resultsTime) resultsTime.textContent = '';
+
+      const startedAt = Date.now();
       const params = buildSearchParams();
       const url = params.toString()
         ? (REQUESTS_API + '?' + params.toString())
@@ -292,14 +298,22 @@
       }
 
       const list = data.data || [];
-      if (resultsCount) resultsCount.textContent = list.length + ' record(s)';
+      const elapsedMs = Date.now() - startedAt;
+      if (resultsCount) {
+        resultsCount.textContent = list.length + ' request' + (list.length !== 1 ? 's' : '');
+      }
+      if (resultsTime) {
+        resultsTime.textContent = '(' + (elapsedMs / 1000).toFixed(2) + 's)';
+      }
       if (!tableBody) return;
 
       if (!list.length) {
-        tableBody.innerHTML = '<tr><td colspan="9" class="empty-state"><p>No requests found.</p></td></tr>';
+        tableBody.innerHTML = '';
+        if (noResults) noResults.style.display = 'block';
         return;
       }
 
+      if (noResults) noResults.style.display = 'none';
       tableBody.innerHTML = list.map((row) => {
         const appLabel = row.applicationMenu
           ? String(row.applicationMenu).replace(/_/g, ' ')
@@ -319,18 +333,25 @@
           + '<td>' + escapeHtml(row.createdByName || '-') + '</td>'
           + '<td class="' + sitClass + '">' + escapeHtml(formatSituation(row.situation)) + '</td>'
           + '<td class="td-actions">'
-          + '<button type="button" class="btn-action btn-edit btn btn-sm edit-request-btn" data-id="' + escapeHtml(id) + '" title="Edit">'
+          + '<button type="button" class="btn-action btn-edit btn btn-sm btn-outline edit-request-btn" data-id="' + escapeHtml(id) + '" title="Edit">'
           + '<i class="fas fa-edit"></i></button> '
-          + '<button type="button" class="btn-action btn-delete btn btn-sm delete-request-btn" data-id="' + escapeHtml(id) + '" title="Delete">'
+          + '<button type="button" class="btn-action btn-delete btn btn-sm btn-outline delete-request-btn" data-id="' + escapeHtml(id) + '" title="Delete">'
           + '<i class="fas fa-trash"></i></button>'
           + '</td>'
           + '</tr>';
       }).join('');
     } catch (error) {
       console.error(error);
+      if (resultsCount) resultsCount.textContent = '0 requests';
+      if (resultsTime) resultsTime.textContent = '';
       if (tableBody) {
-        tableBody.innerHTML = '<tr><td colspan="9" class="empty-state"><p class="error-state">Error loading requests.</p></td></tr>';
+        tableBody.innerHTML = '<tr><td colspan="9" class="empty-state"><p class="error-state">'
+          + escapeHtml(error.message || 'Error loading requests.')
+          + '</p></td></tr>';
       }
+      if (noResults) noResults.style.display = 'none';
+    } finally {
+      if (loadingIndicator) loadingIndicator.style.display = 'none';
     }
   }
 
@@ -342,9 +363,16 @@
     if (createdByInput) createdByInput.value = '';
     if (requestDateFromInput) requestDateFromInput.value = '';
     if (requestDateToInput) requestDateToInput.value = '';
-    if (finishDateFromInput) finishDateFromInput.value = '';
-    if (finishDateToInput) finishDateToInput.value = '';
     if (descriptionInput) descriptionInput.value = '';
+    if (noResults) noResults.style.display = 'none';
+    if (resultsTime) resultsTime.textContent = '';
+    if (resultsCount) resultsCount.textContent = '0 requests';
+    if (tableBody) {
+      tableBody.innerHTML = '<tr><td colspan="9" class="empty-state" id="emptyStateRow">'
+        + '<i class="fas fa-search"></i>'
+        + '<p>Use search or filters and click <strong>Search</strong> to load requests.</p>'
+        + '</td></tr>';
+    }
   }
 
   function openEditModal() {
@@ -455,6 +483,11 @@
       if (editRequestDate) editRequestDate.value = toDateInputValue(item.requestDate);
       if (editFinishDate) editFinishDate.value = toDateInputValue(item.finishDate);
       if (editRequestDescription) editRequestDescription.value = item.description || '';
+      if (editRequestHistory) {
+        editRequestHistory.value = item.requestHistory
+          || 'No history recorded yet. New steps will be logged automatically when you save changes.';
+      }
+      if (editHistoryNote) editHistoryNote.value = '';
 
       toggleEditApplicationField();
       if (editRequestApplication) {
@@ -512,6 +545,7 @@
     const situation = editRequestSituation ? editRequestSituation.value : 'NOT_STARTED';
     const requestDate = editRequestDate ? editRequestDate.value : '';
     const finishDate = editFinishDate ? editFinishDate.value : '';
+    const historyNote = editHistoryNote ? editHistoryNote.value.trim() : '';
 
     if (!description) {
       showEditMessage('Please enter the description.', 'error');
@@ -539,6 +573,9 @@
       requestDate: requestDate || null,
       finishDate: finishDate || null
     };
+    if (historyNote) {
+      payload.historyNote = historyNote;
+    }
     if (isRootUser && editRequestedBySelect && editRequestedBySelect.value) {
       payload.createdBy = editRequestedBySelect.value;
     }
@@ -555,9 +592,12 @@
       if (!res.ok || !data.success) {
         throw new Error((data && (data.error || data.message)) || 'Unable to update request');
       }
+      if (data.data && editRequestHistory) {
+        editRequestHistory.value = data.data.requestHistory || editRequestHistory.value;
+      }
+      if (editHistoryNote) editHistoryNote.value = '';
       showEditMessage(data.message || 'Request updated successfully.', 'success');
       await runSearch();
-      setTimeout(closeEditModal, 500);
     } catch (error) {
       showEditMessage(error.message || 'Unable to update request', 'error');
     } finally {
@@ -590,8 +630,15 @@
     if (applyBtn) applyBtn.addEventListener('click', runSearch);
     if (clearBtn) clearBtn.addEventListener('click', () => {
       clearFilters();
-      runSearch();
     });
+    if (descriptionInput) {
+      descriptionInput.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter') {
+          event.preventDefault();
+          runSearch();
+        }
+      });
+    }
 
     if (editRequestType) {
       editRequestType.addEventListener('change', () => {
@@ -638,7 +685,7 @@
     }
 
     loadApplications().finally(() => {
-      runSearch();
+      if (resultsCount) resultsCount.textContent = '0 requests';
     });
   }
 

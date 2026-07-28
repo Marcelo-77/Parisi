@@ -9,67 +9,162 @@
     <link rel="stylesheet" href="pesquisa-styles.css">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
-        body.improvements-page .container { padding-top: 10px; }
-        body.improvements-page .header { margin-bottom: 12px; }
-        .improvements-hint {
-            margin: 0 0 14px;
-            color: #475569;
-            font-size: 0.95rem;
-            line-height: 1.5;
+        /* Compact header like location.html */
+        body.ic-control-page .container {
+            padding-top: 10px;
         }
-        .improvements-actions {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-            justify-content: center;
+
+        body.ic-control-page .header {
+            margin-bottom: 12px;
+        }
+
+        body.ic-control-page .form-container {
+            width: 100%;
+            max-width: none;
             margin-top: 8px;
+            padding: 24px 28px 20px;
+            scroll-margin-top: 8px;
         }
-        .improvements-message {
-            margin-top: 12px;
-            min-height: 1.2em;
+
+        .ic-form-header {
+            position: relative;
+            display: block;
             text-align: center;
-            font-size: 0.95rem;
+            margin-bottom: 16px;
+            padding-right: 140px;
+            padding-left: 140px;
         }
-        .improvements-message.show.success { color: #15803d; }
-        .improvements-message.show.error { color: #b91c1c; }
-        .improvements-message.show.info { color: #1d4ed8; }
-        .char-count {
+
+        .ic-form-header .form-header {
+            margin: 0;
+            padding: 0;
+            border: none;
+            background: transparent;
+            text-align: center;
+        }
+
+        .ic-form-header .form-header h2 {
+            justify-content: center;
+            text-align: center;
+            margin-bottom: 4px;
+        }
+
+        .ic-form-header .form-header p {
+            text-align: center;
+            margin: 0;
+        }
+
+        .ic-form-header .ic-open-search-btn {
+            position: absolute;
+            top: 0;
+            right: 0;
+        }
+
+        #improvementsForm .form-row {
+            display: grid !important;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 12px;
+            align-items: start;
+            margin-bottom: 10px;
+        }
+
+        #improvementsForm .form-row.ic-row-meta {
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+        }
+
+        #improvementsForm .form-group {
+            margin-bottom: 0;
+            min-width: 0;
+            display: flex;
+            flex-direction: column;
+        }
+
+        #improvementsForm .form-group.full-width {
+            grid-column: 1 / -1;
+        }
+
+        #improvementsForm .form-group label {
+            font-size: 0.95rem;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        #improvementsForm .form-group label i {
+            margin-right: 6px;
+        }
+
+        #improvementsForm .form-group input,
+        #improvementsForm .form-group select,
+        #improvementsForm .form-group textarea {
+            width: 100%;
+            padding: 7px 10px;
+            font-size: 0.9rem;
+            min-height: 36px;
+            box-sizing: border-box;
+        }
+
+        #improvementsForm .form-group textarea {
+            min-height: 120px;
+            resize: vertical;
+        }
+
+        .ic-char-count {
             display: block;
             margin-top: 6px;
             color: #64748b;
             font-size: 0.85rem;
             text-align: right;
         }
-        #applicationGroup.is-hidden,
-        #requestedByDisplay.is-hidden,
-        #requestedBySelect.is-hidden { display: none; }
 
-        .improvements-meta-row {
-            display: grid;
-            grid-template-columns: repeat(6, minmax(0, 1fr));
-            gap: 16px;
-            margin-bottom: 20px;
+        #improvementsForm .form-actions {
+            margin-top: 8px;
+            padding-top: 16px;
+            border-top: 2px solid #f0f0f0;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
         }
-        @media (max-width: 1200px) {
-            .improvements-meta-row {
-                grid-template-columns: repeat(3, minmax(0, 1fr));
+
+        .ic-control-message {
+            margin-top: 10px;
+            min-height: 1.2em;
+            text-align: center;
+            font-size: 0.95rem;
+        }
+
+        .ic-control-message.show.success { color: #15803d; }
+        .ic-control-message.show.error { color: #b91c1c; }
+        .ic-control-message.show.info { color: #1d4ed8; }
+
+        #requestedBySelect.is-hidden { display: none !important; }
+
+        #applicationGroup.is-disabled {
+            opacity: 0.55;
+        }
+
+        @media (max-width: 900px) {
+            .ic-form-header {
+                padding-left: 0;
+                padding-right: 0;
+                padding-top: 48px;
+            }
+
+            #improvementsForm .form-row,
+            #improvementsForm .form-row.ic-row-meta {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
             }
         }
+
         @media (max-width: 700px) {
-            .improvements-meta-row {
+            #improvementsForm .form-row,
+            #improvementsForm .form-row.ic-row-meta {
                 grid-template-columns: 1fr;
             }
         }
-
-        .situation-not-started { color: #64748b; font-weight: 700; }
-        .situation-in-development { color: #2563eb; font-weight: 700; }
-        .situation-in-testing { color: #d97706; font-weight: 700; }
-        .situation-in-client-validation { color: #7c3aed; font-weight: 700; }
-        .situation-live { color: #15803d; font-weight: 700; }
-        .situation-cancelled { color: #b91c1c; font-weight: 700; }
     </style>
 </head>
-<body class="improvements-page">
+<body class="ic-control-page">
     <script src="auth-check.js"></script>
     <script src="header-menu.js"></script>
     <script src="menu-access.js"></script>
@@ -88,7 +183,11 @@
                         <span class="header-stat-label">Low Stock</span>
                     </div>
                 </div>
-                <div class="double-y-wordmark" aria-label="Double Y"><img src="doubley-glyph.png" alt="" class="double-y-glyph" aria-hidden="true"><span class="double-y-name">Double Y</span><img src="doubley-glyph-bottom.png" alt="" class="double-y-glyph double-y-glyph-bottom" aria-hidden="true"></div>
+                <div class="double-y-wordmark" aria-label="Double Y">
+                    <img src="doubley-glyph.png" alt="" class="double-y-glyph" aria-hidden="true">
+                    <span class="double-y-name">Double Y</span>
+                    <img src="doubley-glyph-bottom.png" alt="" class="double-y-glyph double-y-glyph-bottom" aria-hidden="true">
+                </div>
                 <div class="header-stats-right">
                     <div class="header-stat header-stat-entries">
                         <span class="header-stat-value" id="totalEntradas">0</span>
@@ -110,125 +209,104 @@
         </header>
 
         <main class="main-content">
-            <div class="form-container" style="width:100%;max-width:none;">
-                <div class="filters-container">
-                    <div class="filters-header">
-                        <h2><i class="fas fa-clipboard-list"></i> Improvements and Corrections Control</h2>
+            <div class="form-container" id="icControlFormPanel" style="width:100%;max-width:none;">
+                <div class="ic-form-header">
+                    <div class="form-header">
+                        <h2><i class="fas fa-plus-circle"></i> Create New Request</h2>
+                        <p>Fill in the fields below to register an improvement, correction or new functionality</p>
                     </div>
-                    <div class="filters-content show">
-                        <p class="improvements-hint">
-                            Describe what you are requesting and select the request type.
-                            For Improvements or Corrections, choose the related application.
-                        </p>
-
-                        <form id="improvementsForm" novalidate>
-                            <div class="improvements-meta-row">
-                                <div class="filter-group">
-                                    <label for="requestNumberDisplay"><i class="fas fa-hashtag"></i> Request number</label>
-                                    <input type="text" id="requestNumberDisplay" readonly class="input-readonly" placeholder="(auto)">
-                                </div>
-
-                                <div class="filter-group">
-                                    <label for="requestType"><i class="fas fa-list"></i> Request type *</label>
-                                    <select id="requestType" required>
-                                        <option value="">Select type…</option>
-                                        <option value="IMPROVEMENT">Improvements</option>
-                                        <option value="CORRECTION">Corrections</option>
-                                        <option value="NEW_FUNCTIONALITY">New Functionality</option>
-                                    </select>
-                                </div>
-
-                                <div class="filter-group">
-                                    <label for="requestSituation"><i class="fas fa-flag"></i> Situation</label>
-                                    <select id="requestSituation">
-                                        <option value="NOT_STARTED">Not started</option>
-                                        <option value="IN_DEVELOPMENT">In development</option>
-                                        <option value="IN_TESTING">In testing</option>
-                                        <option value="IN_CLIENT_VALIDATION">In client validation</option>
-                                        <option value="LIVE">Live</option>
-                                        <option value="CANCELLED">Cancelled</option>
-                                    </select>
-                                </div>
-
-                                <div class="filter-group">
-                                    <label for="requestDate"><i class="fas fa-calendar"></i> Request date</label>
-                                    <input type="date" id="requestDate">
-                                </div>
-
-                                <div class="filter-group">
-                                    <label for="requestedByDisplay"><i class="fas fa-user"></i> Requested by</label>
-                                    <input type="text" id="requestedByDisplay" readonly class="input-readonly" placeholder="(auto)">
-                                    <select id="requestedBySelect" class="is-hidden">
-                                        <option value="">Select user…</option>
-                                    </select>
-                                </div>
-
-                                <div class="filter-group">
-                                    <label for="finishDate"><i class="fas fa-calendar-check"></i> Finish date</label>
-                                    <input type="date" id="finishDate">
-                                </div>
-                            </div>
-
-                            <div class="filters-grid">
-                                <div class="filter-group is-hidden" id="applicationGroup">
-                                    <label for="requestApplication"><i class="fas fa-window-restore"></i> Application *</label>
-                                    <select id="requestApplication">
-                                        <option value="">Select application…</option>
-                                    </select>
-                                </div>
-
-                                <div class="filter-group" style="grid-column: 1 / -1;">
-                                    <label for="requestDescription"><i class="fas fa-align-left"></i> Request description *</label>
-                                    <textarea id="requestDescription" rows="6" maxlength="4000" required
-                                        placeholder="Explain what you are requesting..."
-                                        style="width:100%;padding:10px 12px;border:1px solid #cbd5e1;border-radius:8px;resize:vertical;font:inherit;"></textarea>
-                                    <span id="descriptionCount" class="char-count">0 / 4000</span>
-                                </div>
-                            </div>
-
-                            <div class="improvements-actions">
-                                <button type="button" id="clearRequestBtn" class="btn btn-secondary">
-                                    <i class="fas fa-eraser"></i> Clear
-                                </button>
-                                <button type="submit" id="saveRequestBtn" class="btn btn-primary">
-                                    <i class="fas fa-save"></i> Save request
-                                </button>
-                            </div>
-                            <div id="requestMessage" class="improvements-message" role="status" aria-live="polite"></div>
-                        </form>
-                    </div>
+                    <a href="Improvements-and-Corrections-Control-Search.html" class="btn btn-secondary ic-open-search-btn" title="Open Search">
+                        <i class="fas fa-search"></i> Search
+                    </a>
                 </div>
 
-                <div class="results-container" style="margin-top:20px;">
-                    <div class="results-header">
-                        <h3>Recent requests</h3>
-                        <span id="resultsCount">0 records</span>
+                <form id="improvementsForm" class="funcionario-form" novalidate>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="requestNumberDisplay">
+                                <i class="fas fa-hashtag"></i> Request number
+                            </label>
+                            <input type="text" id="requestNumberDisplay" readonly class="input-readonly" placeholder="(auto)">
+                        </div>
+                        <div class="form-group">
+                            <label for="requestType">
+                                <i class="fas fa-list"></i> Request type *
+                            </label>
+                            <select id="requestType" required>
+                                <option value="">Select type…</option>
+                                <option value="IMPROVEMENT">Improvements</option>
+                                <option value="CORRECTION">Corrections</option>
+                                <option value="NEW_FUNCTIONALITY">New Functionality</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="requestSituation">
+                                <i class="fas fa-flag"></i> Situation
+                            </label>
+                            <select id="requestSituation">
+                                <option value="NOT_STARTED">Not started</option>
+                                <option value="IN_DEVELOPMENT">In development</option>
+                                <option value="IN_TESTING">In testing</option>
+                                <option value="IN_CLIENT_VALIDATION">In client validation</option>
+                                <option value="LIVE">Live</option>
+                                <option value="CANCELLED">Cancelled</option>
+                            </select>
+                        </div>
+                        <div class="form-group" id="applicationGroup">
+                            <label for="requestApplication">
+                                <i class="fas fa-window-restore"></i> Application *
+                            </label>
+                            <select id="requestApplication">
+                                <option value="">Select application…</option>
+                            </select>
+                        </div>
                     </div>
-                    <div class="table-container">
-                        <table class="warehouse-table">
-                            <thead>
-                                <tr>
-                                    <th>Request #</th>
-                                    <th>Request Date</th>
-                                    <th>Finish Date</th>
-                                    <th>Type</th>
-                                    <th>Application</th>
-                                    <th>Description</th>
-                                    <th>Requested by</th>
-                                    <th>Situation</th>
-                                </tr>
-                            </thead>
-                            <tbody id="requestsTableBody">
-                                <tr>
-                                    <td colspan="8" class="empty-state">
-                                        <i class="fas fa-inbox"></i>
-                                        <p>No requests yet.</p>
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
+
+                    <div class="form-row ic-row-meta">
+                        <div class="form-group">
+                            <label for="requestDate">
+                                <i class="fas fa-calendar"></i> Request date
+                            </label>
+                            <input type="date" id="requestDate">
+                        </div>
+                        <div class="form-group">
+                            <label for="finishDate">
+                                <i class="fas fa-calendar-check"></i> Finish date
+                            </label>
+                            <input type="date" id="finishDate">
+                        </div>
+                        <div class="form-group">
+                            <label for="requestedByDisplay">
+                                <i class="fas fa-user"></i> Requested by
+                            </label>
+                            <input type="text" id="requestedByDisplay" readonly class="input-readonly" placeholder="(auto)">
+                            <select id="requestedBySelect" class="is-hidden">
+                                <option value="">Select user…</option>
+                            </select>
+                        </div>
                     </div>
-                </div>
+
+                    <div class="form-row">
+                        <div class="form-group full-width">
+                            <label for="requestDescription">
+                                <i class="fas fa-align-left"></i> Request description *
+                            </label>
+                            <textarea id="requestDescription" rows="5" maxlength="4000" required
+                                placeholder="Explain what you are requesting..."></textarea>
+                            <span id="descriptionCount" class="ic-char-count">0 / 4000</span>
+                        </div>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="button" id="clearRequestBtn" class="btn btn-secondary">
+                            <i class="fas fa-times"></i> Cancel
+                        </button>
+                        <button type="submit" id="saveRequestBtn" class="btn btn-primary">
+                            <i class="fas fa-save"></i> Save request
+                        </button>
+                    </div>
+                    <div id="requestMessage" class="ic-control-message" role="status" aria-live="polite"></div>
+                </form>
             </div>
         </main>
 
