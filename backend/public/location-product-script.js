@@ -307,12 +307,81 @@ document.addEventListener('DOMContentLoaded', () => {
   function readNewRecordRows() {
     return Array.from(newRecordsBody?.querySelectorAll('.new-record-row') || []).map((row, index) => ({
       lineNumber: index + 1,
+      rowElement: row,
       locationCode: row.querySelector('.new-row-location')?.value.trim().toUpperCase() || '',
       productCode: row.querySelector('.new-row-product')?.value.trim().toUpperCase() || '',
       siprSqNumber: parseInt(row.querySelector('.new-row-situation')?.value, 10),
       quantityInformed: parseInt(row.querySelector('.new-row-qty-informed')?.value, 10) || 0,
       quantityCurrent: parseInt(row.querySelector('.new-row-qty-informed')?.value, 10) || 0
     }));
+  }
+
+  function clearRowInputErrors() {
+    newRecordsBody?.querySelectorAll('.new-row-location, .new-row-product, .new-row-situation, .new-row-qty-informed')
+      .forEach((el) => {
+        el.style.borderColor = '';
+      });
+  }
+
+  function markFieldError(rowElement, selector) {
+    const el = rowElement?.querySelector(selector);
+    if (el) {
+      el.style.borderColor = '#b91c1c';
+      el.focus();
+    }
+  }
+
+  function validateNewRecordRows(rows) {
+    const errors = [];
+
+    for (const row of rows) {
+      if (!row.locationCode) {
+        errors.push(`Line ${row.lineNumber} - Location: required.`);
+        markFieldError(row.rowElement, '.new-row-location');
+        continue;
+      }
+      const knownLocation = locations.some((location) => getLocationCode(location) === row.locationCode);
+      if (!knownLocation) {
+        errors.push(`Line ${row.lineNumber} - Location "${row.locationCode}": not found.`);
+        markFieldError(row.rowElement, '.new-row-location');
+        continue;
+      }
+
+      if (!row.productCode) {
+        errors.push(`Line ${row.lineNumber} - Product: required.`);
+        markFieldError(row.rowElement, '.new-row-product');
+        continue;
+      }
+      const knownProduct = products.some((product) =>
+        String(product?.codigo || '').trim().toUpperCase() === row.productCode
+      );
+      if (!knownProduct) {
+        errors.push(`Line ${row.lineNumber} - Product "${row.productCode}": not found.`);
+        markFieldError(row.rowElement, '.new-row-product');
+        continue;
+      }
+
+      if (!row.siprSqNumber || Number.isNaN(row.siprSqNumber)) {
+        errors.push(`Line ${row.lineNumber} - Situation: required.`);
+        markFieldError(row.rowElement, '.new-row-situation');
+        continue;
+      }
+
+      const qtyInput = row.rowElement?.querySelector('.new-row-qty-informed');
+      const qtyRaw = qtyInput ? String(qtyInput.value).trim() : '';
+      if (!qtyRaw) {
+        errors.push(`Line ${row.lineNumber} - Quantity: required.`);
+        markFieldError(row.rowElement, '.new-row-qty-informed');
+        continue;
+      }
+      if (!/^\d+$/.test(qtyRaw)) {
+        errors.push(`Line ${row.lineNumber} - Quantity "${qtyRaw}": must be an integer >= 0.`);
+        markFieldError(row.rowElement, '.new-row-qty-informed');
+        continue;
+      }
+    }
+
+    return errors;
   }
 
   function fillFilterSituation() {
@@ -491,6 +560,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   async function saveAllNewRecords() {
+    clearRowInputErrors();
     let entryDatetime = bulkEntryDatetime?.value || '';
     if (!entryDatetime) {
       alert('Entry date/time is required.');
@@ -504,23 +574,9 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
-    const invalidRow = rows.find((row) => !row.locationCode || !row.productCode || !row.siprSqNumber);
-    if (invalidRow) {
-      alert(`Line ${invalidRow.lineNumber}: location, product and situation are required.`);
-      return;
-    }
-
-    const unknownLocationRow = rows.find((row) =>
-      !locations.some((location) => getLocationCode(location) === row.locationCode)
-    );
-    if (unknownLocationRow) {
-      const input = newRecordsBody
-        ?.querySelectorAll('.new-record-row')
-        ?.[unknownLocationRow.lineNumber - 1]
-        ?.querySelector('.new-row-location');
-      input?.classList.add('location-code-invalid');
-      input?.focus();
-      alert(`Line ${unknownLocationRow.lineNumber}: select a valid Location Code from the list.`);
+    const validationErrors = validateNewRecordRows(rows);
+    if (validationErrors.length) {
+      alert(`Please fix the following errors:\n\n${validationErrors.join('\n')}`);
       return;
     }
 
@@ -551,12 +607,28 @@ document.addEventListener('DOMContentLoaded', () => {
         });
         const data = await res.json();
         if (!data.success) {
-          errors.push(`Line ${row.lineNumber}: ${data.message || data.error || 'Failed to create'}`);
+          const serverMsg = String(data.message || data.error || 'Failed to create');
+          let detailed = serverMsg;
+          const msgLower = serverMsg.toLowerCase();
+          if (msgLower.includes('location')) {
+            detailed = `Location "${row.locationCode}": ${serverMsg}`;
+            markFieldError(row.rowElement, '.new-row-location');
+          } else if (msgLower.includes('product')) {
+            detailed = `Product "${row.productCode}": ${serverMsg}`;
+            markFieldError(row.rowElement, '.new-row-product');
+          } else if (msgLower.includes('quant')) {
+            detailed = `Quantity "${row.quantityInformed}": ${serverMsg}`;
+            markFieldError(row.rowElement, '.new-row-qty-informed');
+          } else if (msgLower.includes('situation')) {
+            detailed = `Situation: ${serverMsg}`;
+            markFieldError(row.rowElement, '.new-row-situation');
+          }
+          errors.push(`Line ${row.lineNumber} - ${detailed}`);
         } else {
           saved += 1;
         }
       } catch (err) {
-        errors.push(`Line ${row.lineNumber}: ${err.message}`);
+        errors.push(`Line ${row.lineNumber} - Unexpected error: ${err.message}`);
       }
     }
 
