@@ -384,6 +384,44 @@ document.addEventListener('DOMContentLoaded', () => {
     return errors;
   }
 
+  function translateBulkSaveMessage(message) {
+    const text = String(message || '').trim();
+    if (!text) return 'Failed to create record.';
+    const lower = text.toLowerCase();
+
+    const dictionary = [
+      ['localizacao', 'location'],
+      ['localização', 'location'],
+      ['produto', 'product'],
+      ['quantidade', 'quantity'],
+      ['situacao', 'situation'],
+      ['situação', 'situation'],
+      ['obrigatorio', 'required'],
+      ['obrigatória', 'required'],
+      ['obrigatorio.', 'required.'],
+      ['nao encontrado', 'not found'],
+      ['não encontrado', 'not found'],
+      ['ja existe', 'already exists'],
+      ['já existe', 'already exists'],
+      ['invalido', 'invalid'],
+      ['inválido', 'invalid'],
+      ['erro', 'error'],
+      ['falha ao criar', 'failed to create'],
+      ['registro', 'record']
+    ];
+
+    for (const [pt, en] of dictionary) {
+      if (lower.includes(pt)) {
+        return dictionary.reduce(
+          (translated, [ptWord, enWord]) => translated.replace(new RegExp(ptWord, 'gi'), enWord),
+          text
+        );
+      }
+    }
+
+    return text;
+  }
+
   function fillFilterSituation() {
     const sel = document.getElementById('filterSituation');
     const current = sel.value;
@@ -607,7 +645,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
         const data = await res.json();
         if (!data.success) {
-          const serverMsg = String(data.message || data.error || 'Failed to create');
+          const serverMsg = translateBulkSaveMessage(data.message || data.error || 'Failed to create');
           let detailed = serverMsg;
           const msgLower = serverMsg.toLowerCase();
           if (msgLower.includes('location')) {
