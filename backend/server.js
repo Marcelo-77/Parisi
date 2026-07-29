@@ -39,7 +39,12 @@ app.use(helmet({
   contentSecurityPolicy: {
     directives: {
       ...helmet.contentSecurityPolicy.getDefaultDirectives(),
-      'img-src': ["'self'", 'data:', 'blob:']
+      'img-src': ["'self'", 'data:', 'blob:'],
+      // Local html5-qrcode first; allow jsDelivr only as fallback for barcode scanner
+      'script-src': ["'self'", 'https://cdn.jsdelivr.net', "'unsafe-inline'"],
+      'script-src-elem': ["'self'", 'https://cdn.jsdelivr.net', "'unsafe-inline'"],
+      'worker-src': ["'self'", 'blob:'],
+      'media-src': ["'self'", 'blob:', 'mediastream:']
     }
   }
 }));

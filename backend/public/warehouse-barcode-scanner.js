@@ -50,7 +50,9 @@
   function updateBarcodeScanButtonVisibility() {
     const scanBarcodeBtn = document.getElementById('scanBarcodeBtn');
     if (!scanBarcodeBtn) return;
-    scanBarcodeBtn.style.display = canUseBarcodeScan() ? 'inline-flex' : 'none';
+    const show = canUseBarcodeScan();
+    scanBarcodeBtn.style.display = show ? 'inline-flex' : 'none';
+    if (show) preloadHtml5QrcodeLibrary();
   }
 
   function maybeAskToUseBarcodeCamera() {
@@ -87,23 +89,67 @@
     return msg || name || 'Unable to open the camera.';
   }
 
-  function loadHtml5QrcodeLibrary() {
-    if (window.Html5Qrcode) return Promise.resolve(window.Html5Qrcode);
-    if (html5QrcodeLoader) return html5QrcodeLoader;
+  function loadScriptOnce(src) {
+    return new Promise((resolve, reject) => {
+      const existing = document.querySelector(`script[data-barcode-lib="${src}"]`);
+      if (existing) {
+        if (window.Html5Qrcode) {
+          resolve(window.Html5Qrcode);
+          return;
+        }
+        existing.addEventListener('load', () => {
+          if (window.Html5Qrcode) resolve(window.Html5Qrcode);
+          else reject(new Error('Barcode scanner library failed to load'));
+        }, { once: true });
+        existing.addEventListener('error', () => reject(new Error('Unable to load barcode scanner library')), { once: true });
+        return;
+      }
 
-    html5QrcodeLoader = new Promise((resolve, reject) => {
       const script = document.createElement('script');
-      script.src = 'https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js';
+      script.src = src;
       script.async = true;
+      script.dataset.barcodeLib = src;
       script.onload = () => {
         if (window.Html5Qrcode) resolve(window.Html5Qrcode);
         else reject(new Error('Barcode scanner library failed to load'));
       };
-      script.onerror = () => reject(new Error('Unable to load barcode scanner library'));
+      script.onerror = () => reject(new Error(`Unable to load barcode scanner library from ${src}`));
       document.head.appendChild(script);
     });
+  }
+
+  function loadHtml5QrcodeLibrary() {
+    if (window.Html5Qrcode) return Promise.resolve(window.Html5Qrcode);
+    if (html5QrcodeLoader) return html5QrcodeLoader;
+
+    // Prefer local file (works with Helmet CSP). CDN was blocked on iPhone.
+    const sources = [
+      'html5-qrcode.min.js',
+      'https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js'
+    ];
+
+    html5QrcodeLoader = (async () => {
+      let lastError = null;
+      for (let i = 0; i < sources.length; i += 1) {
+        try {
+          return await loadScriptOnce(sources[i]);
+        } catch (error) {
+          lastError = error;
+          console.warn('html5-qrcode load failed:', sources[i], error);
+        }
+      }
+      html5QrcodeLoader = null;
+      throw lastError || new Error('Unable to load barcode scanner library');
+    })();
 
     return html5QrcodeLoader;
+  }
+
+  function preloadHtml5QrcodeLibrary() {
+    if (!isMobileDevice()) return;
+    loadHtml5QrcodeLibrary().catch((error) => {
+      console.warn('Barcode library preload failed:', error);
+    });
   }
 
   async function getCameraStream() {
@@ -263,6 +309,10 @@
     const html5Reader = document.getElementById('html5QrcodeReader');
     if (!html5Reader) throw new Error('Scanner container missing');
 
+    // Load local library while camera permission is still warm.
+    setBarcodeScannerStatus('Loading scanner...');
+    const Html5Qrcode = await loadHtml5QrcodeLibrary();
+
     // Keep permission warm: stop our preview stream only right before html5-qrcode starts
     if (existingStream) {
       existingStream.getTracks().forEach((track) => track.stop());
@@ -277,7 +327,6 @@
     html5Reader.style.display = 'block';
     html5Reader.innerHTML = '';
 
-    const Html5Qrcode = await loadHtml5QrcodeLibrary();
     html5QrCodeInstance = new Html5Qrcode('html5QrcodeReader');
     setBarcodeScannerStatus('Point the camera at the barcode...');
 

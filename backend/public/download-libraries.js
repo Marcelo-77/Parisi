@@ -30,6 +30,11 @@ async function downloadLibraries() {
             'https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js',
             path.join(__dirname, 'jsbarcode.min.js')
         );
+
+        await downloadFile(
+            'https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js',
+            path.join(__dirname, 'html5-qrcode.min.js')
+        );
         
         // Baixar QRCode - usar biblioteca qrcodejs (mais simples)
         const qrcodeUrls = [
