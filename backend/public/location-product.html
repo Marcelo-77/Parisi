@@ -480,25 +480,32 @@
         </div>
     </div>
 
-    <!-- Modal Edit Quantity Current (somente Quantity Current editável) -->
+    <!-- Modal Edit Location Product (Location Code + Quantity Current) -->
     <div id="editQuantityCurrentModal" class="modal">
         <div class="modal-content">
             <div class="modal-header success">
-                <h3><i class="fas fa-edit"></i> Edit Quantity Current</h3>
+                <h3><i class="fas fa-edit"></i> Edit Location Product</h3>
                 <button type="button" class="modal-close" id="closeEditQuantityCurrentModal">&times;</button>
             </div>
             <div class="modal-body">
                 <form id="editQuantityCurrentForm">
-                    <input type="hidden" id="editLocationCode">
+                    <input type="hidden" id="editOriginalLocationCode">
                     <input type="hidden" id="editProductCode">
                     <input type="hidden" id="editEntryDatetime">
                     <input type="hidden" id="editSiprSqNumber">
                     <input type="hidden" id="editQuantityInformed">
                     <p class="detail-label" id="editRecordSummary"></p>
                     <div class="form-group">
+                        <label for="editLocationCode"><i class="fas fa-map-marker-alt"></i> Location Code *</label>
+                        <input type="text" id="editLocationCode" list="locationCodesList" maxlength="50" required style="text-transform:uppercase;" autocomplete="off" placeholder="Location code">
+                    </div>
+                    <div class="form-group">
                         <label for="editQuantityCurrent"><i class="fas fa-boxes"></i> Quantity Current *</label>
                         <input type="number" id="editQuantityCurrent" min="0" step="1" required>
                     </div>
+                    <p class="detail-label" style="margin-top:8px;color:#64748b;">
+                        Changing Location Code records exit/entry in Log Location Product.
+                    </p>
                     <div class="form-actions" style="margin-top:20px;">
                         <button type="button" class="btn btn-secondary" id="cancelEditQuantityCurrentBtn">Cancel</button>
                         <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Update</button>
@@ -538,7 +545,7 @@
 
                 <h4>Edit and Delete</h4>
                 <ul>
-                    <li><strong>Edit</strong> — change Quantity Current for a record.</li>
+                    <li><strong>Edit</strong> — change Location Code and/or Quantity Current. Location changes are logged as exit/entry.</li>
                     <li><strong>Delete</strong> — remove a location-product record (may adjust stock).</li>
                 </ul>
 

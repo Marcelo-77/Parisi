@@ -71,4 +71,34 @@ async function create(data) {
   }
 }
 
-module.exports = { list, create };
+async function updateDetailedDescription(syapCdSeq, syapDsDetailed) {
+  const id = parseInt(syapCdSeq, 10);
+  if (!id || Number.isNaN(id)) {
+    throw new Error('Application ID is required.');
+  }
+
+  const detailed = (syapDsDetailed != null && String(syapDsDetailed).trim())
+    ? String(syapDsDetailed).trim().substring(0, 150)
+    : null;
+
+  const sql = `
+    UPDATE ${TABLE}
+    SET syap_ds_detailed = $1
+    WHERE syap_cd_seq = $2
+    RETURNING *
+  `;
+
+  try {
+    const result = await query(sql, [detailed, id]);
+    if (!result.rows.length) {
+      throw new Error('Application not found.');
+    }
+    return mapRow(result.rows[0]);
+  } catch (error) {
+    if (error.message === 'Application not found.') throw error;
+    console.error('❌ Error updating system application description:', error);
+    throw new Error(`Error updating application description: ${error.message}`);
+  }
+}
+
+module.exports = { list, create, updateDetailedDescription };

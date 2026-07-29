@@ -245,81 +245,220 @@ async function buscarTodos(filtros = {}) {
 }
 
 async function atualizarQuantidades(locationCode, productCode, entryDatetime, siprSqNumber, dados) {
-  const updates = [];
-  const values = [];
-  let idx = 1;
-
-  if (dados.quantityInformed !== undefined) {
-    updates.push(`quantity_informed = $${idx++}`);
-    values.push(dados.quantityInformed);
-  }
-  if (dados.quantityCurrent !== undefined) {
-    updates.push(`quantity_current = $${idx++}`);
-    values.push(dados.quantityCurrent);
+  const sourceLocationInput = locationCode != null ? String(locationCode).trim() : '';
+  const productCodeInput = productCode != null ? String(productCode).trim() : '';
+  const sipr = parseInt(siprSqNumber, 10);
+  if (!sourceLocationInput || !productCodeInput || Number.isNaN(sipr)) {
+    throw new Error('Location, product and situation are required');
   }
 
-  if (updates.length === 0) {
-    throw new Error('No fields to update');
-  }
-
-  values.push(locationCode, productCode, siprSqNumber);
-
-  const updateSql = `
-    UPDATE ${TABLE}
-    SET ${updates.join(', ')}
-    WHERE location_code = $${idx++} AND product_code = $${idx++} AND sipr_sq_number = $${idx}
-    RETURNING *
-  `;
+  const requestedNewLocation = dados.newLocationCode != null
+    ? String(dados.newLocationCode).trim()
+    : '';
 
   const client = await getClient();
   try {
     await client.query('BEGIN');
 
     const oldResult = await client.query(
-      `SELECT lp.quantity_informed, lp.quantity_current, lp.product_code, sp.sipr_nm_description
+      `SELECT lp.location_code, lp.product_code, lp.sipr_sq_number, lp.quantity_informed,
+              lp.quantity_current, lp.stat_cd_id, lp.entry_datetime, sp.sipr_nm_description
        FROM ${TABLE} lp
        LEFT JOIN situation_product sp ON sp.sipr_sq_number = lp.sipr_sq_number
-       WHERE lp.location_code = $1 AND lp.product_code = $2 AND lp.sipr_sq_number = $3`,
-      [locationCode, productCode, siprSqNumber]
+       WHERE TRIM(LOWER(lp.location_code)) = TRIM(LOWER($1))
+         AND TRIM(LOWER(lp.product_code)) = TRIM(LOWER($2))
+         AND lp.sipr_sq_number = $3
+       FOR UPDATE OF lp`,
+      [sourceLocationInput, productCodeInput, sipr]
     );
     if (!oldResult.rows.length) {
       await client.query('ROLLBACK');
       throw new Error('Record not found');
     }
+
     const oldRow = oldResult.rows[0];
+    const sourceLocationExact = oldRow.location_code;
+    const productExact = oldRow.product_code;
     const oldQtyCurrent = parseInt(oldRow.quantity_current, 10) || 0;
+    const oldQtyInformed = parseInt(oldRow.quantity_informed, 10) || 0;
+    const newQtyCurrent = dados.quantityCurrent !== undefined
+      ? (parseInt(dados.quantityCurrent, 10) || 0)
+      : oldQtyCurrent;
+    const newQtyInformed = dados.quantityInformed !== undefined
+      ? (parseInt(dados.quantityInformed, 10) || 0)
+      : oldQtyInformed;
 
-    const result = await client.query(updateSql, values);
-    const updatedRow = result.rows[0];
-    const newQtyCurrent = parseInt(updatedRow.quantity_current, 10) || 0;
+    if (dados.quantityInformed !== undefined && newQtyInformed <= 0) {
+      throw new Error('Quantity informed must be greater than 0');
+    }
+    if (newQtyCurrent < 0) {
+      throw new Error('Quantity current must be a non-negative number');
+    }
 
+    let targetLocationExact = sourceLocationExact;
+    if (requestedNewLocation) {
+      const resolved = await resolveWarehouseLocationCode(client, requestedNewLocation);
+      if (!resolved) {
+        throw new Error(`Location "${requestedNewLocation}" was not found`);
+      }
+      targetLocationExact = resolved;
+    }
+
+    const locationChanged = String(targetLocationExact).trim().toLowerCase()
+      !== String(sourceLocationExact).trim().toLowerCase();
+
+    // Same location: update quantities only
+    if (!locationChanged) {
+      if (
+        dados.quantityInformed === undefined
+        && dados.quantityCurrent === undefined
+      ) {
+        throw new Error('No fields to update');
+      }
+
+      const result = await client.query(
+        `UPDATE ${TABLE}
+         SET quantity_informed = $1,
+             quantity_current = $2
+         WHERE location_code = $3 AND product_code = $4 AND sipr_sq_number = $5
+         RETURNING *`,
+        [newQtyInformed, newQtyCurrent, sourceLocationExact, productExact, sipr]
+      );
+      const updatedRow = result.rows[0];
+
+      if (
+        dados.quantityCurrent !== undefined
+        && isFullSituationDescription(oldRow.sipr_nm_description)
+      ) {
+        await adjustWarehouseItemsQuantity(
+          client,
+          updatedRow.product_code,
+          newQtyCurrent - oldQtyCurrent
+        );
+      }
+
+      await insertLogEntry(client, {
+        operation: 'UPDATE',
+        locationCode: updatedRow.location_code,
+        productCode: updatedRow.product_code,
+        siprSqNumber: updatedRow.sipr_sq_number,
+        quantityPrev: oldQtyCurrent,
+        quantityCurrent: newQtyCurrent,
+        usuario: dados.usuarioAlterou || null
+      });
+
+      await client.query('COMMIT');
+      return mapRow(updatedRow);
+    }
+
+    // Location changed: keep log integrity with DELETE (exit) + INSERT/UPDATE (entry)
+    const destExisting = await client.query(
+      `SELECT location_code, product_code, sipr_sq_number, quantity_informed, quantity_current
+       FROM ${TABLE}
+       WHERE TRIM(LOWER(location_code)) = TRIM(LOWER($1))
+         AND TRIM(LOWER(product_code)) = TRIM(LOWER($2))
+         AND sipr_sq_number = $3
+       FOR UPDATE`,
+      [targetLocationExact, productExact, sipr]
+    );
+
+    // Exit source (always)
+    await client.query(
+      `DELETE FROM ${TABLE}
+       WHERE location_code = $1 AND product_code = $2 AND sipr_sq_number = $3`,
+      [sourceLocationExact, productExact, sipr]
+    );
+    await insertLogEntry(client, {
+      operation: 'DELETE',
+      locationCode: sourceLocationExact,
+      productCode: productExact,
+      siprSqNumber: sipr,
+      quantityPrev: oldQtyCurrent,
+      quantityCurrent: 0,
+      usuario: dados.usuarioAlterou || null
+    });
+
+    let finalRow = null;
+    if (destExisting.rows.length) {
+      const destRow = destExisting.rows[0];
+      const destOldQty = parseInt(destRow.quantity_current, 10) || 0;
+      const destOldInformed = parseInt(destRow.quantity_informed, 10) || 0;
+      const destNewQty = destOldQty + newQtyCurrent;
+      const destNewInformed = destOldInformed + newQtyInformed;
+
+      const updated = await client.query(
+        `UPDATE ${TABLE}
+         SET quantity_current = $1,
+             quantity_informed = $2
+         WHERE location_code = $3 AND product_code = $4 AND sipr_sq_number = $5
+         RETURNING *`,
+        [destNewQty, destNewInformed, destRow.location_code, destRow.product_code, destRow.sipr_sq_number]
+      );
+      finalRow = updated.rows[0];
+
+      await insertLogEntry(client, {
+        operation: 'UPDATE',
+        locationCode: finalRow.location_code,
+        productCode: finalRow.product_code,
+        siprSqNumber: finalRow.sipr_sq_number,
+        quantityPrev: destOldQty,
+        quantityCurrent: destNewQty,
+        usuario: dados.usuarioAlterou || null
+      });
+    } else {
+      const inserted = await client.query(
+        `INSERT INTO ${TABLE}
+          (location_code, product_code, entry_datetime, sipr_sq_number,
+           quantity_informed, quantity_current, stat_cd_id, usuario_inseriu)
+         VALUES ($1, $2, CURRENT_TIMESTAMP, $3, $4, $5, $6, $7)
+         RETURNING *`,
+        [
+          targetLocationExact,
+          productExact,
+          sipr,
+          newQtyInformed,
+          newQtyCurrent,
+          oldRow.stat_cd_id != null ? String(oldRow.stat_cd_id).substring(0, 1) : 'A',
+          dados.usuarioAlterou || null
+        ]
+      );
+      finalRow = inserted.rows[0];
+
+      await insertLogEntry(client, {
+        operation: 'INSERT',
+        locationCode: finalRow.location_code,
+        productCode: finalRow.product_code,
+        siprSqNumber: finalRow.sipr_sq_number,
+        quantityPrev: null,
+        quantityCurrent: newQtyCurrent,
+        usuario: dados.usuarioAlterou || null
+      });
+    }
+
+    // Location relocation is net-zero for stock; only qty delta affects warehouse when Full
     if (
       dados.quantityCurrent !== undefined
       && isFullSituationDescription(oldRow.sipr_nm_description)
     ) {
       await adjustWarehouseItemsQuantity(
         client,
-        updatedRow.product_code,
+        productExact,
         newQtyCurrent - oldQtyCurrent
       );
     }
 
-    await insertLogEntry(client, {
-      operation: 'UPDATE',
-      locationCode: updatedRow.location_code,
-      productCode: updatedRow.product_code,
-      siprSqNumber: updatedRow.sipr_sq_number,
-      quantityPrev: oldQtyCurrent,
-      quantityCurrent: newQtyCurrent,
-      usuario: dados.usuarioAlterou || null
-    });
-
     await client.query('COMMIT');
-    return mapRow(updatedRow);
+    return mapRow(finalRow);
   } catch (error) {
     await client.query('ROLLBACK').catch(() => {});
     if (error.message === 'Record not found') throw error;
     if (error.message && error.message.startsWith('Insufficient warehouse stock')) throw error;
+    if (error.message && (
+      error.message.includes('was not found')
+      || error.message.includes('must be greater than 0')
+      || error.message.includes('non-negative')
+      || error.message.includes('No fields to update')
+    )) throw error;
     console.error('❌ Error updating location_product:', error);
     throw new Error(`Error updating record: ${error.message}`);
   } finally {

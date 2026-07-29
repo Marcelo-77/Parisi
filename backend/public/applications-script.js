@@ -127,7 +127,7 @@ async function searchApplications() {
     if (countEl) countEl.textContent = list.length + ' record(s)';
 
     if (list.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="3" class="empty-state">No applications found.</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="4" class="empty-state">No applications found.</td></tr>';
       return;
     }
 
@@ -136,12 +136,28 @@ async function searchApplications() {
         <td>${escapeHtml(app.syapCdSeq)}</td>
         <td>${escapeHtml(app.syapNmApplication || '-')}</td>
         <td>${escapeHtml(app.syapDsDetailed || '-')}</td>
+        <td class="td-actions">
+          <button
+            type="button"
+            class="btn btn-edit btn-edit-application"
+            data-id="${escapeHtml(app.syapCdSeq)}"
+            data-name="${escapeHtml(app.syapNmApplication || '')}"
+            data-detailed="${escapeHtml(app.syapDsDetailed || '')}"
+            title="Edit Detailed Description"
+          >
+            <i class="fas fa-edit"></i> Edit
+          </button>
+        </td>
       </tr>
     `).join('');
+
+    tbody.querySelectorAll('.btn-edit-application').forEach((btn) => {
+      btn.addEventListener('click', () => openEditApplicationModal(btn.dataset));
+    });
   } catch (err) {
     console.error(err);
     if (countEl) countEl.textContent = '0 records';
-    tbody.innerHTML = '<tr><td colspan="3" class="empty-state">Error loading applications.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="4" class="empty-state">Error loading applications.</td></tr>';
   }
 }
 
@@ -150,8 +166,61 @@ function clearApplicationsFilters() {
   const descEl = document.getElementById('filterSyapDsDetailed');
   if (nameEl) nameEl.value = '';
   if (descEl) descEl.value = '';
-  document.getElementById('searchApplicationsTableBody').innerHTML = '<tr><td colspan="3" class="empty-state">Use filters and click Search to load applications.</td></tr>';
+  document.getElementById('searchApplicationsTableBody').innerHTML = '<tr><td colspan="4" class="empty-state">Use filters and click Search to load applications.</td></tr>';
   document.getElementById('applicationsResultsCount').textContent = '0 records';
+}
+
+function openEditApplicationModal(dataset) {
+  const modal = document.getElementById('editApplicationModal');
+  if (!modal) return;
+  document.getElementById('editSyapCdSeq').value = dataset.id || '';
+  document.getElementById('editSyapNmApplication').value = dataset.name || '';
+  document.getElementById('editSyapDsDetailed').value = dataset.detailed || '';
+  modal.classList.add('show');
+  modal.setAttribute('aria-hidden', 'false');
+  modal.style.display = 'flex';
+  document.getElementById('editSyapDsDetailed')?.focus();
+}
+
+function closeEditApplicationModal() {
+  const modal = document.getElementById('editApplicationModal');
+  if (!modal) return;
+  modal.classList.remove('show');
+  modal.setAttribute('aria-hidden', 'true');
+  modal.style.display = 'none';
+}
+
+async function submitEditApplication(e) {
+  e.preventDefault();
+  const id = document.getElementById('editSyapCdSeq')?.value;
+  const syapDsDetailed = document.getElementById('editSyapDsDetailed')?.value.trim() || '';
+  if (!id) {
+    alert('Application ID is missing.');
+    return;
+  }
+
+  const saveBtn = document.getElementById('saveEditApplicationBtn');
+  if (saveBtn) saveBtn.disabled = true;
+  try {
+    const res = await fetch(`${API_APPLICATIONS}/${encodeURIComponent(id)}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'same-origin',
+      body: JSON.stringify({ syapDsDetailed })
+    });
+    const data = await res.json();
+    if (!res.ok || !data.success) {
+      throw new Error(data.message || data.error || 'Failed to update description');
+    }
+    alert('Detailed Description updated.');
+    closeEditApplicationModal();
+    await searchApplications();
+  } catch (err) {
+    console.error(err);
+    alert(err.message || 'Error updating Detailed Description.');
+  } finally {
+    if (saveBtn) saveBtn.disabled = false;
+  }
 }
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -160,6 +229,16 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('newApplicationsForm').addEventListener('submit', submitNewApplication);
   document.getElementById('applyApplicationsFiltersBtn').addEventListener('click', searchApplications);
   document.getElementById('clearApplicationsFiltersBtn').addEventListener('click', clearApplicationsFilters);
+  document.getElementById('editApplicationForm')?.addEventListener('submit', submitEditApplication);
+  document.getElementById('closeEditApplicationModal')?.addEventListener('click', closeEditApplicationModal);
+  document.getElementById('cancelEditApplicationBtn')?.addEventListener('click', closeEditApplicationModal);
+
+  const editModal = document.getElementById('editApplicationModal');
+  if (editModal) {
+    editModal.addEventListener('click', (e) => {
+      if (e.target === editModal) closeEditApplicationModal();
+    });
+  }
 
   if (getMode() === 'search') {
     searchApplications();

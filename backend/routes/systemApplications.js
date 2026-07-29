@@ -61,4 +61,34 @@ router.post(
   }
 );
 
+// PUT /api/system-applications/:id - update Detailed Description only
+router.put(
+  '/:id',
+  [
+    body('syapDsDetailed').optional({ nullable: true }).isLength({ max: 150 }).trim()
+  ],
+  handleValidationErrors,
+  async (req, res) => {
+    try {
+      const updated = await systemApplicationService.updateDetailedDescription(
+        req.params.id,
+        req.body.syapDsDetailed
+      );
+      res.json({
+        success: true,
+        message: 'Detailed Description updated',
+        data: updated
+      });
+    } catch (error) {
+      console.error('Error updating system application description:', error);
+      const status = error.message === 'Application not found.' ? 404 : 400;
+      res.status(status).json({
+        success: false,
+        error: error.message || 'Error updating application description',
+        message: error.message
+      });
+    }
+  }
+);
+
 module.exports = router;

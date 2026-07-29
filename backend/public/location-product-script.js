@@ -510,7 +510,7 @@ document.addEventListener('DOMContentLoaded', () => {
           <td>${r.quantityCurrent ?? 0}</td>
           <td>${escapeHtml(r.usuarioInseriuNome || r.usuarioInseriu || '-')}</td>
           <td class="td-actions">
-            <button type="button" class="btn btn-edit btn-edit-qty-current" data-location="${escapeHtml(r.locationCode)}" data-product="${escapeHtml(r.productCode)}" data-entry="${escapeHtml(entryDt)}" data-sipr="${r.siprSqNumber}" data-qty-informed="${r.quantityInformed ?? 0}" data-qty-current="${r.quantityCurrent ?? 0}" title="Edit Quantity Current">
+            <button type="button" class="btn btn-edit btn-edit-qty-current" data-location="${escapeHtml(r.locationCode)}" data-product="${escapeHtml(r.productCode)}" data-entry="${escapeHtml(entryDt)}" data-sipr="${r.siprSqNumber}" data-qty-informed="${r.quantityInformed ?? 0}" data-qty-current="${r.quantityCurrent ?? 0}" title="Edit Location / Quantity">
               <i class="fas fa-edit"></i> Edit
             </button>
             <button type="button" class="btn btn-delete btn-delete-record" data-location="${escapeHtml(r.locationCode)}" data-product="${escapeHtml(r.productCode)}" data-entry="${escapeHtml(entryDt)}" data-sipr="${r.siprSqNumber}" title="Delete">
@@ -534,7 +534,11 @@ document.addEventListener('DOMContentLoaded', () => {
   const editQuantityCurrentModal = document.getElementById('editQuantityCurrentModal');
   const editQuantityCurrentForm = document.getElementById('editQuantityCurrentForm');
 
-  function openEditQuantityCurrentModal(dataset) {
+  async function openEditQuantityCurrentModal(dataset) {
+    await Promise.all([loadLocations(), loadProducts()]);
+    fillEntryDatalists();
+
+    document.getElementById('editOriginalLocationCode').value = dataset.location || '';
     document.getElementById('editLocationCode').value = dataset.location || '';
     document.getElementById('editProductCode').value = dataset.product || '';
     document.getElementById('editEntryDatetime').value = dataset.entry || '';
@@ -542,24 +546,49 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('editQuantityInformed').value = dataset.qtyInformed ?? 0;
     document.getElementById('editQuantityCurrent').value = dataset.qtyCurrent ?? 0;
     document.getElementById('editRecordSummary').textContent =
-      `${dataset.location} / ${dataset.product} / ${formatDateTime(dataset.entry)} — Quantity Informed: ${dataset.qtyInformed ?? 0} (read-only)`;
+      `${dataset.product} / ${formatDateTime(dataset.entry)} — Quantity Informed: ${dataset.qtyInformed ?? 0} (read-only)`;
     editQuantityCurrentModal.classList.add('show');
+    document.getElementById('editLocationCode')?.focus();
   }
 
   function closeEditQuantityCurrentModal() {
     editQuantityCurrentModal.classList.remove('show');
   }
 
+  const editLocationInput = document.getElementById('editLocationCode');
+  if (editLocationInput) {
+    editLocationInput.addEventListener('input', () => {
+      editLocationInput.value = editLocationInput.value.toUpperCase();
+    });
+  }
+
   editQuantityCurrentForm.addEventListener('submit', async (e) => {
     e.preventDefault();
-    const locationCode = document.getElementById('editLocationCode').value;
+    const originalLocationCode = String(document.getElementById('editOriginalLocationCode').value || '').trim().toUpperCase();
+    const newLocationCode = String(document.getElementById('editLocationCode').value || '').trim().toUpperCase();
     const productCode = document.getElementById('editProductCode').value;
     const entryDatetime = document.getElementById('editEntryDatetime').value;
     const siprSqNumber = parseInt(document.getElementById('editSiprSqNumber').value, 10);
     const quantityInformed = parseInt(document.getElementById('editQuantityInformed').value, 10) || 0;
     const quantityCurrent = parseInt(document.getElementById('editQuantityCurrent').value, 10) || 0;
+
+    if (!newLocationCode) {
+      alert('Location Code is required.');
+      document.getElementById('editLocationCode')?.focus();
+      return;
+    }
+    const knownLocation = locations.some((location) => getLocationCode(location) === newLocationCode);
+    if (!knownLocation) {
+      alert(`Location "${newLocationCode}" was not found. Select a valid Location Code.`);
+      document.getElementById('editLocationCode')?.focus();
+      return;
+    }
     if (quantityInformed <= 0) {
       alert('Quantity Informed must be greater than 0.');
+      return;
+    }
+    if (quantityCurrent < 0) {
+      alert('Quantity Current must be >= 0.');
       return;
     }
 
@@ -569,17 +598,18 @@ document.addEventListener('DOMContentLoaded', () => {
         headers: { 'Content-Type': 'application/json' },
         credentials: 'same-origin',
         body: JSON.stringify({
-          locationCode,
+          locationCode: originalLocationCode,
           productCode,
           entryDatetime,
           siprSqNumber,
           quantityInformed,
-          quantityCurrent
+          quantityCurrent,
+          newLocationCode
         })
       });
       const data = await res.json();
       if (data.success) {
-        alert('Quantity Current updated.');
+        alert(data.message || 'Record updated.');
         closeEditQuantityCurrentModal();
         loadRecords();
       } else {

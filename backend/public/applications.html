@@ -193,11 +193,12 @@
                                     <th>ID</th>
                                     <th>Application Name</th>
                                     <th>Detailed Description</th>
+                                    <th>Actions</th>
                                 </tr>
                             </thead>
                             <tbody id="searchApplicationsTableBody">
                                 <tr>
-                                    <td colspan="3" class="empty-state">Use filters and click Search to load applications.</td>
+                                    <td colspan="4" class="empty-state">Use filters and click Search to load applications.</td>
                                 </tr>
                             </tbody>
                         </table>
@@ -209,6 +210,36 @@
         <footer class="footer">
             <p>&copy; 2026 Double-Y IT Systems. All rights reserved.</p>
         </footer>
+    </div>
+
+    <div id="editApplicationModal" class="modal" aria-hidden="true">
+        <div class="modal-content" style="max-width:560px;">
+            <div class="modal-header success">
+                <h3><i class="fas fa-edit"></i> Edit Detailed Description</h3>
+                <button type="button" class="modal-close" id="closeEditApplicationModal" aria-label="Close">&times;</button>
+            </div>
+            <form id="editApplicationForm">
+                <div class="modal-body">
+                    <input type="hidden" id="editSyapCdSeq">
+                    <div class="form-group">
+                        <label><i class="fas fa-file-code"></i> Application Name</label>
+                        <input type="text" id="editSyapNmApplication" readonly>
+                    </div>
+                    <div class="form-group">
+                        <label for="editSyapDsDetailed"><i class="fas fa-align-left"></i> Detailed Description</label>
+                        <input type="text" id="editSyapDsDetailed" maxlength="150" placeholder="Detailed description">
+                    </div>
+                </div>
+                <div class="modal-footer" style="display:flex;gap:10px;justify-content:flex-end;">
+                    <button type="button" class="btn btn-secondary" id="cancelEditApplicationBtn">
+                        <i class="fas fa-times"></i> Cancel
+                    </button>
+                    <button type="submit" class="btn btn-primary" id="saveEditApplicationBtn">
+                        <i class="fas fa-save"></i> Save
+                    </button>
+                </div>
+            </form>
+        </div>
     </div>
 
     <script src="applications-script.js"></script>

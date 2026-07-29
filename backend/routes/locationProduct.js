@@ -322,7 +322,7 @@ router.post('/', validarCreate, handleValidationErrors, async (req, res) => {
   }
 });
 
-// PUT /api/location-product - update quantity_informed and quantity_current (composite key in body)
+// PUT /api/location-product - update quantities and optionally relocate (location code)
 router.put(
   '/',
   [
@@ -331,21 +331,38 @@ router.put(
     body('entryDatetime').notEmpty(),
     body('siprSqNumber').isInt({ min: 1 }),
     body('quantityInformed').optional().isInt({ min: 1 }),
-    body('quantityCurrent').optional().isInt({ min: 0 })
+    body('quantityCurrent').optional().isInt({ min: 0 }),
+    body('newLocationCode').optional().isLength({ min: 1, max: 50 }).trim()
   ],
   handleValidationErrors,
   async (req, res) => {
     try {
-      const { locationCode, productCode, entryDatetime, siprSqNumber, quantityInformed, quantityCurrent } = req.body;
+      const {
+        locationCode,
+        productCode,
+        entryDatetime,
+        siprSqNumber,
+        quantityInformed,
+        quantityCurrent,
+        newLocationCode
+      } = req.body;
       const userKey = getSessionUserKey(req);
       const updated = await locationProductService.atualizarQuantidades(
         locationCode,
         productCode,
         entryDatetime,
         siprSqNumber,
-        { quantityInformed, quantityCurrent, usuarioAlterou: userKey }
+        { quantityInformed, quantityCurrent, newLocationCode, usuarioAlterou: userKey }
       );
-      res.json({ success: true, message: 'Record updated', data: updated });
+      const relocated = newLocationCode
+        && String(newLocationCode).trim().toLowerCase() !== String(locationCode).trim().toLowerCase();
+      res.json({
+        success: true,
+        message: relocated
+          ? 'Record updated and location changed (log exit/entry recorded)'
+          : 'Record updated',
+        data: updated
+      });
     } catch (error) {
       console.error('Error updating location-product:', error);
       if (error.message === 'Record not found') {

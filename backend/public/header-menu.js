@@ -107,10 +107,10 @@
                                 </button>
                                 <div class="dropdown-submenu" aria-hidden="true">
                                     <a href="Improvements-and-Corrections-Control.html" class="dropdown-item" data-app="Improvements-and-Corrections-Control.html">
-                                        <i class="fas fa-clipboard-list"></i> Control
+                                        <i class="fas fa-plus"></i> New Request
                                     </a>
                                     <a href="Improvements-and-Corrections-Control-Search.html" class="dropdown-item" data-app="Improvements-and-Corrections-Control-Search.html">
-                                        <i class="fas fa-search"></i> Search
+                                        <i class="fas fa-search"></i> Search Request
                                     </a>
                                 </div>
                             </div>
