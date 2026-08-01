@@ -855,38 +855,62 @@
 
 .search-bar {
     position: relative;
-    margin-bottom: 20px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 16px;
 }
 
-.search-bar i {
+.search-bar > i.fa-search {
     position: absolute;
-    left: 15px;
+    left: 14px;
     top: 50%;
     transform: translateY(-50%);
     color: #667eea;
     font-size: 0.9rem;
+    pointer-events: none;
+    z-index: 1;
 }
 
-.search-bar input {
-    width: 100%;
-    padding: 6px 32px 6px 32px;
+.search-bar #searchByField {
+    flex: 0 1 180px;
+    min-width: 140px;
+    max-width: 100%;
+    margin-left: 0 !important;
+}
+
+.search-bar #searchInput {
+    flex: 1 1 220px;
+    min-width: 160px;
+    width: auto;
+    padding: 10px 40px 10px 36px;
     border: 2px solid #e1e5e9;
     border-radius: 10px;
-    font-size: 0.8rem;
+    font-size: 0.95rem;
     transition: all 0.3s ease;
 }
 
-.search-bar input:focus {
+.search-bar #searchInput:focus {
     outline: none;
     border-color: #667eea;
     box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
 }
 
+.search-bar #scanBarcodeBtn,
+.search-bar #searchBtn {
+    flex: 0 0 auto;
+    white-space: nowrap;
+}
+
+.search-bar #clearSearch {
+    position: static;
+    transform: none;
+    flex: 0 0 auto;
+    padding: 8px 10px;
+}
+
 .btn-icon {
-    position: absolute;
-    right: 10px;
-    top: 50%;
-    transform: translateY(-50%);
     background: none;
     border: none;
     color: #999;
@@ -899,6 +923,13 @@
 .btn-icon:hover {
     color: #667eea;
     background: #f0f0f0;
+}
+
+.product-result-min {
+    color: #999;
+    display: block;
+    font-size: 0.8rem;
+    margin-top: 2px;
 }
 
 .filters-row {
@@ -2464,27 +2495,213 @@ input.input-readonly {
     .dashboard {
         grid-template-columns: 1fr;
     }
-    
+
+    .product-search-section {
+        height: auto;
+        min-height: 0;
+        max-height: none;
+        padding-bottom: 24px;
+    }
+
+    .filters-section {
+        padding: 12px;
+        margin-bottom: 10px;
+        border-radius: 12px;
+    }
+
+    .search-bar {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 10px;
+        margin-bottom: 12px;
+    }
+
+    .search-bar > i.fa-search {
+        display: none;
+    }
+
+    .search-bar #searchByField,
+    .search-bar #searchInput,
+    .search-bar #scanBarcodeBtn,
+    .search-bar #searchBtn,
+    .search-bar #clearSearch {
+        width: 100%;
+        max-width: none;
+        flex: 1 1 auto;
+        min-width: 0;
+        margin: 0 !important;
+    }
+
+    .search-bar #searchInput {
+        padding: 12px 14px;
+        font-size: 1rem;
+    }
+
+    .search-bar #searchBtn,
+    .search-bar #scanBarcodeBtn {
+        min-height: 46px;
+        justify-content: center;
+    }
+
+    .search-bar #clearSearch {
+        align-self: flex-end;
+        width: auto;
+        padding: 10px 12px;
+    }
+
     .filters-row {
         grid-template-columns: 1fr;
+        gap: 10px;
     }
-    
+
+    .warehouse-search-results-meta {
+        justify-content: flex-start;
+        padding: 0 4px 10px;
+    }
+
+    #productSearchSection .table-container {
+        padding: 10px;
+        overflow-x: hidden;
+        overflow-y: visible;
+        flex: none;
+        border-radius: 12px;
+    }
+
     .warehouse-table {
-        font-size: 0.85rem;
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0 12px;
+        font-size: 0.95rem;
     }
-    
-    .warehouse-table th,
-    .warehouse-table td {
-        padding: 10px 8px;
+
+    .warehouse-table thead {
+        display: none;
     }
-    
-    .action-buttons {
+
+    .warehouse-table tbody {
+        display: block;
+        width: 100%;
+    }
+
+    .warehouse-table tbody tr.item-data-row,
+    .warehouse-table tbody tr.item-actions-row {
+        display: block;
+        width: 100%;
+        background: #fff;
+        border: 1px solid #e5e7eb;
+        box-shadow: 0 2px 8px rgba(15, 23, 42, 0.06);
+    }
+
+    .warehouse-table tbody tr.item-data-row {
+        border-radius: 14px 14px 0 0;
+        border-bottom: none;
+        padding: 12px 12px 4px;
+        margin: 0;
+    }
+
+    .warehouse-table tbody tr.item-actions-row {
+        border-radius: 0 0 14px 14px;
+        border-top: 1px solid #f1f5f9;
+        margin: 0 0 4px;
+        padding: 10px 12px 12px;
+        background: #f8fafc;
+    }
+
+    .warehouse-table tbody tr.item-data-row:hover,
+    .warehouse-table tbody tr.item-actions-row:hover {
+        background: inherit;
+    }
+
+    .warehouse-table tbody tr.item-data-row td {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 12px;
+        width: 100%;
+        padding: 8px 0;
+        border: none;
+        text-align: right;
+        word-break: break-word;
+        overflow-wrap: anywhere;
+        white-space: normal;
+        color: #1f2937;
+    }
+
+    .warehouse-table tbody tr.item-data-row td::before {
+        content: attr(data-label);
+        flex: 0 0 38%;
+        max-width: 38%;
+        text-align: left;
+        font-size: 0.78rem;
+        font-weight: 700;
+        letter-spacing: 0.02em;
+        text-transform: uppercase;
+        color: #6b7280;
+    }
+
+    .warehouse-table tbody tr.item-data-row td[data-label="Code"] {
+        padding-top: 2px;
+        padding-bottom: 10px;
+        margin-bottom: 4px;
+        border-bottom: 1px solid #f1f5f9;
+        font-size: 1.05rem;
+    }
+
+    .warehouse-table tbody tr.item-data-row td[data-label="Name"] {
+        font-weight: 600;
+        text-align: left;
         flex-direction: column;
+        gap: 4px;
     }
-    
+
+    .warehouse-table tbody tr.item-data-row td[data-label="Name"]::before {
+        max-width: none;
+        flex-basis: auto;
+    }
+
+    .warehouse-table tbody tr.item-actions-row td {
+        display: block;
+        width: 100%;
+        padding: 0 !important;
+        border: none;
+    }
+
+    .action-buttons-cell {
+        padding-left: 0 !important;
+    }
+
+    .action-buttons {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 8px;
+        width: 100%;
+    }
+
     .btn-action {
         width: 100%;
+        min-height: 42px;
         justify-content: center;
+        padding: 10px 8px;
+        font-size: 0.88rem;
+        border-radius: 10px;
+        white-space: nowrap;
+    }
+
+    .btn-action span {
+        display: inline;
+    }
+
+    .warehouse-table tbody tr.empty-state-row,
+    .warehouse-table tbody tr.empty-state-row td {
+        display: block;
+        width: 100%;
+        border: none;
+        box-shadow: none;
+        background: transparent;
+    }
+
+    .empty-state {
+        padding: 40px 16px !important;
     }
     
     .modal-large {
@@ -2619,14 +2836,24 @@ input.input-readonly {
         flex-direction: column;
         text-align: center;
     }
-    
-    .warehouse-table {
-        font-size: 0.75rem;
+
+    .action-buttons {
+        grid-template-columns: 1fr;
     }
-    
-    .warehouse-table th,
-    .warehouse-table td {
-        padding: 8px 5px;
+
+    .btn-action {
+        min-height: 44px;
+        font-size: 0.92rem;
+    }
+
+    .warehouse-table tbody tr.item-data-row td {
+        font-size: 0.95rem;
+    }
+
+    .warehouse-table tbody tr.item-data-row td::before {
+        font-size: 0.72rem;
+        flex-basis: 34%;
+        max-width: 34%;
     }
 
     .header-actions {

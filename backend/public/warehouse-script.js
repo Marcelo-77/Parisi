@@ -665,6 +665,19 @@ function setupEventListeners() {
     if (productArLaunchBtn) {
         productArLaunchBtn.addEventListener('click', () => launchProductAr());
     }
+    const productArViewerEl = document.getElementById('productArViewer');
+    if (productArViewerEl) {
+        productArViewerEl.addEventListener('click', (e) => {
+            const arSlotBtn = e.target.closest('[slot="ar-button"]');
+            if (!arSlotBtn) return;
+            const platform = detectArPlatform();
+            if (platform.isAndroid && productArPublicModelUrl) {
+                e.preventDefault();
+                e.stopPropagation();
+                launchProductAr();
+            }
+        }, true);
+    }
     const productArModal = document.getElementById('productArModal');
     if (productArModal) {
         productArModal.addEventListener('click', (e) => {
@@ -923,7 +936,7 @@ function displayItems(itemsToDisplay) {
             : 'Use search or filters and click <strong>Search</strong> to load items.';
         const icon = hasSearched ? 'fa-box-open' : 'fa-search';
         itemsTableBody.innerHTML = `
-            <tr>
+            <tr class="empty-state-row">
                 <td colspan="6" class="empty-state">
                     <i class="fas ${icon}"></i>
                     <p>${message}</p>
@@ -935,47 +948,51 @@ function displayItems(itemsToDisplay) {
 
     itemsTableBody.innerHTML = itemsToDisplay.map(item => {
         const status = getItemStatus(item);
-        const statusClass = status.toLowerCase().replace(' ', '-');
+        const statusClass = status.toLowerCase().replace(/\s+/g, '-');
+        const code = escapeHtml(item.codigo || '-');
+        const name = escapeHtml(item.nome || '-');
+        const category = escapeHtml(formatCategoryDisplay(item));
+        const barcode = escapeHtml(item.barcode != null ? String(item.barcode) : '-');
+        const qty = item.quantidade ?? 0;
+        const minQty = item.quantidadeMinima
+            ? `<small class="product-result-min">Min: ${item.quantidadeMinima}</small>`
+            : '';
 
         return `
             <tr class="item-data-row">
-                <td><strong>${item.codigo}</strong></td>
-                <td>${item.nome}</td>
-                <td>${formatCategoryDisplay(item)}</td>
-                <td>${item.barcode != null ? item.barcode : '-'}</td>
-                <td>
-                    <strong>${item.quantidade}</strong>
-                    ${item.quantidadeMinima ? `<small style="color: #999; display: block;">Min: ${item.quantidadeMinima}</small>` : ''}
+                <td data-label="Code"><strong>${code}</strong></td>
+                <td data-label="Name">${name}</td>
+                <td data-label="Category">${category}</td>
+                <td data-label="Barcode">${barcode}</td>
+                <td data-label="Quantity">
+                    <strong>${qty}</strong>
+                    ${minQty}
                 </td>
-                <td><span class="status-badge ${statusClass}">${status}</span></td>
+                <td data-label="Status"><span class="status-badge ${statusClass}">${status}</span></td>
             </tr>
             <tr class="item-actions-row">
-                <td></td>
-                <td colspan="4" class="action-buttons-cell">
+                <td colspan="6" class="action-buttons-cell">
                     <div class="action-buttons">
                         <button class="btn-action view" data-action="view" data-item-id="${item.id}" title="View details">
-                            <i class="fas fa-eye"></i> View
+                            <i class="fas fa-eye"></i> <span>View</span>
                         </button>
                         <button class="btn-action print" data-action="print" data-item-id="${item.id}" title="Print report" type="button">
-                            <i class="fas fa-print"></i> Print
+                            <i class="fas fa-print"></i> <span>Print</span>
                         </button>
                         <button class="btn-action movement" data-action="move" data-item-id="${item.id}" title="Move stock">
-                            <i class="fas fa-exchange-alt"></i> Move
+                            <i class="fas fa-exchange-alt"></i> <span>Move</span>
                         </button>
                         <button class="btn-action edit" data-action="edit" data-item-id="${item.id}" title="Edit">
-                            <i class="fas fa-edit"></i> Edit
+                            <i class="fas fa-edit"></i> <span>Edit</span>
                         </button>
                         <button class="btn-action delete" data-action="delete" data-item-id="${item.id}" title="Delete">
-                            <i class="fas fa-trash"></i> Del.
+                            <i class="fas fa-trash"></i> <span>Del.</span>
                         </button>
                     </div>
                 </td>
-                <td></td>
             </tr>
         `;
     }).join('');
-    
-    // Event listeners j? est?o configurados via event delegation, n?o precisa chamar novamente
 }
 
 // Attach event listeners to action buttons using event delegation
@@ -1729,11 +1746,13 @@ function setProductArLaunchEnabled(enabled) {
 }
 
 function launchSceneViewerIntent(modelUrl, title) {
+    // Scene Viewer is picky: use a clean .glb URL (no query string).
+    const cleanUrl = String(modelUrl || '').split('#')[0].split('?')[0];
     const fallback = window.location.href;
     const params = new URLSearchParams({
-        file: modelUrl,
+        file: cleanUrl,
         mode: 'ar_preferred',
-        title: title || 'Product AR'
+        title: String(title || 'Product AR').slice(0, 80)
     });
     const intent =
         `intent://arvr.google.com/scene-viewer/1.0?${params.toString()}` +
@@ -1790,26 +1809,42 @@ async function openProductArModal() {
         else viewer.removeAttribute('poster');
 
         let arPhotoPayload = null;
-        if (photoSrc && window.WarehouseProductArGlb && typeof window.WarehouseProductArGlb.prepareArPhotoDataUrl === 'function') {
-            arPhotoPayload = await window.WarehouseProductArGlb.prepareArPhotoDataUrl(photoSrc, 512);
-        } else if (photoSrc) {
-            arPhotoPayload = photoSrc;
+        let glbBase64 = null;
+        if (photoSrc && window.WarehouseProductArGlb) {
+            if (typeof window.WarehouseProductArGlb.prepareArPhotoDataUrl === 'function') {
+                arPhotoPayload = await window.WarehouseProductArGlb.prepareArPhotoDataUrl(photoSrc, 512);
+            } else {
+                arPhotoPayload = photoSrc;
+            }
+            if (typeof window.WarehouseProductArGlb.createProductPhotoGlbBase64 === 'function') {
+                glbBase64 = await window.WarehouseProductArGlb.createProductPhotoGlbBase64(arPhotoPayload || photoSrc, {
+                    maxSideMeters: 0.45,
+                    thicknessMeters: 0.025,
+                    maxImageEdge: 512
+                });
+            }
         }
 
-        // Cache a public GLB so Android Scene Viewer can open the camera with the product photo.
+        // Upload client-built GLB (preferred) so Scene Viewer receives the exact textured model.
         const prepareRes = await fetch(`${API_BASE_URL}/${item.id}/prepare-ar-model`, {
             method: 'POST',
             credentials: 'same-origin',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(arPhotoPayload ? { photo: arPhotoPayload } : {})
+            body: JSON.stringify({
+                photo: arPhotoPayload || undefined,
+                glbBase64: glbBase64 || undefined
+            })
         });
         const prepareData = await prepareRes.json().catch(() => ({}));
         if (!prepareRes.ok || !prepareData.success || !prepareData.data || !prepareData.data.relativeUrl) {
             throw new Error(prepareData.message || 'Could not prepare AR model');
         }
 
-        productArPublicModelUrl = `${window.location.origin}${prepareData.data.relativeUrl}?v=${Date.now()}`;
+        // Clean URL without query string — required for Scene Viewer texture loading.
+        productArPublicModelUrl = `${window.location.origin}${prepareData.data.relativeUrl}`;
         viewer.src = productArPublicModelUrl;
+        viewer.setAttribute('ar-modes', 'scene-viewer webxr quick-look');
+        viewer.removeAttribute('ios-src');
 
         await customElements.whenDefined('model-viewer');
         if (!viewer.loaded) {
@@ -1833,7 +1868,7 @@ async function openProductArModal() {
         } else if (platform.isIOS) {
             setProductArStatus('Product photo ready. Tap Open Camera AR (ARKit / Quick Look).');
         } else if (platform.isAndroid) {
-            setProductArStatus('Product photo ready. Tap Open Camera AR (ARCore / Scene Viewer).');
+            setProductArStatus('Product photo ready. Tap Open Camera AR / View in your space (ARCore).');
         } else {
             setProductArStatus('Product photo 3D preview ready. Open Camera AR works on iPhone or Android.');
         }

@@ -267,18 +267,34 @@ function ensureArCacheDir() {
   return dir;
 }
 
-function writeProductArModel(item, photoOverride = null) {
+function writeProductArModel(item, photoOverride = null, glbBase64 = null) {
   ensureArCacheDir();
-  const fileName = `${item.id}.glb`;
+  const stamp = Date.now();
+  const fileName = `${item.id}-${stamp}.glb`;
   const filePath = path.join(getArCacheDir(), fileName);
   const defaultBoxPath = path.join(__dirname, '..', 'public', 'models', 'product-box.glb');
 
-  const photo = photoOverride || item.photo;
   let glb = null;
   let hasPhoto = false;
   let photoError = null;
 
-  if (photo) {
+  if (glbBase64) {
+    try {
+      const raw = String(glbBase64).replace(/^data:model\/gltf-binary;base64,/i, '').replace(/\s+/g, '');
+      glb = Buffer.from(raw, 'base64');
+      hasPhoto = glb.length > 100 && glb.readUInt32LE(0) === 0x46546c67;
+      if (!hasPhoto) {
+        glb = null;
+        photoError = 'Invalid uploaded GLB';
+      }
+    } catch (error) {
+      photoError = error.message || 'Invalid uploaded GLB';
+      glb = null;
+    }
+  }
+
+  const photo = photoOverride || item.photo;
+  if (!glb && photo) {
     try {
       glb = buildProductPhotoGlb(photo, {
         maxSideMeters: 0.45,
@@ -290,7 +306,7 @@ function writeProductArModel(item, photoOverride = null) {
       photoError = error.message || 'Photo GLB build failed';
       glb = null;
     }
-  } else {
+  } else if (!glb) {
     photoError = 'Product has no photo';
   }
 
@@ -299,6 +315,18 @@ function writeProductArModel(item, photoOverride = null) {
       throw new Error(photoError || 'Default AR model is missing');
     }
     glb = fs.readFileSync(defaultBoxPath);
+  }
+
+  // Cleanup older cached models for this product (keep latest only).
+  try {
+    const prefix = `${item.id}-`;
+    fs.readdirSync(getArCacheDir()).forEach((name) => {
+      if (name.startsWith(prefix) && name.endsWith('.glb') && name !== fileName) {
+        fs.unlinkSync(path.join(getArCacheDir(), name));
+      }
+    });
+  } catch {
+    // ignore cleanup errors
   }
 
   fs.writeFileSync(filePath, glb);

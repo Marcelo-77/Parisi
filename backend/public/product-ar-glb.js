@@ -1,6 +1,5 @@
 /**
- * Build a minimal textured plane GLB from a product photo data URL.
- * Dimensions are in meters for real-world AR scale.
+ * Build a Scene Viewer / ARCore friendly photo board GLB.
  */
 (function (global) {
   function align4(n) {
@@ -9,10 +8,10 @@
 
   function parseDataUrl(photo) {
     const value = String(photo || '').trim();
-    const match = value.match(/^data:(image\/[a-zA-Z0-9.+-]+);base64,([A-Za-z0-9+/=\s]+)$/);
+    const match = value.match(/^data:(image\/[a-zA-Z0-9.+-]+)(;[^,]*)?;base64,([A-Za-z0-9+/=\s]+)$/i);
     if (!match) return null;
     const mime = match[1].toLowerCase();
-    const base64 = match[2].replace(/\s+/g, '');
+    const base64 = match[3].replace(/\s+/g, '');
     try {
       const binary = atob(base64);
       const bytes = new Uint8Array(binary.length);
@@ -23,12 +22,21 @@
     }
   }
 
+  function normalizeImageMime(parsed) {
+    if (parsed.bytes[0] === 0xff && parsed.bytes[1] === 0xd8) return 'image/jpeg';
+    if (parsed.bytes[0] === 0x89 && parsed.bytes[1] === 0x50) return 'image/png';
+    const value = String(parsed.mime || '').toLowerCase();
+    if (value.includes('png')) return 'image/png';
+    if (value.includes('jpeg') || value.includes('jpg')) return 'image/jpeg';
+    return null;
+  }
+
   function getImageSize(bytes, mime) {
-    if (mime.includes('png') && bytes.length >= 24) {
+    if ((mime.includes('png') || (bytes[0] === 0x89 && bytes[1] === 0x50)) && bytes.length >= 24) {
       const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
       return { width: view.getUint32(16), height: view.getUint32(20) };
     }
-    if (mime.includes('jpeg') || mime.includes('jpg')) {
+    if (mime.includes('jpeg') || mime.includes('jpg') || (bytes[0] === 0xff && bytes[1] === 0xd8)) {
       let i = 2;
       while (i < bytes.length - 8) {
         if (bytes[i] !== 0xff) break;
@@ -46,10 +54,11 @@
             width: (bytes[i + 7] << 8) + bytes[i + 8]
           };
         }
+        if (size < 2) break;
         i += 2 + size;
       }
     }
-    return { width: 1, height: 1 };
+    return { width: 512, height: 512 };
   }
 
   function concatBuffers(parts) {
@@ -63,78 +72,92 @@
     return out;
   }
 
+  function pushFace(positions, normals, uvs, indices, corners, normal, uvRect) {
+    const base = positions.length / 3;
+    for (let i = 0; i < 4; i += 1) {
+      positions.push(corners[i][0], corners[i][1], corners[i][2]);
+      normals.push(normal[0], normal[1], normal[2]);
+    }
+    uvs.push(
+      uvRect[0], uvRect[1],
+      uvRect[2], uvRect[3],
+      uvRect[4], uvRect[5],
+      uvRect[6], uvRect[7]
+    );
+    indices.push(base, base + 1, base + 2, base, base + 2, base + 3);
+  }
+
   function buildProductPhotoGlb(photoDataUrl, options = {}) {
     const parsed = parseDataUrl(photoDataUrl);
-    if (!parsed) return null;
+    if (!parsed || parsed.bytes.length < 32) return null;
+    const mime = normalizeImageMime(parsed);
+    if (!mime) return null;
 
-    const maxSide = Number(options.maxSideMeters) > 0 ? Number(options.maxSideMeters) : 0.35;
-    const thickness = Number(options.thicknessMeters) > 0 ? Number(options.thicknessMeters) : 0.01;
-    const size = getImageSize(parsed.bytes, parsed.mime);
-    const aspect = size.width / Math.max(size.height, 1);
+    const maxSide = Number(options.maxSideMeters) > 0 ? Number(options.maxSideMeters) : 0.45;
+    const thickness = Number(options.thicknessMeters) > 0 ? Number(options.thicknessMeters) : 0.025;
+    const size = getImageSize(parsed.bytes, mime);
+    const aspect = Math.max(size.width, 1) / Math.max(size.height, 1);
     let width = maxSide;
     let height = maxSide;
-    if (aspect >= 1) {
-      height = maxSide / aspect;
-    } else {
-      width = maxSide * aspect;
-    }
+    if (aspect >= 1) height = maxSide / aspect;
+    else width = maxSide * aspect;
 
     const hx = width / 2;
     const hy = height / 2;
     const hz = thickness / 2;
+    const positions = [];
+    const normals = [];
+    const uvs = [];
+    const indices = [];
+    const fullUv = [0, 1, 1, 1, 1, 0, 0, 0];
+    const sideUv = [0, 0.98, 1, 0.98, 1, 1, 0, 1];
 
-    // Front face (+Z) with UVs for the product photo.
-    const positions = new Float32Array([
-      -hx, -hy, hz,
-      hx, -hy, hz,
-      hx, hy, hz,
-      -hx, hy, hz,
-      // back face (-Z) same photo mirrored so it is visible from behind
-      hx, -hy, -hz,
-      -hx, -hy, -hz,
-      -hx, hy, -hz,
-      hx, hy, -hz
-    ]);
-    const normals = new Float32Array([
-      0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1,
-      0, 0, -1, 0, 0, -1, 0, 0, -1, 0, 0, -1
-    ]);
-    const uvs = new Float32Array([
-      0, 1, 1, 1, 1, 0, 0, 0,
-      0, 1, 1, 1, 1, 0, 0, 0
-    ]);
-    const indices = new Uint16Array([
-      0, 1, 2, 0, 2, 3,
-      4, 5, 6, 4, 6, 7
-    ]);
+    pushFace(positions, normals, uvs, indices, [
+      [-hx, -hy, hz], [hx, -hy, hz], [hx, hy, hz], [-hx, hy, hz]
+    ], [0, 0, 1], fullUv);
+    pushFace(positions, normals, uvs, indices, [
+      [hx, -hy, -hz], [-hx, -hy, -hz], [-hx, hy, -hz], [hx, hy, -hz]
+    ], [0, 0, -1], fullUv);
+    pushFace(positions, normals, uvs, indices, [
+      [-hx, hy, hz], [hx, hy, hz], [hx, hy, -hz], [-hx, hy, -hz]
+    ], [0, 1, 0], sideUv);
+    pushFace(positions, normals, uvs, indices, [
+      [-hx, -hy, -hz], [hx, -hy, -hz], [hx, -hy, hz], [-hx, -hy, hz]
+    ], [0, -1, 0], sideUv);
+    pushFace(positions, normals, uvs, indices, [
+      [hx, -hy, hz], [hx, -hy, -hz], [hx, hy, -hz], [hx, hy, hz]
+    ], [1, 0, 0], sideUv);
+    pushFace(positions, normals, uvs, indices, [
+      [-hx, -hy, -hz], [-hx, -hy, hz], [-hx, hy, hz], [-hx, hy, -hz]
+    ], [-1, 0, 0], sideUv);
 
+    const pos = new Float32Array(positions);
+    const nor = new Float32Array(normals);
+    const uv = new Float32Array(uvs);
+    const ind = new Uint16Array(indices);
     const imageBytes = parsed.bytes;
-    const posBytes = positions.byteLength;
-    const norBytes = normals.byteLength;
-    const uvBytes = uvs.byteLength;
-    const indBytes = indices.byteLength;
 
     const posOffset = 0;
-    const norOffset = align4(posOffset + posBytes);
-    const uvOffset = align4(norOffset + norBytes);
-    const indOffset = align4(uvOffset + uvBytes);
-    const imgOffset = align4(indOffset + indBytes);
+    const norOffset = align4(pos.byteLength);
+    const uvOffset = align4(norOffset + nor.byteLength);
+    const indOffset = align4(uvOffset + uv.byteLength);
+    const imgOffset = align4(indOffset + ind.byteLength);
     const binSize = align4(imgOffset + imageBytes.byteLength);
-
-    const bin = new ArrayBuffer(binSize);
-    new Float32Array(bin, posOffset, positions.length).set(positions);
-    new Float32Array(bin, norOffset, normals.length).set(normals);
-    new Float32Array(bin, uvOffset, uvs.length).set(uvs);
-    new Uint16Array(bin, indOffset, indices.length).set(indices);
-    new Uint8Array(bin, imgOffset, imageBytes.length).set(imageBytes);
+    const bin = new Uint8Array(binSize);
+    bin.set(new Uint8Array(pos.buffer, pos.byteOffset, pos.byteLength), posOffset);
+    bin.set(new Uint8Array(nor.buffer, nor.byteOffset, nor.byteLength), norOffset);
+    bin.set(new Uint8Array(uv.buffer, uv.byteOffset, uv.byteLength), uvOffset);
+    bin.set(new Uint8Array(ind.buffer, ind.byteOffset, ind.byteLength), indOffset);
+    bin.set(imageBytes, imgOffset);
 
     const gltf = {
-      asset: { version: '2.0', generator: 'warehouse-product-ar' },
+      asset: { version: '2.0', generator: 'warehouse-product-ar-client' },
+      extensionsUsed: ['KHR_materials_unlit'],
       scene: 0,
       scenes: [{ nodes: [0] }],
-      nodes: [{ mesh: 0, name: 'ProductPhoto' }],
+      nodes: [{ mesh: 0, name: 'ProductPhotoBoard' }],
       meshes: [{
-        name: 'ProductPhotoMesh',
+        name: 'ProductPhotoBoardMesh',
         primitives: [{
           attributes: { POSITION: 0, NORMAL: 1, TEXCOORD_0: 2 },
           indices: 3,
@@ -142,37 +165,38 @@
         }]
       }],
       materials: [{
-        name: 'ProductPhotoMaterial',
+        name: 'ProductPhotoUnlit',
         pbrMetallicRoughness: {
-          baseColorTexture: { index: 0 },
+          baseColorFactor: [1, 1, 1, 1],
+          baseColorTexture: { index: 0, texCoord: 0 },
           metallicFactor: 0,
-          roughnessFactor: 0.9
+          roughnessFactor: 1
         },
-        doubleSided: true
+        alphaMode: 'OPAQUE',
+        doubleSided: true,
+        extensions: { KHR_materials_unlit: {} }
       }],
-      textures: [{ source: 0 }],
-      images: [{
-        mimeType: parsed.mime,
-        bufferView: 4
-      }],
+      samplers: [{ magFilter: 9729, minFilter: 9729, wrapS: 33071, wrapT: 33071 }],
+      textures: [{ sampler: 0, source: 0 }],
+      images: [{ mimeType: mime, bufferView: 4 }],
       accessors: [
         {
           bufferView: 0,
           componentType: 5126,
-          count: positions.length / 3,
+          count: pos.length / 3,
           type: 'VEC3',
           max: [hx, hy, hz],
           min: [-hx, -hy, -hz]
         },
-        { bufferView: 1, componentType: 5126, count: normals.length / 3, type: 'VEC3' },
-        { bufferView: 2, componentType: 5126, count: uvs.length / 2, type: 'VEC2' },
-        { bufferView: 3, componentType: 5123, count: indices.length, type: 'SCALAR' }
+        { bufferView: 1, componentType: 5126, count: nor.length / 3, type: 'VEC3' },
+        { bufferView: 2, componentType: 5126, count: uv.length / 2, type: 'VEC2' },
+        { bufferView: 3, componentType: 5123, count: ind.length, type: 'SCALAR' }
       ],
       bufferViews: [
-        { buffer: 0, byteOffset: posOffset, byteLength: posBytes, target: 34962 },
-        { buffer: 0, byteOffset: norOffset, byteLength: norBytes, target: 34962 },
-        { buffer: 0, byteOffset: uvOffset, byteLength: uvBytes, target: 34962 },
-        { buffer: 0, byteOffset: indOffset, byteLength: indBytes, target: 34963 },
+        { buffer: 0, byteOffset: posOffset, byteLength: pos.byteLength, target: 34962 },
+        { buffer: 0, byteOffset: norOffset, byteLength: nor.byteLength, target: 34962 },
+        { buffer: 0, byteOffset: uvOffset, byteLength: uv.byteLength, target: 34962 },
+        { buffer: 0, byteOffset: indOffset, byteLength: ind.byteLength, target: 34963 },
         { buffer: 0, byteOffset: imgOffset, byteLength: imageBytes.byteLength }
       ],
       buffers: [{ byteLength: binSize }]
@@ -184,10 +208,9 @@
     jsonChunk.set(json, 0);
     for (let i = 0; i < jsonPadding; i += 1) jsonChunk[json.byteLength + i] = 0x20;
 
-    const binBytes = new Uint8Array(bin);
-    const binPadding = (4 - (binBytes.byteLength % 4)) % 4;
-    const binChunk = new Uint8Array(binBytes.byteLength + binPadding);
-    binChunk.set(binBytes, 0);
+    const binPadding = (4 - (bin.byteLength % 4)) % 4;
+    const binChunk = new Uint8Array(bin.byteLength + binPadding);
+    binChunk.set(bin, 0);
 
     const totalLength = 12 + 8 + jsonChunk.byteLength + 8 + binChunk.byteLength;
     const header = new ArrayBuffer(12);
@@ -215,6 +238,15 @@
     ]);
   }
 
+  function bytesToBase64(bytes) {
+    let binary = '';
+    const chunk = 0x8000;
+    for (let i = 0; i < bytes.length; i += chunk) {
+      binary += String.fromCharCode.apply(null, bytes.subarray(i, i + chunk));
+    }
+    return btoa(binary);
+  }
+
   function loadImageElement(photoDataUrl) {
     return new Promise((resolve, reject) => {
       const img = new Image();
@@ -229,8 +261,6 @@
       const img = await loadImageElement(photoDataUrl);
       const srcW = img.naturalWidth || img.width || 1;
       const srcH = img.naturalHeight || img.height || 1;
-
-      // Power-of-two canvas helps Scene Viewer keep the texture stable.
       let pot = 512;
       if (maxEdge >= 1024) pot = 1024;
       if (maxEdge <= 256) pot = 256;
@@ -240,10 +270,8 @@
       canvas.height = pot;
       const ctx = canvas.getContext('2d');
       if (!ctx) return photoDataUrl;
-
       ctx.fillStyle = '#ffffff';
       ctx.fillRect(0, 0, pot, pot);
-
       const scale = Math.min(pot / srcW, pot / srcH);
       const drawW = Math.max(1, Math.round(srcW * scale));
       const drawH = Math.max(1, Math.round(srcH * scale));
@@ -252,7 +280,6 @@
       ctx.imageSmoothingEnabled = true;
       ctx.imageSmoothingQuality = 'high';
       ctx.drawImage(img, dx, dy, drawW, drawH);
-
       return canvas.toDataURL('image/jpeg', 0.92);
     } catch {
       return photoDataUrl;
@@ -264,17 +291,24 @@
     return resizePhotoDataUrl(photoDataUrl, maxEdge);
   }
 
-  async function createProductPhotoGlbObjectUrl(photoDataUrl, options) {
-    const resized = await resizePhotoDataUrl(photoDataUrl, options && options.maxImageEdge ? options.maxImageEdge : 1024);
+  async function createProductPhotoGlbBase64(photoDataUrl, options) {
+    const resized = await prepareArPhotoDataUrl(photoDataUrl, options && options.maxImageEdge ? options.maxImageEdge : 512);
     const bytes = buildProductPhotoGlb(resized || photoDataUrl, options);
     if (!bytes) return null;
-    const blob = new Blob([bytes], { type: 'model/gltf-binary' });
-    return URL.createObjectURL(blob);
+    return bytesToBase64(bytes);
+  }
+
+  async function createProductPhotoGlbObjectUrl(photoDataUrl, options) {
+    const resized = await prepareArPhotoDataUrl(photoDataUrl, options && options.maxImageEdge ? options.maxImageEdge : 512);
+    const bytes = buildProductPhotoGlb(resized || photoDataUrl, options);
+    if (!bytes) return null;
+    return URL.createObjectURL(new Blob([bytes], { type: 'model/gltf-binary' }));
   }
 
   global.WarehouseProductArGlb = {
     buildProductPhotoGlb,
     createProductPhotoGlbObjectUrl,
+    createProductPhotoGlbBase64,
     parseDataUrl,
     resizePhotoDataUrl,
     prepareArPhotoDataUrl

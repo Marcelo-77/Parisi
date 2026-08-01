@@ -62,8 +62,8 @@ app.use(cors());
 app.use(morgan('combined'));
 
 // Allow larger JSON bodies to support base64 photos
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+app.use(express.json({ limit: '15mb' }));
+app.use(express.urlencoded({ extended: true, limit: '15mb' }));
 
 // Health check route (public)
 app.get('/health', (req, res) => {
@@ -102,6 +102,16 @@ app.get('/api/system-settings', async (req, res) => {
 
 // Protect HTML pages before static files
 app.use(protectPages);
+
+// Serve AR cache with explicit GLB content-type for Scene Viewer / ARCore
+app.use('/ar-cache', express.static(path.join(__dirname, 'public', 'ar-cache'), {
+  setHeaders(res, filePath) {
+    if (String(filePath).toLowerCase().endsWith('.glb')) {
+      res.setHeader('Content-Type', 'model/gltf-binary');
+      res.setHeader('Cache-Control', 'public, max-age=60');
+    }
+  }
+}));
 
 // Serve static files
 app.use(express.static(path.join(__dirname, 'public')));
