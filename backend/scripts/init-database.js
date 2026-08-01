@@ -130,6 +130,12 @@ async function initDatabase() {
     `);
     console.log('✅ warehouse_items.subcategoria adicionada/verificada');
 
+    await query(`
+      ALTER TABLE warehouse_items
+      ADD COLUMN IF NOT EXISTS photo TEXT
+    `);
+    console.log('✅ warehouse_items.photo adicionada/verificada');
+
     // Criar tabela de movimentações do warehouse
     await query(`
       CREATE TABLE IF NOT EXISTS warehouse_movements (

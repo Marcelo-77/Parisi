@@ -39,15 +39,25 @@ app.use(helmet({
   contentSecurityPolicy: {
     directives: {
       ...helmet.contentSecurityPolicy.getDefaultDirectives(),
-      'img-src': ["'self'", 'data:', 'blob:'],
-      // Local html5-qrcode first; allow jsDelivr only as fallback for barcode scanner
+      'img-src': ["'self'", 'data:', 'blob:', 'https://cdn.jsdelivr.net'],
+      // Local html5-qrcode first; allow jsDelivr for barcode scanner / model-viewer
       'script-src': ["'self'", 'https://cdn.jsdelivr.net', "'unsafe-inline'"],
       'script-src-elem': ["'self'", 'https://cdn.jsdelivr.net', "'unsafe-inline'"],
       'worker-src': ["'self'", 'blob:'],
-      'media-src': ["'self'", 'blob:', 'mediastream:']
+      'media-src': ["'self'", 'blob:', 'mediastream:'],
+      'connect-src': ["'self'", 'blob:', 'data:', 'https://cdn.jsdelivr.net']
     }
   }
 }));
+
+// Allow WebXR / camera for AR (iPhone ARKit Quick Look / Android ARCore)
+app.use((req, res, next) => {
+  res.setHeader(
+    'Permissions-Policy',
+    'camera=(self), microphone=(self), xr-spatial-tracking=(self)'
+  );
+  next();
+});
 app.use(cors());
 app.use(morgan('combined'));
 

@@ -63,7 +63,9 @@ function toggleFilterSubcategoriaField() {
 let items = [];
 let currentItemId = null;
 let currentItem = null;
+let existingItemPhoto = null;
 let hasSearched = false; // true ap?s o usu?rio clicar em Search
+let isRootUser = false;
 
 // Elementos do DOM
 const itemModal = document.getElementById('itemModal');
@@ -317,8 +319,41 @@ document.addEventListener('DOMContentLoaded', () => {
     setupEventListeners();
     attachActionButtonListeners();
     loadStatistics();
+    loadRootAccess().then(() => updateArButtonVisibility());
     // N?o carrega todos os itens na abertura; usu?rio deve usar Search
 });
+
+async function loadRootAccess() {
+    try {
+        const cached = sessionStorage.getItem('doubley_menu_access');
+        if (cached) {
+            const data = JSON.parse(cached);
+            if (data && typeof data.isRoot === 'boolean') {
+                isRootUser = data.isRoot;
+                return;
+            }
+        }
+    } catch {
+        // ignore cache errors
+    }
+
+    try {
+        const response = await fetch('/api/auth/menu-access', { credentials: 'same-origin' });
+        const data = await response.json().catch(() => ({}));
+        if (response.ok && data.success) {
+            isRootUser = Boolean(data.isRoot);
+        }
+    } catch (error) {
+        console.warn('Root access check skipped:', error.message);
+        isRootUser = false;
+    }
+}
+
+function updateArButtonVisibility() {
+    const arBtn = document.getElementById('arFromDetailsBtn');
+    if (!arBtn) return;
+    arBtn.hidden = !isRootUser;
+}
 
 function handleWarehouseLandingAction() {
     const params = new URLSearchParams(window.location.search);
@@ -585,6 +620,10 @@ function setupEventListeners() {
     if (descricaoEl) {
         descricaoEl.addEventListener('input', updateDescricaoCount);
     }
+    const itemPhotoEl = document.getElementById('itemPhoto');
+    if (itemPhotoEl) {
+        itemPhotoEl.addEventListener('change', previewItemPhoto);
+    }
     
     // Modal de Movimenta??o
     document.getElementById('closeMovementModal').addEventListener('click', () => closeMovementModal());
@@ -604,6 +643,59 @@ function setupEventListeners() {
                 closeDetailsModal();
                 editItem(currentItem.id);
             }
+        });
+    }
+
+    const arFromDetailsBtn = document.getElementById('arFromDetailsBtn');
+    if (arFromDetailsBtn) {
+        arFromDetailsBtn.addEventListener('click', () => openProductArModal());
+    }
+    const closeProductArModalBtn = document.getElementById('closeProductArModal');
+    if (closeProductArModalBtn) {
+        closeProductArModalBtn.addEventListener('click', () => closeProductArModal());
+    }
+    const closeProductArFooterBtn = document.getElementById('closeProductArFooterBtn');
+    if (closeProductArFooterBtn) {
+        closeProductArFooterBtn.addEventListener('click', () => closeProductArModal());
+    }
+    const productArLaunchBtn = document.getElementById('productArLaunchBtn');
+    if (productArLaunchBtn) {
+        productArLaunchBtn.addEventListener('click', () => launchProductAr());
+    }
+    const productArModal = document.getElementById('productArModal');
+    if (productArModal) {
+        productArModal.addEventListener('click', (e) => {
+            if (e.target === productArModal) closeProductArModal();
+        });
+    }
+
+    const itemDetailsEl = document.getElementById('itemDetails');
+    if (itemDetailsEl) {
+        itemDetailsEl.addEventListener('click', (e) => {
+            if (e.target.closest('.item-edit-summary-photo-download')) return;
+            const photoBtn = e.target.closest('[data-photo-zoom]');
+            if (!photoBtn) return;
+            const img = photoBtn.querySelector('img');
+            if (img && img.src) openProductPhotoZoom(img.src);
+        });
+        itemDetailsEl.addEventListener('keydown', (e) => {
+            if (e.key !== 'Enter' && e.key !== ' ') return;
+            const photoBtn = e.target.closest('[data-photo-zoom]');
+            if (!photoBtn) return;
+            e.preventDefault();
+            const img = photoBtn.querySelector('img');
+            if (img && img.src) openProductPhotoZoom(img.src);
+        });
+    }
+
+    const closeProductPhotoZoomBtn = document.getElementById('closeProductPhotoZoomModal');
+    if (closeProductPhotoZoomBtn) {
+        closeProductPhotoZoomBtn.addEventListener('click', () => closeProductPhotoZoom());
+    }
+    const productPhotoZoomModal = document.getElementById('productPhotoZoomModal');
+    if (productPhotoZoomModal) {
+        productPhotoZoomModal.addEventListener('click', (e) => {
+            if (e.target === productPhotoZoomModal) closeProductPhotoZoom();
         });
     }
     
@@ -674,6 +766,19 @@ function setupEventListeners() {
         if (e.target === detailsModal) closeDetailsModal();
         const printModalEl = document.getElementById('printModal');
         if (e.target === printModalEl) window.closePrintModal();
+    });
+
+    document.addEventListener('keydown', (e) => {
+        if (e.key !== 'Escape') return;
+        const zoomModal = document.getElementById('productPhotoZoomModal');
+        if (zoomModal && zoomModal.style.display === 'flex') {
+            closeProductPhotoZoom();
+            return;
+        }
+        const arModal = document.getElementById('productArModal');
+        if (arModal && arModal.style.display === 'block') {
+            closeProductArModal();
+        }
     });
 }
 
@@ -1100,11 +1205,30 @@ function setItemModalMode(mode, item = null) {
 }
 
 // Abrir modal de item
-function openItemModal(itemId = null) {
+async function openItemModal(itemId = null) {
     currentItemId = itemId;
+    existingItemPhoto = null;
+    clearItemPhotoPreview();
 
     if (itemId) {
-        const item = items.find(i => i.id === itemId);
+        let item = items.find(i => i.id === itemId);
+        try {
+            showLoading();
+            const response = await fetch(`${API_BASE_URL}/${itemId}`);
+            const data = await response.json();
+            if (data.success && data.data) {
+                item = data.data;
+                const idx = items.findIndex(i => i.id === itemId);
+                if (idx !== -1) {
+                    items[idx] = { ...items[idx], ...item, photo: undefined, hasPhoto: Boolean(item.photo || item.hasPhoto) };
+                }
+            }
+        } catch (error) {
+            console.error('Error loading product for edit:', error);
+        } finally {
+            hideLoading();
+        }
+
         if (item) {
             fillItemForm(item);
             setItemModalMode('edit', item);
@@ -1128,6 +1252,8 @@ function closeItemModal() {
     itemModal.style.display = 'none';
     itemForm.reset();
     currentItemId = null;
+    existingItemPhoto = null;
+    clearItemPhotoPreview();
     clearFormErrors();
     updateDescricaoCount();
     const newIntroEl = document.getElementById('itemNewIntro');
@@ -1148,6 +1274,69 @@ function fillItemForm(item) {
     document.getElementById('peso').value = item.peso != null ? item.peso : '';
     document.getElementById('descricao').value = item.descricao || '';
     updateDescricaoCount();
+
+    const photoInput = document.getElementById('itemPhoto');
+    if (photoInput) photoInput.value = '';
+    existingItemPhoto = item.photo || null;
+    if (existingItemPhoto) {
+        setItemPhotoPreview(existingItemPhoto);
+    } else {
+        clearItemPhotoPreview();
+    }
+}
+
+function setItemPhotoPreview(src) {
+    const preview = document.getElementById('itemPhotoPreview');
+    const previewImg = document.getElementById('itemPhotoPreviewImg');
+    if (!preview || !previewImg) return;
+    previewImg.src = src || '';
+    preview.style.display = src ? 'block' : 'none';
+}
+
+function clearItemPhotoPreview() {
+    const photoInput = document.getElementById('itemPhoto');
+    if (photoInput) photoInput.value = '';
+    setItemPhotoPreview('');
+}
+
+function previewItemPhoto(event) {
+    const file = event.target.files && event.target.files[0];
+    if (!file) {
+        if (existingItemPhoto) {
+            setItemPhotoPreview(existingItemPhoto);
+        } else {
+            clearItemPhotoPreview();
+        }
+        return;
+    }
+
+    if (!file.type.startsWith('image/')) {
+        showFieldError('itemPhoto', 'Please select an image file');
+        event.target.value = '';
+        return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+        showFieldError('itemPhoto', 'Image size must be less than 5MB');
+        event.target.value = '';
+        return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = function (e) {
+        setItemPhotoPreview(e.target.result);
+    };
+    reader.readAsDataURL(file);
+    clearFieldError('itemPhoto');
+}
+
+function convertFileToBase64(file) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = error => reject(error);
+        reader.readAsDataURL(file);
+    });
 }
 
 // Submeter formul?rio de item
@@ -1170,14 +1359,36 @@ async function handleItemSubmit(e) {
     if (!validateItemForm(formData)) {
         return;
     }
+
+    const photoInput = document.getElementById('itemPhoto');
+    const photoFile = photoInput && photoInput.files && photoInput.files[0] ? photoInput.files[0] : null;
+    if (photoFile) {
+        if (!photoFile.type.startsWith('image/')) {
+            showFieldError('itemPhoto', 'Please select an image file');
+            return;
+        }
+        if (photoFile.size > 5 * 1024 * 1024) {
+            showFieldError('itemPhoto', 'Image size must be less than 5MB');
+            return;
+        }
+        try {
+            formData.photo = await convertFileToBase64(photoFile);
+        } catch (error) {
+            console.error('Error reading product photo:', error);
+            showFieldError('itemPhoto', 'Could not read the selected image');
+            return;
+        }
+    } else if (currentItemId && existingItemPhoto) {
+        formData.photo = existingItemPhoto;
+    }
     
     try {
         showLoading();
         const url = currentItemId ? `${API_BASE_URL}/${currentItemId}` : API_BASE_URL;
-        const method = currentItemId ? 'PUT' : 'POST';
+        const httpMethod = currentItemId ? 'PUT' : 'POST';
         
         const response = await fetch(url, {
-            method: method,
+            method: httpMethod,
             headers: {
                 'Content-Type': 'application/json'
             },
@@ -1268,6 +1479,20 @@ function showFieldError(fieldName, message) {
     }
 }
 
+function clearFieldError(fieldName) {
+    const field = document.getElementById(fieldName);
+    const errorEl = document.getElementById(`${fieldName}-error`);
+    if (field) {
+        field.classList.remove('error');
+        const formGroup = field.closest('.form-group');
+        if (formGroup) formGroup.classList.remove('error');
+    }
+    if (errorEl) {
+        errorEl.classList.remove('show');
+        errorEl.textContent = '';
+    }
+}
+
 // Limpar erros do formul?rio
 function clearFormErrors() {
     document.querySelectorAll('.error-message').forEach(el => {
@@ -1287,9 +1512,18 @@ function buildItemDetailsHtml(item, status, statusClass) {
     const descriptionBlock = item.descricao
         ? `<div class="detail-section detail-section--full"><h4><i class="fas fa-align-left"></i> Description</h4><p>${escapeHtml(item.descricao)}</p></div>`
         : '';
+    const photoSrc = item.photo && String(item.photo).trim() ? String(item.photo) : '';
+    const headerPhoto = photoSrc
+        ? `<div class="item-edit-summary-photo" data-photo-zoom="1" role="button" tabindex="0" title="View larger photo" aria-label="View larger product photo">
+                <img src="${escapeHtml(photoSrc)}" alt="Product photo">
+                <a class="item-edit-summary-photo-download" href="${escapeHtml(photoSrc)}" download="${escapeHtml((item.codigo || 'product') + '-photo')}" title="Download Photo">
+                    <i class="fas fa-download"></i>
+                </a>
+           </div>`
+        : '';
 
     return `
-        <div class="item-edit-summary">
+        <div class="item-edit-summary${photoSrc ? ' item-edit-summary--with-photo' : ''}">
             <div class="item-edit-summary-main">
                 <div class="item-edit-summary-icon" aria-hidden="true"><i class="fas fa-box-open"></i></div>
                 <div class="item-edit-summary-text">
@@ -1301,10 +1535,13 @@ function buildItemDetailsHtml(item, status, statusClass) {
                     <p class="item-edit-summary-meta">${escapeHtml(formatCategoryDisplay(item))}${item.barcode ? ` ? Barcode: ${barcodeText}` : ''}</p>
                 </div>
             </div>
-            <div class="item-edit-summary-stats">
-                <div class="item-edit-stat"><span class="item-edit-stat-label">Current Stock</span><strong>${item.quantidade ?? 0}</strong></div>
-                <div class="item-edit-stat"><span class="item-edit-stat-label">Min. Quantity</span><strong>${item.quantidadeMinima ?? 0}</strong></div>
-                <div class="item-edit-stat"><span class="item-edit-stat-label">Weight (kg)</span><strong>${item.peso != null ? item.peso : '-'}</strong></div>
+            <div class="item-edit-summary-aside">
+                ${headerPhoto}
+                <div class="item-edit-summary-stats">
+                    <div class="item-edit-stat"><span class="item-edit-stat-label">Current Stock</span><strong>${item.quantidade ?? 0}</strong></div>
+                    <div class="item-edit-stat"><span class="item-edit-stat-label">Min. Quantity</span><strong>${item.quantidadeMinima ?? 0}</strong></div>
+                    <div class="item-edit-stat"><span class="item-edit-stat-label">Weight (kg)</span><strong>${item.peso != null ? item.peso : '-'}</strong></div>
+                </div>
             </div>
         </div>
         <div class="item-details-grid">
@@ -1332,8 +1569,25 @@ function buildItemDetailsHtml(item, status, statusClass) {
 
 // Visualizar item
 async function viewItem(itemId) {
-    const item = items.find(i => i.id === itemId);
+    let item = items.find(i => i.id === itemId);
     if (!item) return;
+
+    try {
+        showLoading();
+        const response = await fetch(`${API_BASE_URL}/${itemId}`);
+        const data = await response.json();
+        if (data.success && data.data) {
+            item = data.data;
+            const idx = items.findIndex(i => i.id === itemId);
+            if (idx !== -1) {
+                items[idx] = { ...items[idx], ...item, photo: undefined, hasPhoto: Boolean(item.photo || item.hasPhoto) };
+            }
+        }
+    } catch (error) {
+        console.error('Error loading product details:', error);
+    } finally {
+        hideLoading();
+    }
 
     currentItem = item;
     const detailsEl = document.getElementById('itemDetails');
@@ -1352,6 +1606,7 @@ async function viewItem(itemId) {
     }
 
     detailsEl.innerHTML = buildItemDetailsHtml(item, status, statusClass);
+    updateArButtonVisibility();
 
     detailsModal.style.display = 'block';
 
@@ -1390,8 +1645,139 @@ async function viewItem(itemId) {
 
 // Fechar modal de detalhes
 function closeDetailsModal() {
+    closeProductPhotoZoom();
+    closeProductArModal();
     detailsModal.style.display = 'none';
     currentItem = null;
+}
+
+function openProductPhotoZoom(src) {
+    const modal = document.getElementById('productPhotoZoomModal');
+    const img = document.getElementById('productPhotoZoomImg');
+    if (!modal || !img || !src) return;
+    img.src = src;
+    modal.style.display = 'flex';
+    modal.setAttribute('aria-hidden', 'false');
+}
+
+function closeProductPhotoZoom() {
+    const modal = document.getElementById('productPhotoZoomModal');
+    const img = document.getElementById('productPhotoZoomImg');
+    if (!modal) return;
+    modal.style.display = 'none';
+    modal.setAttribute('aria-hidden', 'true');
+    if (img) img.src = '';
+}
+
+function detectArPlatform() {
+    const ua = navigator.userAgent || '';
+    const isIOS = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    const isAndroid = /Android/i.test(ua);
+    return { isIOS, isAndroid, isMobile: isIOS || isAndroid };
+}
+
+function setProductArStatus(message, isError = false) {
+    const statusEl = document.getElementById('productArStatus');
+    if (!statusEl) return;
+    statusEl.textContent = message || '';
+    statusEl.classList.toggle('product-ar-status--error', Boolean(isError && message));
+}
+
+function openProductArModal() {
+    if (!isRootUser) {
+        showError('AR is available only for the root user');
+        return;
+    }
+
+    const item = currentItem;
+    if (!item) {
+        showError('Open a product first to use AR');
+        return;
+    }
+
+    const modal = document.getElementById('productArModal');
+    const viewer = document.getElementById('productArViewer');
+    const labelEl = document.getElementById('productArProductLabel');
+    if (!modal || !viewer) return;
+
+    const code = item.codigo || '-';
+    const name = item.nome || '-';
+    if (labelEl) {
+        labelEl.textContent = `${code} — ${name}`;
+    }
+
+    const photoSrc = item.photo && String(item.photo).trim() ? String(item.photo) : '';
+    if (photoSrc) {
+        viewer.setAttribute('poster', photoSrc);
+    } else {
+        viewer.removeAttribute('poster');
+    }
+
+    viewer.setAttribute('alt', `3D model for ${name}`);
+    viewer.src = '/models/product-box.glb';
+
+    const platform = detectArPlatform();
+    if (platform.isIOS) {
+        setProductArStatus('iPhone detected: AR uses ARKit (Apple Quick Look). Tap Open Camera AR, then place the model on a surface.');
+    } else if (platform.isAndroid) {
+        setProductArStatus('Android detected: AR uses ARCore (Scene Viewer / WebXR). Tap Open Camera AR, then place the model on a surface.');
+    } else {
+        setProductArStatus('AR placement works on iPhone (ARKit) or Android (ARCore). On this device you can preview the 3D model; open the page on a phone to place it in your space.');
+    }
+
+    modal.style.display = 'block';
+    modal.setAttribute('aria-hidden', 'false');
+}
+
+function closeProductArModal() {
+    const modal = document.getElementById('productArModal');
+    if (!modal) return;
+    modal.style.display = 'none';
+    modal.setAttribute('aria-hidden', 'true');
+    setProductArStatus('');
+}
+
+async function launchProductAr() {
+    const viewer = document.getElementById('productArViewer');
+    if (!viewer) return;
+
+    const platform = detectArPlatform();
+    if (!platform.isMobile) {
+        setProductArStatus(
+            'Use an iPhone (ARKit) or Android phone (ARCore) to open the camera and place the model in real size.',
+            true
+        );
+        return;
+    }
+
+    try {
+        await customElements.whenDefined('model-viewer');
+
+        if (typeof viewer.activateAR === 'function') {
+            setProductArStatus('Opening camera AR… Scan a flat surface, then tap to place the product model.');
+            await viewer.activateAR();
+            return;
+        }
+
+        const slotBtn = viewer.querySelector('[slot="ar-button"]');
+        if (slotBtn) {
+            slotBtn.click();
+            return;
+        }
+
+        setProductArStatus(
+            'AR is not available in this browser. On iPhone use Safari; on Android use Chrome with ARCore installed.',
+            true
+        );
+    } catch (error) {
+        console.error('AR launch error:', error);
+        setProductArStatus(
+            error && error.message
+                ? error.message
+                : 'Could not start AR. Check camera permission and ARKit/ARCore support.',
+            true
+        );
+    }
 }
 
 // Editar item

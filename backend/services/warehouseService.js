@@ -27,8 +27,8 @@ class WarehouseService {
 
     const insertQuery = `
       INSERT INTO ${this.tableName} 
-      (codigo, barcode, nome, categoria, subcategoria, quantidade, quantidade_minima, localizacao, preco_unitario, fornecedor, descricao)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+      (codigo, barcode, nome, categoria, subcategoria, quantidade, quantidade_minima, localizacao, preco_unitario, fornecedor, descricao, photo)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
       RETURNING *
     `;
 
@@ -43,7 +43,8 @@ class WarehouseService {
       dados.localizacao || null,
       0, // preco_unitario - removed from frontend but kept in DB
       null, // fornecedor - removed from frontend but kept in DB
-      dados.descricao || null
+      dados.descricao || null,
+      this.normalizePhoto(dados.photo)
     ];
 
     try {
@@ -114,7 +115,13 @@ class WarehouseService {
       : '';
 
     const selectQuery = `
-      SELECT * FROM ${this.tableName}
+      SELECT id, codigo, barcode, nome, categoria, subcategoria, quantidade, quantidade_minima,
+             localizacao, descricao, criado_em, atualizado_em,
+             CASE
+               WHEN photo IS NOT NULL AND TRIM(photo) <> '' AND LOWER(TRIM(photo)) NOT IN ('null', 'undefined')
+               THEN TRUE ELSE FALSE
+             END AS has_photo
+      FROM ${this.tableName}
       ${whereClause}
       ORDER BY ${orderBy}
     `;
@@ -198,7 +205,8 @@ class WarehouseService {
       subcategoria: 'subcategoria',
       quantidade: 'quantidade',
       quantidadeMinima: 'quantidade_minima',
-      descricao: 'descricao'
+      descricao: 'descricao',
+      photo: 'photo'
     };
 
     for (const [key, dbColumn] of Object.entries(camposPermitidos)) {
@@ -209,6 +217,9 @@ class WarehouseService {
             ? dados.categoria
             : (await this.buscarPorId(id))?.categoria;
           value = this.resolveSubcategoria(categoria, value);
+        }
+        if (key === 'photo') {
+          value = this.normalizePhoto(value);
         }
         updateFields.push(`${dbColumn} = $${paramIndex++}`);
         values.push(value);
@@ -437,7 +448,17 @@ class WarehouseService {
   }
 
   // Map database row to object
+  normalizePhoto(photo) {
+    const value = photo != null ? String(photo).trim() : '';
+    if (!value || value === 'null' || value === 'undefined') return null;
+    return value;
+  }
+
   mapRowToItem(row) {
+    const photo = this.normalizePhoto(row.photo);
+    const hasPhoto = row.has_photo === true
+      || row.has_photo === 't'
+      || Boolean(photo);
     return {
       id: row.id,
       codigo: row.codigo,
@@ -449,6 +470,8 @@ class WarehouseService {
       quantidadeMinima: parseInt(row.quantidade_minima) || 0,
       localizacao: row.localizacao,
       descricao: row.descricao,
+      photo: photo,
+      hasPhoto: Boolean(hasPhoto),
       criadoEm: row.criado_em,
       atualizadoEm: row.atualizado_em
     };

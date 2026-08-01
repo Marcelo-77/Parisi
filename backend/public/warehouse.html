@@ -400,6 +400,23 @@
                             </section>
 
                             <section class="item-form-section">
+                                <h4 class="item-form-section-title"><i class="fas fa-camera"></i> Product Photo</h4>
+                                <div class="form-row">
+                                    <div class="form-group full-width">
+                                        <label for="itemPhoto">
+                                            <i class="fas fa-image"></i> Photo
+                                        </label>
+                                        <input type="file" id="itemPhoto" name="itemPhoto" accept="image/*">
+                                        <span class="field-hint">Optional. Image up to 5MB (JPG, PNG, WebP, GIF).</span>
+                                        <div id="itemPhotoPreview" class="item-photo-preview" style="display: none;">
+                                            <img id="itemPhotoPreviewImg" src="" alt="Product photo preview">
+                                        </div>
+                                        <span class="error-message" id="itemPhoto-error"></span>
+                                    </div>
+                                </div>
+                            </section>
+
+                            <section class="item-form-section">
                                 <h4 class="item-form-section-title"><i class="fas fa-align-left"></i> Description</h4>
                                 <div class="form-row">
                                     <div class="form-group full-width">
@@ -489,8 +506,56 @@
                     <button type="button" id="closeDetailsFooterBtn" class="btn btn-secondary">
                         <i class="fas fa-times"></i> Close
                     </button>
+                    <button type="button" id="arFromDetailsBtn" class="btn btn-ar" hidden>
+                        <i class="fas fa-cube"></i> AR – Augmented Reality
+                    </button>
                     <button type="button" id="editFromDetailsBtn" class="btn btn-primary">
                         <i class="fas fa-edit"></i> Edit Product
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div id="productArModal" class="modal product-ar-modal" aria-hidden="true">
+            <div class="modal-content product-ar-modal-content">
+                <div class="modal-header success">
+                    <h3><i class="fas fa-cube"></i> AR – Augmented Reality</h3>
+                    <button type="button" class="modal-close" id="closeProductArModal" aria-label="Close">&times;</button>
+                </div>
+                <div class="modal-body product-ar-modal-body">
+                    <p id="productArProductLabel" class="product-ar-product-label">-</p>
+                    <p class="product-ar-help">
+                        Use your phone camera to scan the floor or a surface, then place the 3D product model at real-world scale.
+                    </p>
+                    <ul class="product-ar-platforms">
+                        <li><strong>iPhone:</strong> ARKit via Apple Quick Look</li>
+                        <li><strong>Android:</strong> ARCore via Scene Viewer / WebXR</li>
+                    </ul>
+                    <model-viewer
+                        id="productArViewer"
+                        class="product-ar-viewer"
+                        src="/models/product-box.glb"
+                        alt="Product 3D model for augmented reality"
+                        ar
+                        ar-modes="webxr scene-viewer quick-look"
+                        ar-scale="fixed"
+                        camera-controls
+                        touch-action="pan-y"
+                        shadow-intensity="1"
+                        exposure="1"
+                    >
+                        <button slot="ar-button" type="button" class="btn btn-primary product-ar-native-btn">
+                            <i class="fas fa-camera"></i> View in your space
+                        </button>
+                    </model-viewer>
+                    <p id="productArStatus" class="product-ar-status" role="status"></p>
+                </div>
+                <div class="modal-footer form-actions">
+                    <button type="button" id="productArLaunchBtn" class="btn btn-primary">
+                        <i class="fas fa-camera"></i> Open Camera AR
+                    </button>
+                    <button type="button" id="closeProductArFooterBtn" class="btn btn-secondary">
+                        <i class="fas fa-times"></i> Close
                     </button>
                 </div>
             </div>
@@ -544,6 +609,13 @@
             </div>
         </div>
 
+        <div id="productPhotoZoomModal" class="modal product-photo-zoom-modal" aria-hidden="true">
+            <div class="modal-content product-photo-zoom-content">
+                <button type="button" class="modal-close product-photo-zoom-close" id="closeProductPhotoZoomModal" aria-label="Close">&times;</button>
+                <img id="productPhotoZoomImg" class="product-photo-zoom-img" src="" alt="Product photo">
+            </div>
+        </div>
+
         <footer class="footer">
             <p>&copy; 2026 Double-Y IT Systems. All rights reserved.</p>
         </footer>
@@ -577,6 +649,7 @@
     </script>
     <script src="section-options.js"></script>
     <script src="bathware-subcategory-options.js"></script>
+    <script type="module" src="https://cdn.jsdelivr.net/npm/@google/model-viewer@4.0.0/dist/model-viewer.min.js"></script>
     <script src="warehouse-script.js"></script>
     <script src="warehouse-barcode-scanner.js"></script>
 </body>

@@ -178,6 +178,7 @@ CREATE TABLE IF NOT EXISTS warehouse_items (
 
 ALTER TABLE warehouse_items ADD COLUMN IF NOT EXISTS barcode NUMERIC(20);
 ALTER TABLE warehouse_items ADD COLUMN IF NOT EXISTS subcategoria VARCHAR(50);
+ALTER TABLE warehouse_items ADD COLUMN IF NOT EXISTS photo TEXT;
 
 CREATE TABLE IF NOT EXISTS warehouse_movements (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),

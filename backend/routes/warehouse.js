@@ -52,7 +52,11 @@ const validarItem = [
     .optional()
     .isLength({ max: 500 })
     .withMessage('Description must have at most 500 characters')
-    .trim()
+    .trim(),
+  body('photo')
+    .optional({ nullable: true })
+    .isString()
+    .withMessage('Photo must be a string')
 ];
 
 const validarMovimentacao = [
