@@ -1868,8 +1868,8 @@ async function openProductArModal() {
             setProductArStatus('Building photo model…');
             const assets = await withTimeout(
                 window.WarehouseProductArGlb.createProductPhotoGlbAssets(photoSrc, {
-                    maxSideMeters: 0.45,
-                    thicknessMeters: 0.025,
+                    maxSideMeters: 0.42,
+                    depthMeters: 0.16,
                     maxImageEdge: 512,
                     jpegQuality: 0.78
                 }),

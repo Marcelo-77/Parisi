@@ -528,7 +528,7 @@
                         <img id="productArPhotoImg" class="product-ar-photo-img" src="" alt="Product photo">
                     </div>
                     <p class="product-ar-help">
-                        Use your phone camera to scan the floor or a surface, then place the product photo in real-world scale.
+                        Use your phone camera to scan the floor or a surface, then place the 3D product box in real-world scale.
                     </p>
                     <ul class="product-ar-platforms">
                         <li><strong>iPhone:</strong> ARKit via Apple Quick Look</li>
@@ -543,9 +543,11 @@
                         ar-modes="webxr quick-look"
                         ar-scale="fixed"
                         camera-controls
+                        auto-rotate
+                        rotation-per-second="28deg"
                         touch-action="pan-y"
-                        shadow-intensity="1"
-                        exposure="1"
+                        shadow-intensity="1.4"
+                        exposure="1.05"
                     >
                         <button slot="ar-button" type="button" class="btn btn-primary product-ar-native-btn">
                             <i class="fas fa-camera"></i> View in your space

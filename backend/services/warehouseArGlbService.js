@@ -102,9 +102,7 @@ function buildProductPhotoGlb(photoDataUrl, options = {}) {
   if (!mime) return null;
   parsed.mime = mime;
 
-  const maxSide = Number(options.maxSideMeters) > 0 ? Number(options.maxSideMeters) : 0.45;
-  // Thicker board avoids disappearing when viewed nearly edge-on in AR.
-  const thickness = Number(options.thicknessMeters) > 0 ? Number(options.thicknessMeters) : 0.025;
+  const maxSide = Number(options.maxSideMeters) > 0 ? Number(options.maxSideMeters) : 0.42;
   const size = getImageSize(parsed.buffer, parsed.mime);
   const aspect = Math.max(size.width, 1) / Math.max(size.height, 1);
   let width = maxSide;
@@ -112,97 +110,129 @@ function buildProductPhotoGlb(photoDataUrl, options = {}) {
   if (aspect >= 1) height = maxSide / aspect;
   else width = maxSide * aspect;
 
+  // Real 3D carton depth (not a flat board). Accept legacy thicknessMeters.
+  let depth = Number(options.depthMeters);
+  if (!(depth > 0)) depth = Number(options.thicknessMeters);
+  if (!(depth > 0)) depth = Math.min(0.18, Math.max(0.12, maxSide * 0.38));
+
   const hx = width / 2;
-  const hy = height / 2;
-  const hz = thickness / 2;
+  const hz = depth / 2;
+  const y0 = 0;
+  const y1 = height;
 
-  const positions = [];
-  const normals = [];
-  const uvs = [];
-  const indices = [];
+  const photoPos = [];
+  const photoNor = [];
+  const photoUv = [];
+  const photoInd = [];
+  const sidePos = [];
+  const sideNor = [];
+  const sideUv = [];
+  const sideInd = [];
 
-  // Full photo on front/back; sides use a thin strip of the photo edge (still textured).
   const fullUv = [0, 1, 1, 1, 1, 0, 0, 0];
-  const sideUv = [0, 0.98, 1, 0.98, 1, 1, 0, 1];
+  const blankUv = [0, 0, 1, 0, 1, 1, 0, 1];
 
-  // +Z front
-  pushFace(positions, normals, uvs, indices, [
-    [-hx, -hy, hz], [hx, -hy, hz], [hx, hy, hz], [-hx, hy, hz]
+  // Front (+Z) and back (-Z): product photo
+  pushFace(photoPos, photoNor, photoUv, photoInd, [
+    [-hx, y0, hz], [hx, y0, hz], [hx, y1, hz], [-hx, y1, hz]
   ], [0, 0, 1], fullUv);
-  // -Z back
-  pushFace(positions, normals, uvs, indices, [
-    [hx, -hy, -hz], [-hx, -hy, -hz], [-hx, hy, -hz], [hx, hy, -hz]
+  pushFace(photoPos, photoNor, photoUv, photoInd, [
+    [hx, y0, -hz], [-hx, y0, -hz], [-hx, y1, -hz], [hx, y1, -hz]
   ], [0, 0, -1], fullUv);
-  // +Y top
-  pushFace(positions, normals, uvs, indices, [
-    [-hx, hy, hz], [hx, hy, hz], [hx, hy, -hz], [-hx, hy, -hz]
-  ], [0, 1, 0], sideUv);
-  // -Y bottom
-  pushFace(positions, normals, uvs, indices, [
-    [-hx, -hy, -hz], [hx, -hy, -hz], [hx, -hy, hz], [-hx, -hy, hz]
-  ], [0, -1, 0], sideUv);
-  // +X right
-  pushFace(positions, normals, uvs, indices, [
-    [hx, -hy, hz], [hx, -hy, -hz], [hx, hy, -hz], [hx, hy, hz]
-  ], [1, 0, 0], sideUv);
-  // -X left
-  pushFace(positions, normals, uvs, indices, [
-    [-hx, -hy, -hz], [-hx, -hy, hz], [-hx, hy, hz], [-hx, hy, -hz]
-  ], [-1, 0, 0], sideUv);
 
-  const pos = new Float32Array(positions);
-  const nor = new Float32Array(normals);
-  const uv = new Float32Array(uvs);
-  const ind = new Uint16Array(indices);
+  // Sides: solid carton color so the box reads as 3D under lighting
+  pushFace(sidePos, sideNor, sideUv, sideInd, [
+    [-hx, y1, hz], [hx, y1, hz], [hx, y1, -hz], [-hx, y1, -hz]
+  ], [0, 1, 0], blankUv);
+  pushFace(sidePos, sideNor, sideUv, sideInd, [
+    [-hx, y0, -hz], [hx, y0, -hz], [hx, y0, hz], [-hx, y0, hz]
+  ], [0, -1, 0], blankUv);
+  pushFace(sidePos, sideNor, sideUv, sideInd, [
+    [hx, y0, hz], [hx, y0, -hz], [hx, y1, -hz], [hx, y1, hz]
+  ], [1, 0, 0], blankUv);
+  pushFace(sidePos, sideNor, sideUv, sideInd, [
+    [-hx, y0, -hz], [-hx, y0, hz], [-hx, y1, hz], [-hx, y1, -hz]
+  ], [-1, 0, 0], blankUv);
+
+  const pPos = new Float32Array(photoPos);
+  const pNor = new Float32Array(photoNor);
+  const pUv = new Float32Array(photoUv);
+  const pInd = new Uint16Array(photoInd);
+  const sPos = new Float32Array(sidePos);
+  const sNor = new Float32Array(sideNor);
+  const sUv = new Float32Array(sideUv);
+  const sInd = new Uint16Array(sideInd);
   const imageBytes = parsed.buffer;
 
-  const posBytes = pos.byteLength;
-  const norBytes = nor.byteLength;
-  const uvBytes = uv.byteLength;
-  const indBytes = ind.byteLength;
+  const chunks = [
+    { data: pPos, target: 34962 },
+    { data: pNor, target: 34962 },
+    { data: pUv, target: 34962 },
+    { data: pInd, target: 34963 },
+    { data: sPos, target: 34962 },
+    { data: sNor, target: 34962 },
+    { data: sUv, target: 34962 },
+    { data: sInd, target: 34963 },
+    { data: imageBytes, target: null }
+  ];
 
-  const posOffset = 0;
-  const norOffset = align4(posOffset + posBytes);
-  const uvOffset = align4(norOffset + norBytes);
-  const indOffset = align4(uvOffset + uvBytes);
-  const imgOffset = align4(indOffset + indBytes);
-  const binSize = align4(imgOffset + imageBytes.length);
-
+  let offset = 0;
+  const views = chunks.map((chunk) => {
+    const byteLength = chunk.data.byteLength != null ? chunk.data.byteLength : chunk.data.length;
+    offset = align4(offset);
+    const view = { byteOffset: offset, byteLength, target: chunk.target };
+    offset = align4(offset + byteLength);
+    return view;
+  });
+  const binSize = offset;
   const bin = Buffer.alloc(binSize);
-  copyBytes(bin, posOffset, pos);
-  copyBytes(bin, norOffset, nor);
-  copyBytes(bin, uvOffset, uv);
-  copyBytes(bin, indOffset, ind);
-  copyBytes(bin, imgOffset, imageBytes);
+  chunks.forEach((chunk, i) => {
+    copyBytes(bin, views[i].byteOffset, chunk.data);
+  });
 
   const gltf = {
     asset: { version: '2.0', generator: 'warehouse-product-ar-server' },
-    extensionsUsed: ['KHR_materials_unlit'],
     scene: 0,
     scenes: [{ nodes: [0] }],
-    nodes: [{ mesh: 0, name: 'ProductPhotoBoard' }],
+    nodes: [{ mesh: 0, name: 'ProductPhotoBox' }],
     meshes: [{
-      name: 'ProductPhotoBoardMesh',
-      primitives: [{
-        attributes: { POSITION: 0, NORMAL: 1, TEXCOORD_0: 2 },
-        indices: 3,
-        material: 0
-      }]
+      name: 'ProductPhotoBoxMesh',
+      primitives: [
+        {
+          attributes: { POSITION: 0, NORMAL: 1, TEXCOORD_0: 2 },
+          indices: 3,
+          material: 0
+        },
+        {
+          attributes: { POSITION: 4, NORMAL: 5, TEXCOORD_0: 6 },
+          indices: 7,
+          material: 1
+        }
+      ]
     }],
-    materials: [{
-      name: 'ProductPhotoUnlit',
-      pbrMetallicRoughness: {
-        baseColorFactor: [1, 1, 1, 1],
-        baseColorTexture: { index: 0, texCoord: 0 },
-        metallicFactor: 0,
-        roughnessFactor: 1
+    materials: [
+      {
+        name: 'ProductPhotoFace',
+        pbrMetallicRoughness: {
+          baseColorFactor: [1, 1, 1, 1],
+          baseColorTexture: { index: 0, texCoord: 0 },
+          metallicFactor: 0,
+          roughnessFactor: 0.72
+        },
+        alphaMode: 'OPAQUE',
+        doubleSided: false
       },
-      alphaMode: 'OPAQUE',
-      doubleSided: true,
-      extensions: {
-        KHR_materials_unlit: {}
+      {
+        name: 'ProductCartonSide',
+        pbrMetallicRoughness: {
+          baseColorFactor: [0.78, 0.74, 0.68, 1],
+          metallicFactor: 0,
+          roughnessFactor: 0.9
+        },
+        alphaMode: 'OPAQUE',
+        doubleSided: false
       }
-    }],
+    ],
     samplers: [{
       magFilter: 9729,
       minFilter: 9987,
@@ -210,27 +240,40 @@ function buildProductPhotoGlb(photoDataUrl, options = {}) {
       wrapT: 33071
     }],
     textures: [{ sampler: 0, source: 0 }],
-    images: [{ mimeType: parsed.mime, bufferView: 4 }],
+    images: [{ mimeType: parsed.mime, bufferView: 8 }],
     accessors: [
       {
         bufferView: 0,
         componentType: 5126,
-        count: pos.length / 3,
+        count: pPos.length / 3,
         type: 'VEC3',
-        max: [hx, hy, hz],
-        min: [-hx, -hy, -hz]
+        max: [hx, y1, hz],
+        min: [-hx, y0, -hz]
       },
-      { bufferView: 1, componentType: 5126, count: nor.length / 3, type: 'VEC3' },
-      { bufferView: 2, componentType: 5126, count: uv.length / 2, type: 'VEC2' },
-      { bufferView: 3, componentType: 5123, count: ind.length, type: 'SCALAR' }
+      { bufferView: 1, componentType: 5126, count: pNor.length / 3, type: 'VEC3' },
+      { bufferView: 2, componentType: 5126, count: pUv.length / 2, type: 'VEC2' },
+      { bufferView: 3, componentType: 5123, count: pInd.length, type: 'SCALAR' },
+      {
+        bufferView: 4,
+        componentType: 5126,
+        count: sPos.length / 3,
+        type: 'VEC3',
+        max: [hx, y1, hz],
+        min: [-hx, y0, -hz]
+      },
+      { bufferView: 5, componentType: 5126, count: sNor.length / 3, type: 'VEC3' },
+      { bufferView: 6, componentType: 5126, count: sUv.length / 2, type: 'VEC2' },
+      { bufferView: 7, componentType: 5123, count: sInd.length, type: 'SCALAR' }
     ],
-    bufferViews: [
-      { buffer: 0, byteOffset: posOffset, byteLength: posBytes, target: 34962 },
-      { buffer: 0, byteOffset: norOffset, byteLength: norBytes, target: 34962 },
-      { buffer: 0, byteOffset: uvOffset, byteLength: uvBytes, target: 34962 },
-      { buffer: 0, byteOffset: indOffset, byteLength: indBytes, target: 34963 },
-      { buffer: 0, byteOffset: imgOffset, byteLength: imageBytes.length }
-    ],
+    bufferViews: views.map((view) => {
+      const out = {
+        buffer: 0,
+        byteOffset: view.byteOffset,
+        byteLength: view.byteLength
+      };
+      if (view.target) out.target = view.target;
+      return out;
+    }),
     buffers: [{ byteLength: binSize }]
   };
 
@@ -327,8 +370,8 @@ function writeProductArModel(item, photoOverride = null, glbBase64 = null) {
         photoError = 'Product photo too large for on-demand AR encode';
       } else {
         glb = buildProductPhotoGlb(photo, {
-          maxSideMeters: 0.45,
-          thicknessMeters: 0.025
+          maxSideMeters: 0.42,
+          depthMeters: 0.16
         });
         hasPhoto = Boolean(glb);
         if (!glb) photoError = 'Could not encode product photo into GLB';
