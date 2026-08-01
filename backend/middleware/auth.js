@@ -180,7 +180,7 @@ function verifyStoredPassword(storedPassword, providedPassword) {
 }
 
 function isPublicAsset(path) {
-  return /\.(css|js|png|jpg|jpeg|gif|webp|svg|ico|woff|woff2|txt|map|min\.js|pdf)$/i.test(path);
+  return /\.(css|js|png|jpg|jpeg|gif|webp|svg|ico|woff|woff2|txt|map|min\.js|pdf|glb|gltf|usdz)$/i.test(path);
 }
 
 function getPageApplicationName(path) {

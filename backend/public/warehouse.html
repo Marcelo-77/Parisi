@@ -532,7 +532,7 @@
                     </p>
                     <ul class="product-ar-platforms">
                         <li><strong>iPhone:</strong> ARKit via Apple Quick Look</li>
-                        <li><strong>Android:</strong> ARCore via WebXR (shows product photo)</li>
+                        <li><strong>Android:</strong> ARCore via Scene Viewer / WebXR</li>
                     </ul>
                     <model-viewer
                         id="productArViewer"
@@ -540,7 +540,7 @@
                         src="/models/product-box.glb"
                         alt="Product 3D model for augmented reality"
                         ar
-                        ar-modes="webxr quick-look"
+                        ar-modes="webxr scene-viewer quick-look"
                         ar-scale="fixed"
                         camera-controls
                         touch-action="pan-y"
@@ -554,7 +554,7 @@
                     <p id="productArStatus" class="product-ar-status" role="status"></p>
                 </div>
                 <div class="modal-footer form-actions">
-                    <button type="button" id="productArLaunchBtn" class="btn btn-primary">
+                    <button type="button" id="productArLaunchBtn" class="btn btn-primary" disabled>
                         <i class="fas fa-camera"></i> Open Camera AR
                     </button>
                     <button type="button" id="closeProductArFooterBtn" class="btn btn-secondary">

@@ -67,6 +67,8 @@ let existingItemPhoto = null;
 let hasSearched = false; // true ap?s o usu?rio clicar em Search
 let isRootUser = false;
 let productArModelObjectUrl = null;
+let productArPublicModelUrl = null;
+let productArReady = false;
 
 // Elementos do DOM
 const itemModal = document.getElementById('itemModal');
@@ -1719,6 +1721,32 @@ async function ensureCurrentItemPhoto(item) {
     return item;
 }
 
+function setProductArLaunchEnabled(enabled) {
+    const btn = document.getElementById('productArLaunchBtn');
+    if (!btn) return;
+    btn.disabled = !enabled;
+    btn.classList.toggle('is-disabled', !enabled);
+}
+
+function launchSceneViewerIntent(modelUrl, title) {
+    const fallback = window.location.href;
+    const params = new URLSearchParams({
+        file: modelUrl,
+        mode: 'ar_preferred',
+        title: title || 'Product AR'
+    });
+    const intent =
+        `intent://arvr.google.com/scene-viewer/1.0?${params.toString()}` +
+        `#Intent;scheme=https;package=com.google.ar.core;action=android.intent.action.VIEW;` +
+        `S.browser_fallback_url=${encodeURIComponent(fallback)};end;`;
+    const anchor = document.createElement('a');
+    anchor.href = intent;
+    anchor.rel = 'noreferrer';
+    document.body.appendChild(anchor);
+    anchor.click();
+    anchor.remove();
+}
+
 async function openProductArModal() {
     if (!isRootUser) {
         showError('AR is available only for the root user');
@@ -1736,74 +1764,77 @@ async function openProductArModal() {
     const labelEl = document.getElementById('productArProductLabel');
     if (!modal || !viewer) return;
 
+    productArReady = false;
+    productArPublicModelUrl = null;
+    setProductArLaunchEnabled(false);
+    setProductArStatus('Preparing AR model…');
+
     showLoading();
     try {
         item = await ensureCurrentItemPhoto(item);
         currentItem = item;
+
+        const code = item.codigo || '-';
+        const name = item.nome || '-';
+        if (labelEl) {
+            labelEl.textContent = `${code} — ${name}`;
+        }
+
+        const photoSrc = item.photo && String(item.photo).trim() ? String(item.photo) : '';
+        setProductArPhotoPreview(photoSrc);
+        revokeProductArModelUrl();
+
+        viewer.setAttribute('alt', `Product photo AR model for ${name}`);
+        viewer.setAttribute('ar-modes', 'webxr scene-viewer quick-look');
+        if (photoSrc) viewer.setAttribute('poster', photoSrc);
+        else viewer.removeAttribute('poster');
+
+        // Cache a public HTTPS/HTTP GLB so Android Scene Viewer can open the camera.
+        const prepareRes = await fetch(`${API_BASE_URL}/${item.id}/prepare-ar-model`, {
+            method: 'POST',
+            credentials: 'same-origin'
+        });
+        const prepareData = await prepareRes.json().catch(() => ({}));
+        if (!prepareRes.ok || !prepareData.success || !prepareData.data || !prepareData.data.url) {
+            throw new Error(prepareData.message || 'Could not prepare AR model');
+        }
+
+        productArPublicModelUrl = `${window.location.origin}${prepareData.data.relativeUrl}?v=${Date.now()}`;
+        viewer.src = productArPublicModelUrl;
+
+        await customElements.whenDefined('model-viewer');
+        if (!viewer.loaded) {
+            await Promise.race([
+                new Promise((resolve) => viewer.addEventListener('load', resolve, { once: true })),
+                new Promise((_, reject) => setTimeout(() => reject(new Error('Timed out loading the AR model')), 20000))
+            ]);
+        }
+
+        productArReady = true;
+        setProductArLaunchEnabled(true);
+
+        const platform = detectArPlatform();
+        if (platform.isIOS) {
+            setProductArStatus('Ready. Tap Open Camera AR (ARKit / Quick Look).');
+        } else if (platform.isAndroid) {
+            setProductArStatus('Ready. Tap Open Camera AR (ARCore / Scene Viewer). Allow camera access when prompted.');
+        } else {
+            setProductArStatus('3D preview ready. Open Camera AR works on iPhone or Android with AR support.');
+            setProductArLaunchEnabled(true);
+        }
+    } catch (error) {
+        console.error('AR prepare error:', error);
+        viewer.src = '/models/product-box.glb';
+        productArPublicModelUrl = `${window.location.origin}/models/product-box.glb`;
+        productArReady = true;
+        setProductArLaunchEnabled(true);
+        setProductArStatus(
+            (error && error.message ? error.message + ' ' : '') +
+            'Using default model. Tap Open Camera AR to try anyway.',
+            true
+        );
     } finally {
         hideLoading();
-    }
-
-    const code = item.codigo || '-';
-    const name = item.nome || '-';
-    if (labelEl) {
-        labelEl.textContent = `${code} — ${name}`;
-    }
-
-    const photoSrc = item.photo && String(item.photo).trim() ? String(item.photo) : '';
-    setProductArPhotoPreview(photoSrc);
-    revokeProductArModelUrl();
-
-    viewer.setAttribute('alt', `Product photo AR model for ${name}`);
-    // Prefer WebXR/Quick Look so the photo-textured model is used (Scene Viewer cannot use blob models).
-    viewer.setAttribute('ar-modes', 'webxr quick-look');
-
-    if (photoSrc && window.WarehouseProductArGlb) {
-        showLoading();
-        let objectUrl = null;
-        try {
-            objectUrl = await window.WarehouseProductArGlb.createProductPhotoGlbObjectUrl(photoSrc, {
-                maxSideMeters: 0.35,
-                thicknessMeters: 0.012,
-                maxImageEdge: 1024
-            });
-        } finally {
-            hideLoading();
-        }
-        if (objectUrl) {
-            productArModelObjectUrl = objectUrl;
-            viewer.setAttribute('poster', photoSrc);
-            viewer.src = objectUrl;
-            setProductArStatus('Product photo loaded. Tap Open Camera AR to place it in your space.');
-        } else {
-            viewer.removeAttribute('poster');
-            viewer.src = '/models/product-box.glb';
-            setProductArStatus('Could not build the photo model. Using the default box.', true);
-        }
-    } else {
-        viewer.removeAttribute('poster');
-        viewer.src = '/models/product-box.glb';
-        setProductArStatus(
-            photoSrc
-                ? 'Photo helper unavailable. Using the default box model.'
-                : 'This product has no photo. Using the default box model.',
-            !photoSrc
-        );
-    }
-
-    const platform = detectArPlatform();
-    if (platform.isIOS) {
-        setProductArStatus(
-            (photoSrc ? 'Product photo ready. ' : '') +
-            'iPhone: AR uses ARKit (Quick Look). Tap Open Camera AR, then place the model.'
-        );
-    } else if (platform.isAndroid) {
-        setProductArStatus(
-            (photoSrc ? 'Product photo ready. ' : '') +
-            'Samsung/Android: AR uses ARCore via WebXR. Tap Open Camera AR, allow camera, then place the photo on a surface.'
-        );
-    } else if (!photoSrc) {
-        setProductArStatus('AR placement works on iPhone (ARKit) or Android (ARCore). This product has no photo yet.');
     }
 
     modal.style.display = 'block';
@@ -1818,6 +1849,9 @@ function closeProductArModal() {
         viewer.removeAttribute('poster');
     }
     revokeProductArModelUrl();
+    productArPublicModelUrl = null;
+    productArReady = false;
+    setProductArLaunchEnabled(false);
     setProductArPhotoPreview('');
     if (!modal) return;
     modal.style.display = 'none';
@@ -1825,7 +1859,7 @@ function closeProductArModal() {
     setProductArStatus('');
 }
 
-async function launchProductAr() {
+function launchProductAr() {
     const viewer = document.getElementById('productArViewer');
     if (!viewer) return;
 
@@ -1838,20 +1872,40 @@ async function launchProductAr() {
         return;
     }
 
-    try {
-        await customElements.whenDefined('model-viewer');
+    if (!productArReady) {
+        setProductArStatus('AR model is still loading. Wait a moment and tap again.', true);
+        return;
+    }
 
-        if (!viewer.loaded) {
-            setProductArStatus('Loading product photo model…');
-            await Promise.race([
-                new Promise((resolve) => viewer.addEventListener('load', resolve, { once: true })),
-                new Promise((_, reject) => setTimeout(() => reject(new Error('Timed out loading the AR model')), 20000))
-            ]);
+    const modelUrl = productArPublicModelUrl || viewer.src;
+    const title = (currentItem && (currentItem.codigo || currentItem.nome)) || 'Product AR';
+
+    try {
+        setProductArStatus('Opening camera AR…');
+
+        // Keep this synchronous inside the click handler so Chrome keeps the user gesture.
+        if (platform.isAndroid && modelUrl && /^https?:\/\//i.test(String(modelUrl))) {
+            // Scene Viewer is the most reliable path on Samsung/Android.
+            launchSceneViewerIntent(String(modelUrl), String(title));
+            setProductArStatus('If the camera did not open, install Google Play Services for AR and try again.');
+            return;
         }
 
         if (typeof viewer.activateAR === 'function') {
-            setProductArStatus('Opening camera AR… Scan a flat surface, then tap to place the product photo.');
-            await viewer.activateAR();
+            const maybePromise = viewer.activateAR();
+            if (maybePromise && typeof maybePromise.catch === 'function') {
+                maybePromise.catch((error) => {
+                    console.error('activateAR failed:', error);
+                    if (platform.isAndroid && modelUrl) {
+                        launchSceneViewerIntent(String(modelUrl), String(title));
+                    } else {
+                        setProductArStatus(
+                            error && error.message ? error.message : 'Could not start AR.',
+                            true
+                        );
+                    }
+                });
+            }
             return;
         }
 
@@ -1861,12 +1915,25 @@ async function launchProductAr() {
             return;
         }
 
+        if (platform.isAndroid && modelUrl) {
+            launchSceneViewerIntent(String(modelUrl), String(title));
+            return;
+        }
+
         setProductArStatus(
-            'AR is not available in this browser. On Android use Chrome with ARCore installed; on iPhone use Safari.',
+            'AR is not available in this browser. On Android use Chrome with ARCore; on iPhone use Safari.',
             true
         );
     } catch (error) {
         console.error('AR launch error:', error);
+        if (platform.isAndroid && modelUrl) {
+            try {
+                launchSceneViewerIntent(String(modelUrl), String(title));
+                return;
+            } catch (intentError) {
+                console.error('Scene Viewer intent failed:', intentError);
+            }
+        }
         setProductArStatus(
             error && error.message
                 ? error.message

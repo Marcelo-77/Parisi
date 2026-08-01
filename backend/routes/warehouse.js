@@ -182,6 +182,42 @@ router.get('/:id', [
   }
 });
 
+// POST /api/warehouse/:id/prepare-ar-model - Cache public GLB for Scene Viewer / WebXR
+router.post('/:id/prepare-ar-model', [
+  param('id').isUUID().withMessage('ID must be a valid UUID')
+], handleValidationErrors, async (req, res) => {
+  try {
+    const item = await warehouseService.buscarPorId(req.params.id);
+    if (!item) {
+      return res.status(404).json({
+        success: false,
+        error: 'Item not found'
+      });
+    }
+
+    const warehouseArGlbService = require('../services/warehouseArGlbService');
+    const prepared = warehouseArGlbService.writeProductArModel(item);
+    const absoluteUrl = `${req.protocol}://${req.get('host')}${prepared.relativeUrl}?v=${Date.now()}`;
+
+    res.json({
+      success: true,
+      data: {
+        url: absoluteUrl,
+        relativeUrl: prepared.relativeUrl,
+        hasPhoto: prepared.hasPhoto,
+        fileName: prepared.fileName
+      }
+    });
+  } catch (error) {
+    console.error('Error preparing AR model:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Error preparing AR model',
+      message: error.message
+    });
+  }
+});
+
 // POST /api/warehouse - Criar novo item
 router.post('/', validarItem, handleValidationErrors, async (req, res) => {
   try {

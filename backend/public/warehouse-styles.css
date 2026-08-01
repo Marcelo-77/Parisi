@@ -2365,6 +2365,12 @@ input.input-readonly {
     color: #b91c1c;
 }
 
+#productArLaunchBtn:disabled,
+#productArLaunchBtn.is-disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+}
+
 /* Item Details modal: mesma largura dos modais New/Edit */
 #detailsModal .item-details-modal-content.modal-large {
     width: min(calc(100vw - 40px), 1640px);
