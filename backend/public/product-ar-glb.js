@@ -225,27 +225,32 @@
   }
 
   async function resizePhotoDataUrl(photoDataUrl, maxEdge = 1024) {
-    const parsed = parseDataUrl(photoDataUrl);
-    if (!parsed) return null;
     try {
       const img = await loadImageElement(photoDataUrl);
-      const longest = Math.max(img.naturalWidth || img.width, img.naturalHeight || img.height);
-      if (!longest || longest <= maxEdge) {
-        return photoDataUrl;
-      }
-      const scale = maxEdge / longest;
-      const width = Math.max(1, Math.round((img.naturalWidth || img.width) * scale));
-      const height = Math.max(1, Math.round((img.naturalHeight || img.height) * scale));
+      const srcW = img.naturalWidth || img.width || 1;
+      const srcH = img.naturalHeight || img.height || 1;
+      const longest = Math.max(srcW, srcH);
+      const scale = longest > maxEdge ? maxEdge / longest : 1;
+      const width = Math.max(1, Math.round(srcW * scale));
+      const height = Math.max(1, Math.round(srcH * scale));
       const canvas = document.createElement('canvas');
       canvas.width = width;
       canvas.height = height;
       const ctx = canvas.getContext('2d');
       if (!ctx) return photoDataUrl;
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, width, height);
       ctx.drawImage(img, 0, 0, width, height);
-      return canvas.toDataURL('image/jpeg', 0.85);
+      // Always JPEG for Scene Viewer / ARCore compatibility.
+      return canvas.toDataURL('image/jpeg', 0.9);
     } catch {
       return photoDataUrl;
     }
+  }
+
+  async function prepareArPhotoDataUrl(photoDataUrl, maxEdge = 1024) {
+    if (!photoDataUrl) return null;
+    return resizePhotoDataUrl(photoDataUrl, maxEdge);
   }
 
   async function createProductPhotoGlbObjectUrl(photoDataUrl, options) {
@@ -260,6 +265,7 @@
     buildProductPhotoGlb,
     createProductPhotoGlbObjectUrl,
     parseDataUrl,
-    resizePhotoDataUrl
+    resizePhotoDataUrl,
+    prepareArPhotoDataUrl
   };
 })(window);

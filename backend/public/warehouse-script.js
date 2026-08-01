@@ -1789,13 +1789,22 @@ async function openProductArModal() {
         if (photoSrc) viewer.setAttribute('poster', photoSrc);
         else viewer.removeAttribute('poster');
 
-        // Cache a public HTTPS/HTTP GLB so Android Scene Viewer can open the camera.
+        let arPhotoPayload = null;
+        if (photoSrc && window.WarehouseProductArGlb && typeof window.WarehouseProductArGlb.prepareArPhotoDataUrl === 'function') {
+            arPhotoPayload = await window.WarehouseProductArGlb.prepareArPhotoDataUrl(photoSrc, 1024);
+        } else if (photoSrc) {
+            arPhotoPayload = photoSrc;
+        }
+
+        // Cache a public GLB so Android Scene Viewer can open the camera with the product photo.
         const prepareRes = await fetch(`${API_BASE_URL}/${item.id}/prepare-ar-model`, {
             method: 'POST',
-            credentials: 'same-origin'
+            credentials: 'same-origin',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(arPhotoPayload ? { photo: arPhotoPayload } : {})
         });
         const prepareData = await prepareRes.json().catch(() => ({}));
-        if (!prepareRes.ok || !prepareData.success || !prepareData.data || !prepareData.data.url) {
+        if (!prepareRes.ok || !prepareData.success || !prepareData.data || !prepareData.data.relativeUrl) {
             throw new Error(prepareData.message || 'Could not prepare AR model');
         }
 
@@ -1813,14 +1822,20 @@ async function openProductArModal() {
         productArReady = true;
         setProductArLaunchEnabled(true);
 
+        const hasPhotoModel = Boolean(prepareData.data.hasPhoto);
         const platform = detectArPlatform();
-        if (platform.isIOS) {
-            setProductArStatus('Ready. Tap Open Camera AR (ARKit / Quick Look).');
+        if (!hasPhotoModel) {
+            setProductArStatus(
+                (prepareData.data.photoError ? prepareData.data.photoError + '. ' : '') +
+                'Photo was not embedded. You may see the brown placeholder box.',
+                true
+            );
+        } else if (platform.isIOS) {
+            setProductArStatus('Product photo ready. Tap Open Camera AR (ARKit / Quick Look).');
         } else if (platform.isAndroid) {
-            setProductArStatus('Ready. Tap Open Camera AR (ARCore / Scene Viewer). Allow camera access when prompted.');
+            setProductArStatus('Product photo ready. Tap Open Camera AR (ARCore / Scene Viewer).');
         } else {
-            setProductArStatus('3D preview ready. Open Camera AR works on iPhone or Android with AR support.');
-            setProductArLaunchEnabled(true);
+            setProductArStatus('Product photo 3D preview ready. Open Camera AR works on iPhone or Android.');
         }
     } catch (error) {
         console.error('AR prepare error:', error);

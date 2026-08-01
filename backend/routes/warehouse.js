@@ -196,7 +196,8 @@ router.post('/:id/prepare-ar-model', [
     }
 
     const warehouseArGlbService = require('../services/warehouseArGlbService');
-    const prepared = warehouseArGlbService.writeProductArModel(item);
+    const photoOverride = req.body && req.body.photo ? req.body.photo : null;
+    const prepared = warehouseArGlbService.writeProductArModel(item, photoOverride);
     const absoluteUrl = `${req.protocol}://${req.get('host')}${prepared.relativeUrl}?v=${Date.now()}`;
 
     res.json({
@@ -205,7 +206,9 @@ router.post('/:id/prepare-ar-model', [
         url: absoluteUrl,
         relativeUrl: prepared.relativeUrl,
         hasPhoto: prepared.hasPhoto,
-        fileName: prepared.fileName
+        photoError: prepared.photoError,
+        fileName: prepared.fileName,
+        byteLength: prepared.byteLength
       }
     });
   } catch (error) {
