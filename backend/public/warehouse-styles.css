@@ -2559,7 +2559,9 @@ input.input-readonly {
         padding: 0 4px 10px;
     }
 
-    #productSearchSection .table-container {
+    #productSearchSection .table-container,
+    .results-container .table-container,
+    body.location-search-page .table-container {
         padding: 10px;
         overflow-x: hidden;
         overflow-y: visible;
@@ -2574,11 +2576,11 @@ input.input-readonly {
         font-size: 0.95rem;
     }
 
-    .warehouse-table thead {
+    .warehouse-table:not(.new-records-table) thead {
         display: none;
     }
 
-    .warehouse-table tbody {
+    .warehouse-table:not(.new-records-table) tbody {
         display: block;
         width: 100%;
     }
@@ -2639,7 +2641,9 @@ input.input-readonly {
         color: #6b7280;
     }
 
-    .warehouse-table tbody tr.item-data-row td[data-label="Code"] {
+    .warehouse-table tbody tr.item-data-row td[data-label="Code"],
+    .warehouse-table tbody tr.item-data-row td[data-label="Location"],
+    .warehouse-table tbody tr.item-data-row td[data-label="Location Code"] {
         padding-top: 2px;
         padding-bottom: 10px;
         margin-bottom: 4px;

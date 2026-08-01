@@ -103,12 +103,56 @@ app.get('/api/system-settings', async (req, res) => {
 // Protect HTML pages before static files
 app.use(protectPages);
 
+// Public AR model for Scene Viewer / ARCore (no auth cookies — UUID is the access key)
+app.get('/public-ar/:id.glb', async (req, res) => {
+  try {
+    const id = String(req.params.id || '').trim();
+    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id)) {
+      return res.status(400).send('Invalid product id');
+    }
+
+    const warehouseService = require('./services/warehouseService');
+    const warehouseArGlbService = require('./services/warehouseArGlbService');
+    const item = await warehouseService.buscarPorId(id);
+    if (!item) {
+      return res.status(404).send('Product not found');
+    }
+
+    let glb = null;
+    if (item.photo) {
+      glb = warehouseArGlbService.buildProductPhotoGlb(item.photo, {
+        maxSideMeters: 0.45,
+        thicknessMeters: 0.025
+      });
+    }
+    if (!glb) {
+      const fs = require('fs');
+      const path = require('path');
+      const fallback = path.join(__dirname, 'public', 'models', 'product-box.glb');
+      if (!fs.existsSync(fallback)) {
+        return res.status(404).send('AR model unavailable');
+      }
+      glb = fs.readFileSync(fallback);
+    }
+
+    res.setHeader('Content-Type', 'model/gltf-binary');
+    res.setHeader('Content-Disposition', `inline; filename="${id}.glb"`);
+    res.setHeader('Cache-Control', 'public, max-age=120');
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    return res.status(200).send(glb);
+  } catch (error) {
+    console.error('Public AR model error:', error);
+    return res.status(500).send('Error building AR model');
+  }
+});
+
 // Serve AR cache with explicit GLB content-type for Scene Viewer / ARCore
 app.use('/ar-cache', express.static(path.join(__dirname, 'public', 'ar-cache'), {
   setHeaders(res, filePath) {
     if (String(filePath).toLowerCase().endsWith('.glb')) {
       res.setHeader('Content-Type', 'model/gltf-binary');
       res.setHeader('Cache-Control', 'public, max-age=60');
+      res.setHeader('Access-Control-Allow-Origin', '*');
     }
   }
 }));

@@ -474,8 +474,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (!hasSearched) {
       tbody.innerHTML = `
-        <tr>
-          <td colspan="8" class="empty-state">
+        <tr class="empty-state-row">
+          <td colspan="7" class="empty-state">
             <i class="fas fa-search"></i>
             <p>Use filters and click Search to load records.</p>
           </td>
@@ -487,8 +487,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (!records.length) {
       tbody.innerHTML = `
-        <tr>
-          <td colspan="8" class="empty-state">
+        <tr class="empty-state-row">
+          <td colspan="7" class="empty-state">
             <i class="fas fa-inbox"></i>
             <p>No records. Click "New Record" to add.</p>
           </td>
@@ -501,21 +501,25 @@ document.addEventListener('DOMContentLoaded', () => {
     tbody.innerHTML = records.map(r => {
       const entryDt = r.entryDatetime ? (typeof r.entryDatetime === 'string' ? r.entryDatetime : new Date(r.entryDatetime).toISOString()) : '';
       return `
-        <tr>
-          <td>${escapeHtml(r.locationCode)}</td>
-          <td>${escapeHtml(r.productCode)}</td>
-          <td>${formatDateTime(r.entryDatetime)}</td>
-          <td>${escapeHtml(r.situationDescription || '')}</td>
-          <td>${r.quantityInformed ?? 0}</td>
-          <td>${r.quantityCurrent ?? 0}</td>
-          <td>${escapeHtml(r.usuarioInseriuNome || r.usuarioInseriu || '-')}</td>
-          <td class="td-actions">
-            <button type="button" class="btn btn-edit btn-edit-qty-current" data-location="${escapeHtml(r.locationCode)}" data-product="${escapeHtml(r.productCode)}" data-entry="${escapeHtml(entryDt)}" data-sipr="${r.siprSqNumber}" data-qty-informed="${r.quantityInformed ?? 0}" data-qty-current="${r.quantityCurrent ?? 0}" title="Edit Location / Quantity">
-              <i class="fas fa-edit"></i> Edit
-            </button>
-            <button type="button" class="btn btn-delete btn-delete-record" data-location="${escapeHtml(r.locationCode)}" data-product="${escapeHtml(r.productCode)}" data-entry="${escapeHtml(entryDt)}" data-sipr="${r.siprSqNumber}" title="Delete">
-              <i class="fas fa-trash-alt"></i> Delete
-            </button>
+        <tr class="item-data-row">
+          <td data-label="Location Code"><strong>${escapeHtml(r.locationCode)}</strong></td>
+          <td data-label="Product Code">${escapeHtml(r.productCode)}</td>
+          <td data-label="Entry Date/Time">${formatDateTime(r.entryDatetime)}</td>
+          <td data-label="Situation">${escapeHtml(r.situationDescription || '')}</td>
+          <td data-label="Qty Informed">${r.quantityInformed ?? 0}</td>
+          <td data-label="Qty Current">${r.quantityCurrent ?? 0}</td>
+          <td data-label="Inserted by">${escapeHtml(r.usuarioInseriuNome || r.usuarioInseriu || '-')}</td>
+        </tr>
+        <tr class="item-actions-row">
+          <td colspan="7" class="action-buttons-cell">
+            <div class="action-buttons">
+              <button type="button" class="btn-action edit btn-edit btn-edit-qty-current" data-location="${escapeHtml(r.locationCode)}" data-product="${escapeHtml(r.productCode)}" data-entry="${escapeHtml(entryDt)}" data-sipr="${r.siprSqNumber}" data-qty-informed="${r.quantityInformed ?? 0}" data-qty-current="${r.quantityCurrent ?? 0}" title="Edit Location / Quantity">
+                <i class="fas fa-edit"></i> <span>Edit</span>
+              </button>
+              <button type="button" class="btn-action delete btn-delete btn-delete-record" data-location="${escapeHtml(r.locationCode)}" data-product="${escapeHtml(r.productCode)}" data-entry="${escapeHtml(entryDt)}" data-sipr="${r.siprSqNumber}" title="Delete">
+                <i class="fas fa-trash-alt"></i> <span>Delete</span>
+              </button>
+            </div>
           </td>
         </tr>
       `;
