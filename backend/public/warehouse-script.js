@@ -1791,7 +1791,7 @@ async function openProductArModal() {
 
         let arPhotoPayload = null;
         if (photoSrc && window.WarehouseProductArGlb && typeof window.WarehouseProductArGlb.prepareArPhotoDataUrl === 'function') {
-            arPhotoPayload = await window.WarehouseProductArGlb.prepareArPhotoDataUrl(photoSrc, 1024);
+            arPhotoPayload = await window.WarehouseProductArGlb.prepareArPhotoDataUrl(photoSrc, 512);
         } else if (photoSrc) {
             arPhotoPayload = photoSrc;
         }

@@ -224,31 +224,42 @@
     });
   }
 
-  async function resizePhotoDataUrl(photoDataUrl, maxEdge = 1024) {
+  async function resizePhotoDataUrl(photoDataUrl, maxEdge = 512) {
     try {
       const img = await loadImageElement(photoDataUrl);
       const srcW = img.naturalWidth || img.width || 1;
       const srcH = img.naturalHeight || img.height || 1;
-      const longest = Math.max(srcW, srcH);
-      const scale = longest > maxEdge ? maxEdge / longest : 1;
-      const width = Math.max(1, Math.round(srcW * scale));
-      const height = Math.max(1, Math.round(srcH * scale));
+
+      // Power-of-two canvas helps Scene Viewer keep the texture stable.
+      let pot = 512;
+      if (maxEdge >= 1024) pot = 1024;
+      if (maxEdge <= 256) pot = 256;
+
       const canvas = document.createElement('canvas');
-      canvas.width = width;
-      canvas.height = height;
+      canvas.width = pot;
+      canvas.height = pot;
       const ctx = canvas.getContext('2d');
       if (!ctx) return photoDataUrl;
+
       ctx.fillStyle = '#ffffff';
-      ctx.fillRect(0, 0, width, height);
-      ctx.drawImage(img, 0, 0, width, height);
-      // Always JPEG for Scene Viewer / ARCore compatibility.
-      return canvas.toDataURL('image/jpeg', 0.9);
+      ctx.fillRect(0, 0, pot, pot);
+
+      const scale = Math.min(pot / srcW, pot / srcH);
+      const drawW = Math.max(1, Math.round(srcW * scale));
+      const drawH = Math.max(1, Math.round(srcH * scale));
+      const dx = Math.round((pot - drawW) / 2);
+      const dy = Math.round((pot - drawH) / 2);
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = 'high';
+      ctx.drawImage(img, dx, dy, drawW, drawH);
+
+      return canvas.toDataURL('image/jpeg', 0.92);
     } catch {
       return photoDataUrl;
     }
   }
 
-  async function prepareArPhotoDataUrl(photoDataUrl, maxEdge = 1024) {
+  async function prepareArPhotoDataUrl(photoDataUrl, maxEdge = 512) {
     if (!photoDataUrl) return null;
     return resizePhotoDataUrl(photoDataUrl, maxEdge);
   }
