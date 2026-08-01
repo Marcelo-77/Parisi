@@ -2670,6 +2670,85 @@ input.input-readonly {
         border: none;
     }
 
+    /* Search Location / Location Product: card layout only on mobile; desktop stays as table */
+    .results-container .warehouse-table tbody tr.mobile-result-row {
+        display: block;
+        width: 100%;
+        background: #fff;
+        border: 1px solid #e5e7eb;
+        border-radius: 14px;
+        box-shadow: 0 2px 8px rgba(15, 23, 42, 0.06);
+        padding: 12px;
+        margin: 0 0 12px;
+    }
+
+    .results-container .warehouse-table tbody tr.mobile-result-row:hover {
+        background: #fff;
+    }
+
+    .results-container .warehouse-table tbody tr.mobile-result-row td {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 12px;
+        width: 100%;
+        padding: 8px 0;
+        border: none;
+        text-align: right;
+        word-break: break-word;
+        overflow-wrap: anywhere;
+        white-space: normal;
+        color: #1f2937;
+    }
+
+    .results-container .warehouse-table tbody tr.mobile-result-row td::before {
+        content: attr(data-label);
+        flex: 0 0 38%;
+        max-width: 38%;
+        text-align: left;
+        font-size: 0.78rem;
+        font-weight: 700;
+        letter-spacing: 0.02em;
+        text-transform: uppercase;
+        color: #6b7280;
+    }
+
+    .results-container .warehouse-table tbody tr.mobile-result-row td[data-label="Location"],
+    .results-container .warehouse-table tbody tr.mobile-result-row td[data-label="Location Code"] {
+        padding-top: 2px;
+        padding-bottom: 10px;
+        margin-bottom: 4px;
+        border-bottom: 1px solid #f1f5f9;
+        font-size: 1.05rem;
+        font-weight: 700;
+    }
+
+    .results-container .warehouse-table tbody tr.mobile-result-row td.td-actions {
+        display: block;
+        padding-top: 10px;
+        margin-top: 4px;
+        border-top: 1px solid #f1f5f9;
+        text-align: left;
+    }
+
+    .results-container .warehouse-table tbody tr.mobile-result-row td.td-actions::before {
+        display: none;
+    }
+
+    .results-container .warehouse-table tbody tr.mobile-result-row td.td-actions .action-buttons {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 8px;
+        width: 100%;
+    }
+
+    .results-container .warehouse-table tbody tr.mobile-result-row td.td-actions .btn {
+        width: 100%;
+        min-height: 42px;
+        justify-content: center;
+        border-radius: 10px;
+    }
+
     .action-buttons-cell {
         padding-left: 0 !important;
     }

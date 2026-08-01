@@ -111,8 +111,17 @@ app.get('/public-ar/:id.glb', async (req, res) => {
       return res.status(400).send('Invalid product id');
     }
 
-    const warehouseService = require('./services/warehouseService');
     const warehouseArGlbService = require('./services/warehouseArGlbService');
+    const cached = warehouseArGlbService.findLatestCachedModel(id);
+    if (cached && cached.full) {
+      res.setHeader('Content-Type', 'model/gltf-binary');
+      res.setHeader('Content-Disposition', `inline; filename="${id}.glb"`);
+      res.setHeader('Cache-Control', 'public, max-age=120');
+      res.setHeader('Access-Control-Allow-Origin', '*');
+      return res.sendFile(cached.full);
+    }
+
+    const warehouseService = require('./services/warehouseService');
     const item = await warehouseService.buscarPorId(id);
     if (!item) {
       return res.status(404).send('Product not found');
@@ -120,10 +129,13 @@ app.get('/public-ar/:id.glb', async (req, res) => {
 
     let glb = null;
     if (item.photo) {
-      glb = warehouseArGlbService.buildProductPhotoGlb(item.photo, {
-        maxSideMeters: 0.45,
-        thicknessMeters: 0.025
-      });
+      const parsed = warehouseArGlbService.parseDataUrl(item.photo);
+      if (parsed && parsed.buffer && parsed.buffer.length <= 750000) {
+        glb = warehouseArGlbService.buildProductPhotoGlb(item.photo, {
+          maxSideMeters: 0.45,
+          thicknessMeters: 0.025
+        });
+      }
     }
     if (!glb) {
       const fs = require('fs');

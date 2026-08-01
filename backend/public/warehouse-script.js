@@ -1710,19 +1710,63 @@ function setProductArPhotoPreview(photoSrc) {
     }
 }
 
-async function ensureCurrentItemPhoto(item) {
+async function ensureCurrentItemPhoto(item, timeoutMs = 8000) {
     if (!item || !item.id) return item;
     if (item.photo && String(item.photo).trim()) return item;
+    const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
+    const timer = controller ? setTimeout(() => controller.abort(), timeoutMs) : null;
     try {
-        const response = await fetch(`${API_BASE_URL}/${item.id}`);
+        const response = await fetch(`${API_BASE_URL}/${item.id}`, {
+            signal: controller ? controller.signal : undefined
+        });
         const data = await response.json();
         if (data.success && data.data) {
             return { ...item, ...data.data };
         }
     } catch (error) {
         console.warn('Could not reload product photo for AR:', error);
+    } finally {
+        if (timer) clearTimeout(timer);
     }
     return item;
+}
+
+function withTimeout(promise, ms, message) {
+    let timer = null;
+    return Promise.race([
+        promise,
+        new Promise((_, reject) => {
+            timer = setTimeout(() => reject(new Error(message || 'Timed out')), ms);
+        })
+    ]).finally(() => {
+        if (timer) clearTimeout(timer);
+    });
+}
+
+function waitForModelViewerDefined(timeoutMs = 10000) {
+    if (customElements.get('model-viewer')) return Promise.resolve();
+    return withTimeout(customElements.whenDefined('model-viewer'), timeoutMs, 'Timed out loading model-viewer');
+}
+
+function waitForViewerModel(viewer, timeoutMs = 12000) {
+    if (!viewer) return Promise.reject(new Error('AR viewer missing'));
+    if (viewer.loaded) return Promise.resolve();
+    return new Promise((resolve, reject) => {
+        let settled = false;
+        const finish = (fn, arg) => {
+            if (settled) return;
+            settled = true;
+            clearTimeout(timer);
+            viewer.removeEventListener('load', onLoad);
+            viewer.removeEventListener('error', onError);
+            fn(arg);
+        };
+        const onLoad = () => finish(resolve);
+        const onError = () => finish(reject, new Error('Failed to load the AR model'));
+        const timer = setTimeout(() => finish(reject, new Error('Timed out loading the AR model')), timeoutMs);
+        viewer.addEventListener('load', onLoad, { once: true });
+        viewer.addEventListener('error', onError, { once: true });
+    });
 }
 
 function setProductArLaunchEnabled(enabled) {
@@ -1753,6 +1797,26 @@ function launchSceneViewerIntent(modelUrl, title) {
     anchor.remove();
 }
 
+function queuePrepareArModel(itemId, glbBase64) {
+    if (!itemId) return;
+    const body = glbBase64 ? { glbBase64 } : {};
+    fetch(`${API_BASE_URL}/${itemId}/prepare-ar-model`, {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+    })
+        .then((res) => res.json().catch(() => null))
+        .then((result) => {
+            if (result && result.success && result.data && result.data.relativeUrl) {
+                productArPublicModelUrl = `${window.location.origin}${result.data.relativeUrl}`;
+            }
+        })
+        .catch(() => {
+            // ignore prepare errors; public-ar endpoint builds on demand
+        });
+}
+
 async function openProductArModal() {
     if (!isRootUser) {
         showError('AR is available only for the root user');
@@ -1774,10 +1838,11 @@ async function openProductArModal() {
     productArPublicModelUrl = null;
     setProductArLaunchEnabled(false);
     setProductArStatus('Preparing AR model…');
+    modal.style.display = 'block';
+    modal.setAttribute('aria-hidden', 'false');
 
-    showLoading();
     try {
-        item = await ensureCurrentItemPhoto(item);
+        item = await ensureCurrentItemPhoto(item, 8000);
         currentItem = item;
 
         const code = item.codigo || '-';
@@ -1794,45 +1859,47 @@ async function openProductArModal() {
         if (photoSrc) viewer.setAttribute('poster', photoSrc);
         else viewer.removeAttribute('poster');
 
-        // Public HTTPS/HTTP URL for Scene Viewer fallback (built from DB on demand).
+        // Scene Viewer fallback URL (updated if prepare-ar-model caches a small GLB).
         productArPublicModelUrl = `${window.location.origin}/public-ar/${item.id}.glb`;
 
-        let previewUrl = productArPublicModelUrl;
-        if (photoSrc && window.WarehouseProductArGlb && typeof window.WarehouseProductArGlb.createProductPhotoGlbObjectUrl === 'function') {
-            const objectUrl = await window.WarehouseProductArGlb.createProductPhotoGlbObjectUrl(photoSrc, {
-                maxSideMeters: 0.45,
-                thicknessMeters: 0.025,
-                maxImageEdge: 512
+        let previewUrl = '/models/product-box.glb';
+        let glbBase64 = null;
+        if (photoSrc && window.WarehouseProductArGlb && typeof window.WarehouseProductArGlb.createProductPhotoGlbAssets === 'function') {
+            setProductArStatus('Building photo model…');
+            const assets = await withTimeout(
+                window.WarehouseProductArGlb.createProductPhotoGlbAssets(photoSrc, {
+                    maxSideMeters: 0.45,
+                    thicknessMeters: 0.025,
+                    maxImageEdge: 512,
+                    jpegQuality: 0.78
+                }),
+                12000,
+                'Timed out building the photo model'
+            ).catch((error) => {
+                console.warn('Client AR GLB build failed:', error);
+                return null;
             });
-            if (objectUrl) {
-                productArModelObjectUrl = objectUrl;
-                previewUrl = objectUrl;
+            if (assets && assets.objectUrl) {
+                productArModelObjectUrl = assets.objectUrl;
+                previewUrl = assets.objectUrl;
+                glbBase64 = assets.base64 || null;
             }
         }
 
-        // WebXR first: keeps the already-loaded textured model (Scene Viewer re-downloads and often loses custom photos).
+        // WebXR first: keeps the already-loaded textured model (Scene Viewer re-downloads).
         viewer.setAttribute('ar-modes', photoSrc ? 'webxr quick-look' : 'webxr scene-viewer quick-look');
         viewer.removeAttribute('ios-src');
         viewer.src = previewUrl;
 
-        // Best-effort: also refresh server-side model for Scene Viewer fallback.
-        try {
-            await fetch(`${API_BASE_URL}/${item.id}/prepare-ar-model`, {
-                method: 'POST',
-                credentials: 'same-origin',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({})
-            });
-        } catch {
-            // ignore prepare errors; public-ar endpoint builds on demand
-        }
+        // Cache a compact GLB in the background for Scene Viewer — do not block the UI.
+        queuePrepareArModel(item.id, glbBase64);
 
-        await customElements.whenDefined('model-viewer');
-        if (!viewer.loaded) {
-            await Promise.race([
-                new Promise((resolve) => viewer.addEventListener('load', resolve, { once: true })),
-                new Promise((_, reject) => setTimeout(() => reject(new Error('Timed out loading the AR model')), 20000))
-            ]);
+        await waitForModelViewerDefined(10000);
+        try {
+            await waitForViewerModel(viewer, 12000);
+        } catch (loadError) {
+            // Preview can still open AR later; keep going with whatever src we have.
+            console.warn('AR viewer load warning:', loadError);
         }
 
         productArReady = true;
@@ -1841,6 +1908,8 @@ async function openProductArModal() {
         const platform = detectArPlatform();
         if (!photoSrc) {
             setProductArStatus('This product has no photo. Using the default box model.', true);
+        } else if (previewUrl === '/models/product-box.glb') {
+            setProductArStatus('Could not embed the photo quickly. Using default model — tap Open Camera AR.', true);
         } else if (platform.isIOS) {
             setProductArStatus('Product photo ready. Tap Open Camera AR or View in your space (ARKit).');
         } else if (platform.isAndroid) {
@@ -1859,12 +1928,7 @@ async function openProductArModal() {
             'Using default model. Tap Open Camera AR to try anyway.',
             true
         );
-    } finally {
-        hideLoading();
     }
-
-    modal.style.display = 'block';
-    modal.setAttribute('aria-hidden', 'false');
 }
 
 function closeProductArModal() {

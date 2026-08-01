@@ -267,6 +267,31 @@ function ensureArCacheDir() {
   return dir;
 }
 
+function findLatestCachedModel(itemId) {
+  const id = String(itemId || '').trim();
+  if (!id) return null;
+  try {
+    const dir = ensureArCacheDir();
+    const prefix = `${id}-`;
+    const matches = fs.readdirSync(dir)
+      .filter((name) => name.startsWith(prefix) && name.endsWith('.glb'))
+      .map((name) => {
+        const full = path.join(dir, name);
+        let mtime = 0;
+        try {
+          mtime = fs.statSync(full).mtimeMs || 0;
+        } catch {
+          mtime = 0;
+        }
+        return { name, full, mtime };
+      })
+      .sort((a, b) => b.mtime - a.mtime);
+    return matches.length ? matches[0] : null;
+  } catch {
+    return null;
+  }
+}
+
 function writeProductArModel(item, photoOverride = null, glbBase64 = null) {
   ensureArCacheDir();
   const stamp = Date.now();
@@ -296,12 +321,18 @@ function writeProductArModel(item, photoOverride = null, glbBase64 = null) {
   const photo = photoOverride || item.photo;
   if (!glb && photo) {
     try {
-      glb = buildProductPhotoGlb(photo, {
-        maxSideMeters: 0.45,
-        thicknessMeters: 0.025
-      });
-      hasPhoto = Boolean(glb);
-      if (!glb) photoError = 'Could not encode product photo into GLB';
+      const parsed = parseDataUrl(photo);
+      // Huge DB photos make Render time out — prefer client-uploaded compact GLB.
+      if (parsed && parsed.buffer && parsed.buffer.length > 750000) {
+        photoError = 'Product photo too large for on-demand AR encode';
+      } else {
+        glb = buildProductPhotoGlb(photo, {
+          maxSideMeters: 0.45,
+          thicknessMeters: 0.025
+        });
+        hasPhoto = Boolean(glb);
+        if (!glb) photoError = 'Could not encode product photo into GLB';
+      }
     } catch (error) {
       photoError = error.message || 'Photo GLB build failed';
       glb = null;
@@ -343,5 +374,6 @@ module.exports = {
   buildProductPhotoGlb,
   writeProductArModel,
   ensureArCacheDir,
+  findLatestCachedModel,
   parseDataUrl
 };

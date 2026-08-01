@@ -256,7 +256,7 @@
     });
   }
 
-  async function resizePhotoDataUrl(photoDataUrl, maxEdge = 512) {
+  async function resizePhotoDataUrl(photoDataUrl, maxEdge = 512, quality = 0.82) {
     try {
       const img = await loadImageElement(photoDataUrl);
       const srcW = img.naturalWidth || img.width || 1;
@@ -278,9 +278,10 @@
       const dx = Math.round((pot - drawW) / 2);
       const dy = Math.round((pot - drawH) / 2);
       ctx.imageSmoothingEnabled = true;
-      ctx.imageSmoothingQuality = 'high';
+      ctx.imageSmoothingQuality = 'medium';
       ctx.drawImage(img, dx, dy, drawW, drawH);
-      return canvas.toDataURL('image/jpeg', 0.92);
+      const q = Math.min(0.92, Math.max(0.55, Number(quality) || 0.82));
+      return canvas.toDataURL('image/jpeg', q);
     } catch {
       return photoDataUrl;
     }
@@ -291,22 +292,32 @@
     return resizePhotoDataUrl(photoDataUrl, maxEdge);
   }
 
-  async function createProductPhotoGlbBase64(photoDataUrl, options) {
-    const resized = await prepareArPhotoDataUrl(photoDataUrl, options && options.maxImageEdge ? options.maxImageEdge : 512);
+  async function createProductPhotoGlbAssets(photoDataUrl, options) {
+    const maxEdge = options && options.maxImageEdge ? options.maxImageEdge : 512;
+    const quality = options && Number(options.jpegQuality) > 0 ? Number(options.jpegQuality) : 0.82;
+    const resized = await resizePhotoDataUrl(photoDataUrl, maxEdge, quality);
     const bytes = buildProductPhotoGlb(resized || photoDataUrl, options);
     if (!bytes) return null;
-    return bytesToBase64(bytes);
+    return {
+      bytes,
+      objectUrl: URL.createObjectURL(new Blob([bytes], { type: 'model/gltf-binary' })),
+      base64: bytesToBase64(bytes)
+    };
+  }
+
+  async function createProductPhotoGlbBase64(photoDataUrl, options) {
+    const assets = await createProductPhotoGlbAssets(photoDataUrl, options);
+    return assets ? assets.base64 : null;
   }
 
   async function createProductPhotoGlbObjectUrl(photoDataUrl, options) {
-    const resized = await prepareArPhotoDataUrl(photoDataUrl, options && options.maxImageEdge ? options.maxImageEdge : 512);
-    const bytes = buildProductPhotoGlb(resized || photoDataUrl, options);
-    if (!bytes) return null;
-    return URL.createObjectURL(new Blob([bytes], { type: 'model/gltf-binary' }));
+    const assets = await createProductPhotoGlbAssets(photoDataUrl, options);
+    return assets ? assets.objectUrl : null;
   }
 
   global.WarehouseProductArGlb = {
     buildProductPhotoGlb,
+    createProductPhotoGlbAssets,
     createProductPhotoGlbObjectUrl,
     createProductPhotoGlbBase64,
     parseDataUrl,

@@ -362,7 +362,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (tbody) {
             tbody.innerHTML = `
                 <tr class="empty-state-row">
-                    <td colspan="4" class="empty-state">
+                    <td colspan="5" class="empty-state">
                         <i class="fas fa-search"></i>
                         <p>Use filters and click <strong>Search</strong> to load locations.</p>
                     </td>
@@ -384,7 +384,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!list.length) {
             tbody.innerHTML = `
                 <tr class="empty-state-row">
-                    <td colspan="4" class="empty-state">
+                    <td colspan="5" class="empty-state">
                         <i class="fas fa-search-location"></i>
                         <p>No locations found.</p>
                     </td>
@@ -395,23 +395,21 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         tbody.innerHTML = list.map(loc => `
-            <tr class="item-data-row">
-                <td data-label="Location"><strong>${escapeHtml(loc.location)}</strong></td>
+            <tr class="mobile-result-row">
+                <td data-label="Location">${escapeHtml(loc.location)}</td>
                 <td data-label="Status">${loc.status === 'active' ? 'Active' : 'Inactive'}</td>
                 <td data-label="Access Type">${escapeHtml(loc.accessType || '-')}</td>
                 <td data-label="Section">${escapeHtml(formatSection(getLocationSection(loc)))}</td>
-            </tr>
-            <tr class="item-actions-row">
-                <td colspan="4" class="action-buttons-cell">
+                <td data-label="Actions" class="td-actions">
                     <div class="action-buttons">
-                        <button type="button" class="btn-action edit btn-edit" data-id="${escapeHtml(loc.id || '')}" title="Edit">
-                            <i class="fas fa-edit"></i> <span>Edit</span>
+                        <button type="button" class="btn btn-edit" data-id="${escapeHtml(loc.id || '')}" title="Edit">
+                            <i class="fas fa-edit"></i> Edit
                         </button>
-                        <button type="button" class="btn-action print btn-print" data-location="${escapeHtml(loc.location || '')}" title="Print bin label">
-                            <i class="fas fa-print"></i> <span>Print</span>
+                        <button type="button" class="btn btn-print" data-location="${escapeHtml(loc.location || '')}" title="Print bin label">
+                            <i class="fas fa-print"></i> Print
                         </button>
-                        <button type="button" class="btn-action delete btn-delete" data-id="${escapeHtml(loc.id || '')}" data-location="${escapeHtml(loc.location || '')}" title="Delete">
-                            <i class="fas fa-trash-alt"></i> <span>Delete</span>
+                        <button type="button" class="btn btn-delete" data-id="${escapeHtml(loc.id || '')}" data-location="${escapeHtml(loc.location || '')}" title="Delete">
+                            <i class="fas fa-trash-alt"></i> Delete
                         </button>
                     </div>
                 </td>
