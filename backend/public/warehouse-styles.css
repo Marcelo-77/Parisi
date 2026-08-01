@@ -2308,6 +2308,20 @@ input.input-readonly {
     color: #1f2937;
 }
 
+.product-ar-photo-wrap {
+    margin: 0 0 14px;
+    text-align: center;
+}
+
+.product-ar-photo-img {
+    max-width: min(100%, 280px);
+    max-height: 220px;
+    border-radius: 12px;
+    border: 1px solid #e5e7eb;
+    object-fit: contain;
+    background: #fff;
+}
+
 .product-ar-help {
     margin: 0 0 10px;
     color: #4b5563;

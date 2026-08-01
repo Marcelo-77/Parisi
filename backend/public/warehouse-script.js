@@ -66,6 +66,7 @@ let currentItem = null;
 let existingItemPhoto = null;
 let hasSearched = false; // true ap?s o usu?rio clicar em Search
 let isRootUser = false;
+let productArModelObjectUrl = null;
 
 // Elementos do DOM
 const itemModal = document.getElementById('itemModal');
@@ -1683,13 +1684,48 @@ function setProductArStatus(message, isError = false) {
     statusEl.classList.toggle('product-ar-status--error', Boolean(isError && message));
 }
 
-function openProductArModal() {
+function revokeProductArModelUrl() {
+    if (productArModelObjectUrl) {
+        URL.revokeObjectURL(productArModelObjectUrl);
+        productArModelObjectUrl = null;
+    }
+}
+
+function setProductArPhotoPreview(photoSrc) {
+    const wrap = document.getElementById('productArPhotoWrap');
+    const img = document.getElementById('productArPhotoImg');
+    if (!wrap || !img) return;
+    if (photoSrc) {
+        img.src = photoSrc;
+        wrap.hidden = false;
+    } else {
+        img.src = '';
+        wrap.hidden = true;
+    }
+}
+
+async function ensureCurrentItemPhoto(item) {
+    if (!item || !item.id) return item;
+    if (item.photo && String(item.photo).trim()) return item;
+    try {
+        const response = await fetch(`${API_BASE_URL}/${item.id}`);
+        const data = await response.json();
+        if (data.success && data.data) {
+            return { ...item, ...data.data };
+        }
+    } catch (error) {
+        console.warn('Could not reload product photo for AR:', error);
+    }
+    return item;
+}
+
+async function openProductArModal() {
     if (!isRootUser) {
         showError('AR is available only for the root user');
         return;
     }
 
-    const item = currentItem;
+    let item = currentItem;
     if (!item) {
         showError('Open a product first to use AR');
         return;
@@ -1700,6 +1736,14 @@ function openProductArModal() {
     const labelEl = document.getElementById('productArProductLabel');
     if (!modal || !viewer) return;
 
+    showLoading();
+    try {
+        item = await ensureCurrentItemPhoto(item);
+        currentItem = item;
+    } finally {
+        hideLoading();
+    }
+
     const code = item.codigo || '-';
     const name = item.nome || '-';
     if (labelEl) {
@@ -1707,22 +1751,59 @@ function openProductArModal() {
     }
 
     const photoSrc = item.photo && String(item.photo).trim() ? String(item.photo) : '';
-    if (photoSrc) {
-        viewer.setAttribute('poster', photoSrc);
+    setProductArPhotoPreview(photoSrc);
+    revokeProductArModelUrl();
+
+    viewer.setAttribute('alt', `Product photo AR model for ${name}`);
+    // Prefer WebXR/Quick Look so the photo-textured model is used (Scene Viewer cannot use blob models).
+    viewer.setAttribute('ar-modes', 'webxr quick-look');
+
+    if (photoSrc && window.WarehouseProductArGlb) {
+        showLoading();
+        let objectUrl = null;
+        try {
+            objectUrl = await window.WarehouseProductArGlb.createProductPhotoGlbObjectUrl(photoSrc, {
+                maxSideMeters: 0.35,
+                thicknessMeters: 0.012,
+                maxImageEdge: 1024
+            });
+        } finally {
+            hideLoading();
+        }
+        if (objectUrl) {
+            productArModelObjectUrl = objectUrl;
+            viewer.setAttribute('poster', photoSrc);
+            viewer.src = objectUrl;
+            setProductArStatus('Product photo loaded. Tap Open Camera AR to place it in your space.');
+        } else {
+            viewer.removeAttribute('poster');
+            viewer.src = '/models/product-box.glb';
+            setProductArStatus('Could not build the photo model. Using the default box.', true);
+        }
     } else {
         viewer.removeAttribute('poster');
+        viewer.src = '/models/product-box.glb';
+        setProductArStatus(
+            photoSrc
+                ? 'Photo helper unavailable. Using the default box model.'
+                : 'This product has no photo. Using the default box model.',
+            !photoSrc
+        );
     }
-
-    viewer.setAttribute('alt', `3D model for ${name}`);
-    viewer.src = '/models/product-box.glb';
 
     const platform = detectArPlatform();
     if (platform.isIOS) {
-        setProductArStatus('iPhone detected: AR uses ARKit (Apple Quick Look). Tap Open Camera AR, then place the model on a surface.');
+        setProductArStatus(
+            (photoSrc ? 'Product photo ready. ' : '') +
+            'iPhone: AR uses ARKit (Quick Look). Tap Open Camera AR, then place the model.'
+        );
     } else if (platform.isAndroid) {
-        setProductArStatus('Android detected: AR uses ARCore (Scene Viewer / WebXR). Tap Open Camera AR, then place the model on a surface.');
-    } else {
-        setProductArStatus('AR placement works on iPhone (ARKit) or Android (ARCore). On this device you can preview the 3D model; open the page on a phone to place it in your space.');
+        setProductArStatus(
+            (photoSrc ? 'Product photo ready. ' : '') +
+            'Samsung/Android: AR uses ARCore via WebXR. Tap Open Camera AR, allow camera, then place the photo on a surface.'
+        );
+    } else if (!photoSrc) {
+        setProductArStatus('AR placement works on iPhone (ARKit) or Android (ARCore). This product has no photo yet.');
     }
 
     modal.style.display = 'block';
@@ -1731,6 +1812,13 @@ function openProductArModal() {
 
 function closeProductArModal() {
     const modal = document.getElementById('productArModal');
+    const viewer = document.getElementById('productArViewer');
+    if (viewer) {
+        viewer.src = '/models/product-box.glb';
+        viewer.removeAttribute('poster');
+    }
+    revokeProductArModelUrl();
+    setProductArPhotoPreview('');
     if (!modal) return;
     modal.style.display = 'none';
     modal.setAttribute('aria-hidden', 'true');
@@ -1753,8 +1841,16 @@ async function launchProductAr() {
     try {
         await customElements.whenDefined('model-viewer');
 
+        if (!viewer.loaded) {
+            setProductArStatus('Loading product photo model…');
+            await Promise.race([
+                new Promise((resolve) => viewer.addEventListener('load', resolve, { once: true })),
+                new Promise((_, reject) => setTimeout(() => reject(new Error('Timed out loading the AR model')), 20000))
+            ]);
+        }
+
         if (typeof viewer.activateAR === 'function') {
-            setProductArStatus('Opening camera AR… Scan a flat surface, then tap to place the product model.');
+            setProductArStatus('Opening camera AR… Scan a flat surface, then tap to place the product photo.');
             await viewer.activateAR();
             return;
         }
@@ -1766,7 +1862,7 @@ async function launchProductAr() {
         }
 
         setProductArStatus(
-            'AR is not available in this browser. On iPhone use Safari; on Android use Chrome with ARCore installed.',
+            'AR is not available in this browser. On Android use Chrome with ARCore installed; on iPhone use Safari.',
             true
         );
     } catch (error) {

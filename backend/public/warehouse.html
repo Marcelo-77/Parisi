@@ -524,12 +524,15 @@
                 </div>
                 <div class="modal-body product-ar-modal-body">
                     <p id="productArProductLabel" class="product-ar-product-label">-</p>
+                    <div id="productArPhotoWrap" class="product-ar-photo-wrap" hidden>
+                        <img id="productArPhotoImg" class="product-ar-photo-img" src="" alt="Product photo">
+                    </div>
                     <p class="product-ar-help">
-                        Use your phone camera to scan the floor or a surface, then place the 3D product model at real-world scale.
+                        Use your phone camera to scan the floor or a surface, then place the product photo in real-world scale.
                     </p>
                     <ul class="product-ar-platforms">
                         <li><strong>iPhone:</strong> ARKit via Apple Quick Look</li>
-                        <li><strong>Android:</strong> ARCore via Scene Viewer / WebXR</li>
+                        <li><strong>Android:</strong> ARCore via WebXR (shows product photo)</li>
                     </ul>
                     <model-viewer
                         id="productArViewer"
@@ -537,7 +540,7 @@
                         src="/models/product-box.glb"
                         alt="Product 3D model for augmented reality"
                         ar
-                        ar-modes="webxr scene-viewer quick-look"
+                        ar-modes="webxr quick-look"
                         ar-scale="fixed"
                         camera-controls
                         touch-action="pan-y"
@@ -649,6 +652,7 @@
     </script>
     <script src="section-options.js"></script>
     <script src="bathware-subcategory-options.js"></script>
+    <script src="product-ar-glb.js"></script>
     <script type="module" src="https://cdn.jsdelivr.net/npm/@google/model-viewer@4.0.0/dist/model-viewer.min.js"></script>
     <script src="warehouse-script.js"></script>
     <script src="warehouse-barcode-scanner.js"></script>
