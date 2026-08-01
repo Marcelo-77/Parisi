@@ -2742,6 +2742,24 @@ input.input-readonly {
         width: 100%;
     }
 
+    /* Search Location: keep Edit / Print / Delete on one row on mobile */
+    body.location-search-page .results-container .warehouse-table tbody tr.mobile-result-row td.td-actions .action-buttons {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 6px;
+    }
+
+    body.location-search-page .results-container .warehouse-table tbody tr.mobile-result-row td.td-actions .btn {
+        min-height: 40px;
+        padding: 8px 4px;
+        font-size: 0.78rem;
+        gap: 4px;
+        white-space: nowrap;
+    }
+
+    body.location-search-page .results-container .warehouse-table tbody tr.mobile-result-row td.td-actions .btn i {
+        font-size: 0.82rem;
+    }
+
     .results-container .warehouse-table tbody tr.mobile-result-row td.td-actions .btn {
         width: 100%;
         min-height: 42px;
@@ -2922,6 +2940,10 @@ input.input-readonly {
 
     .action-buttons {
         grid-template-columns: 1fr;
+    }
+
+    body.location-search-page .results-container .warehouse-table tbody tr.mobile-result-row td.td-actions .action-buttons {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
     }
 
     .btn-action {
