@@ -401,15 +401,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 <td data-label="Access Type">${escapeHtml(loc.accessType || '-')}</td>
                 <td data-label="Section">${escapeHtml(formatSection(getLocationSection(loc)))}</td>
                 <td data-label="Actions" class="td-actions">
-                    <div class="action-buttons">
-                        <button type="button" class="btn btn-edit" data-id="${escapeHtml(loc.id || '')}" title="Edit">
-                            <i class="fas fa-edit"></i> Edit
+                    <div class="action-buttons loc-result-actions">
+                        <button type="button" class="loc-action-btn btn-edit" data-id="${escapeHtml(loc.id || '')}" title="Edit">
+                            <i class="fas fa-edit"></i><span>Edit</span>
                         </button>
-                        <button type="button" class="btn btn-print" data-location="${escapeHtml(loc.location || '')}" title="Print bin label">
-                            <i class="fas fa-print"></i> Print
+                        <button type="button" class="loc-action-btn btn-print" data-location="${escapeHtml(loc.location || '')}" title="Print bin label">
+                            <i class="fas fa-print"></i><span>Print</span>
                         </button>
-                        <button type="button" class="btn btn-delete" data-id="${escapeHtml(loc.id || '')}" data-location="${escapeHtml(loc.location || '')}" title="Delete">
-                            <i class="fas fa-trash-alt"></i> Delete
+                        <button type="button" class="loc-action-btn btn-delete" data-id="${escapeHtml(loc.id || '')}" data-location="${escapeHtml(loc.location || '')}" title="Delete">
+                            <i class="fas fa-trash-alt"></i><span>Delete</span>
                         </button>
                     </div>
                 </td>

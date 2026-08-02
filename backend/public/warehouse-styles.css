@@ -2742,29 +2742,37 @@ input.input-readonly {
         width: 100%;
     }
 
-    /* Search Location: keep Edit / Print / Delete on one row on mobile */
-    body.location-search-page .results-container .warehouse-table tbody tr.mobile-result-row td.td-actions .action-buttons {
-        grid-template-columns: repeat(3, minmax(0, 1fr));
-        gap: 6px;
-    }
-
-    body.location-search-page .results-container .warehouse-table tbody tr.mobile-result-row td.td-actions .btn {
-        min-height: 40px;
-        padding: 8px 4px;
-        font-size: 0.78rem;
-        gap: 4px;
-        white-space: nowrap;
-    }
-
-    body.location-search-page .results-container .warehouse-table tbody tr.mobile-result-row td.td-actions .btn i {
-        font-size: 0.82rem;
-    }
-
     .results-container .warehouse-table tbody tr.mobile-result-row td.td-actions .btn {
         width: 100%;
         min-height: 42px;
         justify-content: center;
         border-radius: 10px;
+    }
+
+    /* Search Location compact result actions (no global .btn) */
+    body.location-search-page .results-container .warehouse-table tbody tr.mobile-result-row td.td-actions .loc-result-actions {
+        display: flex !important;
+        flex-wrap: nowrap !important;
+        gap: 4px;
+        width: 100%;
+    }
+
+    body.location-search-page .results-container .warehouse-table tbody tr.mobile-result-row td.td-actions .loc-action-btn {
+        flex: 1 1 0 !important;
+        min-width: 0 !important;
+        width: auto !important;
+        margin: 0 !important;
+        padding: 5px 2px !important;
+        font-size: 0.65rem !important;
+        min-height: 32px !important;
+        gap: 2px;
+        border-radius: 7px;
+        overflow: hidden;
+    }
+
+    body.location-search-page .results-container .warehouse-table tbody tr.mobile-result-row td.td-actions .loc-action-btn i {
+        font-size: 0.65rem;
+        margin: 0 !important;
     }
 
     .action-buttons-cell {
@@ -2942,8 +2950,10 @@ input.input-readonly {
         grid-template-columns: 1fr;
     }
 
-    body.location-search-page .results-container .warehouse-table tbody tr.mobile-result-row td.td-actions .action-buttons {
-        grid-template-columns: repeat(3, minmax(0, 1fr));
+    body.location-search-page .results-container .warehouse-table tbody tr.mobile-result-row td.td-actions .loc-result-actions {
+        display: flex !important;
+        flex-wrap: nowrap !important;
+        grid-template-columns: unset;
     }
 
     .btn-action {
