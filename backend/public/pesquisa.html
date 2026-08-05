@@ -139,88 +139,91 @@
         </header>
 
         <main class="main-content">
-            <!-- Filtros e Busca (mesmo layout da search warehouse) -->
-            <div class="filters-section">
-                <div class="search-bar">
-                    <i class="fas fa-search"></i>
-                    <input type="text" id="searchNome" placeholder="Search by name, email or position...">
-                    <button id="pesquisar" class="btn btn-primary" type="button" title="Search employees">
-                        <i class="fas fa-search"></i> Search
-                    </button>
-                    <button id="limparFiltros" class="btn-icon" title="Clear filters">
-                        <i class="fas fa-times"></i>
-                    </button>
+            <div id="userSearchSection" class="product-search-section user-search-section">
+                <!-- Filtros e Busca (mesmo layout da search product) -->
+                <div class="filters-section">
+                    <div class="search-bar">
+                        <i class="fas fa-search"></i>
+                        <input type="text" id="searchNome" placeholder="Search by name, email or position...">
+                        <button id="pesquisar" class="btn btn-primary" type="button" title="Search employees">
+                            <i class="fas fa-search"></i> Search
+                        </button>
+                        <button id="limparFiltros" class="btn-icon" title="Clear filters">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    <div class="filters-row">
+                        <select id="searchDepartamento" class="filter-select">
+                            <option value="">All departments</option>
+                            <option value="TI">Information Technology</option>
+                            <option value="RH">Human Resources</option>
+                            <option value="Vendas">Sales</option>
+                            <option value="Marketing">Marketing</option>
+                            <option value="Financeiro">Finance</option>
+                            <option value="Operações">Operations</option>
+                            <option value="Jurídico">Legal</option>
+                            <option value="Comercial">Commercial</option>
+                            <option value="Produção">Production</option>
+                            <option value="Qualidade">Quality</option>
+                        </select>
+                        <select id="searchStatus" class="filter-select">
+                            <option value="">All Status</option>
+                            <option value="true">Active</option>
+                            <option value="false">Inactive</option>
+                        </select>
+                        <input type="email" id="searchEmail" class="filter-select" placeholder="Email">
+                        <input type="text" id="searchCargo" class="filter-select" placeholder="Position">
+                        <input type="date" id="searchDataInicio" class="filter-select" title="Hire date from">
+                        <input type="date" id="searchDataFim" class="filter-select" title="Hire date to">
+                        <select id="ordenarPor" class="filter-select">
+                            <option value="nome">Sort by Name</option>
+                            <option value="cargo">Sort by Position</option>
+                            <option value="departamento">Sort by Department</option>
+                            <option value="dataAdmissao">Sort by Hire Date</option>
+                            <option value="criadoEm">Sort by Creation Date</option>
+                        </select>
+                        <select id="direcao" class="filter-select">
+                            <option value="asc">Ascending</option>
+                            <option value="desc">Descending</option>
+                        </select>
+                    </div>
                 </div>
-                <div class="filters-row">
-                    <select id="searchDepartamento" class="filter-select">
-                        <option value="">All departments</option>
-                        <option value="TI">Information Technology</option>
-                        <option value="RH">Human Resources</option>
-                        <option value="Vendas">Sales</option>
-                        <option value="Marketing">Marketing</option>
-                        <option value="Financeiro">Finance</option>
-                        <option value="Operações">Operations</option>
-                        <option value="Jurídico">Legal</option>
-                        <option value="Comercial">Commercial</option>
-                        <option value="Produção">Production</option>
-                        <option value="Qualidade">Quality</option>
-                    </select>
-                    <select id="searchStatus" class="filter-select">
-                        <option value="">All Status</option>
-                        <option value="true">Active</option>
-                        <option value="false">Inactive</option>
-                    </select>
-                    <input type="email" id="searchEmail" class="filter-select" placeholder="Email" style="max-width: 200px;">
-                    <input type="text" id="searchCargo" class="filter-select" placeholder="Position" style="max-width: 160px;">
-                    <input type="date" id="searchDataInicio" class="filter-select" title="Hire date from">
-                    <input type="date" id="searchDataFim" class="filter-select" title="Hire date to">
-                    <select id="ordenarPor" class="filter-select">
-                        <option value="nome">Sort by Name</option>
-                        <option value="cargo">Sort by Position</option>
-                        <option value="departamento">Sort by Department</option>
-                        <option value="dataAdmissao">Sort by Hire Date</option>
-                        <option value="criadoEm">Sort by Creation Date</option>
-                    </select>
-                    <select id="direcao" class="filter-select">
-                        <option value="asc">Ascending</option>
-                        <option value="desc">Descending</option>
-                    </select>
-                </div>
-            </div>
 
-            <!-- Tabela de Resultados (logo abaixo do filtro, igual warehouse) -->
-            <div class="table-container">
-                <div class="results-info-bar">
+                <div class="warehouse-search-results-meta" id="searchResultsMeta">
                     <span id="resultsCount">0 employees</span>
                     <span id="resultsTime"></span>
                 </div>
-                <div id="loadingIndicator" class="loading-indicator" style="display: none;">
-                    <i class="fas fa-spinner fa-spin"></i> Loading...
-                </div>
-                <table class="warehouse-table">
-                    <thead>
-                        <tr>
-                            <th><i class="fas fa-user"></i> Name</th>
-                            <th><i class="fas fa-envelope"></i> Email</th>
-                            <th><i class="fas fa-briefcase"></i> Position</th>
-                            <th><i class="fas fa-building"></i> Department</th>
-                            <th><i class="fas fa-calendar-alt"></i> Hire Date</th>
-                            <th><i class="fas fa-info-circle"></i> Status</th>
-                            <th class="th-actions"><i class="fas fa-cog"></i> Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody id="employeesTableBody">
-                        <tr class="empty-state-row">
-                            <td colspan="7" class="empty-state" id="emptyStateRow">
-                                <i class="fas fa-search"></i>
-                                <p>Use search or filters and click <strong>Search</strong> to load employees.</p>
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
-                <div id="noResults" class="no-results" style="display: none;">
-                    <i class="fas fa-search"></i>
-                    <p>No employees found. Try adjusting the filters or <a href="users.html">register a new user</a>.</p>
+
+                <!-- Resultados abaixo dos filtros -->
+                <div class="table-container">
+                    <div id="loadingIndicator" class="loading-indicator" style="display: none;">
+                        <i class="fas fa-spinner fa-spin"></i> Loading...
+                    </div>
+                    <table class="warehouse-table">
+                        <thead>
+                            <tr>
+                                <th><i class="fas fa-user"></i> Name</th>
+                                <th><i class="fas fa-envelope"></i> Email</th>
+                                <th><i class="fas fa-briefcase"></i> Position</th>
+                                <th><i class="fas fa-building"></i> Department</th>
+                                <th><i class="fas fa-calendar-alt"></i> Hire Date</th>
+                                <th><i class="fas fa-info-circle"></i> Status</th>
+                                <th class="th-actions"><i class="fas fa-cog"></i> Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="employeesTableBody">
+                            <tr class="empty-state-row">
+                                <td colspan="7" class="empty-state" id="emptyStateRow">
+                                    <i class="fas fa-search"></i>
+                                    <p>Use search or filters and click <strong>Search</strong> to load employees.</p>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <div id="noResults" class="no-results" style="display: none;">
+                        <i class="fas fa-search"></i>
+                        <p>No employees found. Try adjusting the filters or <a href="users.html">register a new user</a>.</p>
+                    </div>
                 </div>
             </div>
         </main>

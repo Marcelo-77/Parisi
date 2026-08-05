@@ -769,4 +769,112 @@
     background: #1e8449;
 }
 
+/* Search User: mirror Search Product layout (filters first, then results) */
+body.search-user-page .main-content {
+    justify-content: stretch;
+    width: 100%;
+}
+
+body.search-user-page .user-search-section {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    max-width: 100%;
+    align-self: stretch;
+    height: auto;
+    min-height: 0;
+    max-height: none;
+}
+
+body.search-user-page .search-bar #searchNome {
+    flex: 1 1 220px;
+    min-width: 160px;
+    width: auto;
+    padding: 10px 40px 10px 36px;
+    border: 2px solid #e1e5e9;
+    border-radius: 10px;
+    font-size: 0.95rem;
+    transition: all 0.3s ease;
+}
+
+body.search-user-page .search-bar #searchNome:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+body.search-user-page .search-bar #pesquisar {
+    flex: 0 0 auto;
+    white-space: nowrap;
+}
+
+body.search-user-page .search-bar #limparFiltros {
+    position: static;
+    transform: none;
+    flex: 0 0 auto;
+}
+
+body.search-user-page .warehouse-search-results-meta {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    padding: 0 8px 8px;
+}
+
+@media (max-width: 768px) {
+    body.search-user-page .main-content {
+        display: block;
+        width: 100%;
+        padding: 0 4px 24px;
+    }
+
+    body.search-user-page .user-search-section {
+        height: auto;
+        min-height: 0;
+        max-height: none;
+        padding-bottom: 16px;
+    }
+
+    body.search-user-page .filters-section {
+        order: 1;
+        margin-bottom: 12px;
+    }
+
+    body.search-user-page .warehouse-search-results-meta {
+        order: 2;
+        justify-content: flex-start;
+        padding: 0 4px 10px;
+    }
+
+    body.search-user-page .table-container {
+        order: 3;
+        width: 100%;
+        max-width: 100%;
+        box-sizing: border-box;
+    }
+
+    body.search-user-page .search-bar #searchNome {
+        width: 100%;
+        padding: 12px 14px;
+        font-size: 16px;
+    }
+
+    body.search-user-page .search-bar #pesquisar {
+        width: 100%;
+        min-width: 0;
+        min-height: 46px;
+    }
+
+    body.search-user-page .filters-row .filter-select {
+        width: 100%;
+        max-width: none;
+    }
+
+    body.search-user-page .filters-row input.filter-select,
+    body.search-user-page .filters-row select.filter-select {
+        font-size: 16px;
+        min-height: 44px;
+    }
+}
+
 

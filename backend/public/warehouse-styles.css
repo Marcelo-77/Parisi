@@ -2522,9 +2522,12 @@ input.input-readonly {
 
     .search-bar #searchByField,
     .search-bar #searchInput,
+    .search-bar #searchNome,
     .search-bar #scanBarcodeBtn,
     .search-bar #searchBtn,
-    .search-bar #clearSearch {
+    .search-bar #pesquisar,
+    .search-bar #clearSearch,
+    .search-bar #limparFiltros {
         width: 100%;
         max-width: none;
         flex: 1 1 auto;
@@ -2532,18 +2535,21 @@ input.input-readonly {
         margin: 0 !important;
     }
 
-    .search-bar #searchInput {
+    .search-bar #searchInput,
+    .search-bar #searchNome {
         padding: 12px 14px;
         font-size: 1rem;
     }
 
     .search-bar #searchBtn,
+    .search-bar #pesquisar,
     .search-bar #scanBarcodeBtn {
         min-height: 46px;
         justify-content: center;
     }
 
-    .search-bar #clearSearch {
+    .search-bar #clearSearch,
+    .search-bar #limparFiltros {
         align-self: flex-end;
         width: auto;
         padding: 10px 12px;
@@ -2560,6 +2566,7 @@ input.input-readonly {
     }
 
     #productSearchSection .table-container,
+    #userSearchSection .table-container,
     .results-container .table-container,
     body.location-search-page .table-container {
         padding: 10px;
