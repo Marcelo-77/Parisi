@@ -258,20 +258,20 @@ document.addEventListener('DOMContentLoaded', () => {
     const tr = document.createElement('tr');
     tr.className = 'new-record-row';
     tr.innerHTML = `
-      <td>
+      <td data-label="Location Code">
         <input type="text" class="new-row-location" list="locationCodesList" placeholder="Location code" value="${escapeHtml(defaults.locationCode || '')}" style="text-transform:uppercase;" autocomplete="off">
       </td>
-      <td>
+      <td data-label="Product Code">
         <input type="text" class="new-row-product" list="productCodesList" placeholder="Product code" value="${escapeHtml(defaults.productCode || '')}" style="text-transform:uppercase;" autocomplete="off">
       </td>
-      <td>
+      <td data-label="Situation">
         <select class="new-row-situation" required>${getSituationOptionsHtml(defaults.siprSqNumber ?? getDefaultSituationValue())}</select>
       </td>
-      <td>
+      <td data-label="Qty Informed">
         <input type="number" class="new-row-qty-informed" min="1" step="1" value="${Number(defaults.quantityInformed ?? 1)}">
       </td>
-      <td class="td-actions">
-        <button type="button" class="btn btn-delete btn-remove-row" title="Remove line"><i class="fas fa-times"></i></button>
+      <td class="td-actions" data-label="Actions">
+        <button type="button" class="btn-remove-row" title="Remove line"><i class="fas fa-times"></i></button>
       </td>
     `;
 

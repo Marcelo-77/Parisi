@@ -347,7 +347,7 @@ function renderResults() {
     if (!elements.employeesTableBody) return;
     if (funcionariosFiltrados.length === 0) {
         elements.employeesTableBody.innerHTML = `
-            <tr>
+            <tr class="empty-state-row">
                 <td colspan="7" class="empty-state" id="emptyStateRow">
                     <i class="fas fa-search"></i>
                     <p>No employees found. Use filters and click <strong>Search</strong>, or <a href="users.html">register a new user</a>.</p>
@@ -363,24 +363,26 @@ function renderResults() {
     updateResultsInfo();
 }
 
-// Create table row HTML (igual warehouse: uma linha por funcionário)
+// Create table row HTML (desktop table; mobile cards via .mobile-result-row)
 function createFuncionarioRowHTML(funcionario) {
     const statusClass = funcionario.ativo ? 'ativo' : 'inativo';
     const statusText = funcionario.ativo ? 'Active' : 'Inactive';
     const hireDate = funcionario.dataAdmissao ? formatDate(funcionario.dataAdmissao) : '-';
     const id = String(funcionario.id || '').replace(/"/g, '&quot;');
     return `
-        <tr data-id="${id}">
-            <td>${escapeHtml(funcionario.nome || '')}</td>
-            <td>${escapeHtml(funcionario.email || '')}</td>
-            <td>${escapeHtml(funcionario.cargo || '')}</td>
-            <td>${escapeHtml(funcionario.departamento || '')}</td>
-            <td>${hireDate}</td>
-            <td><span class="status-badge ${statusClass}"><i class="fas fa-circle"></i> ${statusText}</span></td>
-            <td>
-                <button type="button" class="btn-action btn-view btn btn-sm btn-outline" title="View"><i class="fas fa-eye"></i></button>
-                <button type="button" class="btn-action btn-edit btn btn-sm btn-outline" title="Edit"><i class="fas fa-edit"></i></button>
-                <button type="button" class="btn-action btn-delete btn btn-sm btn-outline" title="Delete"><i class="fas fa-trash"></i></button>
+        <tr class="mobile-result-row" data-id="${id}">
+            <td data-label="Name"><strong>${escapeHtml(funcionario.nome || '')}</strong></td>
+            <td data-label="Email">${escapeHtml(funcionario.email || '')}</td>
+            <td data-label="Position">${escapeHtml(funcionario.cargo || '')}</td>
+            <td data-label="Department">${escapeHtml(funcionario.departamento || '')}</td>
+            <td data-label="Hire Date">${hireDate}</td>
+            <td data-label="Status"><span class="status-badge ${statusClass}"><i class="fas fa-circle"></i> ${statusText}</span></td>
+            <td data-label="Actions" class="td-actions">
+                <div class="action-buttons">
+                    <button type="button" class="btn-action btn-view" title="View"><i class="fas fa-eye"></i> <span>View</span></button>
+                    <button type="button" class="btn-action btn-edit" title="Edit"><i class="fas fa-edit"></i> <span>Edit</span></button>
+                    <button type="button" class="btn-action btn-delete" title="Delete"><i class="fas fa-trash"></i> <span>Del.</span></button>
+                </div>
             </td>
         </tr>
     `;

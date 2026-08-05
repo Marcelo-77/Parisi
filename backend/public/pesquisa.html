@@ -9,7 +9,7 @@
     <link rel="stylesheet" href="pesquisa-styles.css">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
 </head>
-<body>
+<body class="search-user-page">
     <script src="auth-check.js"></script>
     <script src="header-menu.js"></script>
     <script src="menu-access.js"></script>
@@ -206,11 +206,11 @@
                             <th><i class="fas fa-building"></i> Department</th>
                             <th><i class="fas fa-calendar-alt"></i> Hire Date</th>
                             <th><i class="fas fa-info-circle"></i> Status</th>
-                            <th><i class="fas fa-cog"></i> Actions</th>
+                            <th class="th-actions"><i class="fas fa-cog"></i> Actions</th>
                         </tr>
                     </thead>
                     <tbody id="employeesTableBody">
-                        <tr>
+                        <tr class="empty-state-row">
                             <td colspan="7" class="empty-state" id="emptyStateRow">
                                 <i class="fas fa-search"></i>
                                 <p>Use search or filters and click <strong>Search</strong> to load employees.</p>
