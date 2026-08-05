@@ -1898,9 +1898,10 @@ async function openProductArModal() {
             const assets = await withTimeout(
                 window.WarehouseProductArGlb.createProductPhotoGlbAssets(photoSrc, {
                     maxSideMeters: 0.42,
-                    depthMeters: 0.16,
+                    depthMeters: 0.012,
                     maxImageEdge: 512,
-                    jpegQuality: 0.78
+                    cutout: true,
+                    removeBackground: true
                 }),
                 12000,
                 'Timed out building the photo model'

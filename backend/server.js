@@ -133,7 +133,8 @@ app.get('/public-ar/:id.glb', async (req, res) => {
       if (parsed && parsed.buffer && parsed.buffer.length <= 750000) {
         glb = warehouseArGlbService.buildProductPhotoGlb(item.photo, {
           maxSideMeters: 0.42,
-          depthMeters: 0.16
+          depthMeters: 0.012,
+          cutout: true
         });
       }
     }
