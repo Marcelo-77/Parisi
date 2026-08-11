@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Double-Y Warehouse System - New Test Case</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="warehouse-styles.css">
+    <link rel="stylesheet" href="pesquisa-styles.css">
+    <link rel="stylesheet" href="test-case-styles.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body class="test-case-page">
+    <script src="auth-check.js"></script>
+    <script src="header-menu.js"></script>
+    <script src="menu-access.js"></script>
+    <script src="double-y-logo-effect.js"></script>
+    <script src="dev-environment-badge.js"></script>
+    <div class="container">
+        <header class="header">
+            <div class="header-stats-row">
+                <div class="header-stats-left">
+                    <div class="header-stat header-stat-total">
+                        <span class="header-stat-value" id="totalItems">0</span>
+                        <span class="header-stat-label">Total Items</span>
+                    </div>
+                    <div class="header-stat header-stat-low">
+                        <span class="header-stat-value" id="lowStockItems">0</span>
+                        <span class="header-stat-label">Low Stock</span>
+                    </div>
+                </div>
+                <div class="double-y-wordmark" aria-label="Double Y"><img src="doubley-glyph.png" alt="" class="double-y-glyph" aria-hidden="true"><span class="double-y-name">Double Y</span><img src="doubley-glyph-bottom.png" alt="" class="double-y-glyph double-y-glyph-bottom" aria-hidden="true"></div>
+                <div class="header-stats-right">
+                    <div class="header-stat header-stat-entries">
+                        <span class="header-stat-value" id="totalEntradas">0</span>
+                        <span class="header-stat-label">Entries Today</span>
+                    </div>
+                    <div class="header-stat header-stat-exits">
+                        <span class="header-stat-value" id="totalSaidas">0</span>
+                        <span class="header-stat-label">Exits Today</span>
+                    </div>
+                </div>
+            </div>
+            <div class="header-content">
+                <h1><i class="fas fa-warehouse"></i> Double-Y Warehouse System</h1>
+                <p class="header-search-users-label">New Test Case</p>
+                <div class="header-actions"></div>
+            </div>
+        </header>
+
+        <main class="main-content">
+            <section class="tc-panel">
+                <div class="tc-intro">
+                    <div class="tc-intro-text">
+                        <div class="tc-intro-icon" aria-hidden="true"><i class="fas fa-vial"></i></div>
+                        <div>
+                            <h2>New Test Case</h2>
+                            <p>Create a test case. IDs are generated automatically as TC-0001, TC-0002, …</p>
+                        </div>
+                    </div>
+                    <div class="tc-intro-actions">
+                        <button type="button" class="btn btn-primary" id="newTestCaseBtn">
+                            <i class="fas fa-plus"></i> New Test Case
+                        </button>
+                    </div>
+                </div>
+                <div id="pageMessage" class="tc-page-message" role="status" aria-live="polite"></div>
+            </section>
+        </main>
+
+        <footer class="footer">
+            <p>&copy; 2026 Double-Y IT Systems. All rights reserved.</p>
+        </footer>
+    </div>
+
+    <div id="testCaseModal" class="modal" aria-hidden="true">
+        <div class="modal-content modal-large item-modal-content">
+            <div class="modal-header success">
+                <h3 id="formTitle"><i class="fas fa-clipboard-check"></i> New Test Case</h3>
+                <button type="button" class="modal-close" id="closeTestCaseModal" aria-label="Close">&times;</button>
+            </div>
+            <form id="testCaseForm" class="item-modal-form">
+                <input type="hidden" id="testCaseRecordId">
+                <div class="modal-body item-modal-body">
+                    <h4 class="tc-section-title"><i class="fas fa-id-card"></i> Identification</h4>
+                    <div class="tc-form-grid">
+                        <div class="tc-field">
+                            <label for="testCaseId"><i class="fas fa-hashtag"></i> Test Case ID</label>
+                            <input type="text" id="testCaseId" class="tc-id-display input-readonly" readonly>
+                        </div>
+                        <div class="tc-field">
+                            <label for="testModule"><i class="fas fa-cubes"></i> Module *</label>
+                            <select id="testModule" required><option value="">Select module</option></select>
+                        </div>
+                        <div class="tc-field">
+                            <label for="testStatus"><i class="fas fa-flag"></i> Status</label>
+                            <select id="testStatus"></select>
+                        </div>
+                        <div class="tc-field">
+                            <label for="testSeverity"><i class="fas fa-bolt"></i> Severity</label>
+                            <select id="testSeverity"></select>
+                        </div>
+                        <div class="tc-field">
+                            <label for="testTester"><i class="fas fa-user"></i> Tester</label>
+                            <input type="text" id="testTester" maxlength="100" placeholder="Tester name">
+                        </div>
+                        <div class="tc-field">
+                            <label for="testExecutionDate"><i class="fas fa-calendar"></i> Execution Date</label>
+                            <input type="date" id="testExecutionDate">
+                        </div>
+                        <div class="tc-field tc-field-wide">
+                            <label for="testEvidence"><i class="fas fa-paperclip"></i> Evidence</label>
+                            <input type="file" id="testEvidence" accept=".pdf,.doc,.docx,.xls,.xlsx,.txt,.png,.jpg,.jpeg,.gif,.csv,.zip,.mp4,.webm">
+                            <p class="tc-file-hint">Optional file, maximum 7 MB.</p>
+                            <div id="currentEvidence" class="tc-evidence-current"></div>
+                        </div>
+                    </div>
+
+                    <h4 class="tc-section-title"><i class="fas fa-list-check"></i> Test details</h4>
+                    <div class="tc-form-grid">
+                        <div class="tc-field tc-field-full">
+                            <label for="testScenario"><i class="fas fa-list"></i> Test Scenario *</label>
+                            <textarea id="testScenario" rows="2" required placeholder="What is being tested?"></textarea>
+                        </div>
+                        <div class="tc-field tc-field-wide">
+                            <label for="testPreCondition"><i class="fas fa-check-double"></i> Pre-Condition</label>
+                            <textarea id="testPreCondition" rows="3" placeholder="Conditions required before execution"></textarea>
+                        </div>
+                        <div class="tc-field tc-field-wide">
+                            <label for="testSteps"><i class="fas fa-route"></i> Test Steps</label>
+                            <textarea id="testSteps" rows="3" placeholder="Step-by-step execution"></textarea>
+                        </div>
+                        <div class="tc-field tc-field-wide">
+                            <label for="testExpectedResult"><i class="fas fa-bullseye"></i> Expected Result</label>
+                            <textarea id="testExpectedResult" rows="3" placeholder="What should happen"></textarea>
+                        </div>
+                        <div class="tc-field tc-field-wide">
+                            <label for="testComments"><i class="fas fa-comment"></i> Comments</label>
+                            <textarea id="testComments" rows="3" placeholder="Notes, defects, observations"></textarea>
+                        </div>
+                    </div>
+                </div>
+                <div id="testCaseMessage" class="tc-form-message" role="status" aria-live="polite"></div>
+                <div class="modal-footer item-modal-footer form-actions">
+                    <button type="button" id="clearTestCaseBtn" class="btn btn-secondary"><i class="fas fa-times"></i> Cancel</button>
+                    <button type="submit" id="saveTestCaseBtn" class="btn btn-primary"><i class="fas fa-save"></i> Save</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="test-case-script.js"></script>
+</body>
+</html>

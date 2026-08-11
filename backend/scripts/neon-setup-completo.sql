@@ -157,6 +157,45 @@ CREATE INDEX IF NOT EXISTS idx_improvements_corrections_criado ON improvements_c
 CREATE INDEX IF NOT EXISTS idx_improvements_corrections_type ON improvements_corrections(request_type);
 ALTER TABLE improvements_corrections ADD COLUMN IF NOT EXISTS request_history TEXT;
 
+CREATE SEQUENCE IF NOT EXISTS test_case_number_seq;
+
+CREATE TABLE IF NOT EXISTS test_cases (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  test_case_number INTEGER UNIQUE NOT NULL DEFAULT nextval('test_case_number_seq'),
+  test_case_id VARCHAR(20) UNIQUE NOT NULL,
+  module VARCHAR(50) NOT NULL,
+  test_scenario TEXT NOT NULL,
+  pre_condition TEXT,
+  test_steps TEXT,
+  expected_result TEXT,
+  status VARCHAR(30) NOT NULL DEFAULT 'Not Executed',
+  severity VARCHAR(20) NOT NULL DEFAULT 'Medium',
+  tester VARCHAR(100),
+  execution_date DATE,
+  comments TEXT,
+  evidence_file_name VARCHAR(200),
+  evidence_mime_type VARCHAR(100),
+  evidence_file_size INTEGER,
+  evidence_file_data BYTEA,
+  created_by UUID REFERENCES funcionarios(id) ON DELETE SET NULL,
+  created_by_name VARCHAR(100),
+  criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  atualizado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT test_cases_module_chk CHECK (module IN (
+    'Sales Order', 'Mobile Warehouse', 'Picking', 'Validation Code', 'Integration', 'PDA - Test'
+  )),
+  CONSTRAINT test_cases_status_chk CHECK (status IN (
+    'Not Executed', 'Pass', 'Fail', 'Blocked', 'In Progress'
+  )),
+  CONSTRAINT test_cases_severity_chk CHECK (severity IN (
+    'Critical', 'High', 'Medium', 'Low'
+  ))
+);
+
+CREATE INDEX IF NOT EXISTS idx_test_cases_module ON test_cases(module);
+CREATE INDEX IF NOT EXISTS idx_test_cases_status ON test_cases(status);
+CREATE INDEX IF NOT EXISTS idx_test_cases_id ON test_cases(test_case_id);
+
 -- =============================================================================
 -- 2) WAREHOUSE (produtos e movimentacoes simples)
 -- =============================================================================
@@ -350,6 +389,8 @@ FROM (VALUES
   ('News-Search.html', 'Applications_News_Search'),
   ('Improvements-and-Corrections-Control.html', 'Applications_Improvements_Corrections'),
   ('Improvements-and-Corrections-Control-Search.html', 'Applications_Improvements_Corrections'),
+  ('Test-Case.html', 'Applications_Test_Control'),
+  ('Test-Case-Search.html', 'Applications_Test_Control_Search'),
   ('location.html', 'Location'),
   ('location-search.html', 'Location_Search'),
   ('location-smart.html', 'Location_Smart'),
@@ -391,6 +432,8 @@ FROM (VALUES
   ('News-Search.html', 'Applications_News_Search'),
   ('Improvements-and-Corrections-Control.html', 'Applications_Improvements_Corrections'),
   ('Improvements-and-Corrections-Control-Search.html', 'Applications_Improvements_Corrections'),
+  ('Test-Case.html', 'Applications_Test_Control'),
+  ('Test-Case-Search.html', 'Applications_Test_Control_Search'),
   ('location.html', 'Location'),
   ('location-search.html', 'Location_Search'),
   ('location-smart.html', 'Location_Smart'),

@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Double-Y Warehouse System - Search Test Cases</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="warehouse-styles.css">
+    <link rel="stylesheet" href="pesquisa-styles.css">
+    <link rel="stylesheet" href="test-case-styles.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body class="test-case-page test-case-search-page">
+    <script src="auth-check.js"></script>
+    <script src="header-menu.js"></script>
+    <script src="menu-access.js"></script>
+    <script src="double-y-logo-effect.js"></script>
+    <script src="dev-environment-badge.js"></script>
+    <div class="container">
+        <header class="header">
+            <div class="header-stats-row">
+                <div class="header-stats-left">
+                    <div class="header-stat header-stat-total">
+                        <span class="header-stat-value" id="totalItems">0</span>
+                        <span class="header-stat-label">Total Items</span>
+                    </div>
+                    <div class="header-stat header-stat-low">
+                        <span class="header-stat-value" id="lowStockItems">0</span>
+                        <span class="header-stat-label">Low Stock</span>
+                    </div>
+                </div>
+                <div class="double-y-wordmark" aria-label="Double Y"><img src="doubley-glyph.png" alt="" class="double-y-glyph" aria-hidden="true"><span class="double-y-name">Double Y</span><img src="doubley-glyph-bottom.png" alt="" class="double-y-glyph double-y-glyph-bottom" aria-hidden="true"></div>
+                <div class="header-stats-right">
+                    <div class="header-stat header-stat-entries">
+                        <span class="header-stat-value" id="totalEntradas">0</span>
+                        <span class="header-stat-label">Entries Today</span>
+                    </div>
+                    <div class="header-stat header-stat-exits">
+                        <span class="header-stat-value" id="totalSaidas">0</span>
+                        <span class="header-stat-label">Exits Today</span>
+                    </div>
+                </div>
+            </div>
+            <div class="header-content">
+                <h1><i class="fas fa-warehouse"></i> Double-Y Warehouse System</h1>
+                <p class="header-search-users-label">Search Test Cases</p>
+                <div class="header-actions"></div>
+            </div>
+        </header>
+
+        <main class="main-content">
+            <div id="testCaseSearchSection" class="product-search-section">
+                <div class="filters-section">
+                    <div class="search-bar warehouse-search-bar">
+                        <i class="fas fa-search"></i>
+                        <select id="searchByField" class="filter-select">
+                            <option value="testCaseId">Search by Test Case ID</option>
+                            <option value="testScenario">Search by Scenario</option>
+                            <option value="tester">Search by Tester</option>
+                        </select>
+                        <input type="text" id="searchInput" placeholder="TC-0001">
+                        <div class="warehouse-search-actions">
+                            <button id="searchBtn" class="btn btn-primary" type="button" title="Search test cases">
+                                <i class="fas fa-search"></i> Search
+                            </button>
+                            <button id="downloadTestCasesExcel" class="btn btn-secondary btn-excel-download" type="button" title="Download Excel">
+                                <span class="btn-excel-icon" aria-hidden="true">
+                                    <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" role="img">
+                                        <path fill="#185c37" d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z"/>
+                                        <path fill="#21a366" d="M14 2v6h6"/>
+                                        <path fill="#fff" d="M8.2 17.5 10.4 14l-2.1-3.5h2l1.1 2 1.1-2h2L12.4 14l2.2 3.5h-2.1l-1-1.7-1 1.7H8.2z"/>
+                                    </svg>
+                                </span>
+                                Download
+                            </button>
+                            <button id="cancelSearchPageBtn" class="btn btn-secondary" type="button" title="Close search">
+                                <i class="fas fa-times"></i> Cancel
+                            </button>
+                            <button id="clearSearch" class="btn-icon" title="Clear search" type="button">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="filters-row">
+                        <select id="filterModule" class="filter-select" aria-label="Filter by module">
+                            <option value="">All Modules</option>
+                        </select>
+                        <select id="filterStatus" class="filter-select" aria-label="Filter by status">
+                            <option value="">All Status</option>
+                        </select>
+                        <select id="filterSeverity" class="filter-select" aria-label="Filter by severity">
+                            <option value="">All Severity</option>
+                        </select>
+                        <select id="sortBy" class="filter-select" aria-label="Sort results">
+                            <option value="testCaseId">Sort by Test Case ID</option>
+                            <option value="module">Sort by Module</option>
+                            <option value="status">Sort by Status</option>
+                            <option value="severity">Sort by Severity</option>
+                            <option value="tester">Sort by Tester</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div id="pageMessage" class="tc-page-message" role="status" aria-live="polite"></div>
+
+                <div id="searchResultsMeta" class="warehouse-search-results-meta" style="display: none;">
+                    <span id="testCaseSearchResultsCount">0 records</span>
+                </div>
+
+                <div class="table-container">
+                    <table class="warehouse-table">
+                        <thead>
+                            <tr>
+                                <th><i class="fas fa-hashtag"></i> Test Case ID</th>
+                                <th><i class="fas fa-cubes"></i> Module</th>
+                                <th><i class="fas fa-list"></i> Test Scenario</th>
+                                <th><i class="fas fa-flag"></i> Status</th>
+                                <th><i class="fas fa-bolt"></i> Severity</th>
+                                <th><i class="fas fa-user"></i> Tester</th>
+                                <th><i class="fas fa-calendar"></i> Execution Date</th>
+                            </tr>
+                        </thead>
+                        <tbody id="testCaseTableBody">
+                            <tr>
+                                <td colspan="7" class="empty-state" id="emptyStateRow">
+                                    <i class="fas fa-search"></i>
+                                    <p>Use search or filters and click <strong>Search</strong> to load test cases.</p>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+
+        <footer class="footer">
+            <p>&copy; 2026 Double-Y IT Systems. All rights reserved.</p>
+        </footer>
+    </div>
+
+    <div id="testCaseModal" class="modal" aria-hidden="true">
+        <div class="modal-content modal-large item-modal-content">
+            <div class="modal-header success">
+                <h3 id="formTitle"><i class="fas fa-clipboard-check"></i> Edit Test Case</h3>
+                <button type="button" class="modal-close" id="closeTestCaseModal" aria-label="Close">&times;</button>
+            </div>
+            <form id="testCaseForm" class="item-modal-form">
+                <input type="hidden" id="testCaseRecordId">
+                <div class="modal-body item-modal-body">
+                    <h4 class="tc-section-title"><i class="fas fa-id-card"></i> Identification</h4>
+                    <div class="tc-form-grid">
+                        <div class="tc-field">
+                            <label for="testCaseId"><i class="fas fa-hashtag"></i> Test Case ID</label>
+                            <input type="text" id="testCaseId" class="tc-id-display input-readonly" readonly>
+                        </div>
+                        <div class="tc-field">
+                            <label for="testModule"><i class="fas fa-cubes"></i> Module *</label>
+                            <select id="testModule" required><option value="">Select module</option></select>
+                        </div>
+                        <div class="tc-field">
+                            <label for="testStatus"><i class="fas fa-flag"></i> Status</label>
+                            <select id="testStatus"></select>
+                        </div>
+                        <div class="tc-field">
+                            <label for="testSeverity"><i class="fas fa-bolt"></i> Severity</label>
+                            <select id="testSeverity"></select>
+                        </div>
+                        <div class="tc-field">
+                            <label for="testTester"><i class="fas fa-user"></i> Tester</label>
+                            <input type="text" id="testTester" maxlength="100" placeholder="Tester name">
+                        </div>
+                        <div class="tc-field">
+                            <label for="testExecutionDate"><i class="fas fa-calendar"></i> Execution Date</label>
+                            <input type="date" id="testExecutionDate">
+                        </div>
+                        <div class="tc-field tc-field-wide">
+                            <label for="testEvidence"><i class="fas fa-paperclip"></i> Evidence</label>
+                            <input type="file" id="testEvidence" accept=".pdf,.doc,.docx,.xls,.xlsx,.txt,.png,.jpg,.jpeg,.gif,.csv,.zip,.mp4,.webm">
+                            <p class="tc-file-hint">Optional file, maximum 7 MB.</p>
+                            <div id="currentEvidence" class="tc-evidence-current"></div>
+                        </div>
+                    </div>
+
+                    <h4 class="tc-section-title"><i class="fas fa-list-check"></i> Test details</h4>
+                    <div class="tc-form-grid">
+                        <div class="tc-field tc-field-full">
+                            <label for="testScenario"><i class="fas fa-list"></i> Test Scenario *</label>
+                            <textarea id="testScenario" rows="2" required placeholder="What is being tested?"></textarea>
+                        </div>
+                        <div class="tc-field tc-field-wide">
+                            <label for="testPreCondition"><i class="fas fa-check-double"></i> Pre-Condition</label>
+                            <textarea id="testPreCondition" rows="3" placeholder="Conditions required before execution"></textarea>
+                        </div>
+                        <div class="tc-field tc-field-wide">
+                            <label for="testSteps"><i class="fas fa-route"></i> Test Steps</label>
+                            <textarea id="testSteps" rows="3" placeholder="Step-by-step execution"></textarea>
+                        </div>
+                        <div class="tc-field tc-field-wide">
+                            <label for="testExpectedResult"><i class="fas fa-bullseye"></i> Expected Result</label>
+                            <textarea id="testExpectedResult" rows="3" placeholder="What should happen"></textarea>
+                        </div>
+                        <div class="tc-field tc-field-wide">
+                            <label for="testComments"><i class="fas fa-comment"></i> Comments</label>
+                            <textarea id="testComments" rows="3" placeholder="Notes, defects, observations"></textarea>
+                        </div>
+                    </div>
+                </div>
+                <div id="testCaseMessage" class="tc-form-message" role="status" aria-live="polite"></div>
+                <div class="modal-footer item-modal-footer form-actions">
+                    <button type="button" id="clearTestCaseBtn" class="btn btn-secondary"><i class="fas fa-times"></i> Cancel</button>
+                    <button type="submit" id="saveTestCaseBtn" class="btn btn-primary"><i class="fas fa-save"></i> Save</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="test-case-script.js"></script>
+</body>
+</html>

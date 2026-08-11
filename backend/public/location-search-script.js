@@ -344,6 +344,7 @@ document.addEventListener('DOMContentLoaded', () => {
     window.addEventListener('load', revealSearchPanel);
 
     const searchLocationInput = document.getElementById('searchLocation');
+    const filterSectionSelect = document.getElementById('filterLocationSection');
     const filterStatusSelect = document.getElementById('filterLocationStatus');
     const filterAccessSelect = document.getElementById('filterAccessType');
     const clearSearchBtn = document.getElementById('clearLocationSearch');
@@ -1212,14 +1213,16 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         const term = getLocationSearchPrefix();
+        const section = filterSectionSelect ? filterSectionSelect.value : '';
         const status = filterStatusSelect.value;
         const access = filterAccessSelect.value;
 
         const filtered = locations.filter(loc => {
             const matchesTerm = locationMatchesSearchTerm(loc.location, term);
+            const matchesSection = !section || getLocationSection(loc).toUpperCase() === section.toUpperCase();
             const matchesStatus = !status || loc.status === status;
             const matchesAccess = !access || loc.accessType === access;
-            return matchesTerm && matchesStatus && matchesAccess;
+            return matchesTerm && matchesSection && matchesStatus && matchesAccess;
         });
 
         filteredLocations = filtered;
@@ -1357,6 +1360,11 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    if (filterSectionSelect) {
+        filterSectionSelect.addEventListener('change', () => {
+            if (hasSearched) filterLocations();
+        });
+    }
     filterStatusSelect.addEventListener('change', () => {
         if (hasSearched) filterLocations();
     });
@@ -1374,6 +1382,7 @@ document.addEventListener('DOMContentLoaded', () => {
             allowPartial: true,
             allowDirectCodeEntry: true
         });
+        if (filterSectionSelect) filterSectionSelect.value = '';
         filterStatusSelect.value = '';
         filterAccessSelect.value = '';
         showEmptyStateInitial();

@@ -8,6 +8,128 @@ let records = [];
 let locations = [];
 let products = [];
 let situations = [];
+let loggedUserExportPrefix = null;
+
+function escapeXml(value) {
+  return String(value == null ? '' : value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+function formatExportFileDate(date) {
+  const pad = (n) => String(n).padStart(2, '0');
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}_${pad(date.getHours())}${pad(date.getMinutes())}`;
+}
+
+function formatExportDateTime(value) {
+  if (!value) return '';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return String(value);
+  const pad = (n) => String(n).padStart(2, '0');
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
+}
+
+function sanitizeFileNamePart(value) {
+  return String(value == null ? '' : value)
+    .trim()
+    .toLowerCase()
+    .replace(/@/g, '_at_')
+    .replace(/[^a-z0-9._-]+/g, '_')
+    .replace(/^_+|_+$/g, '') || 'user';
+}
+
+async function getLoggedUserExportPrefix() {
+  if (loggedUserExportPrefix) return loggedUserExportPrefix;
+  try {
+    const res = await fetch('/api/auth/check');
+    const data = await res.json();
+    if (data.authenticated && data.user) {
+      if (data.user.isRoot) loggedUserExportPrefix = 'root';
+      else if (data.user.email) loggedUserExportPrefix = sanitizeFileNamePart(data.user.email);
+      else loggedUserExportPrefix = 'user';
+    } else {
+      loggedUserExportPrefix = 'user';
+    }
+  } catch {
+    loggedUserExportPrefix = 'user';
+  }
+  return loggedUserExportPrefix;
+}
+
+function getInsertedByName(record) {
+  if (!record) return '';
+  return record.usuarioInseriuNome || record.usuarioInseriu || record.usuario_inseriu_nome || record.usuario_inseriu || '';
+}
+
+function buildLocationProductExcelXml(list) {
+  const headers = [
+    'Location Code',
+    'Product Code',
+    'Qty Current',
+    'Inserted By',
+    'Date Time Last Update'
+  ];
+  const headerRow = headers.map((header) =>
+    `<Cell><Data ss:Type="String">${escapeXml(header)}</Data></Cell>`
+  ).join('');
+
+  const dataRows = list.map((record) => {
+    const qty = Number(record.quantityCurrent);
+    const qtyCell = Number.isFinite(qty)
+      ? `<Cell><Data ss:Type="Number">${qty}</Data></Cell>`
+      : `<Cell><Data ss:Type="String">${escapeXml(record.quantityCurrent ?? 0)}</Data></Cell>`;
+    const lastUpdate = record.lastUpdateDatetime || record.entryDatetime || '';
+    return `<Row>${[
+      `<Cell><Data ss:Type="String">${escapeXml(record.locationCode || '')}</Data></Cell>`,
+      `<Cell><Data ss:Type="String">${escapeXml(record.productCode || '')}</Data></Cell>`,
+      qtyCell,
+      `<Cell><Data ss:Type="String">${escapeXml(getInsertedByName(record))}</Data></Cell>`,
+      `<Cell><Data ss:Type="String">${escapeXml(formatExportDateTime(lastUpdate))}</Data></Cell>`
+    ].join('')}</Row>`;
+  }).join('');
+
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<?mso-application progid="Excel.Sheet"?>
+<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet"
+ xmlns:o="urn:schemas-microsoft-com:office:office"
+ xmlns:x="urn:schemas-microsoft-com:office:excel"
+ xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet">
+<Worksheet ss:Name="Location Product">
+<Table ss:ExpandedColumnCount="${headers.length}" ss:ExpandedRowCount="${list.length + 1}">
+<Column ss:Width="120"/>
+<Column ss:Width="140"/>
+<Column ss:Width="90"/>
+<Column ss:Width="140"/>
+<Column ss:Width="160"/>
+<Row>${headerRow}</Row>
+${dataRows}
+</Table>
+</Worksheet>
+</Workbook>`;
+}
+
+async function downloadLocationProductExcel(list) {
+  if (!list.length) {
+    alert('No records to export. Adjust filters or run Search first.');
+    return;
+  }
+
+  const userPrefix = await getLoggedUserExportPrefix();
+  const xml = buildLocationProductExcelXml(list);
+  const blob = new Blob(['\ufeff', xml], {
+    type: 'application/vnd.ms-excel;charset=utf-8;'
+  });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = `${userPrefix}-location-product-${formatExportFileDate(new Date())}.xls`;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+}
 
 function setupHeaderDropdowns() {
   const usersMenuBtn = document.getElementById('usersMenuBtn');
@@ -146,9 +268,42 @@ document.addEventListener('DOMContentLoaded', () => {
   const bulkEntryDatetime = document.getElementById('bulkEntryDatetime');
   const filterLocationCode = document.getElementById('filterLocationCode');
   const filterProductCode = document.getElementById('filterProductCode');
+  const filterCategoria = document.getElementById('filterCategoria');
+  const filterSubcategoria = document.getElementById('filterSubcategoria');
+  const filterSubcategoriaGroup = document.getElementById('filterSubcategoriaGroup');
   const filterSituation = document.getElementById('filterSituation');
   const filterEntryFrom = document.getElementById('filterEntryFrom');
   const filterEntryTo = document.getElementById('filterEntryTo');
+
+  function categoryHasSubcategories(categoria) {
+    return String(categoria || '').trim().toUpperCase() === 'BATHWARE';
+  }
+
+  function toggleFilterSubcategoriaField() {
+    if (!filterCategoria || !filterSubcategoriaGroup || !filterSubcategoria) return;
+    const show = categoryHasSubcategories(filterCategoria.value);
+    filterSubcategoriaGroup.style.display = show ? '' : 'none';
+    if (!show) filterSubcategoria.value = '';
+  }
+
+  function setupCategoryFilters() {
+    if (filterCategoria && typeof SectionOptions !== 'undefined') {
+      SectionOptions.populateSectionSelect(filterCategoria, {
+        emptyLabel: 'All Category',
+        emptyValue: ''
+      });
+    }
+    if (filterSubcategoria && typeof BathwareSubcategoryOptions !== 'undefined') {
+      BathwareSubcategoryOptions.populateBathwareSubcategorySelect(filterSubcategoria, {
+        emptyLabel: 'All Subcategory',
+        emptyValue: ''
+      });
+    }
+    toggleFilterSubcategoriaField();
+    if (filterCategoria) {
+      filterCategoria.addEventListener('change', toggleFilterSubcategoriaField);
+    }
+  }
 
   function escapeHtml(text) {
     if (text == null) return '';
@@ -452,6 +607,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const params = new URLSearchParams();
     if (filterLocationCode.value.trim()) params.set('locationCode', filterLocationCode.value.trim());
     if (filterProductCode.value.trim()) params.set('productCode', filterProductCode.value.trim());
+    const categoria = filterCategoria && filterCategoria.value ? String(filterCategoria.value).trim() : '';
+    const subcategoria = filterSubcategoria && filterSubcategoria.value ? String(filterSubcategoria.value).trim() : '';
+    if (categoria) params.set('categoria', categoria);
+    if (categoria && categoryHasSubcategories(categoria) && subcategoria) {
+      params.set('subcategoria', subcategoria);
+    }
     if (filterSituation.value) params.set('siprSqNumber', filterSituation.value);
     if (filterEntryFrom.value) params.set('entryFrom', new Date(filterEntryFrom.value).toISOString());
     if (filterEntryTo.value) params.set('entryTo', new Date(filterEntryTo.value).toISOString());
@@ -475,7 +636,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!hasSearched) {
       tbody.innerHTML = `
         <tr class="empty-state-row">
-          <td colspan="8" class="empty-state">
+          <td colspan="9" class="empty-state">
             <i class="fas fa-search"></i>
             <p>Use filters and click Search to load records.</p>
           </td>
@@ -488,7 +649,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!records.length) {
       tbody.innerHTML = `
         <tr class="empty-state-row">
-          <td colspan="8" class="empty-state">
+          <td colspan="9" class="empty-state">
             <i class="fas fa-inbox"></i>
             <p>No records. Click "New Record" to add.</p>
           </td>
@@ -509,6 +670,7 @@ document.addEventListener('DOMContentLoaded', () => {
           <td data-label="Qty Informed">${r.quantityInformed ?? 0}</td>
           <td data-label="Qty Current">${r.quantityCurrent ?? 0}</td>
           <td data-label="Inserted by">${escapeHtml(r.usuarioInseriuNome || r.usuarioInseriu || '-')}</td>
+          <td data-label="Date Time Last Update">${formatDateTime(r.lastUpdateDatetime || r.entryDatetime)}</td>
           <td data-label="Actions" class="td-actions">
             <div class="action-buttons">
               <button type="button" class="btn btn-edit btn-edit-qty-current" data-location="${escapeHtml(r.locationCode)}" data-product="${escapeHtml(r.productCode)}" data-entry="${escapeHtml(entryDt)}" data-sipr="${r.siprSqNumber}" data-qty-informed="${r.quantityInformed ?? 0}" data-qty-current="${r.quantityCurrent ?? 0}" title="Edit Location / Quantity">
@@ -782,9 +944,21 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('closeEditQuantityCurrentModal').addEventListener('click', closeEditQuantityCurrentModal);
   document.getElementById('cancelEditQuantityCurrentBtn').addEventListener('click', closeEditQuantityCurrentModal);
   document.getElementById('applyFiltersBtn').addEventListener('click', loadRecords);
+  const downloadExcelBtn = document.getElementById('downloadLocationProductExcel');
+  if (downloadExcelBtn) {
+    downloadExcelBtn.addEventListener('click', async () => {
+      if (!hasSearched) {
+        await loadRecords();
+      }
+      await downloadLocationProductExcel(records);
+    });
+  }
   document.getElementById('clearFiltersBtn').addEventListener('click', () => {
     filterLocationCode.value = '';
     filterProductCode.value = '';
+    if (filterCategoria) filterCategoria.value = '';
+    if (filterSubcategoria) filterSubcategoria.value = '';
+    toggleFilterSubcategoriaField();
     filterSituation.value = '';
     filterEntryFrom.value = '';
     filterEntryTo.value = '';
@@ -1194,6 +1368,7 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   (async () => {
+    setupCategoryFilters();
     await Promise.all([loadLocations(), loadProducts(), loadSituations()]);
     fillFilterSituation();
     renderTable();

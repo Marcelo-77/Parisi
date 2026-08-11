@@ -274,7 +274,9 @@ router.get(
     query('productCode').optional().trim(),
     query('siprSqNumber').optional().isInt(),
     query('entryFrom').optional().trim(),
-    query('entryTo').optional().trim()
+    query('entryTo').optional().trim(),
+    query('categoria').optional().trim(),
+    query('subcategoria').optional().trim()
   ],
   handleValidationErrors,
   async (req, res) => {
@@ -284,7 +286,9 @@ router.get(
         productCode: req.query.productCode,
         siprSqNumber: req.query.siprSqNumber ? parseInt(req.query.siprSqNumber) : undefined,
         entryFrom: req.query.entryFrom,
-        entryTo: req.query.entryTo
+        entryTo: req.query.entryTo,
+        categoria: req.query.categoria ? String(req.query.categoria).trim() : undefined,
+        subcategoria: req.query.subcategoria ? String(req.query.subcategoria).trim() : undefined
       };
       const list = await locationProductService.buscarTodos(filtros);
       res.json({ success: true, data: list, total: list.length });

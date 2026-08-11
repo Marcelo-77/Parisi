@@ -13,6 +13,8 @@ const systemApplicationMenus = [
   { application: 'System-settings.html', menuName: 'Applications_System_Settings' },
   { application: 'Improvements-and-Corrections-Control.html', menuName: 'Applications_Improvements_Corrections' },
   { application: 'Improvements-and-Corrections-Control-Search.html', menuName: 'Applications_Improvements_Corrections' },
+  { application: 'Test-Case.html', menuName: 'Applications_Test_Control' },
+  { application: 'Test-Case-Search.html', menuName: 'Applications_Test_Control_Search' },
   { application: 'location.html', menuName: 'Location' },
   { application: 'location-search.html', menuName: 'Location_Search' },
   { application: 'location-smart.html', menuName: 'Location_Smart' },

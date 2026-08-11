@@ -370,6 +370,8 @@ async function initDatabase() {
       { application: 'News-Search.html', menuName: 'Applications_News_Search' },
       { application: 'Improvements-and-Corrections-Control.html', menuName: 'Applications_Improvements_Corrections' },
       { application: 'Improvements-and-Corrections-Control-Search.html', menuName: 'Applications_Improvements_Corrections' },
+      { application: 'Test-Case.html', menuName: 'Applications_Test_Control' },
+      { application: 'Test-Case-Search.html', menuName: 'Applications_Test_Control_Search' },
       { application: 'location.html', menuName: 'Location' },
       { application: 'location-search.html', menuName: 'Location_Search' },
       { application: 'location-smart.html', menuName: 'Location_Smart' },
@@ -539,6 +541,46 @@ async function initDatabase() {
     await query(`CREATE INDEX IF NOT EXISTS idx_improvements_corrections_type ON improvements_corrections(request_type)`);
     await query(`ALTER TABLE improvements_corrections ADD COLUMN IF NOT EXISTS request_history TEXT`).catch(() => {});
     console.log('✅ Tabela improvements_corrections criada/verificada');
+
+    await query(`CREATE SEQUENCE IF NOT EXISTS test_case_number_seq`);
+    await query(`
+      CREATE TABLE IF NOT EXISTS test_cases (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        test_case_number INTEGER UNIQUE NOT NULL DEFAULT nextval('test_case_number_seq'),
+        test_case_id VARCHAR(20) UNIQUE NOT NULL,
+        module VARCHAR(50) NOT NULL,
+        test_scenario TEXT NOT NULL,
+        pre_condition TEXT,
+        test_steps TEXT,
+        expected_result TEXT,
+        status VARCHAR(30) NOT NULL DEFAULT 'Not Executed',
+        severity VARCHAR(20) NOT NULL DEFAULT 'Medium',
+        tester VARCHAR(100),
+        execution_date DATE,
+        comments TEXT,
+        evidence_file_name VARCHAR(200),
+        evidence_mime_type VARCHAR(100),
+        evidence_file_size INTEGER,
+        evidence_file_data BYTEA,
+        created_by UUID REFERENCES funcionarios(id) ON DELETE SET NULL,
+        created_by_name VARCHAR(100),
+        criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        atualizado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        CONSTRAINT test_cases_module_chk CHECK (module IN (
+          'Sales Order', 'Mobile Warehouse', 'Picking', 'Validation Code', 'Integration', 'PDA - Test'
+        )),
+        CONSTRAINT test_cases_status_chk CHECK (status IN (
+          'Not Executed', 'Pass', 'Fail', 'Blocked', 'In Progress'
+        )),
+        CONSTRAINT test_cases_severity_chk CHECK (severity IN (
+          'Critical', 'High', 'Medium', 'Low'
+        ))
+      )
+    `);
+    await query(`CREATE INDEX IF NOT EXISTS idx_test_cases_module ON test_cases(module)`);
+    await query(`CREATE INDEX IF NOT EXISTS idx_test_cases_status ON test_cases(status)`);
+    await query(`CREATE INDEX IF NOT EXISTS idx_test_cases_id ON test_cases(test_case_id)`);
+    console.log('✅ Tabela test_cases criada/verificada');
 
     await query(`
       CREATE TABLE IF NOT EXISTS system_settings (

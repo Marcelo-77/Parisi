@@ -114,6 +114,20 @@
                                     </a>
                                 </div>
                             </div>
+                            <div class="dropdown-submenu-group" data-submenu="test-control">
+                                <button type="button" class="dropdown-submenu-trigger" aria-haspopup="true" aria-expanded="false">
+                                    <span><i class="fas fa-vial"></i> Test Control</span>
+                                    <i class="fas fa-chevron-right submenu-chevron" aria-hidden="true"></i>
+                                </button>
+                                <div class="dropdown-submenu" aria-hidden="true">
+                                    <a href="Test-Case.html" class="dropdown-item" data-app="Test-Case.html">
+                                        <i class="fas fa-plus"></i> New Test Case
+                                    </a>
+                                    <a href="Test-Case-Search.html" class="dropdown-item" data-app="Test-Case-Search.html">
+                                        <i class="fas fa-search"></i> Search Test Cases
+                                    </a>
+                                </div>
+                            </div>
                         </div>
                     </div>
                     <div class="movement-dropdown">

@@ -7,6 +7,107 @@ function escapeHtml(text) {
     return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
+function escapeXml(value) {
+    return String(value == null ? '' : value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+}
+
+function formatExportFileDate(date) {
+    const pad = (n) => String(n).padStart(2, '0');
+    return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}_${pad(date.getHours())}${pad(date.getMinutes())}`;
+}
+
+function sanitizeFileNamePart(value) {
+    return String(value == null ? '' : value)
+        .trim()
+        .toLowerCase()
+        .replace(/@/g, '_at_')
+        .replace(/[^a-z0-9._-]+/g, '_')
+        .replace(/^_+|_+$/g, '') || 'user';
+}
+
+let loggedUserExportPrefix = null;
+
+async function getLoggedUserExportPrefix() {
+    if (loggedUserExportPrefix) return loggedUserExportPrefix;
+    try {
+        const res = await fetch('/api/auth/check');
+        const data = await res.json();
+        if (data.authenticated && data.user) {
+            if (data.user.isRoot) loggedUserExportPrefix = 'root';
+            else if (data.user.email) loggedUserExportPrefix = sanitizeFileNamePart(data.user.email);
+            else loggedUserExportPrefix = 'user';
+        } else {
+            loggedUserExportPrefix = 'user';
+        }
+    } catch {
+        loggedUserExportPrefix = 'user';
+    }
+    return loggedUserExportPrefix;
+}
+
+function buildProductsExcelXml(list) {
+    const headers = ['Code Product', 'Name', 'Category', 'Quantity'];
+    const headerRow = headers.map((header) =>
+        `<Cell><Data ss:Type="String">${escapeXml(header)}</Data></Cell>`
+    ).join('');
+
+    const dataRows = list.map((item) => {
+        const qty = Number(item.quantidade);
+        const qtyCell = Number.isFinite(qty)
+            ? `<Cell><Data ss:Type="Number">${qty}</Data></Cell>`
+            : `<Cell><Data ss:Type="String">${escapeXml(item.quantidade ?? 0)}</Data></Cell>`;
+        return `<Row>${[
+            `<Cell><Data ss:Type="String">${escapeXml(item.codigo || '')}</Data></Cell>`,
+            `<Cell><Data ss:Type="String">${escapeXml(item.nome || '')}</Data></Cell>`,
+            `<Cell><Data ss:Type="String">${escapeXml(formatCategoryDisplay(item))}</Data></Cell>`,
+            qtyCell
+        ].join('')}</Row>`;
+    }).join('');
+
+    return `<?xml version="1.0" encoding="UTF-8"?>
+<?mso-application progid="Excel.Sheet"?>
+<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet"
+ xmlns:o="urn:schemas-microsoft-com:office:office"
+ xmlns:x="urn:schemas-microsoft-com:office:excel"
+ xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet">
+<Worksheet ss:Name="Products">
+<Table ss:ExpandedColumnCount="${headers.length}" ss:ExpandedRowCount="${list.length + 1}">
+<Column ss:Width="140"/>
+<Column ss:Width="220"/>
+<Column ss:Width="140"/>
+<Column ss:Width="90"/>
+<Row>${headerRow}</Row>
+${dataRows}
+</Table>
+</Worksheet>
+</Workbook>`;
+}
+
+async function downloadProductsExcel(list) {
+    if (!list.length) {
+        alert('No products to export. Adjust filters or run Search first.');
+        return;
+    }
+
+    const userPrefix = await getLoggedUserExportPrefix();
+    const xml = buildProductsExcelXml(list);
+    const blob = new Blob(['\ufeff', xml], {
+        type: 'application/vnd.ms-excel;charset=utf-8;'
+    });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `${userPrefix}-products-search-${formatExportFileDate(new Date())}.xls`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+}
+
 // Mapeamento categoria (valor no BD) ? texto de exibi??o
 function formatCategory(categoria) {
     if (typeof SectionOptions !== 'undefined') {
@@ -729,6 +830,16 @@ function setupEventListeners() {
     if (searchBtn) {
         searchBtn.addEventListener('click', handleSearchClick);
     }
+    const downloadProductsExcelBtn = document.getElementById('downloadProductsExcel');
+    if (downloadProductsExcelBtn) {
+        downloadProductsExcelBtn.addEventListener('click', async () => {
+            if (!hasSearched) {
+                alert('No products to export. Adjust filters or run Search first.');
+                return;
+            }
+            await downloadProductsExcel(getFilteredSortedItems());
+        });
+    }
     searchInput.addEventListener('keypress', (e) => {
         if (e.key === 'Enter') handleSearchClick();
     });
@@ -1045,8 +1156,7 @@ function getItemStatus(item) {
     return 'Available';
 }
 
-// Filtrar e ordenar itens
-function filterItems() {
+function getFilteredSortedItems() {
     const searchTerm = searchInput.value.toLowerCase();
     const searchBy = searchByField ? searchByField.value : 'codigo';
     const categoriaFilter = filterCategoria.value;
@@ -1095,8 +1205,13 @@ function filterItems() {
         if (aVal > bVal) return 1;
         return 0;
     });
-    
-    displayItems(filtered);
+
+    return filtered;
+}
+
+// Filtrar e ordenar itens
+function filterItems() {
+    displayItems(getFilteredSortedItems());
 }
 
 // Atualizar estat?sticas

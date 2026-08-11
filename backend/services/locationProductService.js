@@ -215,6 +215,16 @@ async function buscarTodos(filtros = {}) {
     whereClauses.push(`lp.entry_datetime <= $${idx++}`);
     values.push(filtros.entryTo);
   }
+  const categoria = filtros.categoria != null ? String(filtros.categoria).trim() : '';
+  const subcategoria = filtros.subcategoria != null ? String(filtros.subcategoria).trim() : '';
+  if (categoria) {
+    whereClauses.push(`UPPER(TRIM(COALESCE(wi.categoria, ''))) = UPPER(TRIM($${idx++}))`);
+    values.push(categoria);
+  }
+  if (subcategoria) {
+    whereClauses.push(`UPPER(TRIM(COALESCE(wi.subcategoria, ''))) = UPPER(TRIM($${idx++}))`);
+    values.push(subcategoria);
+  }
 
   const where = `WHERE ${whereClauses.join(' AND ')}`;
 
@@ -223,7 +233,17 @@ async function buscarTodos(filtros = {}) {
       CASE
         WHEN LOWER(TRIM(COALESCE(lp.usuario_inseriu, ''))) = 'root' THEN 'Root'
         ELSE f.nome
-      END AS usuario_inseriu_nome
+      END AS usuario_inseriu_nome,
+      COALESCE(
+        (
+          SELECT MAX(l.entry_datetime_log)
+          FROM ${TABLE_LOG} l
+          WHERE TRIM(LOWER(l.location_code_log)) = TRIM(LOWER(lp.location_code))
+            AND TRIM(LOWER(l.product_code_log)) = TRIM(LOWER(lp.product_code))
+            AND l.sipr_sq_number = lp.sipr_sq_number
+        ),
+        lp.entry_datetime
+      ) AS last_update_datetime
     FROM ${TABLE} lp
     LEFT JOIN situation_product sp ON sp.sipr_sq_number = lp.sipr_sq_number
     LEFT JOIN warehouse_items wi ON TRIM(LOWER(wi.codigo)) = TRIM(LOWER(lp.product_code))
@@ -236,7 +256,8 @@ async function buscarTodos(filtros = {}) {
     const result = await query(selectSql, values);
     return result.rows.map(row => ({
       ...mapRow(row),
-      situationDescription: row.sipr_nm_description
+      situationDescription: row.sipr_nm_description,
+      lastUpdateDatetime: row.last_update_datetime || row.entry_datetime || null
     }));
   } catch (error) {
     console.error('❌ Error fetching location_product:', error);
