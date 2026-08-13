@@ -5,6 +5,10 @@
 
   const isSearchPage = Boolean(document.getElementById('testCaseSearchSection'));
   const modal = document.getElementById('testCaseModal');
+  const detailsModal = document.getElementById('testCaseDetailsModal');
+  const detailsContent = document.getElementById('testCaseDetails');
+  const detailsTitle = document.getElementById('testCaseDetailsTitle');
+  const detailsSubtitle = document.getElementById('testCaseDetailsSubtitle');
   const form = document.getElementById('testCaseForm');
   const recordIdInput = document.getElementById('testCaseRecordId');
   const testCaseIdInput = document.getElementById('testCaseId');
@@ -39,6 +43,7 @@
   let currentUserName = '';
   let hasSearched = false;
   let loggedUserExportPrefix = null;
+  let currentViewRecord = null;
 
   const SEARCH_PLACEHOLDERS = {
     testCaseId: 'TC-0001',
@@ -147,6 +152,114 @@
     modal.style.display = 'none';
     modal.setAttribute('aria-hidden', 'true');
     clearMessage(formMessageEl, 'tc-form-message');
+  }
+
+  function openDetailsModal() {
+    if (!detailsModal) return;
+    detailsModal.style.display = 'block';
+    detailsModal.setAttribute('aria-hidden', 'false');
+  }
+
+  function closeDetailsModal() {
+    if (!detailsModal) return;
+    detailsModal.style.display = 'none';
+    detailsModal.setAttribute('aria-hidden', 'true');
+    currentViewRecord = null;
+  }
+
+  function multilineHtml(value) {
+    const text = escapeHtml(value || '-');
+    return text.replace(/\n/g, '<br>');
+  }
+
+  function buildDetailsHtml(record) {
+    const evidence = record.hasEvidence && record.evidenceFileName
+      ? `<a href="${API_BASE}/${encodeURIComponent(record.id)}/evidence" target="_blank" rel="noopener">${escapeHtml(record.evidenceFileName)}</a>`
+      : 'No evidence';
+
+    return `
+      <div class="item-edit-summary">
+        <div class="item-edit-summary-main">
+          <div class="item-edit-summary-icon" aria-hidden="true"><i class="fas fa-vial"></i></div>
+          <div class="item-edit-summary-text">
+            <div class="item-edit-summary-top">
+              <span class="item-edit-summary-code">${escapeHtml(record.testCaseId || '-')}</span>
+              <span class="tc-pill ${statusPill(record.status)}">${escapeHtml(record.status || '-')}</span>
+            </div>
+            <p class="item-edit-summary-name">${escapeHtml(record.testScenario || '-')}</p>
+            <p class="item-edit-summary-meta">${escapeHtml(record.module || '-')} · ${escapeHtml(record.severity || '-')}</p>
+          </div>
+        </div>
+        <div class="item-edit-summary-aside">
+          <div class="item-edit-summary-stats">
+            <div class="item-edit-stat"><span class="item-edit-stat-label">Tester</span><strong>${escapeHtml(record.tester || '-')}</strong></div>
+            <div class="item-edit-stat"><span class="item-edit-stat-label">Execution Date</span><strong>${escapeHtml(formatDate(record.executionDate) || '-')}</strong></div>
+            <div class="item-edit-stat"><span class="item-edit-stat-label">Severity</span><strong>${escapeHtml(record.severity || '-')}</strong></div>
+          </div>
+        </div>
+      </div>
+      <div class="item-details-grid">
+        <div class="detail-section detail-section--full tc-identification-section">
+          <h4><i class="fas fa-id-card"></i> Identification</h4>
+          <div class="tc-identification-grid">
+            <p><span class="detail-label">Test Case ID:</span> ${escapeHtml(record.testCaseId || '-')}</p>
+            <p><span class="detail-label">Module:</span> ${escapeHtml(record.module || '-')}</p>
+            <p><span class="detail-label">Status:</span> <span class="tc-pill ${statusPill(record.status)}">${escapeHtml(record.status || '-')}</span></p>
+            <p><span class="detail-label">Tester:</span> ${escapeHtml(record.tester || '-')}</p>
+            <p><span class="detail-label">Execution Date:</span> ${escapeHtml(formatDate(record.executionDate) || '-')}</p>
+            <p><span class="detail-label">Severity:</span> <span class="tc-pill ${severityPill(record.severity)}">${escapeHtml(record.severity || '-')}</span></p>
+            <p class="tc-identification-evidence"><span class="detail-label">Evidence:</span> ${evidence}</p>
+          </div>
+        </div>
+        <div class="detail-section detail-section--full">
+          <h4><i class="fas fa-list"></i> Test Scenario</h4>
+          <p>${multilineHtml(record.testScenario)}</p>
+        </div>
+        <div class="detail-section detail-section--full">
+          <h4><i class="fas fa-check-double"></i> Pre-Condition</h4>
+          <p>${multilineHtml(record.preCondition)}</p>
+        </div>
+        <div class="detail-section detail-section--full">
+          <h4><i class="fas fa-route"></i> Test Steps</h4>
+          <p>${multilineHtml(record.testSteps)}</p>
+        </div>
+        <div class="detail-section detail-section--full">
+          <h4><i class="fas fa-bullseye"></i> Expected Result</h4>
+          <p>${multilineHtml(record.expectedResult)}</p>
+        </div>
+        <div class="detail-section detail-section--full">
+          <h4><i class="fas fa-comment"></i> Comments</h4>
+          <p>${multilineHtml(record.comments)}</p>
+        </div>
+      </div>`;
+  }
+
+  async function viewRecord(id) {
+    let record = records.find((item) => item.id === id);
+    if (!record) return;
+
+    try {
+      const res = await fetch(`${API_BASE}/${encodeURIComponent(id)}`, { credentials: 'same-origin' });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && data.success && data.data) {
+        record = data.data;
+        const idx = records.findIndex((item) => item.id === id);
+        if (idx !== -1) records[idx] = { ...records[idx], ...record };
+      }
+    } catch (error) {
+      console.error('Error loading test case details:', error);
+    }
+
+    currentViewRecord = record;
+    if (detailsTitle) {
+      detailsTitle.innerHTML = '<i class="fas fa-info-circle"></i> Test Case Details';
+    }
+    if (detailsSubtitle) {
+      detailsSubtitle.textContent = `${record.testCaseId || '-'} · ${record.module || '-'}`;
+      detailsSubtitle.style.display = '';
+    }
+    if (detailsContent) detailsContent.innerHTML = buildDetailsHtml(record);
+    openDetailsModal();
   }
 
   function resetForm() {
@@ -319,6 +432,9 @@
         <tr class="item-actions-row">
           <td colspan="7" class="action-buttons-cell">
             <div class="action-buttons">
+              <button type="button" class="btn-action view" data-action="view" data-id="${escapeHtml(item.id)}" title="View details">
+                <i class="fas fa-eye"></i> <span>View</span>
+              </button>
               <button type="button" class="btn-action edit" data-action="edit" data-id="${escapeHtml(item.id)}" title="Edit">
                 <i class="fas fa-edit"></i> <span>Edit</span>
               </button>
@@ -553,7 +669,9 @@ ${dataRows}
         if (!button) return;
         const action = button.getAttribute('data-action');
         const id = button.getAttribute('data-id');
-        if (action === 'edit') {
+        if (action === 'view') {
+          viewRecord(id);
+        } else if (action === 'edit') {
           const record = records.find((item) => item.id === id);
           if (record) fillForm(record);
         } else if (action === 'delete') {
@@ -571,10 +689,23 @@ ${dataRows}
     const newBtn = document.getElementById('newTestCaseBtn');
     const closeBtn = document.getElementById('closeTestCaseModal');
     const cancelBtn = document.getElementById('clearTestCaseBtn');
+    const closeDetailsBtn = document.getElementById('closeTestCaseDetailsModal');
+    const closeDetailsFooterBtn = document.getElementById('closeTestCaseDetailsFooterBtn');
+    const editFromDetailsBtn = document.getElementById('editFromTestCaseDetailsBtn');
 
     if (newBtn) newBtn.addEventListener('click', () => fillForm(null));
     if (closeBtn) closeBtn.addEventListener('click', isSearchPage ? closeModal : closeTestCaseScreen);
     if (cancelBtn) cancelBtn.addEventListener('click', isSearchPage ? closeModal : closeTestCaseScreen);
+    if (closeDetailsBtn) closeDetailsBtn.addEventListener('click', closeDetailsModal);
+    if (closeDetailsFooterBtn) closeDetailsFooterBtn.addEventListener('click', closeDetailsModal);
+    if (editFromDetailsBtn) {
+      editFromDetailsBtn.addEventListener('click', () => {
+        const record = currentViewRecord;
+        if (!record) return;
+        closeDetailsModal();
+        fillForm(record);
+      });
+    }
     if (modal) {
       modal.addEventListener('click', (event) => {
         if (event.target === modal) {
@@ -583,9 +714,19 @@ ${dataRows}
         }
       });
     }
+    if (detailsModal) {
+      detailsModal.addEventListener('click', (event) => {
+        if (event.target === detailsModal) closeDetailsModal();
+      });
+    }
     if (form) form.addEventListener('submit', handleSave);
     document.addEventListener('keydown', (event) => {
-      if (event.key === 'Escape' && modal && modal.getAttribute('aria-hidden') === 'false') {
+      if (event.key !== 'Escape') return;
+      if (detailsModal && detailsModal.getAttribute('aria-hidden') === 'false') {
+        closeDetailsModal();
+        return;
+      }
+      if (modal && modal.getAttribute('aria-hidden') === 'false') {
         if (isSearchPage) closeModal();
         else closeTestCaseScreen();
       }

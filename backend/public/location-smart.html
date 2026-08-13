@@ -50,6 +50,148 @@
             font-size: 1.25rem;
         }
 
+        .source-set-picker {
+            position: relative;
+            width: 100%;
+        }
+
+        .source-set-input-wrap {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+
+        .source-set-search-icon {
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #667eea;
+            font-size: 0.85rem;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .filter-group .source-set-search,
+        .source-set-input-wrap .source-set-search {
+            width: 100%;
+            box-sizing: border-box;
+            padding: 10px 40px 10px 38px !important;
+            border: 2px solid #e1e5e9;
+            border-radius: 10px;
+            background: #fafafa;
+            font-size: 0.95rem;
+            text-transform: uppercase;
+            letter-spacing: 0.02em;
+            transition: border-color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .filter-group .source-set-search:focus,
+        .source-set-input-wrap .source-set-search:focus {
+            outline: none;
+            border-color: #667eea;
+            background: #fff;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.12);
+        }
+
+        .filter-group .source-set-search.is-selected,
+        .source-set-input-wrap .source-set-search.is-selected {
+            border-color: #a7f3d0;
+            background: #ecfdf5;
+            font-weight: 700;
+            color: #047857;
+        }
+
+        .source-set-clear {
+            position: absolute;
+            right: 8px;
+            width: 28px;
+            height: 28px;
+            border: 0;
+            border-radius: 8px;
+            background: transparent;
+            color: #94a3b8;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .source-set-clear:hover {
+            background: #f1f5f9;
+            color: #475569;
+        }
+
+        .source-set-options {
+            position: absolute;
+            z-index: 1300;
+            top: calc(100% + 6px);
+            left: 0;
+            right: 0;
+            min-width: 100%;
+            max-height: 280px;
+            overflow-y: auto;
+            background: #fff;
+            border: 1px solid #dbe2ea;
+            border-radius: 12px;
+            box-shadow: 0 14px 34px rgba(31, 41, 55, 0.18);
+            padding: 6px;
+        }
+
+        .source-set-options[hidden] {
+            display: none;
+        }
+
+        .source-set-option {
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            padding: 10px 12px;
+            border: 0;
+            border-radius: 8px;
+            background: transparent;
+            color: #263238;
+            text-align: left;
+            cursor: pointer;
+        }
+
+        .source-set-option:hover,
+        .source-set-option.is-highlighted {
+            background: #eef2ff;
+        }
+
+        .source-set-option.is-selected {
+            background: #ecfdf5;
+        }
+
+        .source-set-option-code {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 800;
+            color: #3730a3;
+            white-space: nowrap;
+        }
+
+        .source-set-option-code i {
+            color: #667eea;
+        }
+
+        .source-set-option-meta {
+            color: #667085;
+            font-size: 0.8rem;
+            white-space: nowrap;
+        }
+
+        .source-set-empty {
+            padding: 14px 12px;
+            color: #64748b;
+            font-size: 0.9rem;
+            text-align: center;
+        }
+
         .location-help-modal {
             display: none;
             align-items: center;
@@ -218,6 +360,91 @@
             cursor: not-allowed;
         }
 
+        .smart-process-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 5000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            background: rgba(15, 23, 42, 0.55);
+            backdrop-filter: blur(4px);
+        }
+
+        .smart-process-overlay.is-open {
+            display: flex;
+        }
+
+        body.smart-processing {
+            overflow: hidden;
+        }
+
+        .smart-process-card {
+            width: min(420px, calc(100vw - 32px));
+            background: #fff;
+            border-radius: 16px;
+            box-shadow: 0 24px 60px rgba(15, 23, 42, 0.28);
+            padding: 28px 24px 22px;
+            text-align: center;
+        }
+
+        .smart-process-icon {
+            width: 64px;
+            height: 64px;
+            margin: 0 auto 14px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.6rem;
+        }
+
+        .smart-process-card.is-processing .smart-process-icon {
+            background: #eef2ff;
+            color: #4f46e5;
+        }
+
+        .smart-process-card.is-success .smart-process-icon {
+            background: #ecfdf5;
+            color: #059669;
+        }
+
+        .smart-process-card.is-error .smart-process-icon {
+            background: #fef2f2;
+            color: #dc2626;
+        }
+
+        .smart-process-card h3 {
+            margin: 0 0 8px;
+            font-size: 1.2rem;
+            color: #0f172a;
+        }
+
+        .smart-process-card p {
+            margin: 0;
+            color: #475569;
+            line-height: 1.5;
+        }
+
+        .smart-process-progress {
+            margin-top: 14px;
+            font-size: 0.92rem;
+            font-weight: 700;
+            color: #4338ca;
+        }
+
+        .smart-process-actions {
+            margin-top: 18px;
+            display: none;
+            justify-content: center;
+        }
+
+        .smart-process-card.is-success .smart-process-actions,
+        .smart-process-card.is-error .smart-process-actions {
+            display: flex;
+        }
+
         @media (max-width: 768px) {
             .location-smart-arrow {
                 display: none;
@@ -283,12 +510,30 @@
 
                         <div class="filters-grid">
                             <div class="filter-group">
-                                <label for="sourceConjunto">
+                                <label for="sourceConjuntoSearch">
                                     <i class="fas fa-map-marker-alt"></i> Source set
                                 </label>
-                                <select id="sourceConjunto">
-                                    <option value="">Select set…</option>
-                                </select>
+                                <div class="source-set-picker" id="sourceSetPicker">
+                                    <input type="hidden" id="sourceConjunto" value="">
+                                    <div class="source-set-input-wrap">
+                                        <i class="fas fa-search source-set-search-icon" aria-hidden="true"></i>
+                                        <input
+                                            type="text"
+                                            id="sourceConjuntoSearch"
+                                            class="source-set-search"
+                                            placeholder="Type to search set… e.g. A1"
+                                            autocomplete="off"
+                                            spellcheck="false"
+                                            aria-autocomplete="list"
+                                            aria-controls="sourceConjuntoOptions"
+                                            aria-expanded="false"
+                                        >
+                                        <button type="button" id="clearSourceConjuntoBtn" class="source-set-clear" title="Clear source set" hidden aria-label="Clear source set">
+                                            <i class="fas fa-times"></i>
+                                        </button>
+                                    </div>
+                                    <div id="sourceConjuntoOptions" class="source-set-options" role="listbox" hidden></div>
+                                </div>
                             </div>
                             <div class="filter-group location-smart-arrow" aria-hidden="true">
                                 <i class="fas fa-arrow-right"></i>
@@ -385,7 +630,7 @@
 
                 <h4>Steps</h4>
                 <ul>
-                    <li>Choose the <strong>Source set</strong> (example: <code>A1</code>).</li>
+                    <li>Search and choose the <strong>Source set</strong> (example: <code>A1</code>).</li>
                     <li>Type the <strong>New set</strong> (example: <code>A2</code>).</li>
                     <li>Click <strong>Generate lines</strong> to preview all new locations.</li>
                     <li>Adjust <strong>Status</strong> per line if needed.</li>
@@ -412,6 +657,22 @@
             <div class="modal-footer">
                 <button type="button" class="btn btn-primary" id="closeLocationHelpBtn">
                     <i class="fas fa-check"></i> Ok
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div id="smartProcessOverlay" class="smart-process-overlay" aria-hidden="true">
+        <div id="smartProcessCard" class="smart-process-card is-processing" role="dialog" aria-modal="true" aria-labelledby="smartProcessTitle">
+            <div class="smart-process-icon" id="smartProcessIcon" aria-hidden="true">
+                <i class="fas fa-spinner fa-spin"></i>
+            </div>
+            <h3 id="smartProcessTitle">Processing</h3>
+            <p id="smartProcessMessage">Please wait while locations are being created.</p>
+            <div class="smart-process-progress" id="smartProcessProgress"></div>
+            <div class="smart-process-actions">
+                <button type="button" id="smartProcessOkBtn" class="btn btn-primary">
+                    <i class="fas fa-check"></i> OK
                 </button>
             </div>
         </div>

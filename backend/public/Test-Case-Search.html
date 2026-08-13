@@ -138,6 +138,27 @@
         </footer>
     </div>
 
+    <div id="testCaseDetailsModal" class="modal" aria-hidden="true">
+        <div class="modal-content modal-large item-details-modal-content">
+            <div class="modal-header success item-details-modal-header">
+                <h3 id="testCaseDetailsTitle"><i class="fas fa-info-circle"></i> Test Case Details</h3>
+                <p id="testCaseDetailsSubtitle" class="item-modal-subtitle" style="display: none;"></p>
+                <button type="button" class="modal-close" id="closeTestCaseDetailsModal" aria-label="Close">&times;</button>
+            </div>
+            <div class="modal-body item-details-modal-body">
+                <div id="testCaseDetails" class="item-details"></div>
+            </div>
+            <div class="modal-footer item-modal-footer form-actions item-details-modal-footer">
+                <button type="button" id="closeTestCaseDetailsFooterBtn" class="btn btn-secondary">
+                    <i class="fas fa-times"></i> Close
+                </button>
+                <button type="button" id="editFromTestCaseDetailsBtn" class="btn btn-primary">
+                    <i class="fas fa-edit"></i> Edit Test Case
+                </button>
+            </div>
+        </div>
+    </div>
+
     <div id="testCaseModal" class="modal" aria-hidden="true">
         <div class="modal-content modal-large item-modal-content">
             <div class="modal-header success">

@@ -318,6 +318,125 @@ body.test-case-page .main-content {
   width: auto;
 }
 
+#testCaseDetailsModal .item-details-modal-content.modal-large {
+  width: min(calc(100vw - 40px), 1640px);
+  max-width: min(calc(100vw - 40px), 1640px);
+  margin: 2vh auto !important;
+  max-height: 92vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+#testCaseDetailsModal .item-details-modal-header {
+  flex-shrink: 0;
+  padding: 14px 24px;
+}
+
+#testCaseDetailsModal .item-details-modal-body {
+  overflow-y: auto;
+  flex: 1 1 auto;
+  min-height: 0;
+  padding: 18px 24px;
+}
+
+#testCaseDetailsModal .item-details-modal-footer {
+  flex-shrink: 0;
+  margin-top: 0;
+  padding: 14px 24px 18px;
+  border-top: 2px solid #f0f0f0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+}
+
+#testCaseDetailsModal .item-details-modal-footer .btn {
+  min-width: 0;
+  width: auto;
+}
+
+#testCaseDetailsModal .item-edit-summary {
+  margin-bottom: 16px;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+}
+
+#testCaseDetailsModal .item-edit-summary-aside {
+  justify-self: end;
+}
+
+#testCaseDetailsModal .item-edit-summary-stats {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: stretch;
+  gap: 8px;
+}
+
+#testCaseDetailsModal .item-edit-stat {
+  min-width: 0;
+  padding: 6px 10px;
+  border-radius: 8px;
+}
+
+#testCaseDetailsModal .item-edit-stat-label {
+  font-size: 0.68rem;
+  margin-bottom: 2px;
+}
+
+#testCaseDetailsModal .item-edit-stat strong {
+  font-size: 0.88rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+#testCaseDetailsModal .detail-section p {
+  white-space: normal;
+  word-break: break-word;
+}
+
+#testCaseDetailsModal .tc-identification-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px 16px;
+}
+
+#testCaseDetailsModal .tc-identification-grid p {
+  margin: 0;
+}
+
+#testCaseDetailsModal .tc-identification-evidence {
+  grid-column: 1 / -1;
+}
+
+@media (max-width: 900px) {
+  #testCaseDetailsModal .item-edit-summary {
+    grid-template-columns: 1fr;
+  }
+
+  #testCaseDetailsModal .item-edit-summary-aside {
+    justify-self: stretch;
+  }
+
+  #testCaseDetailsModal .item-edit-summary-stats {
+    width: 100%;
+  }
+
+  #testCaseDetailsModal .item-edit-stat {
+    flex: 1 1 0;
+  }
+}
+
+@media (max-width: 700px) {
+  #testCaseDetailsModal .tc-identification-grid {
+    grid-template-columns: 1fr;
+  }
+
+  #testCaseDetailsModal .item-edit-summary-stats {
+    flex-wrap: wrap;
+  }
+}
+
 .tc-form-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));

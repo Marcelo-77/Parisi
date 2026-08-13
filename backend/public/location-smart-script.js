@@ -5,12 +5,250 @@ const LOCATIONS_API_URL = API_BASE + '/api/locations';
 
 let allLocations = [];
 let previewRows = [];
+let sourceConjuntos = [];
+let sourceOptionHighlight = -1;
 
 function escapeHtml(text) {
   if (text == null) return '';
   const div = document.createElement('div');
   div.textContent = String(text);
   return div.innerHTML;
+}
+
+function getSourceHidden() {
+  return document.getElementById('sourceConjunto');
+}
+
+function getSourceSearch() {
+  return document.getElementById('sourceConjuntoSearch');
+}
+
+function getSourceOptionsEl() {
+  return document.getElementById('sourceConjuntoOptions');
+}
+
+function getClearSourceBtn() {
+  return document.getElementById('clearSourceConjuntoBtn');
+}
+
+function setSourceSelection(key, { syncInput = true } = {}) {
+  const hidden = getSourceHidden();
+  const search = getSourceSearch();
+  const clearBtn = getClearSourceBtn();
+  const value = String(key || '').trim().toUpperCase();
+  if (hidden) hidden.value = value;
+  if (search && syncInput) {
+    search.value = value;
+    search.classList.toggle('is-selected', Boolean(value));
+  } else if (search) {
+    search.classList.toggle('is-selected', Boolean(value) && search.value.trim().toUpperCase() === value);
+  }
+  if (clearBtn) clearBtn.hidden = !value && !(search && search.value.trim());
+}
+
+function clearSourceSelection({ clearInput = true } = {}) {
+  const search = getSourceSearch();
+  setSourceSelection('', { syncInput: clearInput });
+  if (search && clearInput) search.classList.remove('is-selected');
+  if (clearInput) hideSourceOptions();
+}
+
+function filterSourceConjuntos(term) {
+  const query = String(term || '').trim().toUpperCase();
+  if (!query) return sourceConjuntos.slice();
+  return sourceConjuntos.filter((c) =>
+    c.key.includes(query) ||
+    c.street.includes(query) ||
+    String(c.building).includes(query)
+  );
+}
+
+function hideSourceOptions() {
+  const optionsEl = getSourceOptionsEl();
+  const search = getSourceSearch();
+  if (optionsEl) {
+    optionsEl.hidden = true;
+    optionsEl.innerHTML = '';
+  }
+  if (search) search.setAttribute('aria-expanded', 'false');
+  sourceOptionHighlight = -1;
+}
+
+function highlightSourceOption(index) {
+  const optionsEl = getSourceOptionsEl();
+  if (!optionsEl) return;
+  const buttons = Array.from(optionsEl.querySelectorAll('.source-set-option'));
+  if (!buttons.length) {
+    sourceOptionHighlight = -1;
+    return;
+  }
+  sourceOptionHighlight = Math.max(0, Math.min(index, buttons.length - 1));
+  buttons.forEach((btn, i) => {
+    btn.classList.toggle('is-highlighted', i === sourceOptionHighlight);
+  });
+  const active = buttons[sourceOptionHighlight];
+  if (active && typeof active.scrollIntoView === 'function') {
+    active.scrollIntoView({ block: 'nearest' });
+  }
+}
+
+function renderSourceOptions(term) {
+  const optionsEl = getSourceOptionsEl();
+  const search = getSourceSearch();
+  const hidden = getSourceHidden();
+  if (!optionsEl || !search) return;
+
+  const matches = filterSourceConjuntos(term);
+  const selected = String(hidden?.value || '').trim().toUpperCase();
+
+  if (!matches.length) {
+    optionsEl.innerHTML = `<div class="source-set-empty">No sets found for “${escapeHtml(term || '')}”.</div>`;
+    optionsEl.hidden = false;
+    search.setAttribute('aria-expanded', 'true');
+    sourceOptionHighlight = -1;
+    return;
+  }
+
+  optionsEl.innerHTML = matches.map((c) => `
+    <button
+      type="button"
+      class="source-set-option${c.key === selected ? ' is-selected' : ''}"
+      role="option"
+      data-key="${escapeHtml(c.key)}"
+      aria-selected="${c.key === selected ? 'true' : 'false'}"
+    >
+      <span class="source-set-option-code"><i class="fas fa-map-marker-alt"></i> ${escapeHtml(c.key)}</span>
+      <span class="source-set-option-meta">${c.count} location${c.count === 1 ? '' : 's'}</span>
+    </button>
+  `).join('');
+
+  optionsEl.querySelectorAll('.source-set-option').forEach((btn) => {
+    btn.addEventListener('mousedown', (event) => {
+      event.preventDefault();
+      selectSourceConjunto(btn.getAttribute('data-key'));
+    });
+  });
+
+  optionsEl.hidden = false;
+  search.setAttribute('aria-expanded', 'true');
+  highlightSourceOption(matches.findIndex((c) => c.key === selected) >= 0
+    ? matches.findIndex((c) => c.key === selected)
+    : 0);
+}
+
+function selectSourceConjunto(key) {
+  setSourceSelection(key, { syncInput: true });
+  hideSourceOptions();
+  const clearBtn = getClearSourceBtn();
+  if (clearBtn) clearBtn.hidden = !key;
+  document.getElementById('targetConjunto')?.focus();
+}
+
+function tryCommitTypedSource() {
+  const search = getSourceSearch();
+  const typed = String(search?.value || '').trim().toUpperCase();
+  if (!typed) {
+    clearSourceSelection();
+    return false;
+  }
+  const exact = sourceConjuntos.find((c) => c.key === typed);
+  if (exact) {
+    selectSourceConjunto(exact.key);
+    return true;
+  }
+  const startsWith = filterSourceConjuntos(typed);
+  if (startsWith.length === 1) {
+    selectSourceConjunto(startsWith[0].key);
+    return true;
+  }
+  return false;
+}
+
+function fillSourceConjuntoOptions() {
+  sourceConjuntos = collectConjuntos(allLocations);
+  const hidden = getSourceHidden();
+  const previous = String(hidden?.value || '').trim().toUpperCase();
+  if (previous && !sourceConjuntos.some((c) => c.key === previous)) {
+    clearSourceSelection();
+  } else if (previous) {
+    setSourceSelection(previous, { syncInput: true });
+  }
+}
+
+function bindSourceSetPicker() {
+  const search = getSourceSearch();
+  const clearBtn = getClearSourceBtn();
+  const picker = document.getElementById('sourceSetPicker');
+  if (!search) return;
+
+  search.addEventListener('focus', () => {
+    renderSourceOptions(search.value);
+  });
+
+  search.addEventListener('input', () => {
+    const value = search.value.replace(/[^a-zA-Z0-9]/g, '').toUpperCase().slice(0, 8);
+    search.value = value;
+    const hidden = getSourceHidden();
+    if (hidden && hidden.value && hidden.value !== value) {
+      hidden.value = '';
+      search.classList.remove('is-selected');
+    }
+    if (clearBtn) clearBtn.hidden = !value;
+    renderSourceOptions(value);
+  });
+
+  search.addEventListener('keydown', (event) => {
+    const optionsEl = getSourceOptionsEl();
+    const open = optionsEl && !optionsEl.hidden;
+    const buttons = open ? Array.from(optionsEl.querySelectorAll('.source-set-option')) : [];
+
+    if (event.key === 'ArrowDown') {
+      event.preventDefault();
+      if (!open) renderSourceOptions(search.value);
+      else highlightSourceOption(sourceOptionHighlight + 1);
+      return;
+    }
+    if (event.key === 'ArrowUp') {
+      event.preventDefault();
+      if (!open) renderSourceOptions(search.value);
+      else highlightSourceOption(sourceOptionHighlight - 1);
+      return;
+    }
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      if (open && buttons[sourceOptionHighlight]) {
+        selectSourceConjunto(buttons[sourceOptionHighlight].getAttribute('data-key'));
+      } else {
+        tryCommitTypedSource();
+      }
+      return;
+    }
+    if (event.key === 'Escape') {
+      hideSourceOptions();
+      return;
+    }
+  });
+
+  search.addEventListener('blur', () => {
+    setTimeout(() => {
+      if (!picker?.contains(document.activeElement)) {
+        tryCommitTypedSource();
+        hideSourceOptions();
+      }
+    }, 120);
+  });
+
+  if (clearBtn) {
+    clearBtn.addEventListener('click', () => {
+      clearSourceSelection({ clearInput: true });
+      search.focus();
+      renderSourceOptions('');
+    });
+  }
+
+  document.addEventListener('click', (event) => {
+    if (picker && !picker.contains(event.target)) hideSourceOptions();
+  });
 }
 
 function parseConjunto(raw) {
@@ -116,19 +354,6 @@ function collectConjuntos(locations) {
     if (a.street !== b.street) return a.street.localeCompare(b.street);
     return Number(a.building) - Number(b.building);
   });
-}
-
-function fillSourceConjuntoOptions() {
-  const select = document.getElementById('sourceConjunto');
-  if (!select) return;
-  const conjuntos = collectConjuntos(allLocations);
-  const previous = select.value;
-  select.innerHTML = '<option value="">Select set…</option>' + conjuntos.map((c) => (
-    `<option value="${escapeHtml(c.key)}">${escapeHtml(c.key)} (${c.count} location${c.count === 1 ? '' : 's'})</option>`
-  )).join('');
-  if (previous && conjuntos.some((c) => c.key === previous)) {
-    select.value = previous;
-  }
 }
 
 function setEmptyTableMessage(messageHtml) {
@@ -275,12 +500,21 @@ function renderPreviewTable() {
 }
 
 function generatePreview() {
+  tryCommitTypedSource();
   const sourceKey = String(document.getElementById('sourceConjunto')?.value || '').trim().toUpperCase();
   const targetRaw = String(document.getElementById('targetConjunto')?.value || '').trim().toUpperCase();
   const target = parseConjunto(targetRaw);
 
   if (!sourceKey) {
-    alert('Select a source set.');
+    alert('Select a valid source set from the list.');
+    getSourceSearch()?.focus();
+    renderSourceOptions(getSourceSearch()?.value || '');
+    return;
+  }
+  if (!sourceConjuntos.some((c) => c.key === sourceKey)) {
+    alert(`Source set ${sourceKey} was not found.`);
+    getSourceSearch()?.focus();
+    renderSourceOptions(sourceKey);
     return;
   }
   if (!target) {
@@ -339,11 +573,64 @@ function generatePreview() {
 }
 
 function clearPreview() {
-  const source = document.getElementById('sourceConjunto');
+  clearSourceSelection({ clearInput: true });
   const target = document.getElementById('targetConjunto');
-  if (source) source.value = '';
   if (target) target.value = '';
   setEmptyTableMessage('Select a source set, type the new set, then click <strong>Generate lines</strong>.');
+}
+
+function showSmartProcessing(total) {
+  const overlay = document.getElementById('smartProcessOverlay');
+  const card = document.getElementById('smartProcessCard');
+  const icon = document.getElementById('smartProcessIcon');
+  const title = document.getElementById('smartProcessTitle');
+  const message = document.getElementById('smartProcessMessage');
+  const progress = document.getElementById('smartProcessProgress');
+  if (!overlay || !card) return;
+
+  document.body.classList.add('smart-processing');
+  card.className = 'smart-process-card is-processing';
+  if (icon) icon.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+  if (title) title.textContent = 'Processing';
+  if (message) message.textContent = 'Please wait. Do not close or use other options while locations are being created.';
+  if (progress) progress.textContent = `0 of ${total}`;
+  overlay.classList.add('is-open');
+  overlay.setAttribute('aria-hidden', 'false');
+}
+
+function updateSmartProcessingProgress(current, total) {
+  const progress = document.getElementById('smartProcessProgress');
+  if (progress) progress.textContent = `${current} of ${total}`;
+}
+
+function showSmartProcessResult({ success, title, message }) {
+  const overlay = document.getElementById('smartProcessOverlay');
+  const card = document.getElementById('smartProcessCard');
+  const icon = document.getElementById('smartProcessIcon');
+  const titleEl = document.getElementById('smartProcessTitle');
+  const messageEl = document.getElementById('smartProcessMessage');
+  const progress = document.getElementById('smartProcessProgress');
+  const okBtn = document.getElementById('smartProcessOkBtn');
+  if (!overlay || !card) return;
+
+  card.className = `smart-process-card ${success ? 'is-success' : 'is-error'}`;
+  if (icon) {
+    icon.innerHTML = success
+      ? '<i class="fas fa-check-circle"></i>'
+      : '<i class="fas fa-exclamation-circle"></i>';
+  }
+  if (titleEl) titleEl.textContent = title;
+  if (messageEl) messageEl.textContent = message;
+  if (progress) progress.textContent = '';
+  if (okBtn) okBtn.focus();
+}
+
+function hideSmartProcessOverlay() {
+  const overlay = document.getElementById('smartProcessOverlay');
+  if (!overlay) return;
+  overlay.classList.remove('is-open');
+  overlay.setAttribute('aria-hidden', 'true');
+  document.body.classList.remove('smart-processing');
 }
 
 async function saveAllRows() {
@@ -359,8 +646,21 @@ async function saveAllRows() {
   }
 
   if (saveBtn) saveBtn.disabled = true;
+  const generateBtn = document.getElementById('generateSmartBtn');
+  const clearBtn = document.getElementById('clearSmartBtn');
+  const cancelBtn = document.getElementById('cancelSmartBtn');
+  const sourceSearch = getSourceSearch();
+  const targetInput = document.getElementById('targetConjunto');
+  const controls = [generateBtn, clearBtn, cancelBtn, sourceSearch, targetInput, saveBtn];
+  controls.forEach((el) => {
+    if (el) el.disabled = true;
+  });
+
+  showSmartProcessing(readyRows.length);
+
   let created = 0;
   let failed = 0;
+  let processed = 0;
 
   for (const row of readyRows) {
     const parsedNew = window.LocationCodeUtils.parseLocationCode(row.newLocation);
@@ -376,6 +676,8 @@ async function saveAllRows() {
       row.exists = true;
       row.existsAs = existingNow.location;
       row.existsKind = existingNow.kind;
+      processed += 1;
+      updateSmartProcessingProgress(processed, readyRows.length);
       continue;
     }
 
@@ -425,15 +727,33 @@ async function saveAllRows() {
       row.errorMessage = err.message || 'Network error';
       failed += 1;
     }
+
+    processed += 1;
+    updateSmartProcessingProgress(processed, readyRows.length);
   }
 
   fillSourceConjuntoOptions();
   renderPreviewTable();
 
+  controls.forEach((el) => {
+    if (!el || el === saveBtn) return;
+    el.disabled = false;
+  });
+
   if (failed === 0) {
-    alert(`Saved ${created} location${created === 1 ? '' : 's'} successfully.`);
+    showSmartProcessResult({
+      success: true,
+      title: 'Processed with success',
+      message: created === 1
+        ? '1 location was created successfully.'
+        : `${created} locations were created successfully.`
+    });
   } else {
-    alert(`Saved ${created}. Failed: ${failed}. Check line status in the table.`);
+    showSmartProcessResult({
+      success: false,
+      title: 'Processed with errors',
+      message: `Saved ${created}. Failed: ${failed}. Check line status in the table.`
+    });
   }
 }
 
@@ -471,6 +791,27 @@ document.addEventListener('DOMContentLoaded', () => {
       targetInput.value = targetInput.value.replace(/[^a-zA-Z0-9]/g, '').toUpperCase().slice(0, 8);
     });
   }
+
+  bindSourceSetPicker();
+
+  document.getElementById('smartProcessOkBtn')?.addEventListener('click', hideSmartProcessOverlay);
+  document.getElementById('smartProcessOverlay')?.addEventListener('click', (event) => {
+    const card = document.getElementById('smartProcessCard');
+    if (!card || card.classList.contains('is-processing')) return;
+    if (event.target === event.currentTarget) hideSmartProcessOverlay();
+  });
+  document.addEventListener('keydown', (event) => {
+    if (event.key !== 'Escape') return;
+    const card = document.getElementById('smartProcessCard');
+    const overlay = document.getElementById('smartProcessOverlay');
+    if (!overlay || !overlay.classList.contains('is-open') || !card) return;
+    if (card.classList.contains('is-processing')) {
+      event.preventDefault();
+      event.stopPropagation();
+      return;
+    }
+    hideSmartProcessOverlay();
+  }, true);
 
   document.getElementById('generateSmartBtn')?.addEventListener('click', generatePreview);
   document.getElementById('clearSmartBtn')?.addEventListener('click', clearPreview);
