@@ -78,6 +78,7 @@ function getLocationPartsForExport(loc) {
         building: parsed.building || '',
         level: parsed.level || '',
         sublevel: parsed.sublevel || '',
+        behind: parsed.behind || '',
         side: parsed.side || ''
     };
 }
@@ -102,7 +103,7 @@ function getInsertedAt(loc) {
 }
 
 function buildLocationsExcelXml(list) {
-    const headers = ['Street', 'Building', 'Level', 'Sublevel', 'Side', 'Location', 'Status', 'Access Type', 'Section', 'Inserted By', 'Inserted At'];
+    const headers = ['Street', 'Building', 'Level', 'Sublevel', 'Behind', 'Side', 'Location', 'Status', 'Access Type', 'Section', 'Inserted By', 'Inserted At'];
     const headerRow = headers.map((header) =>
         `<Cell><Data ss:Type="String">${escapeXml(header)}</Data></Cell>`
     ).join('');
@@ -116,6 +117,7 @@ function buildLocationsExcelXml(list) {
             parts.building,
             parts.level,
             parts.sublevel,
+            parts.behind,
             parts.side,
             loc.location || '',
             statusLabel,
@@ -141,6 +143,7 @@ function buildLocationsExcelXml(list) {
 <Column ss:Width="60"/>
 <Column ss:Width="70"/>
 <Column ss:Width="50"/>
+<Column ss:Width="70"/>
 <Column ss:Width="70"/>
 <Column ss:Width="50"/>
 <Column ss:Width="120"/>
@@ -183,9 +186,11 @@ const SEARCH_FIELD_IDS = {
     levelId: 'searchLocationLevel',
     sideId: 'searchLocationSide',
     sublevelId: 'searchLocationSublevel',
+    behindId: 'searchLocationBehind',
     codeId: 'searchLocation',
     sideGroupId: 'searchLocationSideGroup',
     sublevelGroupId: 'searchLocationSublevelGroup',
+    behindGroupId: 'searchLocationBehindGroup',
     levelZeroModeId: 'searchLocationLevelZeroMode',
     levelZeroModeGroupId: 'searchLocationLevelZeroModeGroup'
 };
@@ -196,9 +201,11 @@ const EDIT_FIELD_IDS = {
     levelId: 'editLocationLevel',
     sideId: 'editLocationSide',
     sublevelId: 'editLocationSublevel',
+    behindId: 'editLocationBehind',
     codeId: 'editLocationCode',
     sideGroupId: 'editLocationSideGroup',
     sublevelGroupId: 'editLocationSublevelGroup',
+    behindGroupId: 'editLocationBehindGroup',
     levelZeroModeId: 'editLocationLevelZeroMode',
     levelZeroModeGroupId: 'editLocationLevelZeroModeGroup',
     accessTypeId: 'editAccessType'
@@ -354,6 +361,67 @@ document.addEventListener('DOMContentLoaded', () => {
     const editForm = document.getElementById('editLocationForm');
     const closeEditBtn = document.getElementById('closeEditLocationModal');
     const cancelEditBtn = document.getElementById('cancelEditLocation');
+
+    function showEditError(fieldId, message) {
+        const errorEl = document.getElementById(`${fieldId}-error`);
+        if (errorEl) {
+            errorEl.textContent = message;
+            errorEl.classList.add('show');
+        }
+    }
+
+    function clearEditErrors() {
+        editForm?.querySelectorAll('.error-message').forEach(el => {
+            el.classList.remove('show');
+            el.textContent = '';
+        });
+    }
+
+    function validateEditForm() {
+        clearEditErrors();
+        LocationCodeUtils.updateComposedLocation(EDIT_FIELD_IDS);
+
+        let valid = true;
+        const validation = LocationCodeUtils.validateLocationParts(
+            LocationCodeUtils.getLocationParts(EDIT_FIELD_IDS)
+        );
+        const status = document.getElementById('editLocationStatus')?.value;
+        const accessType = document.getElementById('editAccessType')?.value;
+        const section = document.getElementById('editLocationSection')?.value;
+
+        const fieldMap = {
+            street: 'editLocationStreet',
+            building: 'editLocationBuilding',
+            level: 'editLocationLevel',
+            levelZeroMode: 'editLocationLevelZeroMode',
+            side: 'editLocationSide',
+            sublevel: 'editLocationSublevel',
+            behind: 'editLocationBehind',
+            code: 'editLocationCode'
+        };
+
+        Object.entries(fieldMap).forEach(([key, fieldId]) => {
+            if (validation.errors[key]) {
+                showEditError(fieldId, validation.errors[key]);
+                valid = false;
+            }
+        });
+
+        if (!status) {
+            showEditError('editLocationStatus', 'Select a status');
+            valid = false;
+        }
+        if (!accessType) {
+            showEditError('editAccessType', 'Select an access type');
+            valid = false;
+        }
+        if (!section) {
+            showEditError('editLocationSection', 'Select a section');
+            valid = false;
+        }
+
+        return valid ? validation : null;
+    }
 
     function showEmptyStateInitial() {
         hasSearched = false;
@@ -1106,6 +1174,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     return;
                 }
                 const loc = result.data;
+                clearEditErrors();
                 document.getElementById('editLocationId').value = loc.id;
                 document.getElementById('editLocationStatus').value = loc.status || 'active';
                 document.getElementById('editAccessType').value = loc.accessType || '';
@@ -1133,6 +1202,7 @@ document.addEventListener('DOMContentLoaded', () => {
             editModal.classList.remove('show');
             editModal.setAttribute('aria-hidden', 'true');
         }
+        clearEditErrors();
     }
 
     function loadLocations() {
@@ -1170,7 +1240,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 const mode = parts.levelZeroMode
                     || (parts.side ? 'side' : (parts.sublevel !== '' ? 'sublevel' : ''));
                 if (mode === 'side' && parts.side) term += parts.side;
-                else if (mode === 'sublevel' && parts.sublevel !== '') term += String(parts.sublevel);
+                else if (mode === 'sublevel' && parts.sublevel !== '') {
+                    term += String(parts.sublevel);
+                    if (parts.behind === 'B') term += 'B';
+                }
             } else if (parts.side) {
                 term += parts.side;
             }
@@ -1246,14 +1319,8 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             LocationCodeUtils.updateComposedLocation(EDIT_FIELD_IDS);
-            const validation = LocationCodeUtils.validateLocationParts(
-                LocationCodeUtils.getLocationParts(EDIT_FIELD_IDS)
-            );
-            if (!validation.valid) {
-                const firstError = Object.values(validation.errors)[0];
-                alert(firstError || 'Please complete all location fields.');
-                return;
-            }
+            const validation = validateEditForm();
+            if (!validation) return;
 
             const data = {
                 location: validation.composed,
@@ -1321,7 +1388,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Do not load result set on open — wait for Search
     showEmptyStateInitial();
 
-    ['searchLocationStreet', 'searchLocationBuilding', 'searchLocationLevel', 'searchLocationSide', 'searchLocationSublevel'].forEach((fieldId) => {
+    ['searchLocationStreet', 'searchLocationBuilding', 'searchLocationLevel', 'searchLocationSide', 'searchLocationSublevel', 'searchLocationBehind'].forEach((fieldId) => {
         const field = document.getElementById(fieldId);
         if (field) {
             field.addEventListener('input', () => {
@@ -1342,12 +1409,14 @@ document.addEventListener('DOMContentLoaded', () => {
             const levelEl = document.getElementById('searchLocationLevel');
             const sideEl = document.getElementById('searchLocationSide');
             const sublevelEl = document.getElementById('searchLocationSublevel');
+            const behindEl = document.getElementById('searchLocationBehind');
             const modeEl = document.getElementById('searchLocationLevelZeroMode');
             if (streetEl) streetEl.value = '';
             if (buildingEl) buildingEl.value = '';
             if (levelEl) levelEl.value = '';
             if (sideEl) sideEl.value = '';
             if (sublevelEl) sublevelEl.value = '';
+            if (behindEl) behindEl.value = '';
             if (modeEl) modeEl.value = '';
             LocationCodeUtils.updateLevelDependentFields(SEARCH_FIELD_IDS);
             if (hasSearched) filterLocations();
@@ -1377,6 +1446,8 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('searchLocationLevel').value = '';
         document.getElementById('searchLocationSide').value = '';
         document.getElementById('searchLocationSublevel').value = '';
+        const behindEl = document.getElementById('searchLocationBehind');
+        if (behindEl) behindEl.value = '';
         searchLocationInput.value = '';
         LocationCodeUtils.updateComposedLocation(SEARCH_FIELD_IDS, {
             allowPartial: true,
@@ -1442,8 +1513,14 @@ document.addEventListener('DOMContentLoaded', () => {
             openLocationHelp();
             return;
         }
-        if (e.key === 'Escape' && locationHelpModal?.classList.contains('is-open')) {
-            closeLocationHelp();
+        if (e.key === 'Escape') {
+            if (editModal?.classList.contains('show')) {
+                closeEditModal();
+                return;
+            }
+            if (locationHelpModal?.classList.contains('is-open')) {
+                closeLocationHelp();
+            }
         }
     });
 

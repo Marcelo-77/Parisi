@@ -276,7 +276,8 @@ function getConjuntoFromCode(locationCode) {
 
 function formatSideOrSublevel(parts) {
   if (parts.levelZeroMode === 'sublevel' || (parts.level === '0' && parts.sublevel !== '' && !parts.side)) {
-    return parts.sublevel !== '' ? `Sublevel ${parts.sublevel}` : '-';
+    if (parts.sublevel === '') return '-';
+    return parts.behind === 'B' ? `Sublevel ${parts.sublevel} B` : `Sublevel ${parts.sublevel}`;
   }
   if (parts.side) {
     const labels = { R: 'R - Right', L: 'L - Left', M: 'M - Middle' };
@@ -292,6 +293,7 @@ function composeForTarget(sourceParts, targetConjunto) {
     level: sourceParts.level,
     side: sourceParts.side,
     sublevel: sourceParts.sublevel,
+    behind: sourceParts.behind,
     levelZeroMode: sourceParts.levelZeroMode
   });
 }
@@ -310,8 +312,9 @@ function partsIdentityKey(parts) {
   const sublevel = parts.sublevel !== '' && parts.sublevel != null
     ? String(Number(parts.sublevel))
     : '';
+  const behind = String(parts.behind || '').toUpperCase() === 'B' ? 'B' : '';
 
-  return [String(parts.street).toUpperCase(), building, level, mode, side, sublevel].join('|');
+  return [String(parts.street).toUpperCase(), building, level, mode, side, sublevel, behind].join('|');
 }
 
 function findExistingEquivalent(newLocation, targetParts) {
@@ -548,6 +551,7 @@ function generatePreview() {
       level: parts.level,
       side: parts.side,
       sublevel: parts.sublevel,
+      behind: parts.behind,
       levelZeroMode: parts.levelZeroMode
     };
     const existing = findExistingEquivalent(newLocation, targetParts);
@@ -670,6 +674,7 @@ async function saveAllRows() {
       level: parsedNew.level,
       side: parsedNew.side,
       sublevel: parsedNew.sublevel,
+      behind: parsedNew.behind,
       levelZeroMode: parsedNew.levelZeroMode
     });
     if (existingNow) {

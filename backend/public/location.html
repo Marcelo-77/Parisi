@@ -18,7 +18,7 @@
 
         #locationForm .location-row-address {
             display: grid;
-            grid-template-columns: 7fr 3fr;
+            grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
             gap: 20px;
             align-items: start;
         }
@@ -34,6 +34,7 @@
         #locationForm .location-address-half--right {
             padding-left: 16px;
             border-left: 1px solid #e5e7eb;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
         }
 
         #locationForm .location-row-address .form-group {
@@ -42,14 +43,17 @@
         }
 
         #locationForm .location-row-address .form-group label {
-            font-size: 0.95rem;
+            display: block;
+            font-size: 0.88rem;
             font-weight: 600;
             margin-bottom: 8px;
-            white-space: nowrap;
+            white-space: normal;
+            line-height: 1.25;
+            overflow-wrap: break-word;
         }
 
         #locationForm .location-row-address .form-group label i {
-            margin-right: 8px;
+            margin-right: 6px;
         }
 
         #locationForm .location-row-compact .form-group input,
@@ -172,12 +176,46 @@
             min-height: 0;
         }
 
-        .location-help-modal .modal-footer {
+        .location-help-modal .modal-footer,
+        .location-feedback-modal .modal-footer {
             flex: 0 0 auto;
             padding: 16px 24px;
             display: flex;
             justify-content: center;
             border-top: 1px solid #eef2f7;
+        }
+
+        .location-feedback-modal {
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+        }
+
+        .location-feedback-modal.is-open {
+            display: flex !important;
+        }
+
+        .location-feedback-modal .modal-content {
+            max-width: 520px;
+            width: min(520px, calc(100vw - 24px));
+            margin: 0 auto !important;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .location-feedback-modal .modal-body {
+            padding: 24px;
+            text-align: center;
+        }
+
+        .location-feedback-modal .modal-body p {
+            margin: 0;
+            color: #334155;
+            font-size: 1rem;
+            line-height: 1.5;
+            word-break: break-word;
         }
 
         .location-help-body {
@@ -457,6 +495,16 @@
                                        placeholder="Ex: 0" min="0" step="1" inputmode="numeric">
                                 <span class="error-message" id="locationSublevel-error"></span>
                             </div>
+                            <div class="form-group" id="locationBehindGroup" style="display:none;">
+                                <label for="locationBehind">
+                                    <i class="fas fa-arrow-turn-up"></i> Behind
+                                </label>
+                                <select id="locationBehind" name="locationBehind">
+                                    <option value="">None</option>
+                                    <option value="B">B - Behind</option>
+                                </select>
+                                <span class="error-message" id="locationBehind-error"></span>
+                            </div>
                             <div class="form-group" id="locationSideGroup" style="display:none;">
                                 <label for="locationSide">
                                     <i class="fas fa-arrows-left-right"></i> Side *
@@ -557,6 +605,7 @@
                 <ul>
                     <li><strong>Side</strong> — then select <strong>R</strong> (Right), <strong>L</strong> (Left) or <strong>M</strong> (Middle).</li>
                     <li><strong>Sublevel</strong> — then enter a sublevel number (for example <code>0</code>).</li>
+                    <li>For <strong>Street A or H</strong>, after typing Sublevel you can choose <strong>B - Behind</strong> or leave it empty (None).</li>
                 </ul>
 
                 <h4>When Level is greater than 0</h4>
@@ -575,6 +624,8 @@
                     <strong>Examples</strong>
                     <ul>
                         <li>Street <code>B</code>, Building <code>1</code>, Level <code>0</code>, Sublevel <code>0</code> → <code>B1-00</code></li>
+                        <li>Street <code>A</code>, Building <code>7</code>, Level <code>0</code>, Sublevel <code>0</code> → <code>A7-00</code></li>
+                        <li>Street <code>A</code>, Building <code>7</code>, Level <code>0</code>, Sublevel <code>0</code>, Behind <code>B</code> → <code>A7-00B</code></li>
                         <li>Street <code>B</code>, Building <code>15</code>, Level <code>1</code>, Side <code>L</code> → <code>B15-1L</code></li>
                         <li>Street <code>A</code>, Building <code>7</code>, Level <code>2</code>, Side <code>R</code> → <code>A7-2R</code></li>
                     </ul>
@@ -582,6 +633,40 @@
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-primary" id="closeLocationHelpBtn">
+                    <i class="fas fa-check"></i> Ok
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div id="locationErrorModal" class="modal location-feedback-modal" role="alertdialog" aria-labelledby="locationErrorTitle" aria-modal="true">
+        <div class="modal-content">
+            <div class="modal-header error">
+                <h3 id="locationErrorTitle"><i class="fas fa-circle-exclamation"></i> Error saving location</h3>
+                <button type="button" class="modal-close" id="closeLocationErrorModal" aria-label="Close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p id="locationErrorMessage"></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary" id="closeLocationErrorBtn">
+                    <i class="fas fa-check"></i> Ok
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div id="locationSuccessModal" class="modal location-feedback-modal" role="dialog" aria-labelledby="locationSuccessTitle" aria-modal="true">
+        <div class="modal-content">
+            <div class="modal-header success">
+                <h3 id="locationSuccessTitle"><i class="fas fa-circle-check"></i> Location saved</h3>
+                <button type="button" class="modal-close" id="closeLocationSuccessModal" aria-label="Close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p id="locationSuccessMessage">Location saved successfully.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary" id="closeLocationSuccessBtn">
                     <i class="fas fa-check"></i> Ok
                 </button>
             </div>

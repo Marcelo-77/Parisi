@@ -6,9 +6,11 @@ const LOCATION_FIELD_IDS = {
     levelId: 'locationLevel',
     sideId: 'locationSide',
     sublevelId: 'locationSublevel',
+    behindId: 'locationBehind',
     codeId: 'locationCode',
     sideGroupId: 'locationSideGroup',
     sublevelGroupId: 'locationSublevelGroup',
+    behindGroupId: 'locationBehindGroup',
     levelZeroModeId: 'locationLevelZeroMode',
     levelZeroModeGroupId: 'locationLevelZeroModeGroup',
     accessTypeId: 'accessType'
@@ -153,6 +155,59 @@ document.addEventListener('DOMContentLoaded', () => {
     const cancelBtn = document.getElementById('cancelLocationBtn');
     const saveBtn = document.getElementById('saveLocationBtn');
 
+    const locationErrorModal = document.getElementById('locationErrorModal');
+    const locationErrorMessage = document.getElementById('locationErrorMessage');
+    const closeLocationErrorModal = document.getElementById('closeLocationErrorModal');
+    const closeLocationErrorBtn = document.getElementById('closeLocationErrorBtn');
+    const locationSuccessModal = document.getElementById('locationSuccessModal');
+    const locationSuccessMessage = document.getElementById('locationSuccessMessage');
+    const closeLocationSuccessModal = document.getElementById('closeLocationSuccessModal');
+    const closeLocationSuccessBtn = document.getElementById('closeLocationSuccessBtn');
+
+    function openFeedbackDialog(modal, closeBtn, messageEl, message, fallback) {
+        if (!modal) return;
+        if (messageEl) {
+            messageEl.textContent = message || fallback;
+        }
+        modal.classList.add('is-open');
+        modal.style.display = 'flex';
+        closeBtn?.focus();
+    }
+
+    function closeFeedbackDialog(modal) {
+        if (!modal) return;
+        modal.classList.remove('is-open');
+        modal.style.display = 'none';
+    }
+
+    function openLocationErrorDialog(message) {
+        openFeedbackDialog(
+            locationErrorModal,
+            closeLocationErrorBtn,
+            locationErrorMessage,
+            message,
+            'Error saving location.'
+        );
+    }
+
+    function closeLocationErrorDialog() {
+        closeFeedbackDialog(locationErrorModal);
+    }
+
+    function openLocationSuccessDialog(message) {
+        openFeedbackDialog(
+            locationSuccessModal,
+            closeLocationSuccessBtn,
+            locationSuccessMessage,
+            message,
+            'Location saved successfully.'
+        );
+    }
+
+    function closeLocationSuccessDialog() {
+        closeFeedbackDialog(locationSuccessModal);
+    }
+
     function showError(fieldId, message) {
         const errorEl = document.getElementById(`${fieldId}-error`);
         if (errorEl) {
@@ -202,6 +257,10 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         if (validation.errors.sublevel) {
             showError('locationSublevel', validation.errors.sublevel);
+            valid = false;
+        }
+        if (validation.errors.behind) {
+            showError('locationBehind', validation.errors.behind);
             valid = false;
         }
         if (validation.errors.code) {
@@ -263,7 +322,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const msg = result.message || result.error || 'Error saving location';
                 throw new Error(msg);
             }
-            alert('Location saved successfully.');
+            openLocationSuccessDialog('Location saved successfully.');
             resetLocationForm();
         })
         .catch((err) => {
@@ -272,7 +331,10 @@ document.addEventListener('DOMContentLoaded', () => {
             if (msg === 'Failed to fetch' || err.name === 'TypeError') {
                 msg = 'Cannot reach server. Open this page from http://localhost:3000/location.html and ensure the backend is running.';
             }
-            alert('Error saving location: ' + msg);
+            if (/already exists|duplicate key|unique constraint/i.test(String(msg || ''))) {
+                msg = msg || 'This location already exists.';
+            }
+            openLocationErrorDialog(msg || 'Error saving location.');
         })
         .finally(() => {
             saveBtn.disabled = false;
@@ -317,14 +379,40 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    if (closeLocationErrorModal) closeLocationErrorModal.addEventListener('click', closeLocationErrorDialog);
+    if (closeLocationErrorBtn) closeLocationErrorBtn.addEventListener('click', closeLocationErrorDialog);
+    if (locationErrorModal) {
+        locationErrorModal.addEventListener('click', (e) => {
+            if (e.target === locationErrorModal) closeLocationErrorDialog();
+        });
+    }
+
+    if (closeLocationSuccessModal) closeLocationSuccessModal.addEventListener('click', closeLocationSuccessDialog);
+    if (closeLocationSuccessBtn) closeLocationSuccessBtn.addEventListener('click', closeLocationSuccessDialog);
+    if (locationSuccessModal) {
+        locationSuccessModal.addEventListener('click', (e) => {
+            if (e.target === locationSuccessModal) closeLocationSuccessDialog();
+        });
+    }
+
     document.addEventListener('keydown', (e) => {
         if (e.key === 'F1') {
             e.preventDefault();
             openLocationHelp();
             return;
         }
-        if (e.key === 'Escape' && locationHelpModal?.classList.contains('is-open')) {
-            closeLocationHelp();
+        if (e.key === 'Escape') {
+            if (locationErrorModal?.classList.contains('is-open')) {
+                closeLocationErrorDialog();
+                return;
+            }
+            if (locationSuccessModal?.classList.contains('is-open')) {
+                closeLocationSuccessDialog();
+                return;
+            }
+            if (locationHelpModal?.classList.contains('is-open')) {
+                closeLocationHelp();
+            }
         }
     });
 

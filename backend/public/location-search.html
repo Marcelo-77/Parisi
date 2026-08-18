@@ -177,6 +177,198 @@
                 text-overflow: ellipsis;
             }
         }
+
+        /* Edit Location — mirror New Location form (location.html) */
+        .location-edit-modal.show {
+            display: flex;
+            align-items: flex-start;
+            justify-content: center;
+            padding: 16px;
+            overflow-y: auto;
+        }
+
+        .location-edit-modal .location-edit-modal-content {
+            margin: 0 auto;
+            max-width: 1100px;
+            width: min(1100px, calc(100vw - 24px));
+            max-height: calc(100vh - 32px);
+            overflow-y: auto;
+            position: relative;
+        }
+
+        .location-edit-modal .location-edit-close {
+            position: absolute;
+            top: 12px;
+            right: 14px;
+            z-index: 2;
+            background: rgba(255, 255, 255, 0.92);
+            border: 1px solid #e2e8f0;
+            color: #475569;
+            width: 36px;
+            height: 36px;
+            border-radius: 999px;
+            font-size: 1.4rem;
+            line-height: 1;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.2s ease, color 0.2s ease;
+        }
+
+        .location-edit-modal .location-edit-close:hover {
+            background: #fff;
+            color: #1e293b;
+        }
+
+        .location-edit-modal .location-form-header {
+            position: relative;
+            display: block;
+            text-align: center;
+            margin-bottom: 8px;
+            padding: 18px 52px 0;
+        }
+
+        .location-edit-modal .location-form-header .form-header {
+            margin: 0;
+            padding: 0;
+            border: none;
+            background: transparent;
+            text-align: center;
+        }
+
+        .location-edit-modal .location-form-header .form-header h2 {
+            justify-content: center;
+            text-align: center;
+        }
+
+        .location-edit-modal .location-form-header .form-header p {
+            text-align: center;
+        }
+
+        #editLocationForm .location-row-3 {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 16px;
+            align-items: start;
+        }
+
+        #editLocationForm .location-row-address {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+            gap: 20px;
+            align-items: start;
+        }
+
+        #editLocationForm .location-address-half {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 10px;
+            align-items: start;
+            min-width: 0;
+        }
+
+        #editLocationForm .location-address-half--right {
+            padding-left: 16px;
+            border-left: 1px solid #e5e7eb;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+        }
+
+        #editLocationForm .location-row-address .form-group {
+            margin-bottom: 0;
+            min-width: 0;
+        }
+
+        #editLocationForm .location-row-address .form-group label {
+            display: block;
+            font-size: 0.88rem;
+            font-weight: 600;
+            margin-bottom: 8px;
+            white-space: normal;
+            line-height: 1.25;
+            overflow-wrap: break-word;
+        }
+
+        #editLocationForm .location-row-address .form-group label i {
+            margin-right: 6px;
+        }
+
+        #editLocationForm .location-row-compact .form-group input,
+        #editLocationForm .location-row-compact .form-group select {
+            width: 100%;
+            padding: 8px 10px;
+            font-size: 0.9rem;
+            min-height: 38px;
+        }
+
+        #editLocationForm .location-code-row {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 4px;
+        }
+
+        #editLocationForm .location-code-group {
+            width: min(320px, 100%);
+            text-align: center;
+            padding: 14px 16px;
+            border-radius: 14px;
+            border: none;
+            background: transparent;
+        }
+
+        #editLocationForm .location-code-group label {
+            display: block;
+            text-align: center;
+            font-size: 0.85rem;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #4338ca;
+        }
+
+        #editLocationForm .location-code-group #editLocationCode {
+            text-align: center;
+            font-size: 1.7rem;
+            font-weight: 800;
+            letter-spacing: 0.04em;
+            min-height: 48px;
+            padding: 8px 12px;
+            color: #1e1b4b;
+            border-color: #c7d2fe;
+            background: #fff;
+        }
+
+        #editLocationForm .location-code-group .error-message {
+            text-align: center;
+        }
+
+        #editLocationForm {
+            padding: 0 24px 24px;
+        }
+
+        @media (max-width: 900px) {
+            #editLocationForm .location-row-address {
+                grid-template-columns: 1fr;
+                gap: 14px;
+            }
+
+            #editLocationForm .location-address-half--right {
+                padding-left: 0;
+                border-left: none;
+                padding-top: 12px;
+                border-top: 1px solid #e5e7eb;
+            }
+        }
+
+        @media (max-width: 768px) {
+            #editLocationForm .location-row-3,
+            #editLocationForm .location-address-half {
+                grid-template-columns: 1fr;
+            }
+
+            .location-edit-modal .location-form-header {
+                padding: 18px 44px 0;
+            }
+        }
     </style>
 </head>
 <body class="location-search-page">
@@ -349,6 +541,15 @@
                                 </label>
                                 <input type="number" id="searchLocationSublevel" min="0" step="1" placeholder="Ex: 0">
                             </div>
+                            <div class="filter-group" id="searchLocationBehindGroup" style="display:none;">
+                                <label for="searchLocationBehind">
+                                    <i class="fas fa-arrow-turn-up"></i> Behind
+                                </label>
+                                <select id="searchLocationBehind">
+                                    <option value="">All</option>
+                                    <option value="B">B - Behind</option>
+                                </select>
+                            </div>
                             <div class="filter-group" id="searchLocationSideGroup" style="display:none;">
                                 <label for="searchLocationSide">
                                     <i class="fas fa-arrows-left-right"></i> Side
@@ -468,83 +669,152 @@
     </div>
 
     <!-- Modal Edit Location -->
-    <div id="editLocationModal" class="modal" aria-hidden="true">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3><i class="fas fa-edit"></i> Edit Location</h3>
-                <button type="button" class="modal-close" id="closeEditLocationModal" aria-label="Close">&times;</button>
+    <div id="editLocationModal" class="modal location-edit-modal" aria-hidden="true">
+        <div class="modal-content location-edit-modal-content">
+            <button type="button" class="location-edit-close" id="closeEditLocationModal" aria-label="Close">&times;</button>
+
+            <div class="location-form-header">
+                <div class="form-header">
+                    <h2><i class="fas fa-edit"></i> Edit Location</h2>
+                    <p>Update the fields below to change this warehouse location</p>
+                </div>
             </div>
-            <form id="editLocationForm">
+
+            <form id="editLocationForm" class="funcionario-form">
                 <input type="hidden" id="editLocationId" name="id">
-                <div class="form-row" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:12px;">
-                    <div class="form-group">
-                        <label for="editLocationStreet"><i class="fas fa-road"></i> Street *</label>
-                        <input type="text" id="editLocationStreet" maxlength="1" required placeholder="Ex: B" style="text-transform: uppercase;">
+
+                <div class="form-row location-code-row">
+                    <div class="form-group location-code-group">
+                        <label for="editLocationCode">
+                            <i class="fas fa-map-marker-alt"></i> Location *
+                        </label>
+                        <input type="text" id="editLocationCode" name="locationCode" required
+                               readonly placeholder="Ex: B1-00, B15-1L"
+                               class="input-readonly">
+                        <span class="error-message" id="editLocationCode-error"></span>
                     </div>
-                    <div class="form-group">
-                        <label for="editLocationBuilding"><i class="fas fa-building"></i> Building *</label>
-                        <input type="number" id="editLocationBuilding" min="0" step="1" required placeholder="Ex: 7">
+                </div>
+
+                <div class="form-row location-row-address location-row-compact">
+                    <div class="location-address-half location-address-half--left">
+                        <div class="form-group">
+                            <label for="editLocationStreet">
+                                <i class="fas fa-road"></i> Street *
+                            </label>
+                            <input type="text" id="editLocationStreet" maxlength="1" required
+                                   placeholder="Ex: A" autocomplete="off"
+                                   style="text-transform: uppercase;">
+                            <span class="error-message" id="editLocationStreet-error"></span>
+                        </div>
+                        <div class="form-group">
+                            <label for="editLocationBuilding">
+                                <i class="fas fa-building"></i> Building *
+                            </label>
+                            <input type="number" id="editLocationBuilding" min="0" step="1" required
+                                   placeholder="Ex: 7" inputmode="numeric">
+                            <span class="error-message" id="editLocationBuilding-error"></span>
+                        </div>
+                        <div class="form-group">
+                            <label for="editLocationLevel">
+                                <i class="fas fa-layer-group"></i> Level *
+                            </label>
+                            <input type="number" id="editLocationLevel" min="0" step="1" required
+                                   placeholder="Ex: 1" inputmode="numeric">
+                            <span class="error-message" id="editLocationLevel-error"></span>
+                        </div>
                     </div>
-                    <div class="form-group">
-                        <label for="editLocationLevel"><i class="fas fa-layer-group"></i> Level *</label>
-                        <input type="number" id="editLocationLevel" min="0" step="1" required placeholder="Ex: 1">
+                    <div class="location-address-half location-address-half--right" id="editLocationLevelZeroRow">
+                        <div class="form-group" id="editLocationLevelZeroModeGroup" style="display:none;">
+                            <label for="editLocationLevelZeroMode">
+                                <i class="fas fa-sliders"></i> Level 0 type *
+                            </label>
+                            <select id="editLocationLevelZeroMode">
+                                <option value="">Select type</option>
+                                <option value="side">Side</option>
+                                <option value="sublevel">Sublevel</option>
+                            </select>
+                            <span class="error-message" id="editLocationLevelZeroMode-error"></span>
+                        </div>
+                        <div class="form-group" id="editLocationSublevelGroup" style="display:none;">
+                            <label for="editLocationSublevel">
+                                <i class="fas fa-sort-numeric-down"></i> Sublevel *
+                            </label>
+                            <input type="number" id="editLocationSublevel" min="0" step="1"
+                                   placeholder="Ex: 0" inputmode="numeric">
+                            <span class="error-message" id="editLocationSublevel-error"></span>
+                        </div>
+                        <div class="form-group" id="editLocationBehindGroup" style="display:none;">
+                            <label for="editLocationBehind">
+                                <i class="fas fa-arrow-turn-up"></i> Behind
+                            </label>
+                            <select id="editLocationBehind">
+                                <option value="">None</option>
+                                <option value="B">B - Behind</option>
+                            </select>
+                            <span class="error-message" id="editLocationBehind-error"></span>
+                        </div>
+                        <div class="form-group" id="editLocationSideGroup" style="display:none;">
+                            <label for="editLocationSide">
+                                <i class="fas fa-arrows-left-right"></i> Side *
+                            </label>
+                            <select id="editLocationSide">
+                                <option value="">Select side</option>
+                                <option value="R">R - Right</option>
+                                <option value="L">L - Left</option>
+                                <option value="M">M - Middle</option>
+                            </select>
+                            <span class="error-message" id="editLocationSide-error"></span>
+                        </div>
                     </div>
-                    <div class="form-group" id="editLocationLevelZeroModeGroup" style="display:none;">
-                        <label for="editLocationLevelZeroMode"><i class="fas fa-sliders"></i> Level 0 type *</label>
-                        <select id="editLocationLevelZeroMode">
-                            <option value="">Select type</option>
-                            <option value="side">Side</option>
-                            <option value="sublevel">Sublevel</option>
+                </div>
+
+                <div class="form-row location-row-3">
+                    <div class="form-group">
+                        <label for="editLocationSection">
+                            <i class="fas fa-folder"></i> Section *
+                        </label>
+                        <select id="editLocationSection" name="locationSection" required>
+                            <option value="">Select section</option>
+                            <option value="TAPWARE">Tapware</option>
+                            <option value="BATHWARE">BathWare</option>
+                            <option value="WAREHOUSE2">Warehouse2</option>
+                            <option value="FURNITUREWARE">Furniture</option>
+                            <option value="DOORWARE">Doorware</option>
+                            <option value="OTHER">Other</option>
                         </select>
+                        <span class="error-message" id="editLocationSection-error"></span>
                     </div>
-                    <div class="form-group" id="editLocationSublevelGroup" style="display:none;">
-                        <label for="editLocationSublevel"><i class="fas fa-sort-numeric-down"></i> Sublevel *</label>
-                        <input type="number" id="editLocationSublevel" min="0" step="1" placeholder="Ex: 0">
-                    </div>
-                    <div class="form-group" id="editLocationSideGroup" style="display:none;">
-                        <label for="editLocationSide"><i class="fas fa-arrows-left-right"></i> Side *</label>
-                        <select id="editLocationSide">
-                            <option value="">Select side</option>
-                            <option value="R">R - Right</option>
-                            <option value="L">L - Left</option>
-                            <option value="M">M - Middle</option>
+                    <div class="form-group">
+                        <label for="editAccessType">
+                            <i class="fas fa-truck-loading"></i> Access Type *
+                        </label>
+                        <select id="editAccessType" name="accessType" required>
+                            <option value="">Select access type</option>
+                            <option value="Shelf by Hand">Shelf by Hand</option>
+                            <option value="Shelf by Wave">Shelf by Wave</option>
+                            <option value="Shelf By Fork">Shelf By Fork</option>
                         </select>
+                        <span class="error-message" id="editAccessType-error"></span>
+                    </div>
+                    <div class="form-group">
+                        <label for="editLocationStatus">
+                            <i class="fas fa-toggle-on"></i> Status *
+                        </label>
+                        <select id="editLocationStatus" name="locationStatus" required>
+                            <option value="active">Active</option>
+                            <option value="inactive">Inactive</option>
+                        </select>
+                        <span class="error-message" id="editLocationStatus-error"></span>
                     </div>
                 </div>
-                <div class="form-group">
-                    <label for="editLocationCode"><i class="fas fa-map-marker-alt"></i> Location *</label>
-                    <input type="text" id="editLocationCode" name="locationCode" required readonly class="input-readonly">
-                </div>
-                <div class="form-group">
-                    <label for="editLocationSection"><i class="fas fa-folder"></i> Section *</label>
-                    <select id="editLocationSection" name="locationSection" required>
-                        <option value="">Select section</option>
-                        <option value="TAPWARE">Tapware</option>
-                        <option value="BATHWARE">BathWare</option>
-                        <option value="WAREHOUSE2">Warehouse2</option>
-                        <option value="FURNITUREWARE">Furniture</option>
-                        <option value="DOORWARE">Doorware</option>
-                        <option value="OTHER">Other</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label for="editLocationStatus"><i class="fas fa-toggle-on"></i> Status *</label>
-                    <select id="editLocationStatus" name="locationStatus" required>
-                        <option value="active">Active</option>
-                        <option value="inactive">Inactive</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label for="editAccessType"><i class="fas fa-truck-loading"></i> Access Type *</label>
-                    <select id="editAccessType" name="accessType" required>
-                        <option value="Shelf by Hand">Shelf by Hand</option>
-                        <option value="Shelf by Wave">Shelf by Wave</option>
-                        <option value="Shelf By Fork">Shelf By Fork</option>
-                    </select>
-                </div>
-                <div class="modal-actions">
-                    <button type="button" class="btn btn-secondary" id="cancelEditLocation">Cancel</button>
-                    <button type="submit" class="btn btn-primary" id="saveEditLocationBtn"><i class="fas fa-save"></i> Save</button>
+
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" id="cancelEditLocation">
+                        <i class="fas fa-times"></i> Cancel
+                    </button>
+                    <button type="submit" class="btn btn-primary" id="saveEditLocationBtn">
+                        <i class="fas fa-save"></i> Save Location
+                    </button>
                 </div>
             </form>
         </div>
