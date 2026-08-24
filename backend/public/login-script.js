@@ -1,5 +1,8 @@
 (function () {
   const TAB_SESSION_KEY = 'doubley_tab_auth';
+  const SIGN_IN_LABEL = '<i class="fas fa-sign-in-alt"></i> Sign In';
+  const SIGNING_IN_LABEL = '<i class="fas fa-spinner fa-spin"></i> Signing in...';
+
   const form = document.getElementById('loginForm');
   const emailInput = document.getElementById('email');
   const passwordInput = document.getElementById('password');
@@ -11,6 +14,7 @@
   const captchaAnswerInput = document.getElementById('captchaAnswer');
   const captchaIdInput = document.getElementById('captchaId');
   const refreshCaptchaBtn = document.getElementById('refreshCaptchaBtn');
+  const togglePasswordBtn = document.getElementById('togglePasswordBtn');
 
   let captchaRequired = false;
 
@@ -19,10 +23,21 @@
     loginError.style.display = 'none';
   }
 
-  function showError(message) {
+  function showError(message, focusTarget) {
     loginErrorText.textContent = message;
     loginError.hidden = false;
     loginError.style.display = 'flex';
+    if (focusTarget && typeof focusTarget.focus === 'function') {
+      focusTarget.focus();
+      if (typeof focusTarget.select === 'function') {
+        focusTarget.select();
+      }
+    }
+  }
+
+  function setSigningIn(isSigningIn) {
+    loginBtn.disabled = isSigningIn;
+    loginBtn.innerHTML = isSigningIn ? SIGNING_IN_LABEL : SIGN_IN_LABEL;
   }
 
   function hideCaptcha() {
@@ -41,7 +56,6 @@
     if (captchaAnswerInput) {
       captchaAnswerInput.required = true;
       captchaAnswerInput.value = '';
-      captchaAnswerInput.focus();
     }
     if (challenge) {
       if (captchaQuestion) captchaQuestion.textContent = challenge.question || 'Solve the challenge below.';
@@ -60,8 +74,14 @@
     } catch {
       // ignore
     }
-    showError('Unable to load verification challenge. Please try again.');
+    showError('Unable to load verification challenge. Please try again.', captchaAnswerInput);
     return false;
+  }
+
+  function resolveErrorFocusTarget() {
+    if (!emailInput.value.trim()) return emailInput;
+    if (captchaRequired && captchaAnswerInput) return captchaAnswerInput;
+    return passwordInput;
   }
 
   async function resolveLandingPage() {
@@ -97,6 +117,39 @@
     }
   }
 
+  function setupPasswordToggle() {
+    if (!togglePasswordBtn || !passwordInput) return;
+
+    togglePasswordBtn.addEventListener('click', () => {
+      const isHidden = passwordInput.type === 'password';
+      passwordInput.type = isHidden ? 'text' : 'password';
+      togglePasswordBtn.setAttribute('aria-pressed', isHidden ? 'true' : 'false');
+      togglePasswordBtn.setAttribute('aria-label', isHidden ? 'Hide password' : 'Show password');
+      togglePasswordBtn.title = isHidden ? 'Hide password' : 'Show password';
+      togglePasswordBtn.innerHTML = isHidden
+        ? '<i class="fas fa-eye-slash" aria-hidden="true"></i>'
+        : '<i class="fas fa-eye" aria-hidden="true"></i>';
+      passwordInput.focus();
+    });
+  }
+
+  function setupEnvironmentCaptcha() {
+    const apply = (detail) => {
+      if (detail && detail.config && detail.config.captchaOnLoad) {
+        loadCaptcha();
+      }
+    };
+
+    if (window.DoubleYEnvironment && typeof window.DoubleYEnvironment.whenReady === 'function') {
+      window.DoubleYEnvironment.whenReady(apply);
+      return;
+    }
+
+    document.addEventListener('doubley:environment-ready', (event) => {
+      apply(event.detail || {});
+    });
+  }
+
   if (refreshCaptchaBtn) {
     refreshCaptchaBtn.addEventListener('click', () => {
       loadCaptcha();
@@ -115,13 +168,12 @@
       payload.captchaId = captchaIdInput ? captchaIdInput.value : '';
       payload.captchaAnswer = captchaAnswerInput ? captchaAnswerInput.value.trim() : '';
       if (!payload.captchaId || !payload.captchaAnswer) {
-        showError('Please complete the verification to confirm you are not a robot.');
+        showError('Please complete the verification to confirm you are not a robot.', captchaAnswerInput);
         return;
       }
     }
 
-    loginBtn.disabled = true;
-    loginBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Verifying...';
+    setSigningIn(true);
 
     try {
       const res = await fetch('/api/auth/login', {
@@ -149,23 +201,22 @@
         }
       }
 
-      if (!email) {
-        emailInput.focus();
-      } else if (captchaRequired && captchaAnswerInput) {
-        captchaAnswerInput.focus();
-        captchaAnswerInput.select();
-      } else {
-        passwordInput.focus();
-        passwordInput.select();
+      const focusTarget = resolveErrorFocusTarget();
+      if (focusTarget && typeof focusTarget.focus === 'function') {
+        focusTarget.focus();
+        if (typeof focusTarget.select === 'function') {
+          focusTarget.select();
+        }
       }
     } catch {
-      showError('Unable to connect to the server. Please try again.');
+      showError('Unable to connect to the server. Please try again.', emailInput.value.trim() ? passwordInput : emailInput);
     } finally {
-      loginBtn.disabled = false;
-      loginBtn.innerHTML = '<i class="fas fa-sign-in-alt"></i> Sign In';
+      setSigningIn(false);
     }
   });
 
+  setupPasswordToggle();
+  setupEnvironmentCaptcha();
   checkExistingSession();
   hideError();
   hideCaptcha();

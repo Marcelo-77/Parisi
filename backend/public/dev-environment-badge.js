@@ -1,18 +1,44 @@
 (function () {
-  const ENVIRONMENT_BADGES = {
+  const ENVIRONMENT_CONFIG = {
     development: {
       text: 'Development Environment',
-      className: 'dev-environment-badge'
+      shortLabel: 'Development',
+      className: 'dev-environment-badge',
+      bodyClass: 'env-development',
+      cardStripClass: 'login-environment-strip login-environment-strip--development',
+      subtitle: 'Sign in to your local development environment.',
+      showWarning: false,
+      captchaOnLoad: true,
+      noindex: true
     },
     approval: {
       text: 'Environment Approval',
-      className: 'dev-environment-badge approval-environment-badge'
+      shortLabel: 'Approval',
+      className: 'dev-environment-badge approval-environment-badge',
+      bodyClass: 'env-approval',
+      cardStripClass: 'login-environment-strip login-environment-strip--approval',
+      subtitle: 'Sign in to the approval environment. Changes here do not affect production.',
+      showWarning: true,
+      warningText: 'This environment may contain a copy of production data. Do not share credentials or use real customer data for tests.',
+      captchaOnLoad: true,
+      noindex: true
     },
     homolog: {
       text: 'Environment Homolog',
-      className: 'dev-environment-badge homolog-environment-badge'
+      shortLabel: 'Homolog',
+      className: 'dev-environment-badge homolog-environment-badge',
+      bodyClass: 'env-homolog',
+      cardStripClass: 'login-environment-strip login-environment-strip--homolog',
+      subtitle: 'Sign in to the homologation environment.',
+      showWarning: true,
+      warningText: 'This is a test environment. Changes here do not affect production.',
+      captchaOnLoad: true,
+      noindex: true
     }
   };
+
+  let resolvedEnvironmentKey = '';
+  let environmentReadyFired = false;
 
   function resolveEnvironmentFromHost(hostname) {
     const host = String(hostname || '').trim().toLowerCase();
@@ -30,7 +56,7 @@
 
   function normalizeEnvironment(value) {
     const key = String(value || '').trim().toLowerCase();
-    return ENVIRONMENT_BADGES[key] ? key : '';
+    return ENVIRONMENT_CONFIG[key] ? key : '';
   }
 
   async function resolveEnvironment() {
@@ -47,6 +73,10 @@
     }
   }
 
+  function getEnvironmentConfig(key) {
+    return key ? ENVIRONMENT_CONFIG[key] || null : null;
+  }
+
   function createBadge(id, config) {
     const badge = document.createElement('div');
     badge.id = id;
@@ -54,6 +84,54 @@
     badge.setAttribute('role', 'status');
     badge.textContent = config.text;
     return badge;
+  }
+
+  function applyNoIndex(shouldApply) {
+    if (!shouldApply || document.querySelector('meta[name="robots"][data-env-noindex]')) return;
+    const meta = document.createElement('meta');
+    meta.name = 'robots';
+    meta.content = 'noindex, nofollow';
+    meta.setAttribute('data-env-noindex', '1');
+    document.head.appendChild(meta);
+  }
+
+  function setupLoginPage(config) {
+    const strip = document.getElementById('loginEnvironmentStrip');
+    if (strip) {
+      strip.className = config.cardStripClass;
+      strip.textContent = config.text;
+      strip.hidden = false;
+    }
+
+    const subtitle = document.getElementById('loginSubtitle');
+    if (subtitle && config.subtitle) {
+      subtitle.textContent = config.subtitle;
+    }
+
+    const warning = document.getElementById('loginEnvironmentWarning');
+    const warningText = document.getElementById('loginEnvironmentWarningText');
+    if (warning && warningText) {
+      if (config.showWarning && config.warningText) {
+        warningText.textContent = config.warningText;
+        warning.hidden = false;
+      } else {
+        warning.hidden = true;
+      }
+    }
+
+    const hostMeta = document.getElementById('loginHostMeta');
+    if (hostMeta) {
+      hostMeta.textContent = 'Connected to: ' + window.location.host;
+      hostMeta.hidden = false;
+    }
+
+    const versionMeta = document.getElementById('loginVersionMeta');
+    if (versionMeta) {
+      versionMeta.textContent = '2026 • ' + config.shortLabel;
+      versionMeta.hidden = false;
+    }
+
+    applyNoIndex(config.noindex);
   }
 
   function showHeaderBadges(config) {
@@ -72,18 +150,6 @@
     return true;
   }
 
-  function showLoginBanner(config) {
-    const page = document.querySelector('.login-page');
-    if (!page || document.getElementById('environmentBanner')) return;
-
-    const banner = document.createElement('div');
-    banner.id = 'environmentBanner';
-    banner.className = config.className + ' environment-banner';
-    banner.setAttribute('role', 'status');
-    banner.textContent = config.text;
-    page.insertBefore(banner, page.firstChild);
-  }
-
   function showFixedBanner(config) {
     if (document.getElementById('environmentBanner')) return;
 
@@ -96,21 +162,68 @@
     document.body.classList.add('has-environment-banner-fixed');
   }
 
+  function dispatchEnvironmentReady(key, config) {
+    environmentReadyFired = true;
+    window.DoubleYEnvironment = {
+      key: key,
+      config: config,
+      isNonProduction: Boolean(key),
+      captchaOnLoad: Boolean(config && config.captchaOnLoad)
+    };
+
+    document.dispatchEvent(new CustomEvent('doubley:environment-ready', {
+      detail: { key, config }
+    }));
+  }
+
   async function showEnvironmentBadges() {
     const environmentKey = await resolveEnvironment();
-    if (!environmentKey) return;
-
-    const config = ENVIRONMENT_BADGES[environmentKey];
-    if (!config) return;
-
-    if (!showHeaderBadges(config)) {
-      if (document.querySelector('.login-page')) {
-        showLoginBanner(config);
-      } else {
-        showFixedBanner(config);
-      }
+    resolvedEnvironmentKey = environmentKey;
+    if (!environmentKey) {
+      dispatchEnvironmentReady('', null);
+      return;
     }
+
+    const config = ENVIRONMENT_CONFIG[environmentKey];
+    if (!config) {
+      dispatchEnvironmentReady('', null);
+      return;
+    }
+
+    document.body.classList.add(config.bodyClass);
+
+    if (document.querySelector('.login-page')) {
+      setupLoginPage(config);
+    } else if (!showHeaderBadges(config)) {
+      showFixedBanner(config);
+    }
+
+    applyNoIndex(config.noindex);
+    dispatchEnvironmentReady(environmentKey, config);
   }
+
+  window.DoubleYEnvironment = {
+    get key() {
+      return resolvedEnvironmentKey;
+    },
+    getConfig: function () {
+      return getEnvironmentConfig(resolvedEnvironmentKey);
+    },
+    whenReady: function (callback) {
+      if (typeof callback !== 'function') return;
+      if (environmentReadyFired) {
+        callback({
+          key: resolvedEnvironmentKey,
+          config: getEnvironmentConfig(resolvedEnvironmentKey)
+        });
+        return;
+      }
+      document.addEventListener('doubley:environment-ready', function handler(event) {
+        document.removeEventListener('doubley:environment-ready', handler);
+        callback(event.detail || { key: '', config: null });
+      });
+    }
+  };
 
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', showEnvironmentBadges);
