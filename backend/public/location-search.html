@@ -262,7 +262,7 @@
 
         #editLocationForm .location-address-half {
             display: grid;
-            grid-template-columns: repeat(3, minmax(0, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
             gap: 10px;
             align-items: start;
             min-width: 0;
@@ -272,6 +272,72 @@
             padding-left: 16px;
             border-left: 1px solid #e5e7eb;
             grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+        }
+
+        #editLocationForm .location-row-address.is-a21-layout {
+            grid-template-columns: repeat(auto-fill, minmax(110px, 140px));
+            justify-content: start;
+            gap: 12px;
+        }
+
+        #editLocationForm .location-row-address.is-a21-layout .location-address-half {
+            display: contents;
+        }
+
+        #editLocationForm .location-row-address.is-a21-layout .location-address-half--right {
+            padding-left: 0;
+            border-left: none;
+        }
+
+        #editLocationForm .location-row-address.is-a21-layout .form-group {
+            max-width: 140px;
+        }
+
+        #editLocationForm .location-row-address.is-a21-layout .location-building-combo-group {
+            max-width: 220px;
+        }
+
+        #editLocationForm .building-x-combo {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr);
+            gap: 6px;
+            align-items: center;
+        }
+
+        #editLocationForm .building-x-combo.is-a21 {
+            grid-template-columns: minmax(0, 1fr) auto minmax(48px, 64px);
+        }
+
+        #editLocationForm .building-x-sep {
+            display: none;
+            font-weight: 800;
+            color: #64748b;
+            font-size: 0.85rem;
+            line-height: 1;
+            user-select: none;
+        }
+
+        #editLocationForm .building-x-combo.is-a21 .building-x-sep {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #editLocationForm .building-x-input {
+            display: none;
+            text-align: center;
+            font-weight: 700;
+        }
+
+        #editLocationForm .building-x-combo.is-a21 .building-x-input {
+            display: block;
+            border-style: dashed;
+            background: #f8fafc;
+        }
+
+        #editLocationForm .building-x-combo.is-a21 .building-x-input:focus {
+            border-style: solid;
+            background: #fff;
         }
 
         #editLocationForm .location-row-address .form-group {
@@ -357,11 +423,29 @@
                 padding-top: 12px;
                 border-top: 1px solid #e5e7eb;
             }
+
+            #editLocationForm .location-row-address.is-a21-layout {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+
+            #editLocationForm .location-row-address.is-a21-layout .form-group,
+            #editLocationForm .location-row-address.is-a21-layout .location-building-combo-group {
+                max-width: none;
+            }
+
+            #editLocationForm .location-row-address.is-a21-layout .location-address-half--right {
+                padding-top: 0;
+                border-top: none;
+            }
         }
 
         @media (max-width: 768px) {
             #editLocationForm .location-row-3,
             #editLocationForm .location-address-half {
+                grid-template-columns: 1fr;
+            }
+
+            #editLocationForm .location-row-address.is-a21-layout {
                 grid-template-columns: 1fr;
             }
 
@@ -706,13 +790,21 @@
                                    style="text-transform: uppercase;">
                             <span class="error-message" id="editLocationStreet-error"></span>
                         </div>
-                        <div class="form-group">
+                        <div class="form-group location-building-combo-group">
                             <label for="editLocationBuilding">
                                 <i class="fas fa-building"></i> Building *
                             </label>
-                            <input type="number" id="editLocationBuilding" min="0" step="1" required
-                                   placeholder="Ex: 7" inputmode="numeric">
+                            <div class="building-x-combo">
+                                <input type="text" id="editLocationBuilding" required
+                                       placeholder="Ex: 7" inputmode="numeric" autocomplete="off">
+                                <span class="building-x-sep" aria-hidden="true">X</span>
+                                <input type="text" id="editLocationBuildingX"
+                                       class="building-x-input" placeholder="opt." inputmode="numeric"
+                                       autocomplete="off"
+                                       title="Optional. Leave empty for normal A21. Fill to create A21X1-00, A21X2-00, ...">
+                            </div>
                             <span class="error-message" id="editLocationBuilding-error"></span>
+                            <span class="error-message" id="editLocationBuildingX-error"></span>
                         </div>
                         <div class="form-group">
                             <label for="editLocationLevel">

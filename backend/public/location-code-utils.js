@@ -1,5 +1,8 @@
 (function (global) {
   const DEFAULT_LEVEL_ZERO_ACCESS_TYPE = 'Shelf by Hand';
+  const DEFAULT_A21X_SECTION = 'OTHER';
+  const A21_SPECIAL_STREET = 'A';
+  const A21_SPECIAL_BUILDING = '21';
 
   function normalizeNumberValue(raw) {
     if (raw === '' || raw == null) return '';
@@ -27,10 +30,28 @@
     return 'B';
   }
 
+  function isA21Special(street, building) {
+    return String(street || '').trim().toUpperCase() === A21_SPECIAL_STREET
+      && normalizeNumberValue(building) === A21_SPECIAL_BUILDING;
+  }
+
+  function normalizeBuildingX(raw) {
+    if (raw === '' || raw == null) return '';
+    const value = Number(raw);
+    if (Number.isNaN(value) || value < 1 || !Number.isInteger(value)) return '';
+    return String(value);
+  }
+
+  function usesA21BuildingX(parts) {
+    return isA21Special(parts.street, parts.building)
+      && normalizeBuildingX(parts.buildingX) !== '';
+  }
+
   function emptyParts(overrides = {}) {
     return {
       street: '',
       building: '',
+      buildingX: '',
       level: '',
       side: '',
       sublevel: '',
@@ -41,10 +62,28 @@
   }
 
   // Format: {street}{building}-{level}{side|sublevel}[B]
-  // Examples: B1-00, B15-1L, A7-0R, A7-00B
-  function composeLocationCode({ street, building, level, side, sublevel, levelZeroMode, behind }) {
+  // A21 special: A21X1-00, A21X1-01, A21X2-00, ...
+  // Examples: B1-00, B15-1L, A7-0R, A7-00B, A21X1-00
+  function composeLocationCode({ street, building, buildingX, level, side, sublevel, levelZeroMode, behind }) {
     if (!street || building === '') {
       return '';
+    }
+
+    const xNumber = normalizeBuildingX(buildingX);
+    if (xNumber) {
+      if (!isA21Special(street, building)) {
+        return '';
+      }
+      if (sublevel === '') {
+        return '';
+      }
+      const sublevelNumber = Number(sublevel);
+      if (Number.isNaN(sublevelNumber) || sublevelNumber < 0) {
+        return '';
+      }
+      // A21X# always Level 0 + chosen Sublevel → A21X1-00, A21X1-01, ...
+      // Behind is not allowed for A21X locations.
+      return `${A21_SPECIAL_STREET}${A21_SPECIAL_BUILDING}X${xNumber}-0${normalizeNumberValue(sublevel)}`;
     }
 
     const levelNumber = level === '' ? NaN : Number(level);
@@ -93,6 +132,20 @@
 
     if (!rest) {
       return emptyParts({ street });
+    }
+
+    // A21 special: 21X1-00 / 21X2-00
+    const a21XMatch = rest.match(/^(\d+)X(\d+)-0(\d+)(B)?$/);
+    if (a21XMatch) {
+      return emptyParts({
+        street,
+        building: normalizeNumberValue(a21XMatch[1]),
+        buildingX: normalizeBuildingX(a21XMatch[2]),
+        level: '0',
+        sublevel: normalizeNumberValue(a21XMatch[3]),
+        behind: a21XMatch[4] === 'B' ? 'B' : '',
+        levelZeroMode: 'sublevel'
+      });
     }
 
     // Current format: 15-1L / 1-00 / 7-0R / 7-00B
@@ -180,11 +233,24 @@
     return emptyParts({ street });
   }
 
-  function buildPartialSearchTerm({ street, building, level, side, sublevel, levelZeroMode, behind }) {
+  function buildPartialSearchTerm({ street, building, buildingX, level, side, sublevel, levelZeroMode, behind }) {
     let term = street || '';
     if (building !== '') {
       term += building;
+      const xNumber = normalizeBuildingX(buildingX);
+      if (xNumber && isA21Special(street, building)) {
+        term += `X${xNumber}`;
+      }
       term += '-';
+    }
+
+    if (usesA21BuildingX({ street, building, buildingX })) {
+      const xNumber = normalizeBuildingX(buildingX);
+      let term = `${A21_SPECIAL_STREET}${A21_SPECIAL_BUILDING}X${xNumber}-`;
+      if (sublevel !== '') {
+        term += `0${normalizeNumberValue(sublevel)}`;
+      }
+      return term.endsWith('-') ? term.slice(0, -1) : term;
     }
 
     if (level === '') {
@@ -218,6 +284,7 @@
   function getLocationParts(ids) {
     const streetEl = document.getElementById(ids.streetId);
     const buildingEl = document.getElementById(ids.buildingId);
+    const buildingXEl = ids.buildingXId ? document.getElementById(ids.buildingXId) : null;
     const levelEl = document.getElementById(ids.levelId);
     const sideEl = document.getElementById(ids.sideId);
     const sublevelEl = ids.sublevelId ? document.getElementById(ids.sublevelId) : null;
@@ -226,18 +293,20 @@
 
     const street = streetEl ? streetEl.value.trim().toUpperCase() : '';
     const building = buildingEl ? normalizeNumberValue(buildingEl.value.trim()) : '';
+    const buildingX = buildingXEl ? normalizeBuildingX(buildingXEl.value.trim()) : '';
     const level = levelEl ? normalizeNumberValue(levelEl.value.trim()) : '';
     const side = sideEl ? sideEl.value.trim().toUpperCase() : '';
     const sublevel = sublevelEl ? normalizeNumberValue(sublevelEl.value.trim()) : '';
     const behind = behindEl ? normalizeBehind(behindEl.value, street) : '';
     const levelZeroMode = modeEl ? String(modeEl.value || '').trim().toLowerCase() : '';
 
-    return { street, building, level, side, sublevel, behind, levelZeroMode };
+    return { street, building, buildingX, level, side, sublevel, behind, levelZeroMode };
   }
 
   function setLocationParts(ids, parts) {
     const streetEl = document.getElementById(ids.streetId);
     const buildingEl = document.getElementById(ids.buildingId);
+    const buildingXEl = ids.buildingXId ? document.getElementById(ids.buildingXId) : null;
     const levelEl = document.getElementById(ids.levelId);
     const sideEl = document.getElementById(ids.sideId);
     const sublevelEl = ids.sublevelId ? document.getElementById(ids.sublevelId) : null;
@@ -246,6 +315,7 @@
 
     if (streetEl) streetEl.value = parts.street || '';
     if (buildingEl) buildingEl.value = parts.building !== '' ? parts.building : '';
+    if (buildingXEl) buildingXEl.value = parts.buildingX !== '' ? parts.buildingX : '';
     if (levelEl) levelEl.value = parts.level !== '' ? parts.level : '';
     if (sideEl) sideEl.value = parts.side || '';
     if (sublevelEl) sublevelEl.value = parts.sublevel !== '' ? parts.sublevel : '';
@@ -256,6 +326,33 @@
           ? (parts.side ? 'side' : (parts.sublevel !== '' ? 'sublevel' : ''))
           : '');
       modeEl.value = inferredMode;
+    }
+  }
+
+  function syncBuildingXInputs(ids) {
+    const streetEl = document.getElementById(ids.streetId);
+    const buildingEl = document.getElementById(ids.buildingId);
+    const buildingXEl = ids.buildingXId ? document.getElementById(ids.buildingXId) : null;
+    if (!buildingEl) return;
+
+    const street = streetEl ? streetEl.value.trim().toUpperCase() : '';
+    let raw = String(buildingEl.value || '').toUpperCase().replace(/\s/g, '');
+    const typedWithX = street === 'A' ? raw.match(/^(\d*)X(\d*)$/) : null;
+
+    if (typedWithX) {
+      buildingEl.value = typedWithX[1];
+      if (buildingXEl) {
+        buildingXEl.value = typedWithX[2].replace(/[^\d]/g, '');
+        if (typedWithX[1] === A21_SPECIAL_BUILDING && document.activeElement === buildingEl && typedWithX[2] === '') {
+          buildingXEl.focus();
+        }
+      }
+    } else {
+      buildingEl.value = raw.replace(/[^\d]/g, '');
+    }
+
+    if (buildingXEl) {
+      buildingXEl.value = String(buildingXEl.value || '').replace(/[^\d]/g, '');
     }
   }
 
@@ -270,7 +367,84 @@
     const behindEl = ids.behindId ? document.getElementById(ids.behindId) : null;
     const modeEl = ids.levelZeroModeId ? document.getElementById(ids.levelZeroModeId) : null;
     const streetEl = document.getElementById(ids.streetId);
+    const buildingEl = document.getElementById(ids.buildingId);
+    const buildingXEl = ids.buildingXId ? document.getElementById(ids.buildingXId) : null;
+    const buildingComboEl = buildingEl ? buildingEl.closest('.building-x-combo') : null;
+    const accessEl = ids.accessTypeId ? document.getElementById(ids.accessTypeId) : null;
+    const sectionEl = ids.sectionId ? document.getElementById(ids.sectionId) : null;
+
     const street = streetEl ? streetEl.value.trim().toUpperCase() : '';
+    const building = buildingEl ? normalizeNumberValue(buildingEl.value.trim()) : '';
+    const a21Special = isA21Special(street, building);
+    const buildingX = buildingXEl ? normalizeBuildingX(buildingXEl.value.trim()) : '';
+    const a21WithX = a21Special && buildingX !== '';
+    const addressRowEl = streetEl ? streetEl.closest('.location-row-address') : null;
+
+    if (addressRowEl) {
+      // Compact A21X layout only when X is filled; A21 without X keeps the normal form.
+      addressRowEl.classList.toggle('is-a21-layout', a21WithX);
+    }
+    if (buildingComboEl) {
+      buildingComboEl.classList.toggle('is-a21', a21Special);
+    }
+    if (buildingXEl) {
+      buildingXEl.required = false;
+      buildingXEl.setAttribute('aria-required', 'false');
+      buildingXEl.placeholder = a21Special ? 'opt.' : '1';
+      buildingXEl.title = a21Special
+        ? 'Optional. Leave empty for normal A21. Fill to create A21X1-00, A21X2-00, ...'
+        : 'X number for A21 only';
+    }
+    if (!a21Special && buildingXEl) {
+      buildingXEl.value = '';
+    }
+
+    if (a21WithX) {
+      if (levelEl) {
+        levelEl.value = '0';
+        levelEl.readOnly = true;
+        levelEl.classList.add('input-readonly');
+      }
+      if (modeEl) modeEl.value = 'sublevel';
+      if (sideEl) {
+        sideEl.value = '';
+        sideEl.required = false;
+      }
+      if (accessEl) {
+        accessEl.value = DEFAULT_LEVEL_ZERO_ACCESS_TYPE;
+        accessEl.disabled = true;
+      }
+      if (sectionEl) {
+        sectionEl.value = DEFAULT_A21X_SECTION;
+        sectionEl.disabled = true;
+      }
+      if (modeGroupEl) modeGroupEl.style.display = 'none';
+      if (sideGroupEl) sideGroupEl.style.display = 'none';
+      if (sublevelGroupEl) sublevelGroupEl.style.display = '';
+      if (sublevelEl) {
+        sublevelEl.required = true;
+        sublevelEl.readOnly = false;
+        sublevelEl.classList.remove('input-readonly');
+      }
+      if (behindGroupEl) behindGroupEl.style.display = 'none';
+      if (behindEl) {
+        behindEl.required = false;
+        behindEl.value = '';
+      }
+      return;
+    }
+
+    if (levelEl) {
+      levelEl.readOnly = false;
+      levelEl.classList.remove('input-readonly');
+    }
+    if (accessEl) {
+      accessEl.disabled = false;
+    }
+    if (sectionEl) {
+      sectionEl.disabled = false;
+    }
+
     const levelRaw = levelEl ? levelEl.value.trim() : '';
     const levelNumber = levelRaw === '' ? null : Number(levelRaw);
     const isGroundLevel = levelNumber === 0;
@@ -319,11 +493,8 @@
       }
     }
 
-    if (isGroundLevel && ids.accessTypeId) {
-      const accessEl = document.getElementById(ids.accessTypeId);
-      if (accessEl) {
-        accessEl.value = DEFAULT_LEVEL_ZERO_ACCESS_TYPE;
-      }
+    if (isGroundLevel && accessEl) {
+      accessEl.value = DEFAULT_LEVEL_ZERO_ACCESS_TYPE;
     }
   }
 
@@ -331,11 +502,13 @@
     const codeEl = document.getElementById(ids.codeId);
     if (!codeEl) return '';
 
+    syncBuildingXInputs(ids);
     updateLevelDependentFields(ids);
     const parts = getLocationParts(ids);
     const hasComponentInput = Boolean(
       parts.street ||
       parts.building !== '' ||
+      parts.buildingX !== '' ||
       parts.level !== '' ||
       parts.side ||
       parts.sublevel !== '' ||
@@ -359,6 +532,7 @@
     const fieldIds = [
       ids.streetId,
       ids.buildingId,
+      ids.buildingXId,
       ids.levelId,
       ids.sideId,
       ids.sublevelId,
@@ -390,6 +564,11 @@
     const levelNumber = parts.level === '' ? NaN : Number(parts.level);
     const buildingNumber = parts.building === '' ? NaN : Number(parts.building);
     const sublevelNumber = parts.sublevel === '' ? NaN : Number(parts.sublevel);
+    const buildingXRaw = parts.buildingX === '' || parts.buildingX == null
+      ? ''
+      : String(parts.buildingX).trim();
+    const buildingXNumber = buildingXRaw === '' ? NaN : Number(buildingXRaw);
+    const a21WithX = usesA21BuildingX(parts);
 
     if (!/^[A-Z]$/.test(parts.street)) {
       errors.street = 'Enter one alphabet letter (A-Z)';
@@ -397,6 +576,31 @@
 
     if (parts.building === '' || Number.isNaN(buildingNumber) || buildingNumber < 0) {
       errors.building = 'Enter a valid building number';
+    }
+
+    if (buildingXRaw !== '') {
+      if (!isA21Special(parts.street, parts.building)) {
+        errors.buildingX = 'X number is only available for Street A and Building 21';
+      } else if (Number.isNaN(buildingXNumber) || buildingXNumber < 1 || !Number.isInteger(buildingXNumber)) {
+        errors.buildingX = 'Enter a valid X number (1, 2, 3, ...)';
+      }
+    }
+
+    if (a21WithX) {
+      if (parts.sublevel === '' || Number.isNaN(sublevelNumber) || sublevelNumber < 0) {
+        errors.sublevel = 'Enter a valid sublevel number';
+      } else if (parts.behind === 'B') {
+        errors.behind = 'Behind is not available for A21X locations';
+      }
+      const composed = composeLocationCode({ ...parts, behind: '' }, options);
+      if (!errors.sublevel && composed.length < 2) {
+        errors.code = 'Complete Street A, Building 21, X number and Sublevel to compose the location';
+      }
+      return {
+        valid: Object.keys(errors).length === 0,
+        errors,
+        composed
+      };
     }
 
     if (parts.level === '' || Number.isNaN(levelNumber) || levelNumber < 0) {
@@ -445,6 +649,8 @@
     updateComposedLocation,
     setupLocationComposition,
     validateLocationParts,
-    canUseBehind
+    canUseBehind,
+    isA21Special,
+    usesA21BuildingX
   };
 })(window);

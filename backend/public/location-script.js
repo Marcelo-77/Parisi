@@ -3,6 +3,7 @@ const LOCATIONS_API_URL = '/api/locations';
 const LOCATION_FIELD_IDS = {
     streetId: 'locationStreet',
     buildingId: 'locationBuilding',
+    buildingXId: 'locationBuildingX',
     levelId: 'locationLevel',
     sideId: 'locationSide',
     sublevelId: 'locationSublevel',
@@ -13,7 +14,8 @@ const LOCATION_FIELD_IDS = {
     behindGroupId: 'locationBehindGroup',
     levelZeroModeId: 'locationLevelZeroMode',
     levelZeroModeGroupId: 'locationLevelZeroModeGroup',
-    accessTypeId: 'accessType'
+    accessTypeId: 'accessType',
+    sectionId: 'locationSection'
 };
 
 function setupHeaderDropdowns() {
@@ -241,6 +243,10 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         if (validation.errors.building) {
             showError('locationBuilding', validation.errors.building);
+            valid = false;
+        }
+        if (validation.errors.buildingX) {
+            showError('locationBuildingX', validation.errors.buildingX);
             valid = false;
         }
         if (validation.errors.level) {

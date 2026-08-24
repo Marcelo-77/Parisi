@@ -76,6 +76,7 @@ function getLocationPartsForExport(loc) {
     return {
         street: parsed.street || '',
         building: parsed.building || '',
+        buildingX: parsed.buildingX || '',
         level: parsed.level || '',
         sublevel: parsed.sublevel || '',
         behind: parsed.behind || '',
@@ -103,7 +104,7 @@ function getInsertedAt(loc) {
 }
 
 function buildLocationsExcelXml(list) {
-    const headers = ['Street', 'Building', 'Level', 'Sublevel', 'Behind', 'Side', 'Location', 'Status', 'Access Type', 'Section', 'Inserted By', 'Inserted At'];
+    const headers = ['Street', 'Building', 'X', 'Level', 'Sublevel', 'Behind', 'Side', 'Location', 'Status', 'Access Type', 'Section', 'Inserted By', 'Inserted At'];
     const headerRow = headers.map((header) =>
         `<Cell><Data ss:Type="String">${escapeXml(header)}</Data></Cell>`
     ).join('');
@@ -115,6 +116,7 @@ function buildLocationsExcelXml(list) {
         const cells = [
             parts.street,
             parts.building,
+            parts.buildingX,
             parts.level,
             parts.sublevel,
             parts.behind,
@@ -142,6 +144,7 @@ function buildLocationsExcelXml(list) {
 <Table ss:ExpandedColumnCount="${columnCount}" ss:ExpandedRowCount="${rowCount}">
 <Column ss:Width="60"/>
 <Column ss:Width="70"/>
+<Column ss:Width="50"/>
 <Column ss:Width="50"/>
 <Column ss:Width="70"/>
 <Column ss:Width="70"/>
@@ -198,6 +201,7 @@ const SEARCH_FIELD_IDS = {
 const EDIT_FIELD_IDS = {
     streetId: 'editLocationStreet',
     buildingId: 'editLocationBuilding',
+    buildingXId: 'editLocationBuildingX',
     levelId: 'editLocationLevel',
     sideId: 'editLocationSide',
     sublevelId: 'editLocationSublevel',
@@ -208,7 +212,8 @@ const EDIT_FIELD_IDS = {
     behindGroupId: 'editLocationBehindGroup',
     levelZeroModeId: 'editLocationLevelZeroMode',
     levelZeroModeGroupId: 'editLocationLevelZeroModeGroup',
-    accessTypeId: 'editAccessType'
+    accessTypeId: 'editAccessType',
+    sectionId: 'editLocationSection'
 };
 
 function setupHeaderDropdowns() {
@@ -392,6 +397,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const fieldMap = {
             street: 'editLocationStreet',
             building: 'editLocationBuilding',
+            buildingX: 'editLocationBuildingX',
             level: 'editLocationLevel',
             levelZeroMode: 'editLocationLevelZeroMode',
             side: 'editLocationSide',

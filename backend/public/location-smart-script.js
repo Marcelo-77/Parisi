@@ -287,9 +287,13 @@ function formatSideOrSublevel(parts) {
 }
 
 function composeForTarget(sourceParts, targetConjunto) {
+  const buildingX = window.LocationCodeUtils.isA21Special(targetConjunto.street, targetConjunto.building)
+    ? (sourceParts.buildingX || '')
+    : '';
   return window.LocationCodeUtils.composeLocationCode({
     street: targetConjunto.street,
     building: targetConjunto.building,
+    buildingX,
     level: sourceParts.level,
     side: sourceParts.side,
     sublevel: sourceParts.sublevel,
@@ -303,6 +307,7 @@ function partsIdentityKey(parts) {
   if (!parts || !parts.street || parts.building === '') return '';
   const building = String(Number(parts.building));
   if (Number.isNaN(Number(building))) return '';
+  const buildingX = parts.buildingX ? String(Number(parts.buildingX)) : '';
   const level = parts.level === '' ? '' : String(Number(parts.level));
   if (level === '' || Number.isNaN(Number(level))) return '';
 
@@ -314,7 +319,7 @@ function partsIdentityKey(parts) {
     : '';
   const behind = String(parts.behind || '').toUpperCase() === 'B' ? 'B' : '';
 
-  return [String(parts.street).toUpperCase(), building, level, mode, side, sublevel, behind].join('|');
+  return [String(parts.street).toUpperCase(), building, buildingX, level, mode, side, sublevel, behind].join('|');
 }
 
 function findExistingEquivalent(newLocation, targetParts) {
