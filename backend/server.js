@@ -75,6 +75,15 @@ app.get('/health', (req, res) => {
   });
 });
 
+// Public environment label for non-production badges (approval, homolog, etc.)
+app.get('/api/env', (req, res) => {
+  const environment = String(process.env.APP_ENV || process.env.RENDER_SERVICE_NAME || 'production').trim();
+  res.status(200).json({
+    success: true,
+    environment: environment.toLowerCase()
+  });
+});
+
 // Home page: login or warehouse
 app.get('/', (req, res) => {
   if (isAuthenticated(req)) {

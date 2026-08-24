@@ -75,6 +75,51 @@
     flex-shrink: 0;
 }
 
+.approval-environment-badge {
+    background: rgba(56, 189, 248, 0.24);
+    border-color: rgba(125, 211, 252, 0.95);
+    color: #ecfeff;
+    max-width: 130px;
+}
+
+.homolog-environment-badge {
+    background: rgba(251, 146, 60, 0.24);
+    border-color: rgba(253, 186, 116, 0.95);
+    color: #fff7ed;
+    max-width: 130px;
+}
+
+.environment-banner {
+    display: block;
+    width: 100%;
+    max-width: 420px;
+    margin: 0 auto 14px;
+    padding: 10px 14px;
+    border-radius: 10px;
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    text-align: center;
+}
+
+.environment-banner--fixed {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 9999;
+    max-width: none;
+    margin: 0;
+    border-radius: 0;
+    padding: 8px 12px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.18);
+}
+
+body.has-environment-banner-fixed {
+    padding-top: 38px;
+}
+
 .header-stat-value {
     font-size: 1.5rem;
     font-weight: 700;
