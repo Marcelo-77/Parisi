@@ -133,23 +133,6 @@
     });
   }
 
-  function setupEnvironmentCaptcha() {
-    const apply = (detail) => {
-      if (detail && detail.config && detail.config.captchaOnLoad) {
-        loadCaptcha();
-      }
-    };
-
-    if (window.DoubleYEnvironment && typeof window.DoubleYEnvironment.whenReady === 'function') {
-      window.DoubleYEnvironment.whenReady(apply);
-      return;
-    }
-
-    document.addEventListener('doubley:environment-ready', (event) => {
-      apply(event.detail || {});
-    });
-  }
-
   if (refreshCaptchaBtn) {
     refreshCaptchaBtn.addEventListener('click', () => {
       loadCaptcha();
@@ -216,7 +199,6 @@
   });
 
   setupPasswordToggle();
-  setupEnvironmentCaptcha();
   checkExistingSession();
   hideError();
   hideCaptcha();

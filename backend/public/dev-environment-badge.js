@@ -8,7 +8,6 @@
       cardStripClass: 'login-environment-strip login-environment-strip--development',
       subtitle: 'Sign in to your local development environment.',
       showWarning: false,
-      captchaOnLoad: true,
       noindex: true
     },
     approval: {
@@ -20,7 +19,6 @@
       subtitle: 'Sign in to the approval environment. Changes here do not affect production.',
       showWarning: true,
       warningText: 'This environment may contain a copy of production data. Do not share credentials or use real customer data for tests.',
-      captchaOnLoad: true,
       noindex: true
     },
     homolog: {
@@ -32,7 +30,6 @@
       subtitle: 'Sign in to the homologation environment.',
       showWarning: true,
       warningText: 'This is a test environment. Changes here do not affect production.',
-      captchaOnLoad: true,
       noindex: true
     }
   };
@@ -167,8 +164,7 @@
     window.DoubleYEnvironment = {
       key: key,
       config: config,
-      isNonProduction: Boolean(key),
-      captchaOnLoad: Boolean(config && config.captchaOnLoad)
+      isNonProduction: Boolean(key)
     };
 
     document.dispatchEvent(new CustomEvent('doubley:environment-ready', {
