@@ -34,6 +34,16 @@
             margin: 0;
         }
 
+        tr.location-product-zero-qty td {
+            color: #64748b;
+            background: rgba(248, 250, 252, 0.9);
+        }
+
+        tr.location-product-zero-qty td[data-label="Qty Current"] {
+            font-weight: 700;
+            color: #b45309;
+        }
+
         .location-help-modal {
             display: none;
             align-items: center;
@@ -693,7 +703,8 @@
                     <strong>Tips</strong>
                     <ul>
                         <li>Location and Product codes are matched exactly (case-insensitive).</li>
-                        <li>Search only shows records with quantity current greater than zero.</li>
+                        <li>Search shows active records, including those with quantity current equal to zero.</li>
+                        <li>If a location/product/situation already exists with zero quantity, saving a new record restocks it instead of creating a duplicate.</li>
                         <li>Press <strong>F1</strong> anytime to open this Help.</li>
                     </ul>
                 </div>

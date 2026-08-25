@@ -311,9 +311,13 @@ router.post('/', validarCreate, handleValidationErrors, async (req, res) => {
       ...req.body,
       usuarioInseriu: userKey
     });
-    res.status(201).json({
+    const restocked = Boolean(created && created.restocked);
+    res.status(restocked ? 200 : 201).json({
       success: true,
-      message: 'Location product record created',
+      message: restocked
+        ? 'Zero-quantity record restocked successfully'
+        : 'Location product record created',
+      restocked,
       data: created
     });
   } catch (error) {

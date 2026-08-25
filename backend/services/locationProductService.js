@@ -139,22 +139,71 @@ async function criar(dados) {
   const client = await getClient();
   try {
     await client.query('BEGIN');
-    // Impedir duplicata: mesmo location + product + situation (sipr_sq_number) ativo
-    const checkSql = `
-      SELECT 1 FROM ${TABLE}
-      WHERE location_code = $1 AND product_code = $2 AND sipr_sq_number = $3
-        AND (stat_cd_id IS NULL OR stat_cd_id = 'A')
-      LIMIT 1
-    `;
-    const checkResult = await client.query(checkSql, [
-      dados.locationCode,
-      String(dados.productCode || '').trim(),
-      dados.siprSqNumber
-    ]);
-    if (checkResult.rows.length > 0) {
-      await client.query('ROLLBACK');
-      throw new Error('An active record already exists for this location, product, and situation. Duplicates are not allowed (for example, same Location + Product + Full).');
+
+    const existingResult = await client.query(
+      `SELECT lp.*, sp.sipr_nm_description
+       FROM ${TABLE} lp
+       LEFT JOIN situation_product sp ON sp.sipr_sq_number = lp.sipr_sq_number
+       WHERE location_code = $1 AND product_code = $2 AND sipr_sq_number = $3
+         AND (stat_cd_id IS NULL OR stat_cd_id = 'A')
+       LIMIT 1
+       FOR UPDATE OF lp`,
+      [
+        dados.locationCode,
+        String(dados.productCode || '').trim(),
+        dados.siprSqNumber
+      ]
+    );
+
+    if (existingResult.rows.length > 0) {
+      const existingRow = existingResult.rows[0];
+      const oldQtyCurrent = parseInt(existingRow.quantity_current, 10) || 0;
+      if (oldQtyCurrent > 0) {
+        await client.query('ROLLBACK');
+        throw new Error('An active record already exists for this location, product, and situation. Duplicates are not allowed (for example, same Location + Product + Full).');
+      }
+
+      const newQtyCurrent = quantityCurrent;
+      const newQtyInformed = parseInt(dados.quantityInformed, 10) || 0;
+      const updateResult = await client.query(
+        `UPDATE ${TABLE}
+         SET quantity_informed = $1,
+             quantity_current = $2,
+             entry_datetime = $3,
+             usuario_inseriu = COALESCE(usuario_inseriu, $4)
+         WHERE location_code = $5 AND product_code = $6 AND sipr_sq_number = $7
+         RETURNING *`,
+        [
+          newQtyInformed,
+          newQtyCurrent,
+          dados.entryDatetime,
+          dados.usuarioInseriu || null,
+          existingRow.location_code,
+          existingRow.product_code,
+          existingRow.sipr_sq_number
+        ]
+      );
+      const updatedRow = updateResult.rows[0];
+      await insertLogEntry(client, {
+        operation: 'UPDATE',
+        locationCode: updatedRow.location_code,
+        productCode: updatedRow.product_code,
+        siprSqNumber: updatedRow.sipr_sq_number,
+        quantityPrev: oldQtyCurrent,
+        quantityCurrent: newQtyCurrent,
+        usuario: dados.usuarioInseriu || null
+      });
+      const situationDesc = existingRow.sipr_nm_description
+        || await fetchSituationDescription(client, dados.siprSqNumber);
+      if (isFullSituationDescription(situationDesc) && newQtyCurrent > 0 && productCode) {
+        await adjustWarehouseItemsQuantity(client, productCode, newQtyCurrent - oldQtyCurrent);
+      }
+      await client.query('COMMIT');
+      const mapped = mapRow(updatedRow);
+      mapped.restocked = true;
+      return mapped;
     }
+
     const result = await client.query(insertSql, values);
     const createdRow = result.rows[0];
     await insertLogEntry(client, {
@@ -189,8 +238,7 @@ async function criar(dados) {
 
 async function buscarTodos(filtros = {}) {
   const whereClauses = [
-    'lp.quantity_current > 0',
-    "lp.stat_cd_id = 'A'"
+    "(lp.stat_cd_id IS NULL OR lp.stat_cd_id = 'A')"
   ];
   const values = [];
   let idx = 1;

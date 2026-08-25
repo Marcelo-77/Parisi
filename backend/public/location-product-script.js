@@ -661,8 +661,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     tbody.innerHTML = records.map(r => {
       const entryDt = r.entryDatetime ? (typeof r.entryDatetime === 'string' ? r.entryDatetime : new Date(r.entryDatetime).toISOString()) : '';
+      const qtyCurrent = Number(r.quantityCurrent ?? 0);
+      const zeroQtyClass = qtyCurrent <= 0 ? ' location-product-zero-qty' : '';
       return `
-        <tr class="mobile-result-row">
+        <tr class="mobile-result-row${zeroQtyClass}">
           <td data-label="Location Code">${escapeHtml(r.locationCode)}</td>
           <td data-label="Product Code">${escapeHtml(r.productCode)}</td>
           <td data-label="Entry Date/Time">${formatDateTime(r.entryDatetime)}</td>
@@ -833,6 +835,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const entryIso = new Date(entryDatetime).toISOString();
     let saved = 0;
+    let restocked = 0;
     const errors = [];
 
     for (const row of rows) {
@@ -872,6 +875,8 @@ document.addEventListener('DOMContentLoaded', () => {
             markFieldError(row.rowElement, '.new-row-situation');
           }
           errors.push(`Line ${row.lineNumber} - ${detailed}`);
+        } else if (data.restocked) {
+          restocked += 1;
         } else {
           saved += 1;
         }
@@ -883,15 +888,21 @@ document.addEventListener('DOMContentLoaded', () => {
     if (saveBtn) saveBtn.disabled = false;
 
     if (errors.length) {
-      alert(`${saved} record(s) saved.\n\nErrors:\n${errors.join('\n')}`);
-      if (saved > 0) {
+      const summary = [];
+      if (saved > 0) summary.push(`${saved} record(s) created`);
+      if (restocked > 0) summary.push(`${restocked} record(s) restocked`);
+      alert(`${summary.join(', ') || '0 records saved'}.\n\nErrors:\n${errors.join('\n')}`);
+      if (saved > 0 || restocked > 0) {
         hasSearched = true;
         loadRecords();
       }
       return;
     }
 
-    alert(`${saved} record(s) created.`);
+    const summary = [];
+    if (saved > 0) summary.push(`${saved} record(s) created`);
+    if (restocked > 0) summary.push(`${restocked} record(s) restocked`);
+    alert(summary.join(', ') || 'Records saved.');
     closeNewRecordsPanel();
     hasSearched = true;
     loadRecords();
