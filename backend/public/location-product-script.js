@@ -422,7 +422,7 @@ document.addEventListener('DOMContentLoaded', () => {
       <td data-label="Situation">
         <select class="new-row-situation" required>${getSituationOptionsHtml(defaults.siprSqNumber ?? getDefaultSituationValue())}</select>
       </td>
-      <td data-label="Qty Informed">
+      <td data-label="Quantity">
         <input type="number" class="new-row-qty-informed" min="1" step="1" value="${Number(defaults.quantityInformed ?? 1)}">
       </td>
       <td class="td-actions" data-label="Actions">
@@ -636,7 +636,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!hasSearched) {
       tbody.innerHTML = `
         <tr class="empty-state-row">
-          <td colspan="9" class="empty-state">
+          <td colspan="8" class="empty-state">
             <i class="fas fa-search"></i>
             <p>Use filters and click Search to load records.</p>
           </td>
@@ -649,7 +649,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!records.length) {
       tbody.innerHTML = `
         <tr class="empty-state-row">
-          <td colspan="9" class="empty-state">
+          <td colspan="8" class="empty-state">
             <i class="fas fa-inbox"></i>
             <p>No records. Click "New Record" to add.</p>
           </td>
@@ -669,7 +669,6 @@ document.addEventListener('DOMContentLoaded', () => {
           <td data-label="Product Code">${escapeHtml(r.productCode)}</td>
           <td data-label="Entry Date/Time">${formatDateTime(r.entryDatetime)}</td>
           <td data-label="Situation">${escapeHtml(r.situationDescription || '')}</td>
-          <td data-label="Qty Informed">${r.quantityInformed ?? 0}</td>
           <td data-label="Qty Current">${r.quantityCurrent ?? 0}</td>
           <td data-label="Inserted by">${escapeHtml(r.usuarioInseriuNome || r.usuarioInseriu || '-')}</td>
           <td data-label="Date Time Last Update">${formatDateTime(r.lastUpdateDatetime || r.entryDatetime)}</td>
