@@ -144,8 +144,8 @@ async function criar(dados) {
       `SELECT lp.*, sp.sipr_nm_description
        FROM ${TABLE} lp
        LEFT JOIN situation_product sp ON sp.sipr_sq_number = lp.sipr_sq_number
-       WHERE location_code = $1 AND product_code = $2 AND sipr_sq_number = $3
-         AND (stat_cd_id IS NULL OR stat_cd_id = 'A')
+       WHERE lp.location_code = $1 AND lp.product_code = $2 AND lp.sipr_sq_number = $3
+         AND (lp.stat_cd_id IS NULL OR lp.stat_cd_id = 'A')
        LIMIT 1
        FOR UPDATE OF lp`,
       [
