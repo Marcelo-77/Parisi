@@ -1335,6 +1335,82 @@ async function buscarLog(filtros = {}) {
   }
 }
 
+async function listarProdutosA21X(filtros = {}) {
+  const withPhotoOnly = filtros.withPhotoOnly !== false;
+  const locationPrefix = filtros.locationCode
+    ? String(filtros.locationCode).trim().toUpperCase()
+    : 'A21X';
+
+  if (!locationPrefix.startsWith('A21X')) {
+    throw new Error('This search only supports A21X locations');
+  }
+
+  const values = [`${locationPrefix}%`];
+  const photoClause = withPhotoOnly
+    ? `AND wi.photo IS NOT NULL
+       AND TRIM(wi.photo) <> ''
+       AND LOWER(TRIM(wi.photo)) NOT IN ('null', 'undefined')`
+    : '';
+
+  const sql = `
+    SELECT
+      lp.location_code,
+      lp.product_code,
+      lp.quantity_current,
+      lp.quantity_informed,
+      lp.sipr_sq_number,
+      lp.entry_datetime,
+      sp.sipr_nm_description,
+      wi.nome AS product_name,
+      wi.barcode,
+      wi.categoria,
+      wi.subcategoria,
+      CASE
+        WHEN wi.photo IS NOT NULL
+         AND TRIM(wi.photo) <> ''
+         AND LOWER(TRIM(wi.photo)) NOT IN ('null', 'undefined')
+        THEN TRUE ELSE FALSE
+      END AS has_photo,
+      ${withPhotoOnly ? 'wi.photo' : 'NULL::text AS photo'}
+    FROM ${TABLE} lp
+    INNER JOIN warehouse_items wi
+      ON TRIM(UPPER(wi.codigo)) = TRIM(UPPER(lp.product_code))
+    LEFT JOIN situation_product sp
+      ON sp.sipr_sq_number = lp.sipr_sq_number
+    WHERE UPPER(TRIM(lp.location_code)) LIKE $1
+      AND lp.quantity_current > 0
+      AND (lp.stat_cd_id IS NULL OR lp.stat_cd_id = 'A')
+      ${photoClause}
+    ORDER BY lp.location_code ASC, lp.product_code ASC
+  `;
+
+  try {
+    const result = await query(sql, values);
+    return (result.rows || []).map((row) => ({
+      locationCode: row.location_code,
+      productCode: row.product_code,
+      quantityCurrent: parseInt(row.quantity_current, 10) || 0,
+      quantityInformed: parseInt(row.quantity_informed, 10) || 0,
+      siprSqNumber: row.sipr_sq_number != null ? parseInt(row.sipr_sq_number, 10) : null,
+      situationDescription: row.sipr_nm_description != null
+        ? String(row.sipr_nm_description).trim()
+        : '',
+      entryDatetime: row.entry_datetime || null,
+      productName: row.product_name != null ? String(row.product_name).trim() : '',
+      barcode: row.barcode != null ? String(row.barcode).trim() : '',
+      categoria: row.categoria != null ? String(row.categoria).trim() : '',
+      subcategoria: row.subcategoria != null ? String(row.subcategoria).trim() : '',
+      hasPhoto: row.has_photo === true || row.has_photo === 't',
+      photo: row.photo != null && String(row.photo).trim() !== ''
+        ? String(row.photo).trim()
+        : null
+    }));
+  } catch (error) {
+    console.error('❌ Error fetching A21X location products:', error);
+    throw new Error(`Error fetching A21X products: ${error.message}`);
+  }
+}
+
 module.exports = {
   criar,
   buscarTodos,
@@ -1344,6 +1420,7 @@ module.exports = {
   listarProductCodesComQuantidadeAtiva,
   buscarPorProdutoFullStatus,
   buscarLog,
+  listarProdutosA21X,
   previewMoveBetweenLocations,
   moveBetweenLocations,
   listarSaldosMovimentaveisDaOrigem,

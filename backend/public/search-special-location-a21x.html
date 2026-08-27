@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Double-Y Warehouse System - Search Special Location A21X</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="warehouse-styles.css">
+    <link rel="stylesheet" href="pesquisa-styles.css">
+    <link rel="stylesheet" href="search-special-location-a21x-styles.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body class="a21x-search-page">
+    <script src="auth-check.js"></script>
+    <script src="header-menu.js"></script>
+    <script src="menu-access.js"></script>
+    <script src="double-y-logo-effect.js"></script>
+    <script src="dev-environment-badge.js"></script>
+    <div class="container">
+        <header class="header">
+            <div class="header-stats-row">
+                <div class="header-stats-left">
+                    <div class="header-stat header-stat-total">
+                        <span class="header-stat-value" id="totalItems">0</span>
+                        <span class="header-stat-label">Total Items</span>
+                    </div>
+                    <div class="header-stat header-stat-low">
+                        <span class="header-stat-value" id="lowStockItems">0</span>
+                        <span class="header-stat-label">Low Stock</span>
+                    </div>
+                </div>
+                <div class="double-y-wordmark" aria-label="Double Y"><img src="doubley-glyph.png" alt="" class="double-y-glyph" aria-hidden="true"><span class="double-y-name">Double Y</span><img src="doubley-glyph-bottom.png" alt="" class="double-y-glyph double-y-glyph-bottom" aria-hidden="true"></div>
+                <div class="header-stats-right">
+                    <div class="header-stat header-stat-entries">
+                        <span class="header-stat-value" id="totalEntradas">0</span>
+                        <span class="header-stat-label">Entries Today</span>
+                    </div>
+                    <div class="header-stat header-stat-exits">
+                        <span class="header-stat-value" id="totalSaidas">0</span>
+                        <span class="header-stat-label">Exits Today</span>
+                    </div>
+                </div>
+            </div>
+            <div class="header-content">
+                <h1><i class="fas fa-warehouse"></i> Double-Y Warehouse System</h1>
+                <p class="header-search-users-label">Search Special Location A21X</p>
+                <div class="header-actions" id="headerActionsHost"></div>
+            </div>
+        </header>
+
+        <main class="main-content">
+            <div class="form-container a21x-search-panel" id="a21xSearchPanel" style="width:100%;max-width:none;" tabindex="-1">
+                <section class="a21x-hero">
+                    <div class="a21x-hero-copy">
+                        <span class="a21x-pill"><i class="fas fa-map-pin"></i> Scope: A21X only</span>
+                        <h2>Find products in A21X bins by photo</h2>
+                        <p>
+                            Capture or upload an image, then match it against product photos stocked in
+                            <strong>A21X*</strong> locations. The catalog stays limited to those bins so the search stays fast.
+                        </p>
+                    </div>
+                    <ol class="a21x-steps" aria-label="Search steps">
+                        <li class="a21x-step is-active" data-step="1"><span>1</span> Capture</li>
+                        <li class="a21x-step" data-step="2"><span>2</span> Compare</li>
+                        <li class="a21x-step" data-step="3"><span>3</span> Results</li>
+                    </ol>
+                </section>
+
+                <div class="a21x-search-grid">
+                    <section class="a21x-capture-card">
+                        <div class="a21x-card-title">
+                            <h3><i class="fas fa-camera"></i> Capture image</h3>
+                            <span id="imageReadyBadge" class="a21x-ready-badge" hidden>Ready</span>
+                        </div>
+
+                        <div id="dropZone" class="a21x-preview-wrap" tabindex="0" role="button" aria-label="Drop image or click to choose photo">
+                            <img id="queryPreview" class="a21x-preview" alt="Query preview" hidden>
+                            <div id="queryPlaceholder" class="a21x-preview-placeholder">
+                                <i class="fas fa-cloud-upload-alt"></i>
+                                <p>Drag & drop a photo here</p>
+                                <small>or use the buttons below · camera / gallery</small>
+                            </div>
+                            <div id="processingOverlay" class="a21x-processing" hidden>
+                                <i class="fas fa-spinner fa-spin"></i>
+                                <span>Processing image…</span>
+                            </div>
+                        </div>
+
+                        <div class="a21x-capture-actions">
+                            <label class="btn btn-primary a21x-file-btn">
+                                <i class="fas fa-camera"></i> Take Photo
+                                <input type="file" id="cameraImageInput" accept="image/*" capture="environment" hidden>
+                            </label>
+                            <label class="btn btn-secondary a21x-file-btn">
+                                <i class="fas fa-upload"></i> Upload File
+                                <input type="file" id="uploadImageInput" accept="image/*" hidden>
+                            </label>
+                            <button type="button" class="btn btn-secondary" id="clearQueryBtn">
+                                <i class="fas fa-times"></i> Clear
+                            </button>
+                        </div>
+
+                        <div class="a21x-filters-row">
+                            <div class="filter-group">
+                                <label for="a21xLocationFilter"><i class="fas fa-map-marker-alt"></i> Location filter</label>
+                                <input type="text" id="a21xLocationFilter" list="a21xLocationList" placeholder="A21X or A21X1-00" style="text-transform:uppercase;" autocomplete="off">
+                                <datalist id="a21xLocationList"></datalist>
+                            </div>
+                            <div class="filter-group a21x-threshold-group">
+                                <label for="matchThreshold"><i class="fas fa-sliders-h"></i> Min. match <span id="thresholdValueLabel">45%</span></label>
+                                <input type="range" id="matchThreshold" min="20" max="90" step="5" value="45">
+                            </div>
+                        </div>
+
+                        <button type="button" class="btn btn-primary a21x-search-main-btn" id="runPhotoSearchBtn" disabled>
+                            <i class="fas fa-search"></i> Search by Photo
+                        </button>
+                        <p id="a21xStatus" class="a21x-status" role="status">Loading A21X catalog…</p>
+                    </section>
+
+                    <section class="a21x-catalog-card">
+                        <div class="a21x-catalog-header">
+                            <div>
+                                <h3><i class="fas fa-boxes-stacked"></i> A21X photo catalog</h3>
+                                <p class="a21x-card-sub">Only bins starting with A21X and products that have a photo.</p>
+                            </div>
+                            <button type="button" class="btn btn-secondary" id="reloadCatalogBtn">
+                                <i class="fas fa-sync-alt"></i> Reload
+                            </button>
+                        </div>
+                        <div class="a21x-catalog-stats">
+                            <div class="a21x-stat-chip"><span id="catalogTotal">0</span><small>Rows</small></div>
+                            <div class="a21x-stat-chip"><span id="catalogWithPhoto">0</span><small>With photo</small></div>
+                            <div class="a21x-stat-chip"><span id="catalogLocations">0</span><small>Locations</small></div>
+                        </div>
+                        <div id="catalogGrid" class="a21x-catalog-grid" aria-live="polite">
+                            <div class="a21x-empty-block">
+                                <i class="fas fa-inbox"></i>
+                                <p>Catalog not loaded yet.</p>
+                            </div>
+                        </div>
+                    </section>
+                </div>
+
+                <section class="a21x-results-card">
+                    <div class="results-header a21x-results-header">
+                        <div>
+                            <h3><i class="fas fa-list-ol"></i> Match results</h3>
+                            <p class="a21x-card-sub">Ranked by visual similarity inside A21X only.</p>
+                        </div>
+                        <span id="resultsCount" class="a21x-results-count">0 matches</span>
+                    </div>
+                    <div id="topMatchBanner" class="a21x-top-match" hidden></div>
+                    <div id="resultsGrid" class="a21x-results-grid" aria-live="polite">
+                        <div class="a21x-empty-block">
+                            <i class="fas fa-search"></i>
+                            <p>Run a photo search to see ranked A21X matches.</p>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </main>
+
+        <footer class="footer">
+            <p>&copy; 2026 Double-Y IT Systems. All rights reserved.</p>
+        </footer>
+    </div>
+
+    <script src="warehouse-stats.js"></script>
+    <script src="search-special-location-a21x-script.js"></script>
+</body>
+</html>

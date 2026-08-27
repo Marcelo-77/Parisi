@@ -41,6 +41,41 @@ router.get('/location-codes-with-quantity', async (req, res) => {
   }
 });
 
+// GET /api/location-product/a21x-products - products stocked only in A21X* bins
+router.get(
+  '/a21x-products',
+  [
+    query('locationCode').optional().trim(),
+    query('withPhotoOnly').optional().isIn(['true', 'false', '1', '0'])
+  ],
+  handleValidationErrors,
+  async (req, res) => {
+    try {
+      const withPhotoRaw = req.query.withPhotoOnly;
+      const withPhotoOnly = withPhotoRaw == null
+        ? true
+        : !['false', '0'].includes(String(withPhotoRaw).toLowerCase());
+      const list = await locationProductService.listarProdutosA21X({
+        locationCode: req.query.locationCode,
+        withPhotoOnly
+      });
+      res.json({
+        success: true,
+        data: list,
+        total: list.length,
+        scope: 'A21X'
+      });
+    } catch (error) {
+      console.error('Error fetching A21X products:', error);
+      res.status(400).json({
+        success: false,
+        error: 'Error fetching A21X products',
+        message: error.message
+      });
+    }
+  }
+);
+
 // GET /api/location-product/log - pesquisa em location_product_log
 router.get(
   '/log',

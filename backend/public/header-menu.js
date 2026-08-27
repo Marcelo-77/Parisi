@@ -34,6 +34,7 @@
                                     <button type="button" id="newProductBtn" class="dropdown-item" data-app="warehouse.html"><i class="fas fa-plus"></i> New Product</button>
                                     <button type="button" id="searchProductBtn" class="dropdown-item" data-app="warehouse.html"><i class="fas fa-search"></i> Search Product</button>
                                     <a href="special-search-product.html" class="dropdown-item" data-app="special-search-product.html"><i class="fas fa-map"></i> Special Search Product</a>
+                                    <a href="search-special-location-a21x.html" class="dropdown-item" data-app="search-special-location-a21x.html"><i class="fas fa-camera"></i> Search Special Location A21X</a>
                                 </div>
                             </div>
                             <div class="dropdown-submenu-group" data-submenu="location">
@@ -46,6 +47,7 @@
                                     <a href="location-search.html" class="dropdown-item" data-app="location-search.html"><i class="fas fa-search"></i> Search Location</a>
                                     <a href="location-smart.html" class="dropdown-item" data-app="location-smart.html"><i class="fas fa-wand-magic-sparkles"></i> Location Smart</a>
                                     <a href="location-product.html" class="dropdown-item" data-app="location-product.html"><i class="fas fa-boxes-stacked"></i> Location Product</a>
+                                    <a href="search-special-location-a21x.html" class="dropdown-item" data-app="search-special-location-a21x.html"><i class="fas fa-camera"></i> Search Special Location A21X</a>
                                     <a href="log-location-product.html" class="dropdown-item" data-app="log-location-product.html"><i class="fas fa-history"></i> Log Location Product</a>
                                 </div>
                             </div>
