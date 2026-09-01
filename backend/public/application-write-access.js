@@ -39,9 +39,17 @@
 
   function shouldHideMenuWriteItem(item, accessData) {
     if (!accessData || accessData.isRoot) return false;
+    if (item.getAttribute('data-always-accessible') === 'true') return false;
+    if (item.getAttribute('data-write-menu') !== 'true') return false;
+
     const appName = item.getAttribute('data-app');
     if (!appName) return false;
-    if (item.getAttribute('data-write-menu') !== 'true') return false;
+
+    const allowed = new Set(
+      (accessData.applications || []).map((app) => normalizeAppName(app))
+    );
+    if (!allowed.has(normalizeAppName(appName))) return true;
+
     return getAccessModeForApp(accessData, appName) === ACCESS_MODE_SEARCH;
   }
 

@@ -51,9 +51,32 @@
 
   function getItemApplication(element) {
     const explicit = element.getAttribute('data-app');
-    if (explicit) return explicit;
+    if (explicit) return appFromHref(explicit) || String(explicit).trim();
     if (element.tagName === 'A') return appFromHref(element.getAttribute('href'));
     return null;
+  }
+
+  function getAccessModeForApp(accessData, appName) {
+    if (!accessData || accessData.isRoot || !appName) return 'all';
+    const map = accessData.accessByApplication || {};
+    const normalized = normalizeAppName(appName);
+    return map[appName] || map[normalized] || 'all';
+  }
+
+  function isMenuItemVisible(item, accessData, allowed) {
+    const appName = getItemApplication(item);
+    if (!appName) return true;
+
+    const alwaysAccessible = item.getAttribute('data-always-accessible') === 'true';
+    if (alwaysAccessible) return true;
+
+    if (!allowed.has(normalizeAppName(appName))) return false;
+
+    if (item.getAttribute('data-write-menu') === 'true') {
+      return getAccessModeForApp(accessData, appName) !== 'search';
+    }
+
+    return true;
   }
 
   function escapeHtml(value) {
@@ -328,15 +351,16 @@
       (accessData.applications || []).map((app) => normalizeAppName(app))
     );
 
-    document.querySelectorAll('.header-actions [data-app], .header-actions a[href*=".html"]').forEach((item) => {
+    document.querySelectorAll('.header-actions [data-app], .header-actions a[href*=".html"], .header-actions button[data-app]').forEach((item) => {
       const appName = getItemApplication(item);
       if (!appName) return;
 
-      const alwaysAccessible = item.getAttribute('data-always-accessible') === 'true';
-      const allowedItem = isRoot || alwaysAccessible || allowed.has(normalizeAppName(appName));
+      const allowedItem = isRoot || isMenuItemVisible(item, accessData, allowed);
       item.style.display = allowedItem ? '' : 'none';
       if (allowedItem) {
         item.removeAttribute('aria-hidden');
+      } else {
+        item.setAttribute('aria-hidden', 'true');
       }
     });
 
