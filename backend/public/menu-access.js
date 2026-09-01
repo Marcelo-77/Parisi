@@ -217,6 +217,22 @@
     }
   }
 
+  async function ensureApplicationWriteAccessScripts() {
+    try {
+      await loadStylesheetOnce('application-write-access.css');
+      await loadScriptOnce('application-write-access.js');
+    } catch (error) {
+      console.warn('Application write access scripts:', error.message);
+    }
+  }
+
+  function notifyMenuAccessApplied(accessData) {
+    if (window.DoubleYApplicationWriteAccess && typeof window.DoubleYApplicationWriteAccess.apply === 'function') {
+      window.DoubleYApplicationWriteAccess.apply(accessData);
+    }
+    document.dispatchEvent(new CustomEvent('doubley:menu-access-applied', { detail: accessData }));
+  }
+
   async function ensureSystemLogoutScripts() {
     try {
       await loadStylesheetOnce('system-logout.css');
@@ -304,6 +320,7 @@
     if (isRoot) {
       resetMenuVisibility();
       headerActions.setAttribute('data-menu-access-ready', 'true');
+      notifyMenuAccessApplied(accessData);
       return;
     }
 
@@ -332,6 +349,7 @@
     updateApplicationsDropdownVisibility(headerActions);
 
     headerActions.setAttribute('data-menu-access-ready', 'true');
+    notifyMenuAccessApplied(accessData);
   }
 
   function markMenuAccessPending() {
@@ -347,6 +365,7 @@
       resetMenuVisibility();
       headerActions.setAttribute('data-menu-access-ready', 'true');
     }
+    notifyMenuAccessApplied({ isRoot: true, applications: [], accessByApplication: {} });
   }
 
   async function sendSessionHeartbeat() {
@@ -443,6 +462,7 @@
       window.DoubleYHeaderMenu.setupDropdowns();
     }
 
+    await ensureApplicationWriteAccessScripts();
     await bindSystemLogoutIfReady();
 
     markMenuAccessPending();
@@ -451,12 +471,16 @@
     if (cached && document.querySelector('.header-actions')) {
       applyMenuAccess(cached);
       renderLoggedUserInfo(cached.user);
+    } else if (cached) {
+      notifyMenuAccessApplied(cached);
     }
 
     try {
       const accessData = await fetchMenuAccess();
       if (document.querySelector('.header-actions')) {
         applyMenuAccess(accessData);
+      } else {
+        notifyMenuAccessApplied(accessData);
       }
       renderLoggedUserInfo(accessData.user);
       if (window.DoubleYHeaderMenu) {

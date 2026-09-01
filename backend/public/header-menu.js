@@ -5,7 +5,7 @@
                             <i class="fas fa-users"></i> Users <i class="fas fa-chevron-down"></i>
                         </button>
                         <div class="users-dropdown-menu" id="usersDropdownMenu" aria-hidden="true">
-                            <a href="users.html" class="dropdown-item" data-app="users.html"><i class="fas fa-user-plus"></i> New User</a>
+                            <a href="users.html" class="dropdown-item" data-app="users.html" data-write-menu="true"><i class="fas fa-user-plus"></i> New User</a>
                             <a href="pesquisa.html" class="dropdown-item" data-app="pesquisa.html"><i class="fas fa-search"></i> Search User</a>
                             <a href="change-password.html" class="dropdown-item" data-app="change-password.html" data-always-accessible="true"><i class="fas fa-key"></i> Change Password</a>
                         </div>
@@ -21,7 +21,7 @@
                                     <i class="fas fa-chevron-right submenu-chevron" aria-hidden="true"></i>
                                 </button>
                                 <div class="dropdown-submenu" aria-hidden="true">
-                                    <a href="customer.html" class="dropdown-item" data-app="customer.html"><i class="fas fa-plus"></i> New Customer</a>
+                                    <a href="customer.html" class="dropdown-item" data-app="customer.html" data-write-menu="true"><i class="fas fa-plus"></i> New Customer</a>
                                     <a href="customer.html?mode=search" class="dropdown-item" data-app="customer.html"><i class="fas fa-search"></i> Search Customer</a>
                                 </div>
                             </div>
@@ -31,7 +31,7 @@
                                     <i class="fas fa-chevron-right submenu-chevron" aria-hidden="true"></i>
                                 </button>
                                 <div class="dropdown-submenu" aria-hidden="true">
-                                    <button type="button" id="newProductBtn" class="dropdown-item" data-app="warehouse.html"><i class="fas fa-plus"></i> New Product</button>
+                                    <button type="button" id="newProductBtn" class="dropdown-item" data-app="warehouse.html" data-write-menu="true"><i class="fas fa-plus"></i> New Product</button>
                                     <button type="button" id="searchProductBtn" class="dropdown-item" data-app="warehouse.html"><i class="fas fa-search"></i> Search Product</button>
                                     <a href="special-search-product.html" class="dropdown-item" data-app="special-search-product.html"><i class="fas fa-map"></i> Special Search Product</a>
                                     <a href="search-special-location-a21x.html" class="dropdown-item" data-app="search-special-location-a21x.html"><i class="fas fa-camera"></i> Search Special Location A21X</a>
@@ -43,7 +43,7 @@
                                     <i class="fas fa-chevron-right submenu-chevron" aria-hidden="true"></i>
                                 </button>
                                 <div class="dropdown-submenu" aria-hidden="true">
-                                    <a href="location.html" class="dropdown-item" data-app="location.html"><i class="fas fa-plus"></i> New Location</a>
+                                    <a href="location.html" class="dropdown-item" data-app="location.html" data-write-menu="true"><i class="fas fa-plus"></i> New Location</a>
                                     <a href="location-search.html" class="dropdown-item" data-app="location-search.html"><i class="fas fa-search"></i> Search Location</a>
                                     <a href="location-smart.html" class="dropdown-item" data-app="location-smart.html"><i class="fas fa-wand-magic-sparkles"></i> Location Smart</a>
                                     <a href="location-product.html" class="dropdown-item" data-app="location-product.html"><i class="fas fa-boxes-stacked"></i> Location Product</a>
@@ -74,7 +74,7 @@
                                     <i class="fas fa-chevron-right submenu-chevron" aria-hidden="true"></i>
                                 </button>
                                 <div class="dropdown-submenu" aria-hidden="true">
-                                    <a href="applications.html" class="dropdown-item" data-app="applications.html"><i class="fas fa-plus"></i> New Applications</a>
+                                    <a href="applications.html" class="dropdown-item" data-app="applications.html" data-write-menu="true"><i class="fas fa-plus"></i> New Applications</a>
                                     <a href="applications.html?mode=search" class="dropdown-item" data-app="applications.html"><i class="fas fa-search"></i> Search Applications</a>
                                     <a href="application_users.html" class="dropdown-item" data-app="application_users.html"><i class="fas fa-user-cog"></i> Application Users</a>
                                     <a href="logged-in-users.html" class="dropdown-item" data-app="logged-in-users.html"><i class="fas fa-user-clock"></i> Logged-in Users</a>
@@ -87,7 +87,7 @@
                                     <i class="fas fa-chevron-right submenu-chevron" aria-hidden="true"></i>
                                 </button>
                                 <div class="dropdown-submenu" aria-hidden="true">
-                                    <a href="System-Documentation.html" class="dropdown-item" data-app="System-Documentation.html"><i class="fas fa-plus"></i> New System Documentation</a>
+                                    <a href="System-Documentation.html" class="dropdown-item" data-app="System-Documentation.html" data-write-menu="true"><i class="fas fa-plus"></i> New System Documentation</a>
                                     <a href="System-Documentation-Search.html" class="dropdown-item" data-app="System-Documentation-Search.html"><i class="fas fa-search"></i> Search System Documentation</a>
                                 </div>
                             </div>
@@ -98,7 +98,7 @@
                                     <i class="fas fa-chevron-right submenu-chevron" aria-hidden="true"></i>
                                 </button>
                                 <div class="dropdown-submenu" aria-hidden="true">
-                                    <a href="News.html" class="dropdown-item" data-app="News.html"><i class="fas fa-plus"></i> News</a>
+                                    <a href="News.html" class="dropdown-item" data-app="News.html" data-write-menu="true"><i class="fas fa-plus"></i> News</a>
                                     <a href="News-Search.html" class="dropdown-item" data-app="News-Search.html"><i class="fas fa-search"></i> Search News</a>
                                 </div>
                             </div>
@@ -108,7 +108,7 @@
                                     <i class="fas fa-chevron-right submenu-chevron" aria-hidden="true"></i>
                                 </button>
                                 <div class="dropdown-submenu" aria-hidden="true">
-                                    <a href="Improvements-and-Corrections-Control.html" class="dropdown-item" data-app="Improvements-and-Corrections-Control.html">
+                                    <a href="Improvements-and-Corrections-Control.html" class="dropdown-item" data-app="Improvements-and-Corrections-Control.html" data-write-menu="true">
                                         <i class="fas fa-plus"></i> New Request
                                     </a>
                                     <a href="Improvements-and-Corrections-Control-Search.html" class="dropdown-item" data-app="Improvements-and-Corrections-Control-Search.html">
@@ -122,7 +122,7 @@
                                     <i class="fas fa-chevron-right submenu-chevron" aria-hidden="true"></i>
                                 </button>
                                 <div class="dropdown-submenu" aria-hidden="true">
-                                    <a href="Test-Case.html" class="dropdown-item" data-app="Test-Case.html">
+                                    <a href="Test-Case.html" class="dropdown-item" data-app="Test-Case.html" data-write-menu="true">
                                         <i class="fas fa-plus"></i> New Test Case
                                     </a>
                                     <a href="Test-Case-Search.html" class="dropdown-item" data-app="Test-Case-Search.html">
@@ -137,7 +137,7 @@
                             <i class="fas fa-exchange-alt"></i> Movement <i class="fas fa-chevron-down"></i>
                         </button>
                         <div class="movement-dropdown-menu" id="movementDropdownMenu" aria-hidden="true">
-                            <a href="movement.html" class="dropdown-item" data-app="movement.html"><i class="fas fa-plus"></i> New Movement</a>
+                            <a href="movement.html" class="dropdown-item" data-app="movement.html" data-write-menu="true"><i class="fas fa-plus"></i> New Movement</a>
                             <a href="movement.html?mode=search" class="dropdown-item" data-app="movement.html"><i class="fas fa-search"></i> Search Movement</a>
                             <a href="movement-situation.html" class="dropdown-item" data-app="movement-situation.html"><i class="fas fa-stream"></i> Situation of the Movement</a>
                         </div>

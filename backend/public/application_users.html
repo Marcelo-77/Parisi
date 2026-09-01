@@ -50,7 +50,7 @@
 
         <main class="main-content app-users-main">
             <section class="app-users-section">
-                <div class="app-users-white-panel">
+                <div class="app-users-white-panel" id="applicationUsersPanel">
                     <div class="app-users-page-intro">
                         <div class="app-users-page-intro-text">
                             <h2><i class="fas fa-user-cog"></i> Application Users</h2>
@@ -86,7 +86,7 @@
                                     <h3><i class="fas fa-window-restore"></i> Application access</h3>
                                     <span class="app-users-card-tag">Step 2</span>
                                 </div>
-                                <p class="app-users-help">Double-click an application to move it between lists. Use the arrow buttons to move selected items or everything at once.</p>
+                                <p class="app-users-help">Double-click an application to move it between lists. For assigned applications, choose <strong>Access all</strong> or <strong>Access search just</strong>. Use the arrow buttons to move selected items or everything at once.</p>
 
                                 <div class="app-lists-wrapper">
                                     <div class="app-list-panel">
@@ -117,14 +117,21 @@
                                             <h4><i class="fas fa-check-square"></i> Assigned</h4>
                                             <span class="app-list-count" id="selectedCount">0</span>
                                         </div>
-                                        <select id="selectedList" multiple aria-label="Assigned applications"></select>
+                                        <div id="selectedList" class="app-assigned-list" aria-label="Assigned applications">
+                                            <div class="app-assigned-empty">No applications assigned yet.</div>
+                                        </div>
                                     </div>
                                 </div>
 
                                 <div class="app-users-actions">
-                                    <button type="button" class="btn btn-primary" id="saveUserApplicationsBtn" disabled>
-                                        <i class="fas fa-save"></i> Save assignments
-                                    </button>
+                                    <div class="app-users-actions-buttons">
+                                        <button type="button" class="btn btn-secondary" id="cancelUserApplicationsBtn">
+                                            <i class="fas fa-times"></i> Cancel
+                                        </button>
+                                        <button type="button" class="btn btn-primary" id="saveUserApplicationsBtn" disabled>
+                                            <i class="fas fa-save"></i> Save assignments
+                                        </button>
+                                    </div>
                                     <div id="assignmentStatus" class="app-users-message" role="status" aria-live="polite"></div>
                                 </div>
                             </div>
@@ -157,7 +164,8 @@
                                 <div class="app-users-tips">
                                     <h4><i class="fas fa-lightbulb"></i> Tips</h4>
                                     <ul>
-                                        <li>Users only see menu items for assigned applications.</li>
+                                        <li>Choose <strong>Access search just</strong> to hide insert, update, and delete on that screen.</li>
+                                        <li>Existing assignments are saved as <strong>Access all</strong> unless changed.</li>
                                         <li>Change Password remains available to every user.</li>
                                     </ul>
                                 </div>

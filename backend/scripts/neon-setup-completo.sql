@@ -483,9 +483,17 @@ ON CONFLICT (setting_key) DO NOTHING;
 CREATE TABLE IF NOT EXISTS user_applications (
   id_funcionario UUID NOT NULL REFERENCES funcionarios(id) ON DELETE CASCADE,
   syap_cd_seq INTEGER NOT NULL REFERENCES system_applications(syap_cd_seq) ON DELETE CASCADE,
+  access_mode VARCHAR(20) NOT NULL DEFAULT 'all',
   criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (id_funcionario, syap_cd_seq)
 );
+
+ALTER TABLE user_applications
+  ADD COLUMN IF NOT EXISTS access_mode VARCHAR(20) NOT NULL DEFAULT 'all';
+
+UPDATE user_applications
+SET access_mode = 'all'
+WHERE access_mode IS NULL OR TRIM(access_mode) = '';
 
 CREATE TABLE IF NOT EXISTS user_sessions (
   id UUID PRIMARY KEY,

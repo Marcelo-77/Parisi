@@ -428,11 +428,23 @@ async function initDatabase() {
       CREATE TABLE IF NOT EXISTS user_applications (
         id_funcionario UUID NOT NULL REFERENCES funcionarios(id) ON DELETE CASCADE,
         syap_cd_seq INTEGER NOT NULL REFERENCES system_applications(syap_cd_seq) ON DELETE CASCADE,
+        access_mode VARCHAR(20) NOT NULL DEFAULT 'all',
         criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         PRIMARY KEY (id_funcionario, syap_cd_seq)
       )
     `);
     console.log('✅ Tabela user_applications criada/verificada');
+
+    await query(`
+      ALTER TABLE user_applications
+      ADD COLUMN IF NOT EXISTS access_mode VARCHAR(20) NOT NULL DEFAULT 'all'
+    `);
+    await query(`
+      UPDATE user_applications
+      SET access_mode = 'all'
+      WHERE access_mode IS NULL OR TRIM(access_mode) = ''
+    `);
+    console.log('✅ user_applications.access_mode adicionada/verificada');
 
     await query(`
       CREATE TABLE IF NOT EXISTS user_sessions (

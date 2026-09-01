@@ -1,0 +1,18 @@
+body.app-access-search-only [data-write-action="true"],
+body.app-access-search-only .btn-delete,
+body.app-access-search-only .btn-edit,
+body.app-access-search-only .btn-action.btn-delete,
+body.app-access-search-only .btn-action.btn-edit,
+body.app-access-search-only .loc-action-btn.btn-edit,
+body.app-access-search-only .loc-action-btn.btn-delete,
+body.app-access-search-only #newRecordBtn,
+body.app-access-search-only #saveNewRecordsBtn,
+body.app-access-search-only #addNewRecordLineBtn,
+body.app-access-search-only #newRecordsPanel,
+body.app-access-search-only .new-records-panel,
+body.app-access-search-only #saveApplicationBtn,
+body.app-access-search-only #newApplicationsSection,
+body.app-access-search-only form[data-write-form="true"],
+body.app-access-search-only .write-form-panel {
+  display: none !important;
+}

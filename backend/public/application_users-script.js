@@ -1,12 +1,14 @@
 const API_BASE = (typeof window !== 'undefined' && window.location && window.location.origin) ? window.location.origin : 'http://localhost:3000';
 const API_FUNCIONARIOS = API_BASE + '/api/funcionarios';
 const API_USER_APPLICATIONS = API_BASE + '/api/user-applications';
+const ACCESS_MODE_ALL = 'all';
+const ACCESS_MODE_SEARCH = 'search';
 
 let availableApps = [];
 let selectedApps = [];
 let currentUserId = null;
 let loadedUsers = [];
-let savedSelectedIds = [];
+let savedSelectedSnapshot = [];
 
 function escapeHtml(text) {
   if (text == null) return '';
@@ -19,6 +21,21 @@ function formatApplicationLabel(app) {
   return app.syapDsDetailed || app.syapNmApplication || '-';
 }
 
+function normalizeAccessMode(value) {
+  return String(value || '').trim().toLowerCase() === ACCESS_MODE_SEARCH
+    ? ACCESS_MODE_SEARCH
+    : ACCESS_MODE_ALL;
+}
+
+function createAppEntry(app, accessMode = ACCESS_MODE_ALL) {
+  return {
+    syapCdSeq: app.syapCdSeq,
+    syapNmApplication: app.syapNmApplication,
+    syapDsDetailed: app.syapDsDetailed,
+    accessMode: normalizeAccessMode(accessMode)
+  };
+}
+
 function sortApps(list) {
   return [...list].sort((a, b) => {
     const labelA = formatApplicationLabel(a).toLowerCase();
@@ -28,15 +45,21 @@ function sortApps(list) {
   });
 }
 
-function getSelectedIds(list) {
-  return sortApps(list).map((app) => app.syapCdSeq);
+function buildSelectedSnapshot(list) {
+  return sortApps(list).map((app) => ({
+    syapCdSeq: app.syapCdSeq,
+    accessMode: normalizeAccessMode(app.accessMode)
+  }));
 }
 
 function hasUnsavedChanges() {
   if (!currentUserId) return false;
-  const current = getSelectedIds(selectedApps);
-  if (current.length !== savedSelectedIds.length) return true;
-  return current.some((id, index) => id !== savedSelectedIds[index]);
+  const current = buildSelectedSnapshot(selectedApps);
+  if (current.length !== savedSelectedSnapshot.length) return true;
+  return current.some((item, index) => {
+    const saved = savedSelectedSnapshot[index];
+    return item.syapCdSeq !== saved.syapCdSeq || item.accessMode !== saved.accessMode;
+  });
 }
 
 function setAssignmentCardEnabled(enabled) {
@@ -55,13 +78,13 @@ function showStatus(message, type) {
 }
 
 function updateSummary() {
-  const userSelect = document.getElementById('userSelect');
   const summaryUserName = document.getElementById('summaryUserName');
   const summaryAvailable = document.getElementById('summaryAvailable');
   const summaryAssigned = document.getElementById('summaryAssigned');
   const summaryStatus = document.getElementById('summaryStatus');
   const dirtyBadge = document.getElementById('appUsersDirtyBadge');
   const saveBtn = document.getElementById('saveUserApplicationsBtn');
+  const cancelBtn = document.getElementById('cancelUserApplicationsBtn');
 
   const selectedUser = loadedUsers.find((user) => user.id === currentUserId);
   const userLabel = selectedUser
@@ -75,6 +98,7 @@ function updateSummary() {
   const dirty = hasUnsavedChanges();
   if (dirtyBadge) dirtyBadge.hidden = !dirty;
   if (saveBtn && currentUserId) saveBtn.disabled = false;
+  if (cancelBtn) cancelBtn.disabled = false;
 
   if (summaryStatus) {
     summaryStatus.className = 'app-users-status-badge';
@@ -91,30 +115,104 @@ function updateSummary() {
   }
 }
 
-function renderLists() {
+function renderAvailableList() {
   const availableList = document.getElementById('availableList');
-  const selectedList = document.getElementById('selectedList');
   const availableCount = document.getElementById('availableCount');
-  const selectedCount = document.getElementById('selectedCount');
-
-  if (!availableList || !selectedList) return;
+  if (!availableList) return;
 
   availableList.innerHTML = sortApps(availableApps).map((app) => `
     <option value="${app.syapCdSeq}">${escapeHtml(formatApplicationLabel(app))}</option>
   `).join('');
 
-  selectedList.innerHTML = sortApps(selectedApps).map((app) => `
-    <option value="${app.syapCdSeq}">${escapeHtml(formatApplicationLabel(app))}</option>
-  `).join('');
-
   if (availableCount) availableCount.textContent = String(availableApps.length);
-  if (selectedCount) selectedCount.textContent = String(selectedApps.length);
+}
 
+function renderSelectedList() {
+  const selectedList = document.getElementById('selectedList');
+  const selectedCount = document.getElementById('selectedCount');
+  if (!selectedList) return;
+
+  const sorted = sortApps(selectedApps);
+  if (!sorted.length) {
+    selectedList.innerHTML = '<div class="app-assigned-empty">No applications assigned yet.</div>';
+  } else {
+    const rows = sorted.map((app) => {
+      const id = app.syapCdSeq;
+      const allChecked = normalizeAccessMode(app.accessMode) === ACCESS_MODE_ALL ? 'checked' : '';
+      const searchChecked = normalizeAccessMode(app.accessMode) === ACCESS_MODE_SEARCH ? 'checked' : '';
+      return `
+        <div class="app-assigned-row" data-app-id="${id}">
+          <label class="app-assigned-select">
+            <input type="checkbox" class="app-assigned-check" value="${id}">
+            <span class="app-assigned-name">${escapeHtml(formatApplicationLabel(app))}</span>
+          </label>
+          <div class="app-access-mode-wrap">
+            <span class="app-access-mode-label">All or Search</span>
+            <div class="app-access-mode" role="radiogroup" aria-label="All or Search for ${escapeHtml(formatApplicationLabel(app))}">
+              <label class="app-access-pill">
+                <input type="radio" name="accessMode-${id}" value="${ACCESS_MODE_ALL}" data-app-id="${id}" ${allChecked}>
+                <span>All</span>
+              </label>
+              <label class="app-access-pill">
+                <input type="radio" name="accessMode-${id}" value="${ACCESS_MODE_SEARCH}" data-app-id="${id}" ${searchChecked}>
+                <span>Search</span>
+              </label>
+            </div>
+          </div>
+        </div>`;
+    }).join('');
+
+    selectedList.innerHTML = `
+      <div class="app-assigned-list-head">
+        <span class="app-assigned-col-app">Application</span>
+        <span class="app-assigned-col-access">All or Search</span>
+      </div>
+      <div class="app-assigned-rows">${rows}</div>`;
+  }
+
+  if (selectedCount) selectedCount.textContent = String(selectedApps.length);
+  bindSelectedListEvents();
   updateSummary();
+}
+
+function bindSelectedListEvents() {
+  const selectedList = document.getElementById('selectedList');
+  if (!selectedList) return;
+
+  selectedList.querySelectorAll('.app-assigned-check').forEach((input) => {
+    input.addEventListener('change', () => {
+      const row = input.closest('.app-assigned-row');
+      if (row) row.classList.toggle('is-selected', input.checked);
+    });
+  });
+
+  selectedList.querySelectorAll('input[type="radio"][data-app-id]').forEach((input) => {
+    input.addEventListener('change', () => {
+      const appId = parseInt(input.getAttribute('data-app-id'), 10);
+      const app = selectedApps.find((item) => item.syapCdSeq === appId);
+      if (app) {
+        app.accessMode = normalizeAccessMode(input.value);
+        updateSummary();
+      }
+    });
+  });
+}
+
+function renderLists() {
+  renderAvailableList();
+  renderSelectedList();
 }
 
 function getSelectedOptionValues(selectEl) {
   return Array.from(selectEl.selectedOptions).map((opt) => parseInt(opt.value, 10));
+}
+
+function getSelectedAssignedIds() {
+  const selectedList = document.getElementById('selectedList');
+  if (!selectedList) return [];
+  return Array.from(selectedList.querySelectorAll('.app-assigned-check:checked'))
+    .map((input) => parseInt(input.value, 10))
+    .filter((id) => Number.isInteger(id));
 }
 
 function moveApps(fromList, toList, ids) {
@@ -124,7 +222,7 @@ function moveApps(fromList, toList, ids) {
   const remaining = fromList.filter((app) => !idSet.has(app.syapCdSeq));
   fromList.length = 0;
   fromList.push(...remaining);
-  toList.push(...moving);
+  toList.push(...moving.map((app) => createAppEntry(app, app.accessMode || ACCESS_MODE_ALL)));
 }
 
 function moveSelected(fromList, toList, selectEl) {
@@ -133,8 +231,14 @@ function moveSelected(fromList, toList, selectEl) {
   renderLists();
 }
 
+function moveSelectedAssignedToAvailable() {
+  const ids = getSelectedAssignedIds();
+  moveApps(selectedApps, availableApps, ids);
+  renderLists();
+}
+
 function moveAll(fromList, toList) {
-  toList.push(...fromList);
+  toList.push(...fromList.map((app) => createAppEntry(app, app.accessMode || ACCESS_MODE_ALL)));
   fromList.length = 0;
   renderLists();
 }
@@ -160,10 +264,13 @@ async function loadUsers() {
     } else {
       updateSummary();
     }
+
+    handleApplicationUsersLandingAction();
   } catch (error) {
     console.error(error);
     userSelect.innerHTML = '<option value="">Error loading users</option>';
     showStatus('Could not load users. Please refresh the page.', 'error');
+    handleApplicationUsersLandingAction();
   }
 }
 
@@ -171,7 +278,7 @@ function clearLists() {
   availableApps = [];
   selectedApps = [];
   currentUserId = null;
-  savedSelectedIds = [];
+  savedSelectedSnapshot = [];
   setAssignmentCardEnabled(false);
   renderLists();
   showStatus('');
@@ -194,9 +301,9 @@ async function loadUserApplications(funcionarioId) {
     }
 
     currentUserId = funcionarioId;
-    availableApps = data.data.available || [];
-    selectedApps = data.data.selected || [];
-    savedSelectedIds = getSelectedIds(selectedApps);
+    availableApps = (data.data.available || []).map((app) => createAppEntry(app, ACCESS_MODE_ALL));
+    selectedApps = (data.data.selected || []).map((app) => createAppEntry(app, app.accessMode || ACCESS_MODE_ALL));
+    savedSelectedSnapshot = buildSelectedSnapshot(selectedApps);
     renderLists();
     showStatus('');
   } catch (error) {
@@ -206,6 +313,36 @@ async function loadUserApplications(funcionarioId) {
   }
 }
 
+function focusApplicationUsersPage() {
+  const panel = document.getElementById('applicationUsersPanel');
+  const userSelect = document.getElementById('userSelect');
+
+  if (panel) {
+    panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  requestAnimationFrame(() => {
+    userSelect?.focus({ preventScroll: true });
+  });
+}
+
+function handleApplicationUsersLandingAction() {
+  focusApplicationUsersPage();
+
+  const params = new URLSearchParams(window.location.search);
+  if (!params.has('user') && window.history && window.history.replaceState) {
+    window.history.replaceState({}, '', window.location.pathname);
+  }
+}
+
+function closeApplicationUsersPage() {
+  window.location.replace('warehouse.html');
+}
+
+function cancelUserApplications() {
+  closeApplicationUsersPage();
+}
+
 async function saveUserApplications() {
   if (!currentUserId) {
     showStatus('Please select a user first.', 'error');
@@ -213,15 +350,17 @@ async function saveUserApplications() {
   }
 
   const saveBtn = document.getElementById('saveUserApplicationsBtn');
+  const cancelBtn = document.getElementById('cancelUserApplicationsBtn');
   if (saveBtn) saveBtn.disabled = true;
+  if (cancelBtn) cancelBtn.disabled = true;
 
   try {
     showStatus('Saving assignments...', 'info');
-    const syapCdSeqList = selectedApps.map((app) => app.syapCdSeq);
+    const assignments = buildSelectedSnapshot(selectedApps);
     const res = await fetch(`${API_USER_APPLICATIONS}/${encodeURIComponent(currentUserId)}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ syapCdSeqList })
+      body: JSON.stringify({ assignments })
     });
     const data = await res.json();
 
@@ -229,9 +368,9 @@ async function saveUserApplications() {
       throw new Error(data.error || 'Error saving user applications');
     }
 
-    availableApps = data.data.available || [];
-    selectedApps = data.data.selected || [];
-    savedSelectedIds = getSelectedIds(selectedApps);
+    availableApps = (data.data.available || []).map((app) => createAppEntry(app, ACCESS_MODE_ALL));
+    selectedApps = (data.data.selected || []).map((app) => createAppEntry(app, app.accessMode || ACCESS_MODE_ALL));
+    savedSelectedSnapshot = buildSelectedSnapshot(selectedApps);
     renderLists();
     showStatus('User applications saved successfully.', 'success');
   } catch (error) {
@@ -245,6 +384,8 @@ async function saveUserApplications() {
 
 document.addEventListener('DOMContentLoaded', () => {
   setAssignmentCardEnabled(false);
+  const cancelBtn = document.getElementById('cancelUserApplicationsBtn');
+  if (cancelBtn) cancelBtn.disabled = false;
   loadUsers();
 
   const userSelect = document.getElementById('userSelect');
@@ -261,7 +402,7 @@ document.addEventListener('DOMContentLoaded', () => {
     moveAll(availableApps, selectedApps);
   });
   document.getElementById('removeSelectedBtn')?.addEventListener('click', () => {
-    moveSelected(selectedApps, availableApps, document.getElementById('selectedList'));
+    moveSelectedAssignedToAvailable();
   });
   document.getElementById('removeAllBtn')?.addEventListener('click', () => {
     moveAll(selectedApps, availableApps);
@@ -270,9 +411,13 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('availableList')?.addEventListener('dblclick', () => {
     moveSelected(availableApps, selectedApps, document.getElementById('availableList'));
   });
-  document.getElementById('selectedList')?.addEventListener('dblclick', () => {
-    moveSelected(selectedApps, availableApps, document.getElementById('selectedList'));
+  document.getElementById('selectedList')?.addEventListener('dblclick', (event) => {
+    if (event.target.closest('.app-access-mode') || event.target.closest('.app-assigned-check')) {
+      return;
+    }
+    moveSelectedAssignedToAvailable();
   });
 
   document.getElementById('saveUserApplicationsBtn')?.addEventListener('click', saveUserApplications);
+  document.getElementById('cancelUserApplicationsBtn')?.addEventListener('click', cancelUserApplications);
 });

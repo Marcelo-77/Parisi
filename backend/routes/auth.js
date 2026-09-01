@@ -106,13 +106,20 @@ router.get('/menu-access', async (req, res) => {
         success: true,
         isRoot: true,
         user,
-        applications: allApps.map((app) => app.syapNmApplication).filter(Boolean)
+        applications: allApps.map((app) => app.syapNmApplication).filter(Boolean),
+        accessByApplication: {}
       });
     }
 
     const userId = getSessionUserId(req);
     if (!userId) {
-      return res.json({ success: true, isRoot: false, user: null, applications: [] });
+      return res.json({
+        success: true,
+        isRoot: false,
+        user: null,
+        applications: [],
+        accessByApplication: {}
+      });
     }
 
     const apps = await userApplicationService.listAccessibleApplications(userId);
@@ -122,12 +129,14 @@ router.get('/menu-access', async (req, res) => {
     });
 
     const user = await getSessionUserProfile(req);
+    const accessByApplication = userApplicationService.buildAccessByApplication(apps, false);
 
     return res.json({
       success: true,
       isRoot: false,
       user,
-      applications: applicationNames
+      applications: applicationNames,
+      accessByApplication
     });
   } catch (error) {
     console.error('Menu access error:', error);

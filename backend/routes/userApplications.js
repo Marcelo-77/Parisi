@@ -18,6 +18,14 @@ const validarFuncionarioId = [
     .withMessage('Employee ID must be a valid UUID')
 ];
 
+const validarAssignments = [
+  body('assignments').optional().isArray().withMessage('assignments must be an array'),
+  body('assignments.*.syapCdSeq').optional().isInt({ min: 1, max: 9999 }),
+  body('assignments.*.accessMode').optional().isIn(['all', 'search']),
+  body('syapCdSeqList').optional().isArray().withMessage('syapCdSeqList must be an array'),
+  body('syapCdSeqList.*').optional().isInt({ min: 1, max: 9999 })
+];
+
 // GET /api/user-applications/:funcionarioId
 router.get(
   '/:funcionarioId',
@@ -42,15 +50,22 @@ router.put(
   '/:funcionarioId',
   [
     ...validarFuncionarioId,
-    body('syapCdSeqList').isArray().withMessage('syapCdSeqList must be an array'),
-    body('syapCdSeqList.*').isInt({ min: 1, max: 9999 }).withMessage('Each application ID must be between 1 and 9999')
+    ...validarAssignments,
+    body().custom((value, { req }) => {
+      const hasAssignments = Array.isArray(req.body.assignments);
+      const hasLegacyList = Array.isArray(req.body.syapCdSeqList);
+      if (!hasAssignments && !hasLegacyList) {
+        throw new Error('assignments or syapCdSeqList is required');
+      }
+      return true;
+    })
   ],
   handleValidationErrors,
   async (req, res) => {
     try {
       const data = await userApplicationService.replaceForFuncionario(
         req.params.funcionarioId,
-        req.body.syapCdSeqList
+        req.body
       );
       res.json({
         success: true,
