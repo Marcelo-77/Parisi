@@ -169,13 +169,14 @@ function renderSelectedList() {
     const rows = sorted.map((app) => {
       const id = app.syapCdSeq;
       const label = formatApplicationLabel(app, duplicateLabelKeys);
+      const htmlFile = app.syapNmApplication || '-';
       const allChecked = normalizeAccessMode(app.accessMode) === ACCESS_MODE_ALL ? 'checked' : '';
       const searchChecked = normalizeAccessMode(app.accessMode) === ACCESS_MODE_SEARCH ? 'checked' : '';
       return `
         <div class="app-assigned-row" data-app-id="${id}">
-          <label class="app-assigned-select">
+          <label class="app-assigned-select" title="${escapeHtml(htmlFile)}">
             <input type="checkbox" class="app-assigned-check" value="${id}">
-            <span class="app-assigned-name">${escapeHtml(label)}</span>
+            <span class="app-assigned-name" title="${escapeHtml(htmlFile)}">${escapeHtml(label)}</span>
           </label>
           <div class="app-access-mode-wrap">
             <span class="app-access-mode-label">All or Search</span>
