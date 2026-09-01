@@ -32,7 +32,9 @@
   function isSearchOnlyAccess(accessData) {
     const currentApp = getCurrentPageApp();
     if (!currentApp) return false;
-    return getAccessModeForApp(accessData, currentApp) === ACCESS_MODE_SEARCH;
+    const data = accessData || readCachedMenuAccess();
+    if (!data) return false;
+    return getAccessModeForApp(data, currentApp) === ACCESS_MODE_SEARCH;
   }
 
   function shouldHideMenuWriteItem(item, accessData) {
@@ -47,12 +49,23 @@
     const scope = root || document;
     const selectors = [
       '[data-write-action="true"]',
+      '[data-action="edit"]',
+      '[data-action="delete"]',
+      '[data-action="move"]',
       '.btn-delete',
       '.btn-edit',
+      '.btn-action.delete',
+      '.btn-action.edit',
+      '.btn-action.movement',
       '.btn-action.btn-delete',
       '.btn-action.btn-edit',
       '.loc-action-btn.btn-edit',
       '.loc-action-btn.btn-delete',
+      '#editFromDetailsBtn',
+      '#saveItemBtn',
+      '#saveMovementBtn',
+      '#itemModal',
+      '#movementModal',
       '#newRecordBtn',
       '#saveNewRecordsBtn',
       '#addNewRecordLineBtn',

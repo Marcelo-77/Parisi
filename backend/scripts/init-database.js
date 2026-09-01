@@ -413,6 +413,26 @@ async function initDatabase() {
     }
     console.log(`✅ system_applications: ${systemApplicationMenus.length} menu HTML pages verified`);
 
+    const systemApplicationDescriptionFixes = [
+      { application: 'Double-Y-Schedule.html', menuName: 'Double_Y_Schedule' },
+      { application: 'search-users.html', menuName: 'Users_Search_Legacy' },
+      { application: 'new-customer.html', menuName: 'Customer_New' },
+      {
+        application: 'Improvements-and-Corrections-Control-Search.html',
+        menuName: 'Applications_Improvements_Corrections_Search'
+      }
+    ];
+
+    for (const item of systemApplicationDescriptionFixes) {
+      await query(
+        `UPDATE system_applications
+         SET syap_ds_detailed = $2::VARCHAR(150)
+         WHERE syap_nm_application = $1::VARCHAR(100)`,
+        [item.application, item.menuName]
+      );
+    }
+    console.log(`✅ system_applications: ${systemApplicationDescriptionFixes.length} duplicate descriptions corrected`);
+
     await query(`
       UPDATE system_applications
       SET syap_nm_application = 'users.html'

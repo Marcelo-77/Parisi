@@ -2684,7 +2684,8 @@ input.input-readonly {
     }
 
     #productSearchSection .warehouse-search-actions #searchBtn,
-    #productSearchSection .warehouse-search-actions #downloadProductsExcel {
+    #productSearchSection .warehouse-search-actions #downloadProductsExcel,
+    #productSearchSection .warehouse-search-actions #closeProductSearchBtn {
         flex: 1 1 0;
         width: auto;
         min-width: 0;

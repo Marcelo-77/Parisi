@@ -17,8 +17,33 @@ function escapeHtml(text) {
   return div.innerHTML;
 }
 
-function formatApplicationLabel(app) {
-  return app.syapDsDetailed || app.syapNmApplication || '-';
+function getApplicationPrimaryLabel(app) {
+  const detailed = app.syapDsDetailed != null ? String(app.syapDsDetailed).trim() : '';
+  const fileName = app.syapNmApplication != null ? String(app.syapNmApplication).trim() : '';
+  return detailed || fileName || '-';
+}
+
+function buildDuplicateLabelKeys(apps) {
+  const counts = new Map();
+  for (const app of apps) {
+    const key = getApplicationPrimaryLabel(app).toLowerCase();
+    counts.set(key, (counts.get(key) || 0) + 1);
+  }
+  return counts;
+}
+
+function formatApplicationLabel(app, duplicateLabelKeys) {
+  const primary = getApplicationPrimaryLabel(app);
+  const fileName = app.syapNmApplication != null ? String(app.syapNmApplication).trim() : '-';
+  const key = primary.toLowerCase();
+  if (duplicateLabelKeys && duplicateLabelKeys.get(key) > 1) {
+    return `${primary} (${fileName})`;
+  }
+  return primary;
+}
+
+function getAllVisibleApps() {
+  return [...availableApps, ...selectedApps];
 }
 
 function normalizeAccessMode(value) {
@@ -36,17 +61,18 @@ function createAppEntry(app, accessMode = ACCESS_MODE_ALL) {
   };
 }
 
-function sortApps(list) {
+function sortApps(list, duplicateLabelKeys) {
   return [...list].sort((a, b) => {
-    const labelA = formatApplicationLabel(a).toLowerCase();
-    const labelB = formatApplicationLabel(b).toLowerCase();
+    const labelA = formatApplicationLabel(a, duplicateLabelKeys).toLowerCase();
+    const labelB = formatApplicationLabel(b, duplicateLabelKeys).toLowerCase();
     if (labelA !== labelB) return labelA.localeCompare(labelB);
     return (a.syapCdSeq || 0) - (b.syapCdSeq || 0);
   });
 }
 
 function buildSelectedSnapshot(list) {
-  return sortApps(list).map((app) => ({
+  const duplicateLabelKeys = buildDuplicateLabelKeys(getAllVisibleApps());
+  return sortApps(list, duplicateLabelKeys).map((app) => ({
     syapCdSeq: app.syapCdSeq,
     accessMode: normalizeAccessMode(app.accessMode)
   }));
@@ -85,6 +111,7 @@ function updateSummary() {
   const dirtyBadge = document.getElementById('appUsersDirtyBadge');
   const saveBtn = document.getElementById('saveUserApplicationsBtn');
   const cancelBtn = document.getElementById('cancelUserApplicationsBtn');
+  const closeBtn = document.getElementById('closeUserApplicationsBtn');
 
   const selectedUser = loadedUsers.find((user) => user.id === currentUserId);
   const userLabel = selectedUser
@@ -99,6 +126,7 @@ function updateSummary() {
   if (dirtyBadge) dirtyBadge.hidden = !dirty;
   if (saveBtn && currentUserId) saveBtn.disabled = false;
   if (cancelBtn) cancelBtn.disabled = false;
+  if (closeBtn) closeBtn.disabled = false;
 
   if (summaryStatus) {
     summaryStatus.className = 'app-users-status-badge';
@@ -120,8 +148,9 @@ function renderAvailableList() {
   const availableCount = document.getElementById('availableCount');
   if (!availableList) return;
 
-  availableList.innerHTML = sortApps(availableApps).map((app) => `
-    <option value="${app.syapCdSeq}">${escapeHtml(formatApplicationLabel(app))}</option>
+  const duplicateLabelKeys = buildDuplicateLabelKeys(getAllVisibleApps());
+  availableList.innerHTML = sortApps(availableApps, duplicateLabelKeys).map((app) => `
+    <option value="${app.syapCdSeq}">${escapeHtml(formatApplicationLabel(app, duplicateLabelKeys))}</option>
   `).join('');
 
   if (availableCount) availableCount.textContent = String(availableApps.length);
@@ -132,23 +161,25 @@ function renderSelectedList() {
   const selectedCount = document.getElementById('selectedCount');
   if (!selectedList) return;
 
-  const sorted = sortApps(selectedApps);
+  const duplicateLabelKeys = buildDuplicateLabelKeys(getAllVisibleApps());
+  const sorted = sortApps(selectedApps, duplicateLabelKeys);
   if (!sorted.length) {
     selectedList.innerHTML = '<div class="app-assigned-empty">No applications assigned yet.</div>';
   } else {
     const rows = sorted.map((app) => {
       const id = app.syapCdSeq;
+      const label = formatApplicationLabel(app, duplicateLabelKeys);
       const allChecked = normalizeAccessMode(app.accessMode) === ACCESS_MODE_ALL ? 'checked' : '';
       const searchChecked = normalizeAccessMode(app.accessMode) === ACCESS_MODE_SEARCH ? 'checked' : '';
       return `
         <div class="app-assigned-row" data-app-id="${id}">
           <label class="app-assigned-select">
             <input type="checkbox" class="app-assigned-check" value="${id}">
-            <span class="app-assigned-name">${escapeHtml(formatApplicationLabel(app))}</span>
+            <span class="app-assigned-name">${escapeHtml(label)}</span>
           </label>
           <div class="app-access-mode-wrap">
             <span class="app-access-mode-label">All or Search</span>
-            <div class="app-access-mode" role="radiogroup" aria-label="All or Search for ${escapeHtml(formatApplicationLabel(app))}">
+            <div class="app-access-mode" role="radiogroup" aria-label="All or Search for ${escapeHtml(label)}">
               <label class="app-access-pill">
                 <input type="radio" name="accessMode-${id}" value="${ACCESS_MODE_ALL}" data-app-id="${id}" ${allChecked}>
                 <span>All</span>
@@ -339,6 +370,10 @@ function closeApplicationUsersPage() {
   window.location.replace('warehouse.html');
 }
 
+function closeUserApplications() {
+  closeApplicationUsersPage();
+}
+
 function cancelUserApplications() {
   closeApplicationUsersPage();
 }
@@ -351,8 +386,10 @@ async function saveUserApplications() {
 
   const saveBtn = document.getElementById('saveUserApplicationsBtn');
   const cancelBtn = document.getElementById('cancelUserApplicationsBtn');
+  const closeBtn = document.getElementById('closeUserApplicationsBtn');
   if (saveBtn) saveBtn.disabled = true;
   if (cancelBtn) cancelBtn.disabled = true;
+  if (closeBtn) closeBtn.disabled = true;
 
   try {
     showStatus('Saving assignments...', 'info');
@@ -373,6 +410,7 @@ async function saveUserApplications() {
     savedSelectedSnapshot = buildSelectedSnapshot(selectedApps);
     renderLists();
     showStatus('User applications saved successfully.', 'success');
+    alert('The assignment information has been saved successfully.');
   } catch (error) {
     console.error(error);
     showStatus(error.message || 'Error saving user applications.', 'error');
@@ -385,7 +423,9 @@ async function saveUserApplications() {
 document.addEventListener('DOMContentLoaded', () => {
   setAssignmentCardEnabled(false);
   const cancelBtn = document.getElementById('cancelUserApplicationsBtn');
+  const closeBtn = document.getElementById('closeUserApplicationsBtn');
   if (cancelBtn) cancelBtn.disabled = false;
+  if (closeBtn) closeBtn.disabled = false;
   loadUsers();
 
   const userSelect = document.getElementById('userSelect');
@@ -420,4 +460,5 @@ document.addEventListener('DOMContentLoaded', () => {
 
   document.getElementById('saveUserApplicationsBtn')?.addEventListener('click', saveUserApplications);
   document.getElementById('cancelUserApplicationsBtn')?.addEventListener('click', cancelUserApplications);
+  document.getElementById('closeUserApplicationsBtn')?.addEventListener('click', closeUserApplications);
 });

@@ -459,17 +459,55 @@ function updateArButtonVisibility() {
     arBtn.hidden = !isRootUser;
 }
 
-function handleWarehouseLandingAction() {
+async function focusProductRegistrationScreen() {
+    await openItemModal();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    const target = document.getElementById('itemSectionIdentity') || document.getElementById('itemModal');
+    if (target) {
+        target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+    requestAnimationFrame(() => {
+        document.getElementById('codigo')?.focus({ preventScroll: true });
+    });
+}
+
+function focusProductSearchScreen() {
+    const section = document.getElementById('productSearchSection');
+    if (section) {
+        section.style.display = 'flex';
+        section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+    requestAnimationFrame(() => {
+        document.getElementById('searchInput')?.focus({ preventScroll: true });
+    });
+}
+
+function closeProductSearchSection() {
+    if (productSearchSection) {
+        productSearchSection.style.display = 'none';
+    }
+    if (searchInput) searchInput.value = '';
+    if (searchByField) searchByField.value = 'codigo';
+    if (filterCategoria) filterCategoria.value = '';
+    if (filterSubcategoria) filterSubcategoria.value = '';
+    if (filterStatus) filterStatus.value = '';
+    if (sortBy) sortBy.value = 'nome';
+    toggleFilterSubcategoriaField();
+    showEmptyStateInitial();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+async function handleWarehouseLandingAction() {
     const params = new URLSearchParams(window.location.search);
     const action = params.get('action');
     if (action === 'new') {
-        openItemModal();
-    } else if (action === 'search') {
-        const section = document.getElementById('productSearchSection');
-        if (section) {
-            section.style.display = 'flex';
-            section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        if (isWarehouseSearchOnlyAccess()) {
+            focusProductSearchScreen();
+        } else {
+            await focusProductRegistrationScreen();
         }
+    } else if (action === 'search') {
+        focusProductSearchScreen();
     } else {
         return;
     }
@@ -483,10 +521,7 @@ function setupEventListeners() {
     // Product: New Product e Search Product
     function openSearchProductSection() {
         closeProductDropdown();
-        if (productSearchSection) {
-            productSearchSection.style.display = 'flex';
-            productSearchSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        }
+        focusProductSearchScreen();
         if (window.WarehouseBarcodeScanner
           && typeof window.WarehouseBarcodeScanner.updateButtonVisibility === 'function') {
             window.WarehouseBarcodeScanner.updateButtonVisibility();
@@ -494,7 +529,11 @@ function setupEventListeners() {
     }
     function openNewProductModal() {
         closeProductDropdown();
-        openItemModal();
+        if (isWarehouseSearchOnlyAccess()) {
+            openSearchProductSection();
+            return;
+        }
+        void focusProductRegistrationScreen();
     }
     function bindDropdownAction(btn, handler) {
         if (!btn) return;
@@ -710,7 +749,13 @@ function setupEventListeners() {
         closeHelpDropdown();
     });
 
-    handleWarehouseLandingAction();
+    void handleWarehouseLandingAction();
+
+    document.addEventListener('doubley:menu-access-applied', () => {
+        if (hasSearched) {
+            displayItems(getFilteredSortedItems());
+        }
+    });
 
     // Modal de Item
     document.getElementById('closeModal').addEventListener('click', () => closeItemModal());
@@ -839,6 +884,10 @@ function setupEventListeners() {
             }
             await downloadProductsExcel(getFilteredSortedItems());
         });
+    }
+    const closeProductSearchBtn = document.getElementById('closeProductSearchBtn');
+    if (closeProductSearchBtn) {
+        closeProductSearchBtn.addEventListener('click', closeProductSearchSection);
     }
     searchInput.addEventListener('keypress', (e) => {
         if (e.key === 'Enter') handleSearchClick();
@@ -1032,6 +1081,37 @@ async function loadItems(filtros) {
     }
 }
 
+function isWarehouseSearchOnlyAccess() {
+    return Boolean(
+        window.DoubleYApplicationWriteAccess
+        && typeof window.DoubleYApplicationWriteAccess.isSearchOnlyAccess === 'function'
+        && window.DoubleYApplicationWriteAccess.isSearchOnlyAccess()
+    );
+}
+
+function buildItemActionButtons(item) {
+    const writeButtons = isWarehouseSearchOnlyAccess()
+        ? ''
+        : `
+                        <button class="btn-action movement" data-action="move" data-item-id="${item.id}" title="Move stock" data-write-action="true">
+                            <i class="fas fa-exchange-alt"></i> <span>Move</span>
+                        </button>
+                        <button class="btn-action edit" data-action="edit" data-item-id="${item.id}" title="Edit" data-write-action="true">
+                            <i class="fas fa-edit"></i> <span>Edit</span>
+                        </button>
+                        <button class="btn-action delete" data-action="delete" data-item-id="${item.id}" title="Delete" data-write-action="true">
+                            <i class="fas fa-trash"></i> <span>Del.</span>
+                        </button>`;
+
+    return `
+                        <button class="btn-action view" data-action="view" data-item-id="${item.id}" title="View details">
+                            <i class="fas fa-eye"></i> <span>View</span>
+                        </button>
+                        <button class="btn-action print" data-action="print" data-item-id="${item.id}" title="Print report" type="button">
+                            <i class="fas fa-print"></i> <span>Print</span>
+                        </button>${writeButtons}`;
+}
+
 // Exibir itens na tabela
 function displayItems(itemsToDisplay) {
     updateSearchResultsCount(itemsToDisplay.length);
@@ -1079,21 +1159,7 @@ function displayItems(itemsToDisplay) {
             <tr class="item-actions-row">
                 <td colspan="6" class="action-buttons-cell">
                     <div class="action-buttons">
-                        <button class="btn-action view" data-action="view" data-item-id="${item.id}" title="View details">
-                            <i class="fas fa-eye"></i> <span>View</span>
-                        </button>
-                        <button class="btn-action print" data-action="print" data-item-id="${item.id}" title="Print report" type="button">
-                            <i class="fas fa-print"></i> <span>Print</span>
-                        </button>
-                        <button class="btn-action movement" data-action="move" data-item-id="${item.id}" title="Move stock">
-                            <i class="fas fa-exchange-alt"></i> <span>Move</span>
-                        </button>
-                        <button class="btn-action edit" data-action="edit" data-item-id="${item.id}" title="Edit">
-                            <i class="fas fa-edit"></i> <span>Edit</span>
-                        </button>
-                        <button class="btn-action delete" data-action="delete" data-item-id="${item.id}" title="Delete">
-                            <i class="fas fa-trash"></i> <span>Del.</span>
-                        </button>
+                        ${buildItemActionButtons(item)}
                     </div>
                 </td>
             </tr>
@@ -1117,6 +1183,10 @@ function attachActionButtonListeners() {
         const itemId = button.getAttribute('data-item-id');
         
         if (!action || !itemId) return;
+
+        if (isWarehouseSearchOnlyAccess() && (action === 'edit' || action === 'delete' || action === 'move')) {
+            return;
+        }
         
         console.log('Button clicked:', action, 'Item ID:', itemId);
         
