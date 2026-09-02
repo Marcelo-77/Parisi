@@ -11,18 +11,13 @@
   const imageReadyBadge = document.getElementById('imageReadyBadge');
   const clearQueryBtn = document.getElementById('clearQueryBtn');
   const runPhotoSearchBtn = document.getElementById('runPhotoSearchBtn');
-  const reloadCatalogBtn = document.getElementById('reloadCatalogBtn');
   const a21xLocationFilter = document.getElementById('a21xLocationFilter');
   const matchThresholdInput = document.getElementById('matchThreshold');
   const thresholdValueLabel = document.getElementById('thresholdValueLabel');
   const a21xStatus = document.getElementById('a21xStatus');
-  const catalogGrid = document.getElementById('catalogGrid');
   const resultsGrid = document.getElementById('resultsGrid');
   const topMatchBanner = document.getElementById('topMatchBanner');
   const resultsCount = document.getElementById('resultsCount');
-  const catalogTotal = document.getElementById('catalogTotal');
-  const catalogWithPhoto = document.getElementById('catalogWithPhoto');
-  const catalogLocations = document.getElementById('catalogLocations');
   const a21xLocationList = document.getElementById('a21xLocationList');
   const stepEls = Array.from(document.querySelectorAll('.a21x-step'));
 
@@ -40,10 +35,26 @@
 
   function setStatus(message, type) {
     if (!a21xStatus) return;
-    a21xStatus.textContent = message;
-    a21xStatus.classList.remove('is-error', 'is-ok');
-    if (type === 'error') a21xStatus.classList.add('is-error');
-    if (type === 'ok') a21xStatus.classList.add('is-ok');
+    const textEl = a21xStatus.querySelector('.a21x-status-text');
+    const iconEl = a21xStatus.querySelector('.a21x-status-icon');
+    if (textEl) {
+      textEl.textContent = message;
+    } else {
+      a21xStatus.textContent = message;
+    }
+    a21xStatus.classList.remove('is-error', 'is-ok', 'is-idle');
+    if (type === 'error') {
+      a21xStatus.classList.add('is-error');
+      if (iconEl) iconEl.className = 'fas fa-exclamation-triangle a21x-status-icon';
+    } else if (type === 'ok') {
+      a21xStatus.classList.add('is-ok');
+      if (iconEl) iconEl.className = 'fas fa-check-circle a21x-status-icon';
+    } else if (type === 'idle') {
+      a21xStatus.classList.add('is-idle');
+      if (iconEl) iconEl.className = 'fas fa-info-circle a21x-status-icon';
+    } else {
+      if (iconEl) iconEl.className = 'fas fa-circle-notch fa-spin a21x-status-icon';
+    }
   }
 
   function setStep(activeStep) {
@@ -84,7 +95,7 @@
     dropZone?.classList.remove('has-image', 'is-dragover');
     if (runPhotoSearchBtn) runPhotoSearchBtn.disabled = true;
     setStep(1);
-    setStatus('Image cleared. Take a photo or upload a file to continue.');
+    setStatus('Image cleared. Take a photo or upload a file to continue.', 'idle');
   }
 
   function loadImageFromSrc(src) {
@@ -188,7 +199,6 @@
     }
 
     setStatus('Loading A21X catalog…');
-    if (reloadCatalogBtn) reloadCatalogBtn.disabled = true;
     try {
       const params = new URLSearchParams({
         withPhotoOnly: 'true',
@@ -201,7 +211,7 @@
       }
       catalog = Array.isArray(data.data) ? data.data : [];
       await prepareCatalogFingerprints(catalog);
-      renderCatalog(catalog);
+      updateLocationOptions(catalog);
       setStatus(
         `Catalog ready: ${catalog.length} A21X row(s) with photo` +
           (locationCode !== 'A21X' ? ` (filter ${locationCode})` : '') +
@@ -210,10 +220,8 @@
       );
     } catch (err) {
       catalog = [];
-      renderCatalog([]);
+      updateLocationOptions([]);
       setStatus('Catalog error: ' + (err.message || 'unknown'), 'error');
-    } finally {
-      if (reloadCatalogBtn) reloadCatalogBtn.disabled = false;
     }
   }
 
@@ -228,13 +236,8 @@
     }
   }
 
-  function renderCatalog(rows) {
+  function updateLocationOptions(rows) {
     const locations = new Set(rows.map((r) => r.locationCode).filter(Boolean));
-    if (catalogTotal) catalogTotal.textContent = String(rows.length);
-    if (catalogWithPhoto) {
-      catalogWithPhoto.textContent = String(rows.filter((r) => r.hasPhoto || r.photo).length);
-    }
-    if (catalogLocations) catalogLocations.textContent = String(locations.size);
 
     if (a21xLocationList) {
       a21xLocationList.innerHTML = Array.from(locations)
@@ -242,31 +245,6 @@
         .map((code) => `<option value="${escapeHtml(code)}"></option>`)
         .join('');
     }
-
-    if (!catalogGrid) return;
-    if (!rows.length) {
-      catalogGrid.innerHTML = `
-        <div class="a21x-empty-block">
-          <i class="fas fa-inbox"></i>
-          <p>No A21X products with photo found for this filter.</p>
-        </div>`;
-      return;
-    }
-
-    catalogGrid.innerHTML = rows.map((row) => `
-      <article class="a21x-catalog-item">
-        ${row.photo
-          ? `<img src="${escapeHtml(row.photo)}" alt="">`
-          : `<div class="a21x-empty-block" style="padding:28px 8px;"><i class="fas fa-image"></i></div>`}
-        <div class="a21x-catalog-item-body">
-          <strong>${escapeHtml(row.productCode || '')}</strong>
-          <div class="a21x-meta">
-            ${escapeHtml(row.locationCode || '')}<br>
-            Qty ${row.quantityCurrent ?? 0}
-          </div>
-        </div>
-      </article>
-    `).join('');
   }
 
   async function runPhotoSearch() {
@@ -383,7 +361,6 @@
   bindFileInput(uploadImageInput);
   clearQueryBtn?.addEventListener('click', clearQueryImage);
   runPhotoSearchBtn?.addEventListener('click', runPhotoSearch);
-  reloadCatalogBtn?.addEventListener('click', loadCatalog);
   matchThresholdInput?.addEventListener('input', updateThresholdLabel);
   a21xLocationFilter?.addEventListener('change', () => {
     loadCatalog();
@@ -420,13 +397,14 @@
 
   function focusPanelOnOpen() {
     const panel = document.getElementById('a21xSearchPanel');
-    if (!panel) return;
-    requestAnimationFrame(() => {
+    if (panel) {
       panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+    requestAnimationFrame(() => {
       try {
-        panel.focus({ preventScroll: true });
+        panel?.focus({ preventScroll: true });
       } catch {
-        panel.focus();
+        panel?.focus();
       }
       dropZone?.focus({ preventScroll: true });
     });

@@ -2715,7 +2715,8 @@ input.input-readonly {
     #productSearchSection .table-container,
     #userSearchSection .table-container,
     .results-container .table-container,
-    body.location-search-page .table-container {
+    body.location-search-page .table-container,
+    body.ic-search-page .ic-results-container {
         padding: 10px;
         overflow-x: hidden;
         overflow-y: visible;
@@ -2815,6 +2816,30 @@ input.input-readonly {
     .warehouse-table tbody tr.item-data-row td[data-label="Name"]::before {
         max-width: none;
         flex-basis: auto;
+    }
+
+    body.ic-search-page .warehouse-table tbody tr.item-data-row td[data-label="Request #"] {
+        padding-top: 2px;
+        padding-bottom: 10px;
+        margin-bottom: 4px;
+        border-bottom: 1px solid #f1f5f9;
+        font-size: 1.05rem;
+    }
+
+    body.ic-search-page .warehouse-table tbody tr.item-data-row td[data-label="Description"] {
+        font-weight: 600;
+        text-align: left;
+        flex-direction: column;
+        gap: 4px;
+    }
+
+    body.ic-search-page .warehouse-table tbody tr.item-data-row td[data-label="Description"]::before {
+        max-width: none;
+        flex-basis: auto;
+    }
+
+    body.ic-search-page .warehouse-table tbody tr.item-data-row td[data-label="Situation"] {
+        font-weight: 700;
     }
 
     .warehouse-table tbody tr.item-actions-row td {

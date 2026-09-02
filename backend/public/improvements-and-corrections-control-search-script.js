@@ -323,20 +323,24 @@
         const sitClass = situationCssClass(row.situation);
         const id = row.id || '';
 
-        return '<tr data-id="' + escapeHtml(id) + '">'
-          + '<td>' + escapeHtml(row.requestNumber || '-') + '</td>'
-          + '<td>' + escapeHtml(formatDate(row.requestDate || row.criadoEm)) + '</td>'
-          + '<td>' + escapeHtml(formatDate(row.finishDate || row.finish_date || null)) + '</td>'
-          + '<td>' + escapeHtml(formatRequestType(row.requestType)) + '</td>'
-          + '<td>' + escapeHtml(appLabel) + '</td>'
-          + '<td title="' + escapeHtml(desc) + '">' + escapeHtml(shortDesc) + '</td>'
-          + '<td>' + escapeHtml(row.createdByName || '-') + '</td>'
-          + '<td class="' + sitClass + '">' + escapeHtml(formatSituation(row.situation)) + '</td>'
-          + '<td class="td-actions">'
-          + '<button type="button" class="btn-action btn-edit btn btn-sm btn-outline edit-request-btn" data-id="' + escapeHtml(id) + '" title="Edit">'
-          + '<i class="fas fa-edit"></i></button> '
-          + '<button type="button" class="btn-action btn-delete btn btn-sm btn-outline delete-request-btn" data-id="' + escapeHtml(id) + '" title="Delete">'
-          + '<i class="fas fa-trash"></i></button>'
+        return '<tr class="item-data-row" data-id="' + escapeHtml(id) + '">'
+          + '<td data-label="Request #"><strong>#' + escapeHtml(row.requestNumber || '-') + '</strong></td>'
+          + '<td data-label="Request Date">' + escapeHtml(formatDate(row.requestDate || row.criadoEm)) + '</td>'
+          + '<td data-label="Finish Date">' + escapeHtml(formatDate(row.finishDate || row.finish_date || null)) + '</td>'
+          + '<td data-label="Type">' + escapeHtml(formatRequestType(row.requestType)) + '</td>'
+          + '<td data-label="Application">' + escapeHtml(appLabel) + '</td>'
+          + '<td data-label="Description" title="' + escapeHtml(desc) + '">' + escapeHtml(shortDesc) + '</td>'
+          + '<td data-label="Requested by">' + escapeHtml(row.createdByName || '-') + '</td>'
+          + '<td data-label="Situation" class="' + sitClass + '">' + escapeHtml(formatSituation(row.situation)) + '</td>'
+          + '</tr>'
+          + '<tr class="item-actions-row" data-id="' + escapeHtml(id) + '">'
+          + '<td colspan="8" class="action-buttons-cell">'
+          + '<div class="action-buttons">'
+          + '<button type="button" class="btn-action edit edit-request-btn" data-id="' + escapeHtml(id) + '" title="Edit">'
+          + '<i class="fas fa-edit"></i> <span>Edit</span></button>'
+          + '<button type="button" class="btn-action delete delete-request-btn" data-id="' + escapeHtml(id) + '" title="Delete">'
+          + '<i class="fas fa-trash"></i> <span>Del.</span></button>'
+          + '</div>'
           + '</td>'
           + '</tr>';
       }).join('');
@@ -345,7 +349,7 @@
       if (resultsCount) resultsCount.textContent = '0 requests';
       if (resultsTime) resultsTime.textContent = '';
       if (tableBody) {
-        tableBody.innerHTML = '<tr><td colspan="9" class="empty-state"><p class="error-state">'
+        tableBody.innerHTML = '<tr class="empty-state-row"><td colspan="8" class="empty-state"><p class="error-state">'
           + escapeHtml(error.message || 'Error loading requests.')
           + '</p></td></tr>';
       }
@@ -368,7 +372,7 @@
     if (resultsTime) resultsTime.textContent = '';
     if (resultsCount) resultsCount.textContent = '0 requests';
     if (tableBody) {
-      tableBody.innerHTML = '<tr><td colspan="9" class="empty-state" id="emptyStateRow">'
+      tableBody.innerHTML = '<tr class="empty-state-row"><td colspan="8" class="empty-state" id="emptyStateRow">'
         + '<i class="fas fa-search"></i>'
         + '<p>Use search or filters and click <strong>Search</strong> to load requests.</p>'
         + '</td></tr>';
