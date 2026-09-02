@@ -373,6 +373,9 @@ async function initDatabase() {
       { application: 'Improvements-and-Corrections-Control-Search.html', menuName: 'Applications_Improvements_Corrections' },
       { application: 'Test-Case.html', menuName: 'Applications_Test_Control' },
       { application: 'Test-Case-Search.html', menuName: 'Applications_Test_Control_Search' },
+      { application: 'Message-Email.html', menuName: 'Applications_Message_Email' },
+      { application: 'Search-Message-Email.html', menuName: 'Applications_Message_Email_Search' },
+      { application: 'Search-Email-Send-Log.html', menuName: 'Applications_Message_Email_Send_Log' },
       { application: 'location.html', menuName: 'Location' },
       { application: 'location-search.html', menuName: 'Location_Search' },
       { application: 'location-smart.html', menuName: 'Location_Smart' },
@@ -567,13 +570,38 @@ async function initDatabase() {
         CONSTRAINT improvements_corrections_type_chk
           CHECK (request_type IN ('IMPROVEMENT', 'CORRECTION', 'NEW_FUNCTIONALITY')),
         CONSTRAINT improvements_corrections_situation_chk
-          CHECK (situation IN ('NOT_STARTED', 'IN_DEVELOPMENT', 'IN_TESTING', 'IN_CLIENT_VALIDATION', 'LIVE', 'CANCELLED'))
+          CHECK (situation IN ('NOT_STARTED', 'IN_DEVELOPMENT', 'IN_TESTING', 'IN_CLIENT_VALIDATION', 'APPROVED', 'NOT_APPROVED', 'LIVE', 'CANCELLED'))
       )
     `);
     await query(`CREATE INDEX IF NOT EXISTS idx_improvements_corrections_criado ON improvements_corrections(criado_em DESC)`);
     await query(`CREATE INDEX IF NOT EXISTS idx_improvements_corrections_type ON improvements_corrections(request_type)`);
     await query(`ALTER TABLE improvements_corrections ADD COLUMN IF NOT EXISTS request_history TEXT`).catch(() => {});
     console.log('✅ Tabela improvements_corrections criada/verificada');
+
+    await query(`
+      CREATE TABLE IF NOT EXISTS email_send_logs (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        message_code VARCHAR(50),
+        from_email VARCHAR(255) NOT NULL,
+        to_email VARCHAR(255),
+        to_name VARCHAR(100),
+        subject VARCHAR(255) NOT NULL,
+        body_preview TEXT,
+        send_status VARCHAR(20) NOT NULL DEFAULT 'FAILED',
+        error_message TEXT,
+        reference_type VARCHAR(50),
+        reference_id UUID,
+        reference_number BIGINT,
+        sent_by UUID REFERENCES funcionarios(id) ON DELETE SET NULL,
+        sent_by_name VARCHAR(100),
+        criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        CONSTRAINT email_send_logs_status_chk
+          CHECK (send_status IN ('SENT', 'FAILED', 'SKIPPED'))
+      )
+    `);
+    await query(`CREATE INDEX IF NOT EXISTS idx_email_send_logs_criado ON email_send_logs(criado_em DESC)`);
+    await query(`CREATE INDEX IF NOT EXISTS idx_email_send_logs_status ON email_send_logs(send_status)`);
+    console.log('✅ Tabela email_send_logs criada/verificada');
 
     await query(`CREATE SEQUENCE IF NOT EXISTS test_case_number_seq`);
     await query(`

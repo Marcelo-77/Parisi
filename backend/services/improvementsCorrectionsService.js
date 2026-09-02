@@ -2,7 +2,7 @@ const { query } = require('../config/database');
 
 const TABLE = 'improvements_corrections';
 const REQUEST_TYPES = ['IMPROVEMENT', 'CORRECTION', 'NEW_FUNCTIONALITY'];
-const SITUATIONS = ['NOT_STARTED', 'IN_DEVELOPMENT', 'IN_TESTING', 'IN_CLIENT_VALIDATION', 'LIVE', 'CANCELLED'];
+const SITUATIONS = ['NOT_STARTED', 'IN_DEVELOPMENT', 'IN_TESTING', 'IN_CLIENT_VALIDATION', 'APPROVED', 'NOT_APPROVED', 'LIVE', 'CANCELLED'];
 const REQUEST_NUMBER_SEQ = 'improvements_corrections_request_number_seq';
 
 let tableReady = false;
@@ -40,6 +40,15 @@ async function ensureTable() {
   await query(`ALTER TABLE ${TABLE} ADD COLUMN IF NOT EXISTS request_date DATE`).catch(() => {});
   await query(`ALTER TABLE ${TABLE} ADD COLUMN IF NOT EXISTS finish_date DATE`).catch(() => {});
   await query(`ALTER TABLE ${TABLE} ADD COLUMN IF NOT EXISTS request_history TEXT`).catch(() => {});
+  await query(`ALTER TABLE ${TABLE} DROP CONSTRAINT IF EXISTS improvements_corrections_situation_chk`).catch(() => {});
+  await query(`
+    ALTER TABLE ${TABLE}
+    ADD CONSTRAINT improvements_corrections_situation_chk
+    CHECK (situation IN (
+      'NOT_STARTED', 'IN_DEVELOPMENT', 'IN_TESTING', 'IN_CLIENT_VALIDATION',
+      'APPROVED', 'NOT_APPROVED', 'LIVE', 'CANCELLED'
+    ))
+  `).catch(() => {});
   tableReady = true;
 }
 
@@ -69,7 +78,9 @@ function formatSituationLabel(situation) {
   if (value === 'NOT_STARTED') return 'Not started';
   if (value === 'IN_DEVELOPMENT') return 'In development';
   if (value === 'IN_TESTING') return 'In testing';
-  if (value === 'IN_CLIENT_VALIDATION') return 'In client validation';
+  if (value === 'IN_CLIENT_VALIDATION') return 'In approval validation';
+  if (value === 'APPROVED') return 'Approved';
+  if (value === 'NOT_APPROVED') return 'Not Approved';
   if (value === 'LIVE') return 'Live';
   if (value === 'CANCELLED') return 'Cancelled';
   return situation || '-';
@@ -184,6 +195,11 @@ function normalizeSituation(value) {
   return String(value || '').trim().toUpperCase().replace(/[\s-]+/g, '_');
 }
 
+function isSituationLocked(situation) {
+  const value = normalizeSituation(situation);
+  return value === 'LIVE' || value === 'CANCELLED';
+}
+
 function validate(dados) {
   const erros = [];
   const description = dados.description != null ? String(dados.description).trim() : '';
@@ -204,7 +220,7 @@ function validate(dados) {
   }
 
   if (!situation) {
-    erros.push('Situation must be Not started, In development, In testing, In client validation, Live or Cancelled');
+    erros.push('Situation must be Not started, In development, In testing, In approval validation, Approved, Not Approved, Live or Cancelled');
   }
 
   return { erros, description, requestType, applicationName, situation, requestDate, finishDate };
@@ -340,6 +356,10 @@ async function atualizar(id, dados) {
     throw new Error('Request not found');
   }
 
+  if (isSituationLocked(existing.situation)) {
+    throw new Error('Requests with situation Live or Cancelled cannot be updated');
+  }
+
   const { erros, description, requestType, applicationName, situation, requestDate, finishDate } = validate(dados);
   if (erros.length) {
     throw new Error(erros.join(', '));
@@ -413,6 +433,23 @@ async function excluir(id) {
   return mapRow(result.rows[0]);
 }
 
+async function appendHistoryLines(id, lines) {
+  await ensureTable();
+  const existing = await buscarPorId(id);
+  if (!existing) {
+    throw new Error('Request not found');
+  }
+  const requestHistory = appendHistory(existing.requestHistory, lines);
+  const result = await query(
+    `UPDATE ${TABLE}
+     SET request_history = $1, atualizado_em = CURRENT_TIMESTAMP
+     WHERE id = $2
+     RETURNING *`,
+    [requestHistory, id]
+  );
+  return mapRow(result.rows[0]);
+}
+
 module.exports = {
   ensureTable,
   criar,
@@ -420,8 +457,10 @@ module.exports = {
   buscarPorId,
   atualizar,
   excluir,
+  appendHistoryLines,
   REQUEST_TYPES,
   normalizeRequestType,
   requiresApplication,
+  isSituationLocked,
   SITUATIONS
 };

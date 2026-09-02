@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en" class="message-email-search-root">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Double-Y Warehouse System - Search Message Email</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="warehouse-styles.css">
+    <link rel="stylesheet" href="pesquisa-styles.css">
+    <link rel="stylesheet" href="message-email-styles.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body class="message-email-search-page ic-search-page">
+    <script src="auth-check.js"></script>
+    <script src="header-menu.js"></script>
+    <script src="menu-access.js"></script>
+    <script src="application-write-access.js"></script>
+    <script src="double-y-logo-effect.js"></script>
+    <script src="dev-environment-badge.js"></script>
+    <div class="container">
+        <header class="header">
+            <div class="header-stats-row">
+                <div class="header-stats-left">
+                    <div class="header-stat header-stat-total">
+                        <span class="header-stat-value" id="totalItems">0</span>
+                        <span class="header-stat-label">Total Items</span>
+                    </div>
+                    <div class="header-stat header-stat-low">
+                        <span class="header-stat-value" id="lowStockItems">0</span>
+                        <span class="header-stat-label">Low Stock</span>
+                    </div>
+                </div>
+                <div class="double-y-wordmark" aria-label="Double Y">
+                    <img src="doubley-glyph.png" alt="" class="double-y-glyph" aria-hidden="true">
+                    <span class="double-y-name">Double Y</span>
+                    <img src="doubley-glyph-bottom.png" alt="" class="double-y-glyph double-y-glyph-bottom" aria-hidden="true">
+                </div>
+                <div class="header-stats-right">
+                    <div class="header-stat header-stat-entries">
+                        <span class="header-stat-value" id="totalEntradas">0</span>
+                        <span class="header-stat-label">Entries Today</span>
+                    </div>
+                    <div class="header-stat header-stat-exits">
+                        <span class="header-stat-value" id="totalSaidas">0</span>
+                        <span class="header-stat-label">Exits Today</span>
+                    </div>
+                </div>
+            </div>
+            <div class="header-content">
+                <h1><i class="fas fa-warehouse"></i> Double-Y Warehouse System</h1>
+                <p class="header-search-users-label">Search Message Email</p>
+                <div class="header-actions"></div>
+            </div>
+        </header>
+
+        <main class="main-content">
+            <div class="filters-section">
+                <div class="search-bar warehouse-search-bar">
+                    <i class="fas fa-search"></i>
+                    <input type="text" id="searchTerm" placeholder="Search by code, subject, body or notes...">
+                    <div class="warehouse-search-actions">
+                        <button id="applySearchBtn" class="btn btn-primary" type="button" title="Search messages">
+                            <i class="fas fa-search"></i> Search
+                        </button>
+                        <button type="button" class="btn btn-secondary location-page-close-btn" title="Close">
+                            <i class="fas fa-door-open"></i> Close
+                        </button>
+                        <button id="clearSearchBtn" class="btn-icon" type="button" title="Clear filters">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="filters-row">
+                    <input type="text" id="searchMessageCode" class="filter-select" placeholder="Message code" style="text-transform:uppercase;">
+                    <input type="text" id="searchSubject" class="filter-select" placeholder="Subject">
+                    <select id="searchCategory" class="filter-select">
+                        <option value="">All categories</option>
+                        <option value="GENERAL">General</option>
+                        <option value="WAREHOUSE">Warehouse</option>
+                        <option value="NOTIFICATION">Notification</option>
+                        <option value="WELCOME">Welcome</option>
+                        <option value="OTHER">Other</option>
+                    </select>
+                    <select id="searchStatus" class="filter-select">
+                        <option value="">All status</option>
+                        <option value="ACTIVE">Active</option>
+                        <option value="INACTIVE">Inactive</option>
+                    </select>
+                    <input type="text" id="searchCreatedByName" class="filter-select" placeholder="Created by">
+                    <input type="date" id="searchDateFrom" class="filter-select" title="Created from">
+                    <input type="date" id="searchDateTo" class="filter-select" title="Created to">
+                </div>
+            </div>
+
+            <div class="table-container results-container ic-results-container">
+                <div class="results-info-bar">
+                    <span id="resultsCount">0 messages</span>
+                    <span id="resultsTime"></span>
+                    <a href="Message-Email.html" class="btn btn-secondary btn-sm message-email-new-link" data-app="Message-Email.html" data-write-menu="true">
+                        <i class="fas fa-plus"></i> New Message
+                    </a>
+                </div>
+                <div id="loadingIndicator" class="loading-indicator" style="display:none;">
+                    <i class="fas fa-spinner fa-spin"></i> Loading...
+                </div>
+                <div class="ic-table-scroll">
+                    <table class="warehouse-table">
+                        <thead>
+                            <tr>
+                                <th><i class="fas fa-barcode"></i> Code</th>
+                                <th><i class="fas fa-heading"></i> Subject</th>
+                                <th><i class="fas fa-folder"></i> Category</th>
+                                <th><i class="fas fa-toggle-on"></i> Status</th>
+                                <th><i class="fas fa-align-left"></i> Body</th>
+                                <th><i class="fas fa-user"></i> Created by</th>
+                                <th><i class="fas fa-calendar"></i> Created</th>
+                            </tr>
+                        </thead>
+                        <tbody id="messageSearchTableBody">
+                            <tr class="empty-state-row">
+                                <td colspan="7" class="empty-state" id="emptyStateRow">
+                                    <i class="fas fa-search"></i>
+                                    <p>Use search or filters and click <strong>Search</strong> to load email messages.</p>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <div id="noResults" class="no-results" style="display:none;">
+                        <i class="fas fa-search"></i>
+                        <p>No email messages found. Try adjusting the filters or <a href="Message-Email.html">create a new message</a>.</p>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <div id="editMessageModal" class="modal" aria-hidden="true">
+            <div class="modal-content modal-large item-modal-content">
+                <div class="modal-header success edit-mode">
+                    <h3 id="editMessageModalTitle"><i class="fas fa-edit"></i> Edit Email Message</h3>
+                    <p id="editMessageModalSubtitle" class="item-modal-subtitle">Update email message details</p>
+                    <button type="button" class="modal-close" id="closeEditMessageModal" aria-label="Close">&times;</button>
+                </div>
+                <form id="editMessageForm" class="warehouse-form item-modal-form">
+                    <input type="hidden" id="editMessageId">
+                    <div class="modal-body item-modal-body">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="editMessageCode"><i class="fas fa-barcode"></i> Message code *</label>
+                                <input type="text" id="editMessageCode" maxlength="50" style="text-transform:uppercase;" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="editMessageCategory"><i class="fas fa-folder"></i> Category *</label>
+                                <select id="editMessageCategory" required>
+                                    <option value="GENERAL">General</option>
+                                    <option value="WAREHOUSE">Warehouse</option>
+                                    <option value="NOTIFICATION">Notification</option>
+                                    <option value="WELCOME">Welcome</option>
+                                    <option value="OTHER">Other</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="editMessageStatus"><i class="fas fa-toggle-on"></i> Status *</label>
+                                <select id="editMessageStatus" required>
+                                    <option value="ACTIVE">Active</option>
+                                    <option value="INACTIVE">Inactive</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group full-width">
+                                <label for="editMessageSubject"><i class="fas fa-heading"></i> Subject *</label>
+                                <input type="text" id="editMessageSubject" maxlength="255" required>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group full-width">
+                                <label for="editMessageBody"><i class="fas fa-align-left"></i> Email body *</label>
+                                <textarea id="editMessageBody" rows="10" maxlength="20000" required></textarea>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group full-width">
+                                <label for="editMessageNotes"><i class="fas fa-sticky-note"></i> Notes</label>
+                                <textarea id="editMessageNotes" rows="3" maxlength="2000"></textarea>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="editMessageStatusMsg" class="message-email-message" role="status" aria-live="polite"></div>
+                    <div class="modal-footer item-modal-footer form-actions">
+                        <button type="button" class="btn btn-secondary" id="cancelEditMessageBtn">
+                            <i class="fas fa-times"></i> Cancel
+                        </button>
+                        <button type="submit" class="btn btn-primary" id="saveEditMessageBtn" data-write-action="true">
+                            <i class="fas fa-save"></i> Save changes
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <footer class="footer">
+            <p>&copy; 2026 Double-Y IT Systems. All rights reserved.</p>
+        </footer>
+    </div>
+
+    <script src="warehouse-stats.js"></script>
+    <script src="location-page-close.js"></script>
+    <script src="search-message-email-script.js"></script>
+</body>
+</html>

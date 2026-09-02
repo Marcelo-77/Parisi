@@ -1,5 +1,6 @@
 const express = require('express');
 const improvementsCorrectionsService = require('../services/improvementsCorrectionsService');
+const icApprovalEmailService = require('../services/icApprovalEmailService');
 const funcionarioServiceDB = require('../services/funcionarioServiceDB');
 const { getSessionUserId, isRootSession, ROOT_USER } = require('../middleware/auth');
 
@@ -106,6 +107,59 @@ router.post('/', async (req, res) => {
   }
 });
 
+router.get('/:id/approval-email-preview', async (req, res) => {
+  try {
+    const preview = await icApprovalEmailService.previewForRequestId(req.params.id);
+    res.json({ success: true, data: preview });
+  } catch (error) {
+    console.error('Improvements/Corrections approval email preview error:', error);
+    const status = /not found/i.test(error.message || '') ? 404 : 400;
+    res.status(status).json({
+      success: false,
+      error: error.message || 'Error loading approval email preview'
+    });
+  }
+});
+
+router.post('/:id/approval-email-preview', async (req, res) => {
+  try {
+    const existing = await improvementsCorrectionsService.buscarPorId(req.params.id);
+    if (!existing) {
+      return res.status(404).json({ success: false, error: 'Request not found' });
+    }
+
+    const merged = {
+      ...existing,
+      requestType: req.body.requestType || existing.requestType,
+      applicationName: Object.prototype.hasOwnProperty.call(req.body, 'applicationName')
+        ? req.body.applicationName
+        : existing.applicationName,
+      applicationMenu: Object.prototype.hasOwnProperty.call(req.body, 'applicationMenu')
+        ? req.body.applicationMenu
+        : existing.applicationMenu,
+      description: Object.prototype.hasOwnProperty.call(req.body, 'description')
+        ? req.body.description
+        : existing.description,
+      createdBy: Object.prototype.hasOwnProperty.call(req.body, 'createdBy')
+        ? req.body.createdBy
+        : existing.createdBy,
+      createdByName: Object.prototype.hasOwnProperty.call(req.body, 'createdByName')
+        ? req.body.createdByName
+        : existing.createdByName
+    };
+
+    const preview = await icApprovalEmailService.buildApprovalEmailPreview(merged);
+    res.json({ success: true, data: preview });
+  } catch (error) {
+    console.error('Improvements/Corrections approval email preview error:', error);
+    const status = /not found/i.test(error.message || '') ? 404 : 400;
+    res.status(status).json({
+      success: false,
+      error: error.message || 'Error loading approval email preview'
+    });
+  }
+});
+
 router.get('/:id', async (req, res) => {
   try {
     const data = await improvementsCorrectionsService.buscarPorId(req.params.id);
@@ -124,6 +178,11 @@ router.get('/:id', async (req, res) => {
 
 router.put('/:id', async (req, res) => {
   try {
+    const existing = await improvementsCorrectionsService.buscarPorId(req.params.id);
+    if (!existing) {
+      return res.status(404).json({ success: false, error: 'Request not found' });
+    }
+
     const payload = {
       description: req.body.description,
       requestType: req.body.requestType,
@@ -143,10 +202,35 @@ router.put('/:id', async (req, res) => {
     }
 
     const updated = await improvementsCorrectionsService.atualizar(req.params.id, payload);
+
+    let emailResult = null;
+    if (icApprovalEmailService.shouldSendApprovalEmail(existing, updated, req.body.sendApprovalEmail === true)) {
+      const actorName = payload.updatedByName;
+      const userId = isRootSession(req) ? null : getSessionUserId(req);
+      emailResult = await icApprovalEmailService.sendApprovalEmail(updated, {
+        sentBy: userId,
+        sentByName: actorName
+      });
+
+      const historyLine = emailResult.sent
+        ? `Approval email sent by ${actorName} to ${emailResult.recipientEmail} (subject: ${emailResult.subject})`
+        : emailResult.skipped
+          ? `Approval email skipped by ${actorName}: ${emailResult.error}`
+          : `Approval email failed by ${actorName}: ${emailResult.error}`;
+
+      const withHistory = await improvementsCorrectionsService.appendHistoryLines(req.params.id, historyLine);
+      updated.requestHistory = withHistory.requestHistory;
+    }
+
     res.json({
       success: true,
-      message: 'Request updated successfully',
-      data: updated
+      message: emailResult && emailResult.sent
+        ? 'Request updated and approval email sent successfully'
+        : emailResult && !emailResult.sent
+          ? 'Request updated. Approval email was not sent — check Email Send Log for details.'
+          : 'Request updated successfully',
+      data: updated,
+      emailResult
     });
   } catch (error) {
     console.error('Improvements/Corrections update error:', error);

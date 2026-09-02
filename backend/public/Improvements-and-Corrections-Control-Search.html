@@ -152,6 +152,8 @@
         .situation-in-development { color: #2563eb; font-weight: 700; }
         .situation-in-testing { color: #d97706; font-weight: 700; }
         .situation-in-client-validation { color: #7c3aed; font-weight: 700; }
+        .situation-approved { color: #15803d; font-weight: 700; }
+        .situation-not-approved { color: #b91c1c; font-weight: 700; }
         .situation-live { color: #15803d; font-weight: 700; }
         .situation-cancelled { color: #b91c1c; font-weight: 700; }
 
@@ -288,6 +290,18 @@
         #editRequestModal .ic-edit-message.show.error { color: #b91c1c; }
         #editRequestModal .ic-edit-message.show.info { color: #1d4ed8; }
 
+        #editRequestModal.is-view-mode #saveEditRequestBtn {
+            display: none;
+        }
+
+        #editRequestModal.is-view-mode #editHistoryNoteGroup {
+            display: none;
+        }
+
+        #editRequestModal.is-view-mode .modal-header.edit-mode {
+            background: linear-gradient(135deg, #64748b 0%, #475569 100%);
+        }
+
         #editRequestModal .status-badge {
             text-transform: none;
             letter-spacing: 0;
@@ -308,6 +322,14 @@
         #editRequestModal .status-badge.situation-in-client-validation {
             background: #ede9fe;
             color: #6d28d9;
+        }
+        #editRequestModal .status-badge.situation-approved {
+            background: #dcfce7;
+            color: #15803d;
+        }
+        #editRequestModal .status-badge.situation-not-approved {
+            background: #fee2e2;
+            color: #b91c1c;
         }
         #editRequestModal .status-badge.situation-live {
             background: #dcfce7;
@@ -367,7 +389,8 @@
                 padding: 12px 14px;
             }
 
-            body.ic-search-page .search-bar #applySearchBtn {
+            body.ic-search-page .search-bar #applySearchBtn,
+            body.ic-search-page .search-bar .location-page-close-btn {
                 flex: 1 1 0;
                 min-width: 0;
                 min-height: 46px;
@@ -465,6 +488,9 @@
                     <button id="applySearchBtn" class="btn btn-primary" type="button" title="Search requests">
                         <i class="fas fa-search"></i> Search
                     </button>
+                    <button type="button" class="btn btn-secondary location-page-close-btn" title="Close">
+                        <i class="fas fa-door-open"></i> Close
+                    </button>
                     <button id="clearSearchBtn" class="btn-icon" type="button" title="Clear filters">
                         <i class="fas fa-times"></i>
                     </button>
@@ -485,7 +511,9 @@
                         <option value="NOT_STARTED">Not started</option>
                         <option value="IN_DEVELOPMENT">In development</option>
                         <option value="IN_TESTING">In testing</option>
-                        <option value="IN_CLIENT_VALIDATION">In client validation</option>
+                        <option value="IN_CLIENT_VALIDATION">In approval validation</option>
+                        <option value="APPROVED">Approved</option>
+                        <option value="NOT_APPROVED">Not Approved</option>
                         <option value="LIVE">Live</option>
                         <option value="CANCELLED">Cancelled</option>
                     </select>
@@ -595,7 +623,9 @@
                                             <option value="NOT_STARTED">Not started</option>
                                             <option value="IN_DEVELOPMENT">In development</option>
                                             <option value="IN_TESTING">In testing</option>
-                                            <option value="IN_CLIENT_VALIDATION">In client validation</option>
+                                            <option value="IN_CLIENT_VALIDATION">In approval validation</option>
+                                            <option value="APPROVED">Approved</option>
+                                            <option value="NOT_APPROVED">Not Approved</option>
                                             <option value="LIVE">Live</option>
                                             <option value="CANCELLED">Cancelled</option>
                                         </select>
@@ -653,7 +683,7 @@
                                         <span class="field-hint">Automatic log of every step (creation, situation changes, dates, description and notes).</span>
                                     </div>
                                 </div>
-                                <div class="form-row">
+                                <div class="form-row" id="editHistoryNoteGroup">
                                     <div class="form-group full-width">
                                         <label for="editHistoryNote"><i class="fas fa-comment-dots"></i> Add history note (optional)</label>
                                         <textarea id="editHistoryNote" rows="2" maxlength="1000"
@@ -676,11 +706,41 @@
             </div>
         </div>
 
+        <div id="approvalEmailDialog" class="modal" aria-hidden="true">
+            <div class="modal-content" style="max-width: 560px;">
+                <div class="modal-header success">
+                    <h3><i class="fas fa-envelope"></i> Send Approval Email</h3>
+                    <button type="button" class="modal-close" id="closeApprovalEmailDialog" aria-label="Close">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <p id="approvalEmailDialogIntro" style="margin-top:0;line-height:1.55;color:#334155;">
+                        The request will move to <strong>In approval validation</strong>.
+                    </p>
+                    <div class="help-card" style="margin:12px 0;padding:14px 16px;">
+                        <p style="margin:0 0 8px;"><strong>From:</strong> <span id="approvalEmailFrom">doubleyitsystem@gmail.com</span></p>
+                        <p style="margin:0 0 8px;"><strong>Template:</strong> APPROVAL (Message Email)</p>
+                        <p style="margin:0 0 8px;"><strong>To:</strong> <span id="approvalEmailRecipient">-</span></p>
+                        <p style="margin:0;"><strong>Subject preview:</strong> <span id="approvalEmailSubject">-</span></p>
+                    </div>
+                    <p id="approvalEmailDialogNote" style="margin:0;line-height:1.55;color:#64748b;font-size:0.92rem;"></p>
+                </div>
+                <div class="modal-footer form-actions" style="justify-content:center;gap:10px;padding:14px 18px 18px;">
+                    <button type="button" class="btn btn-secondary" id="cancelApprovalEmailDialog">
+                        <i class="fas fa-times"></i> Cancel
+                    </button>
+                    <button type="button" class="btn btn-primary" id="confirmApprovalEmailDialog">
+                        <i class="fas fa-paper-plane"></i> Save and send email
+                    </button>
+                </div>
+            </div>
+        </div>
+
         <footer class="footer">
             <p>&copy; 2026 Double-Y IT Systems. All rights reserved.</p>
         </footer>
     </div>
 
+    <script src="location-page-close.js"></script>
     <script src="improvements-and-corrections-control-search-script.js"></script>
 </body>
 </html>

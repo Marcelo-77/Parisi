@@ -45,12 +45,25 @@
   const cancelEditBtn = document.getElementById('cancelEditRequestBtn');
   const saveEditBtn = document.getElementById('saveEditRequestBtn');
 
+  const approvalEmailDialog = document.getElementById('approvalEmailDialog');
+  const approvalEmailFrom = document.getElementById('approvalEmailFrom');
+  const approvalEmailRecipient = document.getElementById('approvalEmailRecipient');
+  const approvalEmailSubject = document.getElementById('approvalEmailSubject');
+  const approvalEmailDialogNote = document.getElementById('approvalEmailDialogNote');
+  const closeApprovalEmailDialogBtn = document.getElementById('closeApprovalEmailDialog');
+  const cancelApprovalEmailDialogBtn = document.getElementById('cancelApprovalEmailDialog');
+  const confirmApprovalEmailDialogBtn = document.getElementById('confirmApprovalEmailDialog');
+
+  let originalSituationWhenOpened = '';
+  let approvalDialogResolver = null;
+
   const editSummaryRequestNumber = document.getElementById('editSummaryRequestNumber');
   const editSummarySituation = document.getElementById('editSummarySituation');
   const editSummaryType = document.getElementById('editSummaryType');
   const editSummaryMeta = document.getElementById('editSummaryMeta');
   const editSummaryRequestedBy = document.getElementById('editSummaryRequestedBy');
   const editSummaryRequestDate = document.getElementById('editSummaryRequestDate');
+  const editRequestModalTitle = document.getElementById('editRequestModalTitle');
   const editRequestModalSubtitle = document.getElementById('editRequestModalSubtitle');
 
   let accessibleApplications = [];
@@ -82,7 +95,9 @@
     if (value === 'NOT_STARTED') return 'Not started';
     if (value === 'IN_DEVELOPMENT') return 'In development';
     if (value === 'IN_TESTING') return 'In testing';
-    if (value === 'IN_CLIENT_VALIDATION') return 'In client validation';
+    if (value === 'IN_CLIENT_VALIDATION') return 'In approval validation';
+    if (value === 'APPROVED') return 'Approved';
+    if (value === 'NOT_APPROVED') return 'Not Approved';
     if (value === 'LIVE') return 'Live';
     if (value === 'CANCELLED') return 'Cancelled';
     return situation || '-';
@@ -94,6 +109,8 @@
     if (value === 'IN_DEVELOPMENT') return 'situation-in-development';
     if (value === 'IN_TESTING') return 'situation-in-testing';
     if (value === 'IN_CLIENT_VALIDATION') return 'situation-in-client-validation';
+    if (value === 'APPROVED') return 'situation-approved';
+    if (value === 'NOT_APPROVED') return 'situation-not-approved';
     if (value === 'LIVE') return 'situation-live';
     if (value === 'CANCELLED') return 'situation-cancelled';
     return '';
@@ -125,6 +142,11 @@
 
   function requiresApplication(type) {
     return type === 'IMPROVEMENT' || type === 'CORRECTION';
+  }
+
+  function isRequestLocked(situation) {
+    const value = normalizeSituation(situation);
+    return value === 'LIVE' || value === 'CANCELLED';
   }
 
   function showEditMessage(text, type) {
@@ -322,6 +344,11 @@
         const shortDesc = desc.length > 120 ? desc.slice(0, 117) + '…' : desc;
         const sitClass = situationCssClass(row.situation);
         const id = row.id || '';
+        const locked = isRequestLocked(row.situation);
+        const editButton = locked
+          ? ''
+          : ('<button type="button" class="btn-action edit edit-request-btn" data-id="' + escapeHtml(id) + '" title="Edit">'
+            + '<i class="fas fa-edit"></i> <span>Edit</span></button>');
 
         return '<tr class="item-data-row" data-id="' + escapeHtml(id) + '">'
           + '<td data-label="Request #"><strong>#' + escapeHtml(row.requestNumber || '-') + '</strong></td>'
@@ -336,8 +363,9 @@
           + '<tr class="item-actions-row" data-id="' + escapeHtml(id) + '">'
           + '<td colspan="8" class="action-buttons-cell">'
           + '<div class="action-buttons">'
-          + '<button type="button" class="btn-action edit edit-request-btn" data-id="' + escapeHtml(id) + '" title="Edit">'
-          + '<i class="fas fa-edit"></i> <span>Edit</span></button>'
+          + '<button type="button" class="btn-action view view-request-btn" data-id="' + escapeHtml(id) + '" title="View">'
+          + '<i class="fas fa-eye"></i> <span>View</span></button>'
+          + editButton
           + '<button type="button" class="btn-action delete delete-request-btn" data-id="' + escapeHtml(id) + '" title="Delete">'
           + '<i class="fas fa-trash"></i> <span>Del.</span></button>'
           + '</div>'
@@ -389,7 +417,242 @@
     if (!editModal) return;
     editModal.classList.remove('show');
     editModal.setAttribute('aria-hidden', 'true');
+    setEditModalMode(false);
     clearEditMessage();
+  }
+
+  function setEditModalMode(viewMode) {
+    if (editModal) {
+      editModal.classList.toggle('is-view-mode', viewMode);
+    }
+
+    [
+      editRequestType,
+      editRequestSituation,
+      editRequestApplication,
+      editRequestDate,
+      editFinishDate,
+      editRequestDescription,
+      editHistoryNote,
+      editRequestedBySelect
+    ].forEach((field) => {
+      if (!field) return;
+      field.disabled = viewMode;
+    });
+
+    if (editRequestDescription) {
+      editRequestDescription.classList.toggle('input-readonly', viewMode);
+    }
+
+    if (saveEditBtn) saveEditBtn.hidden = viewMode;
+    if (cancelEditBtn) {
+      cancelEditBtn.innerHTML = viewMode
+        ? '<i class="fas fa-door-open"></i> Close'
+        : '<i class="fas fa-times"></i> Cancel';
+    }
+    if (editRequestModalTitle) {
+      editRequestModalTitle.innerHTML = viewMode
+        ? '<i class="fas fa-eye"></i> View Request'
+        : '<i class="fas fa-edit"></i> Edit Request';
+    }
+  }
+
+  function populateRequestModal(item) {
+    if (editRequestId) editRequestId.value = item.id || '';
+    if (editRequestNumber) editRequestNumber.value = item.requestNumber != null ? item.requestNumber : '';
+    if (editRequestType) editRequestType.value = item.requestType || '';
+    if (editRequestSituation) editRequestSituation.value = item.situation || 'NOT_STARTED';
+    if (editRequestDate) editRequestDate.value = toDateInputValue(item.requestDate);
+    if (editFinishDate) editFinishDate.value = toDateInputValue(item.finishDate);
+    if (editRequestDescription) editRequestDescription.value = item.description || '';
+    if (editRequestHistory) {
+      editRequestHistory.value = item.requestHistory
+        || 'No history recorded yet. New steps will be logged automatically when you save changes.';
+    }
+    if (editHistoryNote) editHistoryNote.value = '';
+
+    toggleEditApplicationField();
+    if (editRequestApplication) {
+      editRequestApplication.value = item.applicationName || '';
+      if (item.applicationName && !editRequestApplication.value) {
+        const option = document.createElement('option');
+        option.value = item.applicationName;
+        option.setAttribute('data-menu', item.applicationMenu || item.applicationName);
+        option.textContent = (item.applicationMenu || item.applicationName).replace(/_/g, ' ');
+        editRequestApplication.appendChild(option);
+        editRequestApplication.value = item.applicationName;
+      }
+    }
+
+    toggleEditRequestedByField();
+    if (isRootUser && editRequestedBySelect) {
+      if (item.createdBy) {
+        editRequestedBySelect.value = item.createdBy;
+      } else if (String(item.createdByName || '').toLowerCase() === 'root') {
+        editRequestedBySelect.value = ROOT_REQUESTER_VALUE;
+      } else {
+        editRequestedBySelect.value = '';
+      }
+    } else if (editRequestedByDisplay) {
+      editRequestedByDisplay.value = item.createdByName || '-';
+    }
+
+    updateEditSummary(item);
+    originalSituationWhenOpened = item.situation || 'NOT_STARTED';
+  }
+
+  function closeApprovalEmailDialog(confirmed) {
+    if (approvalEmailDialog) {
+      approvalEmailDialog.classList.remove('show');
+      approvalEmailDialog.setAttribute('aria-hidden', 'true');
+    }
+    if (approvalDialogResolver) {
+      approvalDialogResolver(Boolean(confirmed));
+      approvalDialogResolver = null;
+    }
+  }
+
+  async function fetchApprovalEmailPreview(id, payload) {
+    const previewPayload = {
+      requestType: payload.requestType,
+      applicationName: payload.applicationName,
+      applicationMenu: payload.applicationMenu,
+      description: payload.description
+    };
+    if (Object.prototype.hasOwnProperty.call(payload, 'createdBy')) {
+      previewPayload.createdBy = payload.createdBy;
+    }
+
+    const res = await fetch(REQUESTS_API + '/' + encodeURIComponent(id) + '/approval-email-preview', {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(previewPayload)
+    });
+    const data = await res.json();
+    if (!res.ok || !data.success) {
+      throw new Error((data && (data.error || data.message)) || 'Unable to load approval email preview');
+    }
+    return data.data || {};
+  }
+
+  function showApprovalEmailDialog(preview) {
+    if (approvalEmailFrom) {
+      approvalEmailFrom.textContent = preview.fromEmail || 'doubleyitsystem@gmail.com';
+    }
+    if (approvalEmailRecipient) {
+      approvalEmailRecipient.textContent = preview.hasValidRecipientEmail
+        ? ((preview.recipientName || 'Requester') + ' <' + preview.recipientEmail + '>')
+        : ((preview.recipientName || 'Requester') + ' (no valid email on file)');
+    }
+    if (approvalEmailSubject) {
+      approvalEmailSubject.textContent = preview.subjectPreview || '-';
+    }
+    if (approvalEmailDialogNote) {
+      if (!preview.templateAvailable) {
+        approvalEmailDialogNote.textContent = 'Warning: ' + (preview.templateError || 'APPROVAL template is unavailable.') + ' The request will still be saved, but the email may fail.';
+      } else if (!preview.hasValidRecipientEmail) {
+        approvalEmailDialogNote.textContent = 'The request will be saved, but no approval email will be sent because the requester does not have a valid email address. You can review the result in Search Email Send Log.';
+      } else {
+        approvalEmailDialogNote.textContent = 'An approval email will be sent from doubleyitsystem@gmail.com using the APPROVAL template. You can verify delivery in Search Email Send Log.';
+      }
+    }
+
+    if (approvalEmailDialog) {
+      approvalEmailDialog.classList.add('show');
+      approvalEmailDialog.setAttribute('aria-hidden', 'false');
+    }
+
+    return new Promise((resolve) => {
+      approvalDialogResolver = resolve;
+    });
+  }
+
+  function shouldPromptApprovalEmail(situation) {
+    const next = normalizeSituation(situation);
+    const previous = normalizeSituation(originalSituationWhenOpened);
+    return next === 'IN_CLIENT_VALIDATION' && previous !== 'IN_CLIENT_VALIDATION';
+  }
+
+  async function performSaveRequest(id, payload, sendApprovalEmail) {
+    if (sendApprovalEmail) {
+      payload.sendApprovalEmail = true;
+    }
+
+    if (saveEditBtn) saveEditBtn.disabled = true;
+    try {
+      const res = await fetch(REQUESTS_API + '/' + encodeURIComponent(id), {
+        method: 'PUT',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error((data && (data.error || data.message)) || 'Unable to update request');
+      }
+      if (data.data && editRequestHistory) {
+        editRequestHistory.value = data.data.requestHistory || editRequestHistory.value;
+      }
+      if (editHistoryNote) editHistoryNote.value = '';
+
+      let message = data.message || 'Request updated successfully.';
+      if (data.emailResult) {
+        if (data.emailResult.sent) {
+          message = 'Request updated and approval email sent successfully to ' + (data.emailResult.recipientEmail || 'requester') + '.';
+        } else if (data.emailResult.skipped) {
+          message = 'Request updated. Approval email was skipped: ' + (data.emailResult.error || 'no valid recipient email') + '.';
+        } else if (data.emailResult.error) {
+          message = 'Request updated, but approval email failed: ' + data.emailResult.error + '. Check Search Email Send Log.';
+        }
+      }
+
+      showEditMessage(message, data.emailResult && !data.emailResult.sent ? 'info' : 'success');
+      originalSituationWhenOpened = data.data && data.data.situation ? data.data.situation : payload.situation;
+      await runSearch();
+    } finally {
+      if (saveEditBtn) saveEditBtn.disabled = false;
+    }
+  }
+
+  async function openRequestModal(id, viewMode) {
+    clearEditMessage();
+    try {
+      const res = await fetch(REQUESTS_API + '/' + encodeURIComponent(id), { credentials: 'include' });
+      const data = await res.json();
+      if (!res.ok || !data.success || !data.data) {
+        throw new Error((data && data.error) || 'Unable to load request');
+      }
+      const item = data.data;
+
+      if (!viewMode && isRequestLocked(item.situation)) {
+        alert('Requests with situation Live or Cancelled cannot be updated.');
+        return;
+      }
+
+      populateRequestModal(item);
+
+      if (editRequestModalSubtitle) {
+        const requestNumber = item.requestNumber != null ? item.requestNumber : '-';
+        editRequestModalSubtitle.textContent = viewMode
+          ? ('Viewing request #' + requestNumber)
+          : ('Editing request #' + requestNumber);
+      }
+
+      setEditModalMode(viewMode);
+      openEditModal();
+    } catch (error) {
+      console.error(error);
+      alert(error.message || (viewMode ? 'Unable to open request for view' : 'Unable to open request for edit'));
+    }
+  }
+
+  function openEditRequest(id) {
+    return openRequestModal(id, false);
+  }
+
+  function openViewRequest(id) {
+    return openRequestModal(id, true);
   }
 
   function getSelectedApplicationLabel() {
@@ -470,63 +733,6 @@
     updateEditSummary(null);
   }
 
-  async function openEditRequest(id) {
-    clearEditMessage();
-    try {
-      const res = await fetch(REQUESTS_API + '/' + encodeURIComponent(id), { credentials: 'include' });
-      const data = await res.json();
-      if (!res.ok || !data.success || !data.data) {
-        throw new Error((data && data.error) || 'Unable to load request');
-      }
-      const item = data.data;
-
-      if (editRequestId) editRequestId.value = item.id || '';
-      if (editRequestNumber) editRequestNumber.value = item.requestNumber != null ? item.requestNumber : '';
-      if (editRequestType) editRequestType.value = item.requestType || '';
-      if (editRequestSituation) editRequestSituation.value = item.situation || 'NOT_STARTED';
-      if (editRequestDate) editRequestDate.value = toDateInputValue(item.requestDate);
-      if (editFinishDate) editFinishDate.value = toDateInputValue(item.finishDate);
-      if (editRequestDescription) editRequestDescription.value = item.description || '';
-      if (editRequestHistory) {
-        editRequestHistory.value = item.requestHistory
-          || 'No history recorded yet. New steps will be logged automatically when you save changes.';
-      }
-      if (editHistoryNote) editHistoryNote.value = '';
-
-      toggleEditApplicationField();
-      if (editRequestApplication) {
-        editRequestApplication.value = item.applicationName || '';
-        if (item.applicationName && !editRequestApplication.value) {
-          const option = document.createElement('option');
-          option.value = item.applicationName;
-          option.setAttribute('data-menu', item.applicationMenu || item.applicationName);
-          option.textContent = (item.applicationMenu || item.applicationName).replace(/_/g, ' ');
-          editRequestApplication.appendChild(option);
-          editRequestApplication.value = item.applicationName;
-        }
-      }
-
-      toggleEditRequestedByField();
-      if (isRootUser && editRequestedBySelect) {
-        if (item.createdBy) {
-          editRequestedBySelect.value = item.createdBy;
-        } else if (String(item.createdByName || '').toLowerCase() === 'root') {
-          editRequestedBySelect.value = ROOT_REQUESTER_VALUE;
-        } else {
-          editRequestedBySelect.value = '';
-        }
-      } else if (editRequestedByDisplay) {
-        editRequestedByDisplay.value = item.createdByName || '-';
-      }
-
-      updateEditSummary(item);
-      openEditModal();
-    } catch (error) {
-      console.error(error);
-      alert(error.message || 'Unable to open request for edit');
-    }
-  }
-
   async function saveEditRequest(event) {
     event.preventDefault();
     clearEditMessage();
@@ -584,28 +790,22 @@
       payload.createdBy = editRequestedBySelect.value;
     }
 
-    if (saveEditBtn) saveEditBtn.disabled = true;
     try {
-      const res = await fetch(REQUESTS_API + '/' + encodeURIComponent(id), {
-        method: 'PUT',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-      const data = await res.json();
-      if (!res.ok || !data.success) {
-        throw new Error((data && (data.error || data.message)) || 'Unable to update request');
+      if (shouldPromptApprovalEmail(situation)) {
+        const preview = await fetchApprovalEmailPreview(id, payload);
+        const confirmed = await showApprovalEmailDialog(preview);
+        if (!confirmed) {
+          showEditMessage('Save cancelled. Approval email was not sent.', 'info');
+          return;
+        }
+        await performSaveRequest(id, payload, true);
+        return;
       }
-      if (data.data && editRequestHistory) {
-        editRequestHistory.value = data.data.requestHistory || editRequestHistory.value;
-      }
-      if (editHistoryNote) editHistoryNote.value = '';
-      showEditMessage(data.message || 'Request updated successfully.', 'success');
-      await runSearch();
+
+      await performSaveRequest(id, payload, false);
     } catch (error) {
+      closeApprovalEmailDialog(false);
       showEditMessage(error.message || 'Unable to update request', 'error');
-    } finally {
-      if (saveEditBtn) saveEditBtn.disabled = false;
     }
   }
 
@@ -674,8 +874,28 @@
       });
     }
 
+    if (closeApprovalEmailDialogBtn) {
+      closeApprovalEmailDialogBtn.addEventListener('click', () => closeApprovalEmailDialog(false));
+    }
+    if (cancelApprovalEmailDialogBtn) {
+      cancelApprovalEmailDialogBtn.addEventListener('click', () => closeApprovalEmailDialog(false));
+    }
+    if (confirmApprovalEmailDialogBtn) {
+      confirmApprovalEmailDialogBtn.addEventListener('click', () => closeApprovalEmailDialog(true));
+    }
+    if (approvalEmailDialog) {
+      approvalEmailDialog.addEventListener('click', (event) => {
+        if (event.target === approvalEmailDialog) closeApprovalEmailDialog(false);
+      });
+    }
+
     if (tableBody) {
       tableBody.addEventListener('click', (event) => {
+        const viewBtn = event.target.closest('.view-request-btn');
+        if (viewBtn) {
+          openViewRequest(viewBtn.getAttribute('data-id'));
+          return;
+        }
         const editBtn = event.target.closest('.edit-request-btn');
         if (editBtn) {
           openEditRequest(editBtn.getAttribute('data-id'));

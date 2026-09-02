@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Double-Y Warehouse System - Message Email</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="warehouse-styles.css">
+    <link rel="stylesheet" href="pesquisa-styles.css">
+    <link rel="stylesheet" href="message-email-styles.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body class="message-email-page ic-control-page">
+    <script src="auth-check.js"></script>
+    <script src="header-menu.js"></script>
+    <script src="menu-access.js"></script>
+    <script src="application-write-access.js"></script>
+    <script src="double-y-logo-effect.js"></script>
+    <script src="dev-environment-badge.js"></script>
+    <div class="container">
+        <header class="header">
+            <div class="header-stats-row">
+                <div class="header-stats-left">
+                    <div class="header-stat header-stat-total">
+                        <span class="header-stat-value" id="totalItems">0</span>
+                        <span class="header-stat-label">Total Items</span>
+                    </div>
+                    <div class="header-stat header-stat-low">
+                        <span class="header-stat-value" id="lowStockItems">0</span>
+                        <span class="header-stat-label">Low Stock</span>
+                    </div>
+                </div>
+                <div class="double-y-wordmark" aria-label="Double Y">
+                    <img src="doubley-glyph.png" alt="" class="double-y-glyph" aria-hidden="true">
+                    <span class="double-y-name">Double Y</span>
+                    <img src="doubley-glyph-bottom.png" alt="" class="double-y-glyph double-y-glyph-bottom" aria-hidden="true">
+                </div>
+                <div class="header-stats-right">
+                    <div class="header-stat header-stat-entries">
+                        <span class="header-stat-value" id="totalEntradas">0</span>
+                        <span class="header-stat-label">Entries Today</span>
+                    </div>
+                    <div class="header-stat header-stat-exits">
+                        <span class="header-stat-value" id="totalSaidas">0</span>
+                        <span class="header-stat-label">Exits Today</span>
+                    </div>
+                </div>
+            </div>
+            <div class="header-content">
+                <h1><i class="fas fa-warehouse"></i> Double-Y Warehouse System</h1>
+                <p class="header-search-users-label">Message Email</p>
+                <div class="header-actions"></div>
+            </div>
+        </header>
+
+        <main class="main-content">
+            <div class="form-container" id="messageEmailPanel" tabindex="-1">
+                <div class="message-email-form-header">
+                    <div>
+                        <h2><i class="fas fa-envelope"></i> New Email Message</h2>
+                        <p>Register an email message template for maintenance and reuse</p>
+                    </div>
+                    <a href="Search-Message-Email.html" class="btn btn-secondary message-email-open-search-btn" data-app="Search-Message-Email.html">
+                        <i class="fas fa-search"></i> Search
+                    </a>
+                </div>
+
+                <form id="messageEmailForm" class="warehouse-form" novalidate>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="messageCode"><i class="fas fa-barcode"></i> Message code *</label>
+                            <input type="text" id="messageCode" maxlength="50" placeholder="e.g. WELCOME-001" style="text-transform:uppercase;" autocomplete="off" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="messageCategory"><i class="fas fa-folder"></i> Category *</label>
+                            <select id="messageCategory" required>
+                                <option value="GENERAL">General</option>
+                                <option value="WAREHOUSE">Warehouse</option>
+                                <option value="NOTIFICATION">Notification</option>
+                                <option value="WELCOME">Welcome</option>
+                                <option value="OTHER">Other</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="messageStatus"><i class="fas fa-toggle-on"></i> Status *</label>
+                            <select id="messageStatus" required>
+                                <option value="ACTIVE">Active</option>
+                                <option value="INACTIVE">Inactive</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group full-width">
+                            <label for="messageSubject"><i class="fas fa-heading"></i> Subject *</label>
+                            <input type="text" id="messageSubject" maxlength="255" placeholder="Email subject" required>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group full-width">
+                            <label for="messageBody"><i class="fas fa-align-left"></i> Email body *</label>
+                            <textarea id="messageBody" maxlength="20000" placeholder="Email message content..." required></textarea>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group full-width">
+                            <label for="messageNotes"><i class="fas fa-sticky-note"></i> Notes</label>
+                            <textarea id="messageNotes" maxlength="2000" rows="3" placeholder="Optional internal notes"></textarea>
+                        </div>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary" id="saveMessageBtn" data-write-action="true">
+                            <i class="fas fa-save"></i> Save Message
+                        </button>
+                        <button type="button" class="btn btn-secondary" id="clearMessageBtn" data-write-action="true">
+                            <i class="fas fa-eraser"></i> Clear
+                        </button>
+                        <button type="button" class="btn btn-secondary location-page-close-btn">
+                            <i class="fas fa-door-open"></i> Close
+                        </button>
+                    </div>
+                    <div id="messageEmailStatus" class="message-email-message" role="status" aria-live="polite"></div>
+                </form>
+            </div>
+        </main>
+
+        <footer class="footer">
+            <p>&copy; 2026 Double-Y IT Systems. All rights reserved.</p>
+        </footer>
+    </div>
+
+    <script src="warehouse-stats.js"></script>
+    <script src="location-page-close.js"></script>
+    <script src="message-email-script.js"></script>
+</body>
+</html>

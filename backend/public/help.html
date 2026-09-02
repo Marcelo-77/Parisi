@@ -144,6 +144,7 @@
                             <a href="help.html#modules" class="dropdown-item"><i class="fas fa-th-large"></i> System Modules</a>
                             <a href="help.html#picking" class="dropdown-item"><i class="fas fa-dolly"></i> Picking Workflow</a>
                             <a href="help.html#qrcode" class="dropdown-item"><i class="fas fa-qrcode"></i> Generate QR Code</a>
+                            <a href="help.html#ic-approval-email" class="dropdown-item" data-app="help.html"><i class="fas fa-envelope-circle-check"></i> Approval Email</a>
                         </div>
                     </div>
                 </div>
@@ -171,7 +172,23 @@
                                     <li><strong>Location</strong> — manage warehouse locations and product placement.</li>
                                     <li><strong>Movement</strong> — create, search, and track movement status.</li>
                                     <li><strong>Picking</strong> — handle order picking, separation, double checking, and labels.</li>
+                                    <li><strong>Improvements and Corrections</strong> — register improvements, corrections and new functionality requests.</li>
+                                    <li><strong>Message Email</strong> — maintain reusable email templates such as APPROVAL.</li>
+                                    <li><strong>Search Email Send Log</strong> — verify whether system emails were sent successfully.</li>
                                 </ul>
+                            </section>
+                            <section id="ic-approval-email" class="help-section">
+                                <h3><i class="fas fa-envelope-circle-check"></i> Improvements Approval Email</h3>
+                                <ol>
+                                    <li>Create or review the <strong>APPROVAL</strong> template in <strong>Message Email</strong> (code must be <code>APPROVAL</code>).</li>
+                                    <li>In <strong>Improvements and Corrections Search</strong>, edit a request and change the situation to <strong>In approval validation</strong>.</li>
+                                    <li>Click <strong>Save changes</strong>. The system shows a dialog explaining that an approval email will be sent from <strong>doubleyitsystem@gmail.com</strong>.</li>
+                                    <li>The email is sent to the user who created the request, when that user has a valid email registered in Users.</li>
+                                    <li>For <strong>Corrections</strong> linked to an application/functionality, the functionality name is appended to the email subject.</li>
+                                    <li>Open <strong>Search Email Send Log</strong> to confirm whether the email status is <strong>Sent</strong>, <strong>Failed</strong>, or <strong>Skipped</strong>.</li>
+                                </ol>
+                                <p><strong>SMTP setup (server):</strong> configure <code>SMTP_USER</code>, <code>SMTP_PASS</code>, and optionally <code>SMTP_FROM=doubleyitsystem@gmail.com</code> in <code>config.env</code>. For Gmail, use an App Password.</p>
+                                <p><strong>Template placeholders:</strong> <code>{{requestNumber}}</code>, <code>{{requesterName}}</code>, <code>{{requestType}}</code>, <code>{{functionality}}</code>, <code>{{description}}</code>, <code>{{applicationName}}</code>, <code>{{applicationMenu}}</code>.</p>
                             </section>
                             <section id="picking" class="help-section">
                                 <h3><i class="fas fa-dolly"></i> Picking Workflow</h3>

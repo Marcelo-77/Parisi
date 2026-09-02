@@ -130,6 +130,23 @@
                                     </a>
                                 </div>
                             </div>
+                            <div class="dropdown-submenu-group" data-submenu="message-email">
+                                <button type="button" class="dropdown-submenu-trigger" aria-haspopup="true" aria-expanded="false">
+                                    <span><i class="fas fa-envelope"></i> Message Email</span>
+                                    <i class="fas fa-chevron-right submenu-chevron" aria-hidden="true"></i>
+                                </button>
+                                <div class="dropdown-submenu" aria-hidden="true">
+                                    <a href="Message-Email.html" class="dropdown-item" data-app="Message-Email.html" data-write-menu="true">
+                                        <i class="fas fa-plus"></i> New Message Email
+                                    </a>
+                                    <a href="Search-Message-Email.html" class="dropdown-item" data-app="Search-Message-Email.html">
+                                        <i class="fas fa-search"></i> Search Message Email
+                                    </a>
+                                    <a href="Search-Email-Send-Log.html" class="dropdown-item" data-app="Search-Email-Send-Log.html">
+                                        <i class="fas fa-paper-plane"></i> Search Email Send Log
+                                    </a>
+                                </div>
+                            </div>
                         </div>
                     </div>
                     <div class="movement-dropdown">
@@ -171,6 +188,7 @@
                             <a href="help.html#modules" class="dropdown-item" data-app="help.html"><i class="fas fa-th-large"></i> System Modules</a>
                             <a href="help.html#picking" class="dropdown-item" data-app="help.html"><i class="fas fa-dolly"></i> Picking Workflow</a>
                             <a href="help.html#qrcode" class="dropdown-item" data-app="help.html"><i class="fas fa-qrcode"></i> Generate QR Code</a>
+                            <a href="help.html#ic-approval-email" class="dropdown-item" data-app="help.html"><i class="fas fa-envelope-circle-check"></i> Approval Email</a>
                         </div>
                     </div>
                     <button type="button" class="btn btn-primary system-exit-btn" id="exitSystemBtn" data-always-accessible="true" title="Exit system">

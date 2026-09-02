@@ -150,7 +150,7 @@ CREATE TABLE IF NOT EXISTS improvements_corrections (
   CONSTRAINT improvements_corrections_type_chk
     CHECK (request_type IN ('IMPROVEMENT', 'CORRECTION', 'NEW_FUNCTIONALITY')),
   CONSTRAINT improvements_corrections_situation_chk
-    CHECK (situation IN ('NOT_STARTED', 'IN_DEVELOPMENT', 'IN_TESTING', 'IN_CLIENT_VALIDATION', 'LIVE', 'CANCELLED'))
+    CHECK (situation IN ('NOT_STARTED', 'IN_DEVELOPMENT', 'IN_TESTING', 'IN_CLIENT_VALIDATION', 'APPROVED', 'NOT_APPROVED', 'LIVE', 'CANCELLED'))
 );
 
 CREATE INDEX IF NOT EXISTS idx_improvements_corrections_criado ON improvements_corrections(criado_em DESC);

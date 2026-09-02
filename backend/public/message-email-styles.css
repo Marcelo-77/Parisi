@@ -1,0 +1,535 @@
+/* ── New Message Email (full-width form, like product / IC control) ── */
+body.message-email-page.ic-control-page .container {
+  padding-top: 10px;
+}
+
+body.message-email-page.ic-control-page .header {
+  margin-bottom: 12px;
+}
+
+body.message-email-page.ic-control-page .main-content {
+  width: 100%;
+  align-self: stretch;
+  justify-content: flex-start;
+}
+
+body.message-email-page.ic-control-page .form-container {
+  width: 100%;
+  max-width: none;
+  margin-top: 8px;
+  padding: 24px 28px 20px;
+  scroll-margin-top: 8px;
+}
+
+.message-email-form-header,
+.ic-form-header.message-email-form-header {
+  position: relative;
+  display: block;
+  text-align: center;
+  margin-bottom: 16px;
+  padding: 0 140px;
+}
+
+.message-email-form-header h2 {
+  margin: 0 0 4px;
+  font-size: 1.5rem;
+  color: #333;
+}
+
+.message-email-form-header p {
+  margin: 0;
+  color: #64748b;
+  font-size: 0.95rem;
+}
+
+.message-email-form-header .message-email-open-search-btn {
+  position: absolute;
+  top: 0;
+  right: 0;
+}
+
+#messageEmailForm.warehouse-form {
+  gap: 0;
+}
+
+#messageEmailForm .form-row {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+#messageEmailForm .form-group {
+  margin-bottom: 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+#messageEmailForm .form-group.full-width {
+  grid-column: 1 / -1;
+}
+
+#messageEmailForm .form-group label {
+  font-size: 0.95rem;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+#messageEmailForm .form-group label i {
+  margin-right: 6px;
+}
+
+#messageEmailForm .form-group input,
+#messageEmailForm .form-group select,
+#messageEmailForm .form-group textarea {
+  width: 100%;
+  padding: 8px 12px;
+  font-size: 0.95rem;
+  min-height: 38px;
+  border: 2px solid #e1e5e9;
+  border-radius: 10px;
+  box-sizing: border-box;
+  background: #fafafa;
+  transition: all 0.3s ease;
+}
+
+#messageEmailForm .form-group input:focus,
+#messageEmailForm .form-group select:focus,
+#messageEmailForm .form-group textarea:focus {
+  outline: none;
+  border-color: #667eea;
+  background: #fff;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+#messageEmailForm .form-group textarea {
+  min-height: 180px;
+  resize: vertical;
+  font-family: inherit;
+}
+
+#messageEmailForm .form-group textarea#messageNotes {
+  min-height: 100px;
+}
+
+#messageEmailForm .form-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: center;
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 2px solid #f0f0f0;
+}
+
+.message-email-message {
+  margin-top: 10px;
+  min-height: 1.2em;
+  text-align: center;
+  font-size: 0.95rem;
+}
+
+.message-email-message.show.success { color: #15803d; }
+.message-email-message.show.error { color: #b91c1c; }
+.message-email-message.show.info { color: #1d4ed8; }
+
+/* ── Search Message Email (viewport layout like product search / IC search) ── */
+html.message-email-search-root,
+html.message-email-search-root body {
+  height: 100%;
+  overflow: hidden;
+}
+
+body.message-email-search-page.ic-search-page {
+  height: 100dvh;
+  max-height: 100dvh;
+  overflow: hidden;
+}
+
+body.message-email-search-page.ic-search-page .container {
+  height: 100dvh;
+  max-height: 100dvh;
+  min-height: 0;
+  padding: 10px 16px 8px;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+body.message-email-search-page.ic-search-page .header {
+  margin-bottom: 8px;
+  flex-shrink: 0;
+}
+
+body.message-email-search-page.ic-search-page .header-stats-row {
+  margin-bottom: 4px;
+}
+
+body.message-email-search-page.ic-search-page .header-content > h1 {
+  font-size: 1.35rem;
+  margin: 0 0 2px;
+}
+
+body.message-email-search-page.ic-search-page .header-search-users-label {
+  font-size: 1.15rem;
+  margin: 0 0 4px;
+}
+
+body.message-email-search-page.ic-search-page .header-actions {
+  margin-top: 6px;
+}
+
+body.message-email-search-page.ic-search-page .main-content {
+  flex: 1 1 auto;
+  min-height: 0;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-start;
+  overflow: hidden;
+  gap: 8px;
+}
+
+body.message-email-search-page.ic-search-page .filters-section {
+  flex-shrink: 0;
+  margin-bottom: 0;
+  padding: 8px 10px;
+}
+
+body.message-email-search-page.ic-search-page .search-bar {
+  margin-bottom: 8px;
+}
+
+body.message-email-search-page.ic-search-page .warehouse-search-bar {
+  flex-wrap: nowrap;
+  gap: 6px;
+}
+
+body.message-email-search-page.ic-search-page .warehouse-search-actions {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 6px;
+  flex: 0 0 auto;
+}
+
+body.message-email-search-page.ic-search-page .warehouse-search-bar .btn {
+  min-width: 0;
+  width: auto;
+  height: 38px;
+  padding: 8px 12px;
+  font-size: 0.85rem;
+  white-space: nowrap;
+}
+
+body.message-email-search-page.ic-search-page .warehouse-search-bar .btn-icon,
+body.message-email-search-page.ic-search-page .warehouse-search-bar #clearSearchBtn {
+  height: 38px;
+  width: 38px;
+  padding: 8px;
+}
+
+body.message-email-search-page.ic-search-page .results-info-bar .message-email-new-link {
+  margin-left: auto;
+}
+
+body.message-email-search-page.ic-search-page .search-bar input[type="text"] {
+  flex: 1 1 220px;
+  min-width: 160px;
+  padding: 10px 40px 10px 36px;
+  border: 2px solid #e1e5e9;
+  border-radius: 10px;
+  font-size: 0.95rem;
+}
+
+body.message-email-search-page.ic-search-page .search-bar input[type="text"]:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+body.message-email-search-page.ic-search-page .filters-row {
+  gap: 8px;
+  margin: 0;
+}
+
+body.message-email-search-page.ic-search-page .filters-row .filter-select {
+  padding: 6px 8px;
+  font-size: 0.85rem;
+  min-height: 34px;
+}
+
+body.message-email-search-page.ic-search-page .table-container {
+  flex: 1 1 auto;
+  min-height: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding: 10px 12px;
+}
+
+body.message-email-search-page.ic-search-page .results-info-bar {
+  flex-shrink: 0;
+  margin-bottom: 6px;
+}
+
+body.message-email-search-page.ic-search-page .ic-table-scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+  border-radius: 8px;
+}
+
+body.message-email-search-page.ic-search-page .warehouse-table {
+  margin: 0;
+}
+
+body.message-email-search-page.ic-search-page .warehouse-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: #667eea;
+  color: #fff;
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.08);
+}
+
+body.message-email-search-page.ic-search-page .warehouse-table th,
+body.message-email-search-page.ic-search-page .warehouse-table td {
+  padding: 8px 10px;
+  font-size: 0.88rem;
+}
+
+body.message-email-search-page.ic-search-page .warehouse-table td[data-label="Body"] {
+  white-space: normal;
+  max-width: 280px;
+}
+
+body.message-email-search-page.ic-search-page .footer {
+  flex-shrink: 0;
+  margin-top: 4px;
+  padding: 4px 0;
+  font-size: 0.8rem;
+}
+
+body.message-email-search-page.ic-search-page .loading-indicator,
+body.message-email-search-page.ic-search-page .no-results {
+  padding: 16px;
+}
+
+.status-active { color: #15803d; font-weight: 700; }
+.status-inactive { color: #b45309; font-weight: 700; }
+
+/* ── Edit modal (same size as product item modal) ── */
+#editMessageModal .item-modal-content.modal-large {
+  width: min(calc(100vw - 40px), 1640px);
+  max-width: min(calc(100vw - 40px), 1640px);
+  margin: 2vh auto !important;
+}
+
+#editMessageModal .item-modal-content {
+  display: flex;
+  flex-direction: column;
+  max-height: 92vh;
+  overflow: hidden;
+}
+
+#editMessageModal .item-modal-form {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+  gap: 0;
+  padding: 0;
+}
+
+#editMessageModal .item-modal-body {
+  overflow-y: auto;
+  flex: 1 1 auto;
+  min-height: 0;
+  text-align: left;
+  padding: 18px 24px;
+}
+
+#editMessageModal .item-modal-footer {
+  flex-shrink: 0;
+  margin-top: 0;
+  padding: 14px 24px 18px;
+  border-top: 2px solid #f0f0f0;
+}
+
+#editMessageModal .modal-header {
+  padding: 14px 24px;
+  background: linear-gradient(135deg, #4facfe 0%, #00c6fb 100%);
+  color: #fff;
+}
+
+#editMessageModal .modal-header h3 {
+  font-size: 1.15rem;
+  margin: 0;
+}
+
+#editMessageModal .item-modal-subtitle {
+  margin: 6px 0 0;
+  font-size: 0.9rem;
+  opacity: 0.92;
+  font-weight: 500;
+}
+
+#editMessageModal .modal-close {
+  width: 34px;
+  height: 34px;
+  font-size: 1.25rem;
+  line-height: 1;
+}
+
+#editMessageModal .form-row {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+#editMessageModal .form-group.full-width {
+  grid-column: 1 / -1;
+}
+
+#editMessageModal .form-group label {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #333;
+}
+
+#editMessageModal .form-group input,
+#editMessageModal .form-group select,
+#editMessageModal .form-group textarea {
+  width: 100%;
+  padding: 8px 12px;
+  font-size: 0.95rem;
+  min-height: 38px;
+  border: 2px solid #e1e5e9;
+  border-radius: 10px;
+  background: #fafafa;
+  box-sizing: border-box;
+  font-family: inherit;
+  transition: all 0.3s ease;
+}
+
+#editMessageModal .form-group input:focus,
+#editMessageModal .form-group select:focus,
+#editMessageModal .form-group textarea:focus {
+  outline: none;
+  border-color: #667eea;
+  background: #fff;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+#editMessageModal .form-group textarea#editMessageBody {
+  min-height: 220px;
+  resize: vertical;
+}
+
+#editMessageModal .form-group textarea#editMessageNotes {
+  min-height: 100px;
+  resize: vertical;
+}
+
+#editMessageModal .message-email-message {
+  margin: 0 24px 8px;
+}
+
+#editMessageModal.is-view-mode #saveEditMessageBtn {
+  display: none;
+}
+
+#editMessageModal.is-view-mode .modal-header.edit-mode {
+  background: linear-gradient(135deg, #64748b 0%, #475569 100%);
+}
+
+@media (max-width: 900px) {
+  .message-email-form-header {
+    padding: 48px 0 0;
+  }
+
+  #messageEmailForm .form-row,
+  #editMessageModal .form-row {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 768px) {
+  body.message-email-search-page.ic-search-page .container {
+    height: auto;
+    max-height: none;
+    overflow: visible;
+  }
+
+  body.message-email-search-page.ic-search-page {
+    height: auto;
+    max-height: none;
+    overflow: auto;
+  }
+
+  html.message-email-search-root,
+  html.message-email-search-root body {
+    height: auto;
+    overflow: auto;
+  }
+
+  body.message-email-search-page.ic-search-page .main-content {
+    overflow: visible;
+  }
+
+  body.message-email-search-page.ic-search-page .table-container {
+    overflow: visible;
+    min-height: 280px;
+  }
+
+  body.message-email-search-page.ic-search-page .ic-table-scroll {
+    overflow: visible;
+  }
+
+  body.message-email-search-page.ic-search-page .search-bar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  body.message-email-search-page.ic-search-page .warehouse-search-bar {
+    flex-wrap: wrap;
+  }
+
+  body.message-email-search-page.ic-search-page .warehouse-search-actions {
+    flex-wrap: wrap;
+    width: 100%;
+  }
+
+  body.message-email-search-page.ic-search-page .warehouse-search-actions .btn {
+    flex: 1 1 auto;
+    justify-content: center;
+    min-height: 46px;
+  }
+
+  body.message-email-search-page.ic-search-page .search-bar input[type="text"],
+  body.message-email-search-page.ic-search-page .search-bar .btn {
+    width: 100%;
+    min-height: 46px;
+  }
+
+  body.message-email-search-page.ic-search-page .search-bar > i.fa-search {
+    display: none;
+  }
+
+  #messageEmailForm .form-row,
+  #editMessageModal .form-row {
+    grid-template-columns: 1fr;
+  }
+
+  #editMessageModal .item-modal-content.modal-large {
+    width: calc(100vw - 16px);
+    max-width: calc(100vw - 16px);
+    margin: 1vh auto !important;
+  }
+}
