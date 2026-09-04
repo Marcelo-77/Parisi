@@ -244,6 +244,422 @@ const lowStockItemsEl = document.getElementById('lowStockItems');
 const totalEntradasEl = document.getElementById('totalEntradas');
 const totalSaidasEl = document.getElementById('totalSaidas');
 
+let bathPrintItem = null;
+let bathPrintOptions = [];
+let bathPrintSearchTerm = '';
+
+function isBathCategory(categoria) {
+    return String(categoria || '').trim().toUpperCase() === 'BATH';
+}
+
+function getBathPrintFontSize() {
+    const selected = document.querySelector('input[name="bathPrintFontSize"]:checked');
+    const size = selected ? parseInt(selected.value, 10) : 95;
+    return [64, 70, 80, 85, 95].includes(size) ? size : 95;
+}
+
+function resetBathPrintForm() {
+    const containerEl = document.getElementById('bathPrintContainerNr');
+    const copiesEl = document.getElementById('bathPrintCopies');
+    const barcodesEl = document.getElementById('bathPrintBarcodesCheckbox');
+    const defaultFont = document.querySelector('input[name="bathPrintFontSize"][value="95"]');
+    if (containerEl) containerEl.value = 'AAAA999999-00';
+    if (copiesEl) copiesEl.value = '1';
+    if (barcodesEl) barcodesEl.checked = true;
+    if (defaultFont) defaultFont.checked = true;
+}
+
+function getBathProductSearchHaystack(item) {
+    return [
+        item.codigo,
+        item.nome,
+        item.barcode,
+        item.subcategoria,
+        formatSubcategory(item.subcategoria),
+        item.supplierProductCode
+    ].map((v) => String(v || '').toLowerCase()).join(' ');
+}
+
+function filterBathPrintOptions(searchTerm) {
+    const term = String(searchTerm || '').trim().toLowerCase();
+    if (!term) return bathPrintOptions.slice();
+    return bathPrintOptions.filter((item) => getBathProductSearchHaystack(item).includes(term));
+}
+
+function getSelectedBathPrintItem() {
+    const list = document.getElementById('bathPrintProductList');
+    const selected = list?.querySelector('input[name="bathPrintProductId"]:checked');
+    if (!selected) return bathPrintItem;
+    const id = selected.value;
+    return bathPrintOptions.find((item) => String(item.id) === String(id)) || bathPrintItem;
+}
+
+function renderBathPrintProductOptions(searchTerm = bathPrintSearchTerm) {
+    const list = document.getElementById('bathPrintProductList');
+    if (!list) return;
+
+    bathPrintSearchTerm = String(searchTerm || '');
+    const selectedId = bathPrintItem ? String(bathPrintItem.id) : '';
+    const filtered = filterBathPrintOptions(bathPrintSearchTerm);
+
+    const optionsHtml = filtered.length
+        ? filtered.map((item) => {
+            const id = String(item.id);
+            const isSelected = id === selectedId;
+            const subgroup = formatSubcategory(item.subcategoria) || '-';
+            return `
+              <label class="print-location-card${isSelected ? ' is-selected' : ''}">
+                <input type="radio" name="bathPrintProductId" value="${escapeHtml(id)}"${isSelected ? ' checked' : ''}>
+                <span class="print-location-card-icon"><i class="fas fa-box"></i></span>
+                <span class="print-location-card-content">
+                  <strong>${escapeHtml(item.codigo || '-')}</strong>
+                  <small>${escapeHtml(item.nome || '')}</small>
+                  <small>${escapeHtml(subgroup)}${item.barcode ? ` · ${escapeHtml(String(item.barcode))}` : ''}</small>
+                </span>
+              </label>
+            `;
+        }).join('')
+        : '<div class="print-location-empty"><i class="fas fa-search"></i><p>No matching Bath products found.</p></div>';
+
+    list.innerHTML = `
+      <div class="print-location-picker-toolbar">
+        <div class="print-location-search">
+          <i class="fas fa-search"></i>
+          <input id="bathPrintProductSearch" type="search"
+                 placeholder="Search Bath product code, name, barcode or subgroup"
+                 value="${escapeHtml(bathPrintSearchTerm)}" autocomplete="off">
+        </div>
+      </div>
+      <div class="print-location-picker-summary">
+        <span><strong>${bathPrintOptions.length}</strong> Bath products</span>
+        <span>${filtered.length} shown</span>
+      </div>
+      <div class="print-location-cards" role="radiogroup" aria-label="Select Bath product">
+        ${optionsHtml}
+      </div>
+    `;
+
+    const searchInput = document.getElementById('bathPrintProductSearch');
+    searchInput?.focus();
+    if (searchInput) {
+        const len = searchInput.value.length;
+        searchInput.setSelectionRange(len, len);
+        searchInput.addEventListener('input', () => {
+            renderBathPrintProductOptions(searchInput.value);
+        });
+    }
+
+    list.querySelectorAll('input[name="bathPrintProductId"]').forEach((radio) => {
+        radio.addEventListener('change', () => {
+            bathPrintItem = getSelectedBathPrintItem();
+            list.querySelectorAll('.print-location-card').forEach((card) => {
+                card.classList.toggle('is-selected', Boolean(card.querySelector('input')?.checked));
+            });
+        });
+    });
+}
+
+async function loadBathPrintProducts() {
+    const query = new URLSearchParams({
+        categoria: 'BATH',
+        ordenarPor: 'codigo',
+        direcao: 'asc'
+    });
+    const response = await fetch(`${API_BASE_URL}?${query.toString()}`);
+    const data = await response.json();
+    if (!response.ok || !data.success) {
+        throw new Error(data.message || data.error || 'Failed to load Bath products');
+    }
+    bathPrintOptions = (data.data || [])
+        .filter((item) => isBathCategory(item.categoria))
+        .sort((a, b) => String(a.codigo || '').localeCompare(String(b.codigo || ''), undefined, { sensitivity: 'base' }));
+}
+
+window.openBathPrintModal = async function(item) {
+    bathPrintItem = item || null;
+    bathPrintSearchTerm = '';
+    const modal = document.getElementById('bathPrintModal');
+    const list = document.getElementById('bathPrintProductList');
+    if (!modal || !list) {
+        alert('Bath print dialog not available');
+        return;
+    }
+    resetBathPrintForm();
+    modal.style.display = 'block';
+    list.innerHTML = '<p>Loading Bath products...</p>';
+    try {
+        await loadBathPrintProducts();
+        if (bathPrintItem?.id) {
+            const matched = bathPrintOptions.find((p) => String(p.id) === String(bathPrintItem.id));
+            if (matched) bathPrintItem = matched;
+        }
+        if (bathPrintOptions.length === 0) {
+            list.innerHTML = '<p class="empty-state">No Bath products found.</p>';
+            return;
+        }
+        renderBathPrintProductOptions('');
+    } catch (e) {
+        console.error('Bath print modal error:', e);
+        list.innerHTML = '<p class="error-message">Error loading Bath products. Check console and ensure the server is running.</p>';
+    }
+};
+
+window.closeBathPrintModal = function() {
+    const modal = document.getElementById('bathPrintModal');
+    if (modal) modal.style.display = 'none';
+    bathPrintItem = null;
+    bathPrintOptions = [];
+    bathPrintSearchTerm = '';
+};
+
+function renderBathBarcodeSvg(svgId, barcodeValue, fontSize) {
+    if (typeof JsBarcode === 'undefined') return false;
+    const height = Math.max(40, Math.round(fontSize * 0.75));
+    const opts = {
+        format: 'CODE128',
+        width: fontSize >= 80 ? 2 : 1.6,
+        height,
+        displayValue: true,
+        fontSize: Math.max(12, Math.round(fontSize * 0.22)),
+        margin: 4,
+        textMargin: 2
+    };
+    try {
+        JsBarcode('#' + svgId, barcodeValue, opts);
+        return true;
+    } catch (e) {
+        try {
+            JsBarcode('#' + svgId, barcodeValue, { ...opts, format: 'CODE128' });
+            return true;
+        } catch (e2) {
+            return false;
+        }
+    }
+}
+
+window.doBathPrint = function() {
+    const item = getSelectedBathPrintItem();
+    if (!item) {
+        alert('Please select a Bath product to print.');
+        return;
+    }
+    bathPrintItem = item;
+    const containerNr = String(document.getElementById('bathPrintContainerNr')?.value || '').trim();
+    if (!containerNr) {
+        alert('Please enter Container Nr.');
+        document.getElementById('bathPrintContainerNr')?.focus();
+        return;
+    }
+    const copiesRaw = parseInt(document.getElementById('bathPrintCopies')?.value, 10);
+    const copies = Number.isFinite(copiesRaw) && copiesRaw > 0 ? Math.min(copiesRaw, 99) : 0;
+    if (copies < 1) {
+        alert('Number of prints must be at least 1.');
+        document.getElementById('bathPrintCopies')?.focus();
+        return;
+    }
+    const printBarcodes = document.getElementById('bathPrintBarcodesCheckbox')?.checked !== false;
+    const fontSize = getBathPrintFontSize();
+    const barcodeValue = String(item.barcode || '').trim();
+    if (printBarcodes && !barcodeValue) {
+        alert('This product has no barcode. Uncheck "Print barcodes" or update the product.');
+        return;
+    }
+    if (printBarcodes && typeof JsBarcode === 'undefined') {
+        alert('Barcode library not loaded. Refresh the page and try again.');
+        return;
+    }
+
+    let barcodeSvgHtml = '';
+    if (printBarcodes && barcodeValue) {
+        const temp = document.createElement('div');
+        temp.style.cssText = 'position:absolute;left:-9999px;top:0;visibility:hidden;';
+        document.body.appendChild(temp);
+        const svgId = 'bathBc_' + Date.now();
+        const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+        svg.setAttribute('class', 'bath-label-barcode');
+        svg.id = svgId;
+        temp.appendChild(svg);
+        if (renderBathBarcodeSvg(svgId, barcodeValue, fontSize)) {
+            barcodeSvgHtml = svg.outerHTML;
+        }
+        document.body.removeChild(temp);
+        if (!barcodeSvgHtml) {
+            barcodeSvgHtml = `<div class="bath-label-barcode-fallback">${escapeHtml(barcodeValue)}</div>`;
+        }
+    }
+
+    const subcategory = escapeHtml(formatSubcategory(item.subcategoria) || '-');
+    const productCode = escapeHtml(String(item.codigo || '-'));
+    const containerEsc = escapeHtml(containerNr);
+    const printDate = escapeHtml(new Date().toLocaleDateString('en-AU'));
+    const barcodeCell = printBarcodes
+        ? `<div class="bath-label-barcode-wrap">${barcodeSvgHtml}</div>`
+        : '';
+
+    const pages = [];
+    for (let i = 0; i < copies; i += 3) {
+        const chunk = [];
+        for (let j = 0; j < 3 && (i + j) < copies; j++) {
+            const isThirdOnPage = j === 2;
+            const headerRule = j === 0
+                ? '<div class="bath-label-rule bath-label-header-rule"></div>'
+                : '';
+            const separatorHtml = isThirdOnPage
+                ? `<div class="bath-label-rule"></div>`
+                : `
+        <div class="bath-label-rule"></div>
+        <div class="bath-label-blank"></div>
+        <div class="bath-label-rule"></div>`;
+            chunk.push(`
+      <div class="bath-label">
+        ${headerRule}
+        <div class="bath-label-top" style="font-size:${fontSize}px;">
+          <span class="bath-label-subcategory">${subcategory}</span>
+          ${barcodeCell}
+        </div>
+        <div class="bath-label-code-row" style="font-size:${fontSize}px;">
+          <span class="bath-label-code">${productCode}</span>
+          <span class="bath-label-date">${printDate}</span>
+        </div>
+        <div class="bath-label-container-row">
+          <span class="bath-label-container">Container Nr: ${containerEsc}</span>
+          <span class="bath-label-qty">Qty: 1</span>
+        </div>
+        ${separatorHtml}
+      </div>`);
+        }
+        pages.push(`<div class="bath-print-page">${chunk.join('')}</div>`);
+    }
+
+    const w = window.open('', '_blank', 'width=900,height=1100');
+    if (!w) {
+        alert('Allow popups to print.');
+        return;
+    }
+    w.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8">
+<title>Bath Labels - ${productCode}</title>
+<style>
+  @page { size: portrait; margin: 10mm; }
+  * { box-sizing: border-box; }
+  body { margin: 0; padding: 0; font-family: Arial, Helvetica, sans-serif; color: #111; }
+  .bath-print-page {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    min-height: 100vh;
+    page-break-after: always;
+    break-after: page;
+  }
+  .bath-print-page:last-child {
+    page-break-after: auto;
+    break-after: auto;
+  }
+  .bath-label {
+    flex: 0 0 auto;
+    padding: 8mm 4mm 6mm;
+    min-height: 85mm;
+  }
+  .bath-label-header-rule {
+    margin-top: 0;
+    margin-bottom: 8px;
+  }
+  .bath-label-top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    font-weight: 700;
+    line-height: 1.05;
+  }
+  .bath-label-subcategory {
+    flex: 1 1 auto;
+    min-width: 0;
+    word-break: break-word;
+  }
+  .bath-label-barcode-wrap {
+    flex: 0 0 auto;
+    max-width: 55%;
+    display: flex;
+    align-items: flex-start;
+    justify-content: flex-end;
+  }
+  .bath-label-barcode {
+    display: block;
+    max-width: 100%;
+    height: auto;
+  }
+  .bath-label-barcode-fallback {
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+  }
+  .bath-label-code-row {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+    margin-top: 6px;
+    font-weight: 800;
+    line-height: 1.05;
+  }
+  .bath-label-code {
+    flex: 1 1 auto;
+    min-width: 0;
+    word-break: break-all;
+  }
+  .bath-label-date {
+    flex: 0 0 auto;
+    font-size: 30px;
+    font-weight: 700;
+    line-height: 1.15;
+    text-align: right;
+    white-space: nowrap;
+  }
+  .bath-label-container-row {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+    margin-top: 8px;
+  }
+  .bath-label-container,
+  .bath-label-qty {
+    font-size: 30px;
+    font-weight: 700;
+    line-height: 1.15;
+  }
+  .bath-label-container {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+  .bath-label-qty {
+    flex: 0 0 auto;
+    text-align: right;
+    white-space: nowrap;
+  }
+  .bath-label-rule {
+    margin-top: 10px;
+    border-top: 2px solid #111;
+    height: 0;
+  }
+  .bath-label-blank {
+    height: 1.2em;
+  }
+  @media print {
+    body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  }
+</style>
+</head><body>
+${pages.join('')}
+<script>
+  window.onload = function() {
+    setTimeout(function() { window.focus(); window.print(); }, 250);
+  };
+<\/script>
+</body></html>`);
+    w.document.close();
+};
+
 // Definir fun??o printReport globalmente ANTES do DOMContentLoaded
 window.printReport = function(itemId) {
     console.log('========================================');
@@ -265,6 +681,11 @@ window.printReport = function(itemId) {
     console.log('Item code:', item.codigo);
     console.log('Item barcode:', item.barcode);
     console.log('Item name:', item.nome);
+
+    if (isBathCategory(item.categoria)) {
+        window.openBathPrintModal(item);
+        return;
+    }
     
     const printModal = document.getElementById('printModal');
     const printContent = document.getElementById('printContent');
@@ -899,6 +1320,25 @@ function setupEventListeners() {
     }
     if (printBtn) {
         printBtn.addEventListener('click', () => window.print());
+    }
+
+    const closeBathPrintModalBtn = document.getElementById('closeBathPrintModal');
+    const closeBathPrintBtn = document.getElementById('closeBathPrintBtn');
+    const doBathPrintBtn = document.getElementById('doBathPrintBtn');
+    const bathPrintModal = document.getElementById('bathPrintModal');
+    if (closeBathPrintModalBtn) {
+        closeBathPrintModalBtn.addEventListener('click', () => window.closeBathPrintModal());
+    }
+    if (closeBathPrintBtn) {
+        closeBathPrintBtn.addEventListener('click', () => window.closeBathPrintModal());
+    }
+    if (doBathPrintBtn) {
+        doBathPrintBtn.addEventListener('click', () => window.doBathPrint());
+    }
+    if (bathPrintModal) {
+        bathPrintModal.addEventListener('click', (e) => {
+            if (e.target === bathPrintModal) window.closeBathPrintModal();
+        });
     }
     
     // Bot?o Search - carrega itens da API com filtros

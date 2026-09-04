@@ -616,6 +616,73 @@
             </div>
         </div>
 
+        <!-- Modal impressão Bath (rótulos container) -->
+        <div id="bathPrintModal" class="modal location-product-print-modal bath-print-modal">
+            <div class="modal-content modal-large">
+                <div class="modal-header success">
+                    <h3><i class="fas fa-print"></i> Print Bath Labels</h3>
+                    <button type="button" class="modal-close" id="closeBathPrintModal">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <p class="print-modal-desc">Search any Bath product, then print portrait labels — up to 3 labels per page.</p>
+                    <div id="bathPrintProductList" class="print-location-codes-list bath-print-product-list">
+                        <!-- filled by script -->
+                    </div>
+                    <label class="print-barcode-option" for="bathPrintBarcodesCheckbox">
+                        <input type="checkbox" id="bathPrintBarcodesCheckbox" checked>
+                        <span class="print-barcode-option-icon"><i class="fas fa-barcode"></i></span>
+                        <span>
+                            <strong>Print barcodes</strong>
+                            <small>Include the product barcode next to the subcategory.</small>
+                        </span>
+                    </label>
+                    <div class="bath-print-fields-row">
+                        <div class="form-group bath-print-field">
+                            <label for="bathPrintContainerNr"><i class="fas fa-box"></i> Container Nr</label>
+                            <input type="text" id="bathPrintContainerNr" maxlength="40" value="AAAA999999-00"
+                                   placeholder="AAAA999999-00" autocomplete="off"
+                                   title="Alphanumeric format example: AAAA999999-00 (editable)">
+                        </div>
+                        <div class="form-group bath-print-field">
+                            <label for="bathPrintCopies"><i class="fas fa-copy"></i> Number of prints</label>
+                            <input type="number" id="bathPrintCopies" min="1" max="99" step="1" value="1">
+                        </div>
+                    </div>
+                    <fieldset class="print-font-size-option">
+                        <legend><i class="fas fa-text-height"></i> Print font size (subcategory &amp; product code)</legend>
+                        <div class="print-font-size-radios" role="radiogroup" aria-label="Bath print font size">
+                            <label class="print-font-size-radio">
+                                <input type="radio" name="bathPrintFontSize" value="64">
+                                <span>64</span>
+                            </label>
+                            <label class="print-font-size-radio">
+                                <input type="radio" name="bathPrintFontSize" value="70">
+                                <span>70</span>
+                            </label>
+                            <label class="print-font-size-radio">
+                                <input type="radio" name="bathPrintFontSize" value="80">
+                                <span>80</span>
+                            </label>
+                            <label class="print-font-size-radio">
+                                <input type="radio" name="bathPrintFontSize" value="85">
+                                <span>85</span>
+                            </label>
+                            <label class="print-font-size-radio">
+                                <input type="radio" name="bathPrintFontSize" value="95" checked>
+                                <span>95</span>
+                            </label>
+                        </div>
+                    </fieldset>
+                </div>
+                <div class="modal-footer location-product-print-footer form-actions bath-print-footer">
+                    <button type="button" class="btn btn-secondary" id="closeBathPrintBtn">Close</button>
+                    <button type="button" class="btn btn-primary" id="doBathPrintBtn">
+                        <i class="fas fa-print"></i> Print
+                    </button>
+                </div>
+            </div>
+        </div>
+
         </div>
 
         <!-- Mobile barcode camera scanner -->

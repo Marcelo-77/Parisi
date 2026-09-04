@@ -1242,6 +1242,50 @@ body.has-environment-banner-fixed {
     cursor: pointer;
 }
 
+.bath-print-modal .bath-print-product-list {
+    margin-bottom: 4px;
+    min-height: 220px;
+    max-height: 280px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.bath-print-modal .bath-print-product-list .print-location-cards {
+    flex: 1 1 auto;
+    min-height: 120px;
+    overflow-y: auto;
+}
+
+.bath-print-modal .bath-print-fields-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    margin-top: 14px;
+    align-items: flex-end;
+}
+
+.bath-print-modal .bath-print-fields-row .bath-print-field {
+    margin-top: 0;
+    flex: 1 1 180px;
+    min-width: 160px;
+}
+
+.bath-print-modal .bath-print-field input[type="text"],
+.bath-print-modal .bath-print-field input[type="number"] {
+    width: 100%;
+    max-width: none;
+    padding: 10px 12px;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    font-size: 1rem;
+    letter-spacing: 0.02em;
+}
+
+.bath-print-modal .location-product-print-footer.bath-print-footer {
+    justify-content: center;
+}
+
 .print-barcode-option > input {
     width: 19px;
     height: 19px;
