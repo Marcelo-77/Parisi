@@ -276,14 +276,30 @@ document.addEventListener('DOMContentLoaded', () => {
   const filterEntryTo = document.getElementById('filterEntryTo');
 
   function categoryHasSubcategories(categoria) {
-    return String(categoria || '').trim().toUpperCase() === 'BATHWARE';
+    if (typeof BathwareSubcategoryOptions !== 'undefined'
+      && typeof BathwareSubcategoryOptions.categoryHasSubcategories === 'function') {
+      return BathwareSubcategoryOptions.categoryHasSubcategories(categoria);
+    }
+    const category = String(categoria || '').trim().toUpperCase();
+    return category === 'BATHWARE' || category === 'BATH';
   }
 
   function toggleFilterSubcategoriaField() {
     if (!filterCategoria || !filterSubcategoriaGroup || !filterSubcategoria) return;
-    const show = categoryHasSubcategories(filterCategoria.value);
+    const category = String(filterCategoria.value || '').trim().toUpperCase();
+    const show = categoryHasSubcategories(category);
     filterSubcategoriaGroup.style.display = show ? '' : 'none';
-    if (!show) filterSubcategoria.value = '';
+    if (!show) {
+      filterSubcategoria.value = '';
+      return;
+    }
+    if (typeof BathwareSubcategoryOptions !== 'undefined') {
+      BathwareSubcategoryOptions.populateBathwareSubcategorySelect(filterSubcategoria, {
+        emptyLabel: 'All Subcategory',
+        emptyValue: '',
+        category: category || undefined
+      });
+    }
   }
 
   function setupCategoryFilters() {
@@ -292,6 +308,19 @@ document.addEventListener('DOMContentLoaded', () => {
         emptyLabel: 'All Category',
         emptyValue: ''
       });
+      const hasBath = Array.from(filterCategoria.options).some((opt) => opt.value === 'BATH');
+      if (!hasBath) {
+        const bathOpt = document.createElement('option');
+        bathOpt.value = 'BATH';
+        bathOpt.textContent = 'Bath';
+        // Insert after BathWare when present
+        const bathwareOpt = Array.from(filterCategoria.options).find((opt) => opt.value === 'BATHWARE');
+        if (bathwareOpt && bathwareOpt.nextSibling) {
+          filterCategoria.insertBefore(bathOpt, bathwareOpt.nextSibling);
+        } else {
+          filterCategoria.appendChild(bathOpt);
+        }
+      }
     }
     if (filterSubcategoria && typeof BathwareSubcategoryOptions !== 'undefined') {
       BathwareSubcategoryOptions.populateBathwareSubcategorySelect(filterSubcategoria, {

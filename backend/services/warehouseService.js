@@ -1,9 +1,9 @@
 // Warehouse service using PostgreSQL
 const { query } = require('../config/database');
 const {
-  BATHWARE_SUBCATEGORIES,
   isValidBathwareSubcategory,
-  normalizeBathwareSubcategory
+  normalizeBathwareSubcategory,
+  categorySupportsSubcategory
 } = require('../constants/bathwareSubcategories');
 
 class WarehouseService {
@@ -27,8 +27,8 @@ class WarehouseService {
 
     const insertQuery = `
       INSERT INTO ${this.tableName} 
-      (codigo, barcode, nome, categoria, subcategoria, quantidade, quantidade_minima, localizacao, preco_unitario, fornecedor, descricao, photo)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+      (codigo, barcode, nome, categoria, subcategoria, supplier_product_code, quantidade, quantidade_minima, localizacao, preco_unitario, fornecedor, descricao, photo)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
       RETURNING *
     `;
 
@@ -38,6 +38,7 @@ class WarehouseService {
       dados.nome,
       dados.categoria,
       this.resolveSubcategoria(dados.categoria, dados.subcategoria),
+      this.normalizeSupplierProductCode(dados.supplierProductCode),
       dados.quantidade || 0,
       dados.quantidadeMinima || 0,
       dados.localizacao || null,
@@ -115,7 +116,8 @@ class WarehouseService {
       : '';
 
     const selectQuery = `
-      SELECT id, codigo, barcode, nome, categoria, subcategoria, quantidade, quantidade_minima,
+      SELECT id, codigo, barcode, nome, categoria, subcategoria, supplier_product_code,
+             quantidade, quantidade_minima,
              localizacao, descricao, criado_em, atualizado_em,
              CASE
                WHEN photo IS NOT NULL AND TRIM(photo) <> '' AND LOWER(TRIM(photo)) NOT IN ('null', 'undefined')
@@ -203,6 +205,7 @@ class WarehouseService {
       nome: 'nome',
       categoria: 'categoria',
       subcategoria: 'subcategoria',
+      supplierProductCode: 'supplier_product_code',
       quantidade: 'quantidade',
       quantidadeMinima: 'quantidade_minima',
       descricao: 'descricao',
@@ -217,6 +220,9 @@ class WarehouseService {
             ? dados.categoria
             : (await this.buscarPorId(id))?.categoria;
           value = this.resolveSubcategoria(categoria, value);
+        }
+        if (key === 'supplierProductCode') {
+          value = this.normalizeSupplierProductCode(value);
         }
         if (key === 'photo') {
           value = this.normalizePhoto(value);
@@ -397,8 +403,7 @@ class WarehouseService {
   }
 
   resolveSubcategoria(categoria, subcategoria) {
-    const category = String(categoria || '').trim().toUpperCase();
-    if (category !== 'BATHWARE') {
+    if (!categorySupportsSubcategory(categoria)) {
       return null;
     }
     return normalizeBathwareSubcategory(subcategoria);
@@ -441,7 +446,13 @@ class WarehouseService {
     }
 
     if (dados.subcategoria !== undefined && !isValidBathwareSubcategory(dados.subcategoria)) {
-      erros.push(`Subcategory must be one of: ${BATHWARE_SUBCATEGORIES.join(', ')}`);
+      erros.push('Subcategory is invalid');
+    }
+
+    if (dados.supplierProductCode !== undefined && dados.supplierProductCode !== null && dados.supplierProductCode !== '') {
+      if (String(dados.supplierProductCode).trim().length > 100) {
+        erros.push('Supplier product code must be at most 100 characters');
+      }
     }
 
     return erros;
@@ -452,6 +463,15 @@ class WarehouseService {
     const value = photo != null ? String(photo).trim() : '';
     if (!value || value === 'null' || value === 'undefined') return null;
     return value;
+  }
+
+  normalizeSupplierProductCode(value) {
+    if (value == null) return null;
+    const trimmed = String(value).trim();
+    if (!trimmed || trimmed.toLowerCase() === 'null' || trimmed.toLowerCase() === 'undefined') {
+      return null;
+    }
+    return trimmed.substring(0, 100);
   }
 
   mapRowToItem(row) {
@@ -466,6 +486,7 @@ class WarehouseService {
       nome: row.nome,
       categoria: row.categoria,
       subcategoria: row.subcategoria || null,
+      supplierProductCode: row.supplier_product_code || null,
       quantidade: parseInt(row.quantidade) || 0,
       quantidadeMinima: parseInt(row.quantidade_minima) || 0,
       localizacao: row.localizacao,

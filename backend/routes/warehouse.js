@@ -1,7 +1,6 @@
 const express = require('express');
 const { body, param, query, validationResult } = require('express-validator');
 const warehouseService = require('../services/warehouseService');
-const { BATHWARE_SUBCATEGORIES } = require('../constants/bathwareSubcategories');
 
 const router = express.Router();
 
@@ -34,8 +33,14 @@ const validarItem = [
     .trim(),
   body('subcategoria')
     .optional({ nullable: true, checkFalsy: true })
-    .isIn(BATHWARE_SUBCATEGORIES)
-    .withMessage(`Subcategory must be one of: ${BATHWARE_SUBCATEGORIES.join(', ')}`),
+    .isLength({ min: 1, max: 50 })
+    .withMessage('Subcategory must be between 1 and 50 characters')
+    .trim(),
+  body('supplierProductCode')
+    .optional({ nullable: true, checkFalsy: true })
+    .isLength({ max: 100 })
+    .withMessage('Supplier product code must be at most 100 characters')
+    .trim(),
   body('barcode')
     .optional({ nullable: true, checkFalsy: true })
     .matches(/^\d{1,20}$/)
@@ -76,7 +81,7 @@ const validarMovimentacao = [
 // GET /api/warehouse - Listar todos os itens
 router.get('/', [
   query('categoria').optional().isLength({ min: 1 }).trim(),
-  query('subcategoria').optional().isIn(BATHWARE_SUBCATEGORIES),
+  query('subcategoria').optional().isLength({ min: 1, max: 50 }).trim(),
   query('codigo').optional().isLength({ min: 1 }).trim(),
   query('nome').optional().isLength({ min: 1 }).trim(),
   query('barcode').optional().isLength({ min: 1 }).trim(),

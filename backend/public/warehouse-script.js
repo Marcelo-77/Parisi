@@ -50,7 +50,7 @@ async function getLoggedUserExportPrefix() {
 }
 
 function buildProductsExcelXml(list) {
-    const headers = ['Code Product', 'Name', 'Category', 'Quantity'];
+    const headers = ['Code Product', 'Name', 'Category', 'Supplier Product Code', 'Barcode', 'Quantity'];
     const headerRow = headers.map((header) =>
         `<Cell><Data ss:Type="String">${escapeXml(header)}</Data></Cell>`
     ).join('');
@@ -64,6 +64,8 @@ function buildProductsExcelXml(list) {
             `<Cell><Data ss:Type="String">${escapeXml(item.codigo || '')}</Data></Cell>`,
             `<Cell><Data ss:Type="String">${escapeXml(item.nome || '')}</Data></Cell>`,
             `<Cell><Data ss:Type="String">${escapeXml(formatCategoryDisplay(item))}</Data></Cell>`,
+            `<Cell><Data ss:Type="String">${escapeXml(item.supplierProductCode || '')}</Data></Cell>`,
+            `<Cell><Data ss:Type="String">${escapeXml(item.barcode != null ? String(item.barcode) : '')}</Data></Cell>`,
             qtyCell
         ].join('')}</Row>`;
     }).join('');
@@ -78,6 +80,8 @@ function buildProductsExcelXml(list) {
 <Table ss:ExpandedColumnCount="${headers.length}" ss:ExpandedRowCount="${list.length + 1}">
 <Column ss:Width="140"/>
 <Column ss:Width="220"/>
+<Column ss:Width="140"/>
+<Column ss:Width="160"/>
 <Column ss:Width="140"/>
 <Column ss:Width="90"/>
 <Row>${headerRow}</Row>
@@ -110,6 +114,8 @@ async function downloadProductsExcel(list) {
 
 // Mapeamento categoria (valor no BD) ? texto de exibi??o
 function formatCategory(categoria) {
+    const normalized = String(categoria || '').trim().toUpperCase();
+    if (normalized === 'BATH') return 'Bath';
     if (typeof SectionOptions !== 'undefined') {
         return SectionOptions.formatSectionLabel(categoria);
     }
@@ -127,8 +133,8 @@ function formatSubcategory(subcategoria) {
 
 function formatCategoryDisplay(item) {
     const category = formatCategory(item.categoria);
-    if (String(item.categoria || '').toUpperCase() === 'BATHWARE' && item.subcategoria) {
-        return `${category} ? ${formatSubcategory(item.subcategoria)}`;
+    if (categoryHasSubcategories(item.categoria) && item.subcategoria) {
+        return `${category} · ${formatSubcategory(item.subcategoria)}`;
     }
     return category;
 }
@@ -139,24 +145,47 @@ function toggleSubcategoriaField() {
     const subcategoriaEl = document.getElementById('subcategoria');
     if (!categoriaEl || !subcategoriaGroup || !subcategoriaEl) return;
 
-    const isBathware = String(categoriaEl.value || '').toUpperCase() === 'BATHWARE';
-    subcategoriaGroup.style.display = isBathware ? '' : 'none';
-    if (!isBathware) {
+    const category = String(categoriaEl.value || '').trim().toUpperCase();
+    const show = categoryHasSubcategories(category);
+    subcategoriaGroup.style.display = show ? '' : 'none';
+    if (!show) {
         subcategoriaEl.value = '';
+        return;
+    }
+    if (typeof BathwareSubcategoryOptions !== 'undefined') {
+        BathwareSubcategoryOptions.populateBathwareSubcategorySelect(subcategoriaEl, {
+            includeEmpty: true,
+            emptyLabel: 'Select subcategory',
+            category
+        });
     }
 }
 
 function categoryHasSubcategories(categoria) {
-    return String(categoria || '').toUpperCase() === 'BATHWARE';
+    if (typeof BathwareSubcategoryOptions !== 'undefined'
+        && typeof BathwareSubcategoryOptions.categoryHasSubcategories === 'function') {
+        return BathwareSubcategoryOptions.categoryHasSubcategories(categoria);
+    }
+    const category = String(categoria || '').trim().toUpperCase();
+    return category === 'BATHWARE' || category === 'BATH';
 }
 
 function toggleFilterSubcategoriaField() {
     if (!filterCategoria || !filterSubcategoria) return;
 
-    const showSubcategory = categoryHasSubcategories(filterCategoria.value);
+    const category = String(filterCategoria.value || '').trim().toUpperCase();
+    const showSubcategory = categoryHasSubcategories(category);
     filterSubcategoria.style.display = showSubcategory ? '' : 'none';
     if (!showSubcategory) {
         filterSubcategoria.value = '';
+        return;
+    }
+    if (typeof BathwareSubcategoryOptions !== 'undefined') {
+        BathwareSubcategoryOptions.populateBathwareSubcategorySelect(filterSubcategoria, {
+            emptyLabel: 'All Subcategory',
+            emptyValue: '',
+            category: category || undefined
+        });
     }
 }
 
@@ -268,6 +297,7 @@ window.printReport = function(itemId) {
                 <h3>${item.nome}</h3>
                 <p><strong>Code:</strong> ${item.codigo}</p>
                 <p><strong>Barcode:</strong> ${item.barcode || '-'}</p>
+                <p><strong>Supplier Product Code:</strong> ${item.supplierProductCode || '-'}</p>
                 <p><strong>Category:</strong> ${formatCategoryDisplay(item)}</p>
                 <p><strong>Quantity:</strong> ${item.quantidade}</p>
             </div>
@@ -1123,7 +1153,7 @@ function displayItems(itemsToDisplay) {
         const icon = hasSearched ? 'fa-box-open' : 'fa-search';
         itemsTableBody.innerHTML = `
             <tr class="empty-state-row">
-                <td colspan="6" class="empty-state">
+                <td colspan="7" class="empty-state">
                     <i class="fas ${icon}"></i>
                     <p>${message}</p>
                 </td>
@@ -1138,6 +1168,7 @@ function displayItems(itemsToDisplay) {
         const code = escapeHtml(item.codigo || '-');
         const name = escapeHtml(item.nome || '-');
         const category = escapeHtml(formatCategoryDisplay(item));
+        const supplierCode = escapeHtml(item.supplierProductCode || '-');
         const barcode = escapeHtml(item.barcode != null ? String(item.barcode) : '-');
         const qty = item.quantidade ?? 0;
         const minQty = item.quantidadeMinima
@@ -1149,6 +1180,7 @@ function displayItems(itemsToDisplay) {
                 <td data-label="Code"><strong>${code}</strong></td>
                 <td data-label="Name">${name}</td>
                 <td data-label="Category">${category}</td>
+                <td data-label="Supplier Code">${supplierCode}</td>
                 <td data-label="Barcode">${barcode}</td>
                 <td data-label="Quantity">
                     <strong>${qty}</strong>
@@ -1157,7 +1189,7 @@ function displayItems(itemsToDisplay) {
                 <td data-label="Status"><span class="status-badge ${statusClass}">${status}</span></td>
             </tr>
             <tr class="item-actions-row">
-                <td colspan="6" class="action-buttons-cell">
+                <td colspan="7" class="action-buttons-cell">
                     <div class="action-buttons">
                         ${buildItemActionButtons(item)}
                     </div>
@@ -1323,6 +1355,7 @@ function populateEditSummary(item) {
     const status = getItemStatus(item);
     const statusClass = status.toLowerCase().replace(/\s+/g, '-');
     const metaParts = [formatCategoryDisplay(item)];
+    if (item.supplierProductCode) metaParts.push(`Supplier: ${item.supplierProductCode}`);
     if (item.barcode) metaParts.push(`Barcode: ${item.barcode}`);
 
     codeEl.textContent = item.codigo || '-';
@@ -1466,9 +1499,20 @@ function fillItemForm(item) {
     document.getElementById('codigo').value = item.codigo || '';
     document.getElementById('nome').value = item.nome || '';
     document.getElementById('categoria').value = item.categoria || '';
-    document.getElementById('subcategoria').value = item.subcategoria || '';
+    const subcategoriaEl = document.getElementById('subcategoria');
+    if (subcategoriaEl && typeof BathwareSubcategoryOptions !== 'undefined') {
+        BathwareSubcategoryOptions.populateBathwareSubcategorySelect(subcategoriaEl, {
+            includeEmpty: true,
+            emptyLabel: 'Select subcategory',
+            category: item.categoria,
+            extraValues: item.subcategoria ? [item.subcategoria] : []
+        });
+    }
+    if (subcategoriaEl) subcategoriaEl.value = item.subcategoria || '';
     toggleSubcategoriaField();
     document.getElementById('barcode').value = item.barcode != null ? String(item.barcode) : '';
+    const supplierEl = document.getElementById('supplierProductCode');
+    if (supplierEl) supplierEl.value = item.supplierProductCode || '';
     document.getElementById('quantidade').value = item.quantidade || 0;
     document.getElementById('quantidadeMinima').value = item.quantidadeMinima || 0;
     document.getElementById('peso').value = item.peso != null ? item.peso : '';
@@ -1549,6 +1593,7 @@ async function handleItemSubmit(e) {
         categoria: document.getElementById('categoria').value,
         subcategoria: document.getElementById('subcategoria').value || null,
         barcode: document.getElementById('barcode').value.trim() || null,
+        supplierProductCode: (document.getElementById('supplierProductCode')?.value || '').trim() || null,
         quantidade: parseInt(document.getElementById('quantidade').value) || 0,
         quantidadeMinima: parseInt(document.getElementById('quantidadeMinima').value) || 0,
         peso: parseFloat(document.getElementById('peso').value) || 0,
@@ -1732,7 +1777,7 @@ function buildItemDetailsHtml(item, status, statusClass) {
                         <span class="status-badge ${statusClass}">${status}</span>
                     </div>
                     <p class="item-edit-summary-name">${escapeHtml(item.nome || '-')}</p>
-                    <p class="item-edit-summary-meta">${escapeHtml(formatCategoryDisplay(item))}${item.barcode ? ` ? Barcode: ${barcodeText}` : ''}</p>
+                    <p class="item-edit-summary-meta">${escapeHtml(formatCategoryDisplay(item))}${item.supplierProductCode ? ` · Supplier: ${escapeHtml(item.supplierProductCode)}` : ''}${item.barcode ? ` · Barcode: ${barcodeText}` : ''}</p>
                 </div>
             </div>
             <div class="item-edit-summary-aside">
@@ -1750,6 +1795,7 @@ function buildItemDetailsHtml(item, status, statusClass) {
                 <p><span class="detail-label">Code:</span> ${escapeHtml(item.codigo || '-')}</p>
                 <p><span class="detail-label">Name:</span> ${escapeHtml(item.nome || '-')}</p>
                 <p><span class="detail-label">Barcode:</span> ${barcodeText}</p>
+                <p><span class="detail-label">Supplier Product Code:</span> ${escapeHtml(item.supplierProductCode || '-')}</p>
             </div>
             <div class="detail-section">
                 <h4><i class="fas fa-folder-tree"></i> Classification</h4>

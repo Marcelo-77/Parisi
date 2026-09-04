@@ -193,6 +193,7 @@
                         <option value="">All Category</option>
                         <option value="TAPWARE">Tapware</option>
                         <option value="BATHWARE">BathWare</option>
+                        <option value="BATH">Bath</option>
                         <option value="WAREHOUSE2">Warehouse2</option>
                         <option value="FURNITUREWARE">Furniture</option>
                         <option value="DOORWARE">Doorware</option>
@@ -228,6 +229,7 @@
                             <th><i class="fas fa-barcode"></i> Code</th>
                             <th><i class="fas fa-tag"></i> Name</th>
                             <th><i class="fas fa-folder"></i> Category</th>
+                            <th><i class="fas fa-truck"></i> Supplier Code</th>
                             <th><i class="fas fa-barcode"></i> Barcode</th>
                             <th><i class="fas fa-boxes"></i> Quantity</th>
                             <th><i class="fas fa-info-circle"></i> Status</th>
@@ -235,7 +237,7 @@
                     </thead>
                     <tbody id="itemsTableBody">
                         <tr>
-                            <td colspan="6" class="empty-state" id="emptyStateRow">
+                            <td colspan="7" class="empty-state" id="emptyStateRow">
                                 <i class="fas fa-search"></i>
                                 <p>Use search or filters and click <strong>Search</strong> to load items.</p>
                             </td>
@@ -347,6 +349,7 @@
                                             <option value="">Select category</option>
                                             <option value="TAPWARE">Tapware</option>
                                             <option value="BATHWARE">BathWare</option>
+                                            <option value="BATH">Bath</option>
                                             <option value="WAREHOUSE2">Warehouse2</option>
                                             <option value="FURNITUREWARE">Furniture</option>
                                             <option value="DOORWARE">Doorware</option>
@@ -374,6 +377,15 @@
                                                placeholder="Up to 20 digits"
                                                maxlength="20" pattern="[0-9]+">
                                         <span class="error-message" id="barcode-error"></span>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="supplierProductCode">
+                                            <i class="fas fa-truck"></i> Supplier Product Code
+                                        </label>
+                                        <input type="text" id="supplierProductCode" name="supplierProductCode"
+                                               placeholder="Supplier product code"
+                                               maxlength="100">
+                                        <span class="error-message" id="supplierProductCode-error"></span>
                                     </div>
                                 </div>
                             </section>
