@@ -548,11 +548,6 @@ window.doBathPrint = function() {
     }
 
     const containerNr = String(document.getElementById('bathPrintContainerNr')?.value || '').trim();
-    if (!containerNr) {
-        alert('Please enter Container Nr.');
-        document.getElementById('bathPrintContainerNr')?.focus();
-        return;
-    }
     const copiesRaw = parseInt(document.getElementById('bathPrintCopies')?.value, 10);
     const copies = Number.isFinite(copiesRaw) && copiesRaw > 0 ? Math.min(copiesRaw, 99) : 0;
     if (copies < 1) {
