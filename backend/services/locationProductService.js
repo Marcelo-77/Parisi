@@ -13,6 +13,7 @@ function mapRow(row) {
     quantityInformed: parseInt(row.quantity_informed) || 0,
     quantityCurrent: parseInt(row.quantity_current) || 0,
     statCdId: row.stat_cd_id != null ? String(row.stat_cd_id) : null,
+    situationDetails: row.situation_details != null ? String(row.situation_details).trim() : null,
     usuarioInseriu: row.usuario_inseriu || null,
     usuarioInseriuNome: resolveUsuarioInseriuNome(row)
   };
@@ -36,6 +37,17 @@ function resolveUsuarioAlterouNome(row) {
 
 function isFullSituationDescription(description) {
   return String(description || '').trim().toLowerCase() === 'full';
+}
+
+function isSituationRequiringDetails(description) {
+  const value = String(description || '').trim().toLowerCase();
+  return value === 'missing' || value === 'damaged';
+}
+
+function normalizeSituationDetails(value) {
+  if (value == null) return null;
+  const text = String(value).trim();
+  return text ? text.substring(0, 500) : null;
 }
 
 async function fetchSituationDescription(client, siprSqNumber) {
@@ -115,30 +127,47 @@ async function criar(dados) {
     throw new Error(`Invalid data: ${erros.join(', ')}`);
   }
 
-  const insertSql = `
-    INSERT INTO ${TABLE}
-      (location_code, product_code, entry_datetime, sipr_sq_number, quantity_informed, quantity_current, stat_cd_id, usuario_inseriu)
-    VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-    RETURNING *
-  `;
-
-  const values = [
-    dados.locationCode,
-    dados.productCode,
-    dados.entryDatetime,
-    dados.siprSqNumber,
-    dados.quantityInformed ?? 0,
-    dados.quantityCurrent ?? 0,
-    dados.statCdId != null ? String(dados.statCdId).substring(0, 1) : 'A',
-    dados.usuarioInseriu || null
-  ];
-
   const quantityCurrent = parseInt(dados.quantityCurrent, 10) || 0;
   const productCode = String(dados.productCode || '').trim();
 
   const client = await getClient();
   try {
     await client.query('BEGIN');
+
+    const situationDesc = await fetchSituationDescription(client, dados.siprSqNumber);
+    if (!situationDesc) {
+      await client.query('ROLLBACK');
+      throw new Error('Situation was not found.');
+    }
+
+    let situationDetails = normalizeSituationDetails(dados.situationDetails);
+    if (isSituationRequiringDetails(situationDesc)) {
+      if (!situationDetails) {
+        await client.query('ROLLBACK');
+        throw new Error('Details of the situation is required when Situation is Missing or Damaged.');
+      }
+    } else {
+      situationDetails = null;
+    }
+
+    const insertSql = `
+      INSERT INTO ${TABLE}
+        (location_code, product_code, entry_datetime, sipr_sq_number, quantity_informed, quantity_current, stat_cd_id, usuario_inseriu, situation_details)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+      RETURNING *
+    `;
+
+    const values = [
+      dados.locationCode,
+      dados.productCode,
+      dados.entryDatetime,
+      dados.siprSqNumber,
+      dados.quantityInformed ?? 0,
+      dados.quantityCurrent ?? 0,
+      dados.statCdId != null ? String(dados.statCdId).substring(0, 1) : 'A',
+      dados.usuarioInseriu || null,
+      situationDetails
+    ];
 
     const existingResult = await client.query(
       `SELECT lp.*, sp.sipr_nm_description
@@ -170,14 +199,16 @@ async function criar(dados) {
          SET quantity_informed = $1,
              quantity_current = $2,
              entry_datetime = $3,
-             usuario_inseriu = COALESCE(usuario_inseriu, $4)
-         WHERE location_code = $5 AND product_code = $6 AND sipr_sq_number = $7
+             usuario_inseriu = COALESCE(usuario_inseriu, $4),
+             situation_details = $5
+         WHERE location_code = $6 AND product_code = $7 AND sipr_sq_number = $8
          RETURNING *`,
         [
           newQtyInformed,
           newQtyCurrent,
           dados.entryDatetime,
           dados.usuarioInseriu || null,
+          situationDetails,
           existingRow.location_code,
           existingRow.product_code,
           existingRow.sipr_sq_number
@@ -193,13 +224,13 @@ async function criar(dados) {
         quantityCurrent: newQtyCurrent,
         usuario: dados.usuarioInseriu || null
       });
-      const situationDesc = existingRow.sipr_nm_description
-        || await fetchSituationDescription(client, dados.siprSqNumber);
-      if (isFullSituationDescription(situationDesc) && newQtyCurrent > 0 && productCode) {
+      const existingSituationDesc = existingRow.sipr_nm_description || situationDesc;
+      if (isFullSituationDescription(existingSituationDesc) && newQtyCurrent > 0 && productCode) {
         await adjustWarehouseItemsQuantity(client, productCode, newQtyCurrent - oldQtyCurrent);
       }
       await client.query('COMMIT');
       const mapped = mapRow(updatedRow);
+      mapped.situationDescription = existingSituationDesc;
       mapped.restocked = true;
       return mapped;
     }
@@ -215,14 +246,24 @@ async function criar(dados) {
       quantityCurrent: parseInt(createdRow.quantity_current, 10) || 0,
       usuario: dados.usuarioInseriu || null
     });
-    const situationDesc = await fetchSituationDescription(client, dados.siprSqNumber);
     if (isFullSituationDescription(situationDesc) && quantityCurrent > 0 && productCode) {
       await adjustWarehouseItemsQuantity(client, productCode, quantityCurrent);
     }
     await client.query('COMMIT');
-    return mapRow(result.rows[0]);
+    const mapped = mapRow(createdRow);
+    mapped.situationDescription = situationDesc;
+    return mapped;
   } catch (error) {
     await client.query('ROLLBACK').catch(() => {});
+    if (error.message && (
+      error.message.startsWith('Insufficient warehouse stock')
+      || error.message.startsWith('An active record already exists')
+      || error.message.startsWith('Details of the situation')
+      || error.message.startsWith('Situation was not found')
+      || error.message.startsWith('Invalid data')
+    )) {
+      throw error;
+    }
     if (error.code === '23505') {
       throw new Error('Record already exists for this location, product, date/time and situation.');
     }

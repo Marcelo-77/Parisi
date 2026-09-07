@@ -529,6 +529,14 @@ CREATE TABLE IF NOT EXISTS location_product (
 
 ALTER TABLE location_product ADD COLUMN IF NOT EXISTS stat_cd_id VARCHAR(1);
 ALTER TABLE location_product ADD COLUMN IF NOT EXISTS usuario_inseriu VARCHAR(50);
+ALTER TABLE location_product ADD COLUMN IF NOT EXISTS situation_details VARCHAR(500);
+
+INSERT INTO situation_product (sipr_nm_description)
+SELECT 'Damaged'
+WHERE NOT EXISTS (
+  SELECT 1 FROM situation_product
+  WHERE LOWER(TRIM(sipr_nm_description)) = 'damaged'
+);
 
 DO $$
 BEGIN

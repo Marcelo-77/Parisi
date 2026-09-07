@@ -263,10 +263,18 @@ function resetBathPrintForm() {
     const copiesEl = document.getElementById('bathPrintCopies');
     const barcodesEl = document.getElementById('bathPrintBarcodesCheckbox');
     const defaultFont = document.querySelector('input[name="bathPrintFontSize"][value="95"]');
-    if (containerEl) containerEl.value = 'AAAA999999-00';
+    if (containerEl) containerEl.value = '';
     if (copiesEl) copiesEl.value = '1';
     if (barcodesEl) barcodesEl.checked = true;
     if (defaultFont) defaultFont.checked = true;
+}
+
+function syncWarehousePrintOptionsVisibility(item) {
+    const optionsPanel = document.getElementById('bathPrintOptionsPanel');
+    const defaultHint = document.getElementById('defaultPrintHint');
+    const isBath = item ? isBathCategory(item.categoria) : false;
+    if (optionsPanel) optionsPanel.hidden = !isBath;
+    if (defaultHint) defaultHint.hidden = !item || isBath;
 }
 
 function getBathProductSearchHaystack(item) {
@@ -274,6 +282,8 @@ function getBathProductSearchHaystack(item) {
         item.codigo,
         item.nome,
         item.barcode,
+        item.categoria,
+        formatCategory(item.categoria),
         item.subcategoria,
         formatSubcategory(item.subcategoria),
         item.supplierProductCode
@@ -306,7 +316,7 @@ function renderBathPrintProductOptions(searchTerm = bathPrintSearchTerm) {
         ? filtered.map((item) => {
             const id = String(item.id);
             const isSelected = id === selectedId;
-            const subgroup = formatSubcategory(item.subcategoria) || '-';
+            const categoryLabel = formatCategoryDisplay(item);
             return `
               <label class="print-location-card${isSelected ? ' is-selected' : ''}">
                 <input type="radio" name="bathPrintProductId" value="${escapeHtml(id)}"${isSelected ? ' checked' : ''}>
@@ -314,27 +324,27 @@ function renderBathPrintProductOptions(searchTerm = bathPrintSearchTerm) {
                 <span class="print-location-card-content">
                   <strong>${escapeHtml(item.codigo || '-')}</strong>
                   <small>${escapeHtml(item.nome || '')}</small>
-                  <small>${escapeHtml(subgroup)}${item.barcode ? ` · ${escapeHtml(String(item.barcode))}` : ''}</small>
+                  <small>${escapeHtml(categoryLabel)}${item.barcode ? ` · ${escapeHtml(String(item.barcode))}` : ''}</small>
                 </span>
               </label>
             `;
         }).join('')
-        : '<div class="print-location-empty"><i class="fas fa-search"></i><p>No matching Bath products found.</p></div>';
+        : '<div class="print-location-empty"><i class="fas fa-search"></i><p>No matching products found.</p></div>';
 
     list.innerHTML = `
       <div class="print-location-picker-toolbar">
         <div class="print-location-search">
           <i class="fas fa-search"></i>
           <input id="bathPrintProductSearch" type="search"
-                 placeholder="Search Bath product code, name, barcode or subgroup"
+                 placeholder="Search product code, name, barcode or category"
                  value="${escapeHtml(bathPrintSearchTerm)}" autocomplete="off">
         </div>
       </div>
       <div class="print-location-picker-summary">
-        <span><strong>${bathPrintOptions.length}</strong> Bath products</span>
+        <span><strong>${bathPrintOptions.length}</strong> products</span>
         <span>${filtered.length} shown</span>
       </div>
-      <div class="print-location-cards" role="radiogroup" aria-label="Select Bath product">
+      <div class="print-location-cards" role="radiogroup" aria-label="Select product">
         ${optionsHtml}
       </div>
     `;
@@ -352,56 +362,72 @@ function renderBathPrintProductOptions(searchTerm = bathPrintSearchTerm) {
     list.querySelectorAll('input[name="bathPrintProductId"]').forEach((radio) => {
         radio.addEventListener('change', () => {
             bathPrintItem = getSelectedBathPrintItem();
+            syncWarehousePrintOptionsVisibility(bathPrintItem);
             list.querySelectorAll('.print-location-card').forEach((card) => {
                 card.classList.toggle('is-selected', Boolean(card.querySelector('input')?.checked));
             });
         });
     });
+
+    syncWarehousePrintOptionsVisibility(bathPrintItem);
 }
 
-async function loadBathPrintProducts() {
+async function loadWarehousePrintProducts(bathOnly = false) {
     const query = new URLSearchParams({
-        categoria: 'BATH',
         ordenarPor: 'codigo',
         direcao: 'asc'
     });
+    if (bathOnly) query.set('categoria', 'BATH');
     const response = await fetch(`${API_BASE_URL}?${query.toString()}`);
     const data = await response.json();
     if (!response.ok || !data.success) {
-        throw new Error(data.message || data.error || 'Failed to load Bath products');
+        throw new Error(data.message || data.error || 'Failed to load products');
     }
     bathPrintOptions = (data.data || [])
-        .filter((item) => isBathCategory(item.categoria))
+        .filter((item) => (bathOnly ? isBathCategory(item.categoria) : true))
         .sort((a, b) => String(a.codigo || '').localeCompare(String(b.codigo || ''), undefined, { sensitivity: 'base' }));
 }
 
-window.openBathPrintModal = async function(item) {
+window.openBathPrintModal = async function(item, options = {}) {
+    const onlyBath = options.bathOnly === true;
+
     bathPrintItem = item || null;
     bathPrintSearchTerm = '';
     const modal = document.getElementById('bathPrintModal');
     const list = document.getElementById('bathPrintProductList');
     if (!modal || !list) {
-        alert('Bath print dialog not available');
+        alert('Print dialog not available');
         return;
     }
     resetBathPrintForm();
+    syncWarehousePrintOptionsVisibility(bathPrintItem);
     modal.style.display = 'block';
-    list.innerHTML = '<p>Loading Bath products...</p>';
+    list.innerHTML = '<p>Loading products...</p>';
     try {
-        await loadBathPrintProducts();
+        await loadWarehousePrintProducts(onlyBath);
         if (bathPrintItem?.id) {
             const matched = bathPrintOptions.find((p) => String(p.id) === String(bathPrintItem.id));
-            if (matched) bathPrintItem = matched;
+            if (matched) {
+                bathPrintItem = matched;
+            } else if (bathPrintItem) {
+                bathPrintOptions.unshift(bathPrintItem);
+            }
         }
         if (bathPrintOptions.length === 0) {
-            list.innerHTML = '<p class="empty-state">No Bath products found.</p>';
+            list.innerHTML = '<p class="empty-state">No products found.</p>';
+            syncWarehousePrintOptionsVisibility(null);
             return;
         }
         renderBathPrintProductOptions('');
     } catch (e) {
-        console.error('Bath print modal error:', e);
-        list.innerHTML = '<p class="error-message">Error loading Bath products. Check console and ensure the server is running.</p>';
+        console.error('Print modal error:', e);
+        list.innerHTML = '<p class="error-message">Error loading products. Check console and ensure the server is running.</p>';
+        syncWarehousePrintOptionsVisibility(null);
     }
+};
+
+window.openWarehousePrintModal = function(item) {
+    return window.openBathPrintModal(item || null, { bathOnly: false });
 };
 
 window.closeBathPrintModal = function() {
@@ -410,6 +436,7 @@ window.closeBathPrintModal = function() {
     bathPrintItem = null;
     bathPrintOptions = [];
     bathPrintSearchTerm = '';
+    syncWarehousePrintOptionsVisibility(null);
 };
 
 function renderBathBarcodeSvg(svgId, barcodeValue, fontSize) {
@@ -440,10 +467,17 @@ function renderBathBarcodeSvg(svgId, barcodeValue, fontSize) {
 window.doBathPrint = function() {
     const item = getSelectedBathPrintItem();
     if (!item) {
-        alert('Please select a Bath product to print.');
+        alert('Please select a product to print.');
         return;
     }
     bathPrintItem = item;
+
+    if (!isBathCategory(item.categoria)) {
+        window.closeBathPrintModal();
+        window.openDefaultPrintReport(item);
+        return;
+    }
+
     const containerNr = String(document.getElementById('bathPrintContainerNr')?.value || '').trim();
     if (!containerNr) {
         alert('Please enter Container Nr.');
@@ -519,11 +553,13 @@ window.doBathPrint = function() {
         </div>
         <div class="bath-label-code-row" style="font-size:${fontSize}px;">
           <span class="bath-label-code">${productCode}</span>
-          <span class="bath-label-date">${printDate}</span>
         </div>
         <div class="bath-label-container-row">
           <span class="bath-label-container">Container Nr: ${containerEsc}</span>
-          <span class="bath-label-qty">Qty: 1</span>
+          <span class="bath-label-meta">
+            <span class="bath-label-date">${printDate}</span>
+            <span class="bath-label-qty">Qty: 1</span>
+          </span>
         </div>
         ${separatorHtml}
       </div>`);
@@ -596,7 +632,7 @@ window.doBathPrint = function() {
   .bath-label-code-row {
     display: flex;
     align-items: baseline;
-    justify-content: space-between;
+    justify-content: flex-start;
     gap: 12px;
     margin-top: 6px;
     font-weight: 800;
@@ -607,14 +643,6 @@ window.doBathPrint = function() {
     min-width: 0;
     word-break: break-all;
   }
-  .bath-label-date {
-    flex: 0 0 auto;
-    font-size: 30px;
-    font-weight: 700;
-    line-height: 1.15;
-    text-align: right;
-    white-space: nowrap;
-  }
   .bath-label-container-row {
     display: flex;
     align-items: baseline;
@@ -623,6 +651,7 @@ window.doBathPrint = function() {
     margin-top: 8px;
   }
   .bath-label-container,
+  .bath-label-date,
   .bath-label-qty {
     font-size: 30px;
     font-weight: 700;
@@ -632,8 +661,15 @@ window.doBathPrint = function() {
     flex: 1 1 auto;
     min-width: 0;
   }
-  .bath-label-qty {
+  .bath-label-meta {
     flex: 0 0 auto;
+    display: inline-flex;
+    align-items: baseline;
+    gap: 16px;
+    white-space: nowrap;
+  }
+  .bath-label-date,
+  .bath-label-qty {
     text-align: right;
     white-space: nowrap;
   }
@@ -662,51 +698,42 @@ ${pages.join('')}
 
 // Definir fun??o printReport globalmente ANTES do DOMContentLoaded
 window.printReport = function(itemId) {
-    console.log('========================================');
-    console.log('?? PRINT REPORT FUNCTION CALLED');
-    console.log('========================================');
-    console.log('Item ID:', itemId);
-    console.log('Items array length:', items.length);
-    console.log('Items:', items);
-    
     const item = items.find(i => i.id === itemId || i.id === String(itemId));
     if (!item) {
-        console.error('? Item not found for ID:', itemId);
-        console.log('Available item IDs:', items.map(i => i.id));
         alert('Item not found: ' + itemId);
         return;
     }
-    
-    console.log('? Item found:', item);
-    console.log('Item code:', item.codigo);
-    console.log('Item barcode:', item.barcode);
-    console.log('Item name:', item.nome);
 
     if (isBathCategory(item.categoria)) {
         window.openBathPrintModal(item);
         return;
     }
-    
+
+    window.openDefaultPrintReport(item);
+};
+
+window.openDefaultPrintReport = function(item) {
+    if (!item) {
+        alert('Item not found');
+        return;
+    }
+
+    const itemId = item.id;
     const printModal = document.getElementById('printModal');
     const printContent = document.getElementById('printContent');
     
     if (!printModal) {
-        console.error('? printModal element not found in DOM');
         alert('Print modal not available');
         return;
     }
-    console.log('? printModal found');
     
     if (!printContent) {
-        console.error('? printContent element not found in DOM');
         alert('Print content not available');
         return;
     }
-    console.log('? printContent found');
     
     const uniqueId = `barcode-${itemId}-${Date.now()}`;
     const qrId = `qrcode-${itemId}-${Date.now()}`;
-    console.log('Generated IDs - Barcode SVG:', uniqueId, 'QR Container:', qrId);
     
     printContent.innerHTML = `
         <div class="print-report">
@@ -715,12 +742,12 @@ window.printReport = function(itemId) {
                 <p>Item Report</p>
             </div>
             <div class="print-item-info">
-                <h3>${item.nome}</h3>
-                <p><strong>Code:</strong> ${item.codigo}</p>
-                <p><strong>Barcode:</strong> ${item.barcode || '-'}</p>
-                <p><strong>Supplier Product Code:</strong> ${item.supplierProductCode || '-'}</p>
-                <p><strong>Category:</strong> ${formatCategoryDisplay(item)}</p>
-                <p><strong>Quantity:</strong> ${item.quantidade}</p>
+                <h3>${escapeHtml(item.nome || '')}</h3>
+                <p><strong>Code:</strong> ${escapeHtml(item.codigo || '')}</p>
+                <p><strong>Barcode:</strong> ${escapeHtml(item.barcode || '-')}</p>
+                <p><strong>Supplier Product Code:</strong> ${escapeHtml(item.supplierProductCode || '-')}</p>
+                <p><strong>Category:</strong> ${escapeHtml(formatCategoryDisplay(item))}</p>
+                <p><strong>Quantity:</strong> ${escapeHtml(String(item.quantidade ?? ''))}</p>
             </div>
             <div class="print-codes">
                 <div class="code-section">
@@ -740,25 +767,14 @@ window.printReport = function(itemId) {
     
     // Para impress?o, usar barcode do produto para Barcode e QRCode
     const barcodeValue = String(item.barcode || '').trim();
-    console.log('?? Barcode to generate:', barcodeValue);
-    console.log('Barcode type:', typeof barcodeValue);
-    console.log('Barcode length:', barcodeValue.length);
     
     if (!barcodeValue) {
-        console.error('? Item barcode is empty or undefined');
         alert('Item barcode is missing. Cannot generate barcode and QR code.');
         return;
     }
     
-    // Verificar bibliotecas antes de continuar
-    console.log('?? Checking libraries...');
-    console.log('JsBarcode available:', typeof JsBarcode !== 'undefined');
-    console.log('QRCode available:', typeof QRCode !== 'undefined');
-    
     // Exibir modal primeiro
-    console.log('?? Displaying print modal...');
     printModal.style.display = 'block';
-    console.log('? Modal displayed');
     
     // Fun??o para gerar c?digos com retry
     function generateCodes() {
@@ -767,16 +783,9 @@ window.printReport = function(itemId) {
         const barcodeReady = typeof JsBarcode !== 'undefined';
         const qrcodeReady = typeof QRCode !== 'undefined';
         
-        console.log('?? Checking conditions...');
-        console.log('  - SVG element:', svgElement ? '? Found' : '? Not found');
-        console.log('  - QR Container element:', qrContainer ? '? Found' : '? Not found');
-        console.log('  - JsBarcode:', barcodeReady ? '? Available' : '? Not available');
-        console.log('  - QRCode:', qrcodeReady ? '? Available' : '? Not available');
-        
         // Gerar Barcode
         if (barcodeReady && svgElement) {
             try {
-                console.log('?? Generating barcode for:', barcodeValue);
                 JsBarcode(`#${uniqueId}`, barcodeValue, {
                     format: "CODE128",
                     width: 2,
@@ -785,24 +794,15 @@ window.printReport = function(itemId) {
                     fontSize: 16,
                     margin: 10
                 });
-                console.log('? Barcode generated successfully');
             } catch (error) {
-                console.error('? Error generating barcode:', error);
-                console.error('Error details:', error.message, error.stack);
+                console.error('Error generating barcode:', error);
             }
-        } else {
-            if (!barcodeReady) console.error('? Cannot generate barcode: JsBarcode not available');
-            if (!svgElement) console.error('? Cannot generate barcode: SVG element not found');
         }
         
         // Gerar QR Code - usando qrcodejs (API diferente)
         if (qrcodeReady && qrContainer) {
             try {
-                console.log('?? Generating QR code for:', barcodeValue);
-                // Limpar conte?do anterior
                 qrContainer.innerHTML = '';
-                
-                // Usar a API do qrcodejs
                 new QRCode(qrContainer, {
                     text: barcodeValue,
                     width: 200,
@@ -811,14 +811,9 @@ window.printReport = function(itemId) {
                     colorLight: '#FFFFFF',
                     correctLevel: QRCode.CorrectLevel.H
                 });
-                console.log('? QR code generated successfully');
             } catch (error) {
-                console.error('? Error generating QR code:', error);
-                console.error('Error details:', error.message, error.stack);
+                console.error('Error generating QR code:', error);
             }
-        } else {
-            if (!qrcodeReady) console.error('? Cannot generate QR code: QRCode not available');
-            if (!qrContainer) console.error('? Cannot generate QR code: QR Container element not found');
         }
     }
     
@@ -828,31 +823,21 @@ window.printReport = function(itemId) {
     
     function tryGenerateCodes() {
         attempts++;
-        console.log(`Attempt ${attempts}/${maxAttempts} to generate codes...`);
-        
         const svgElement = document.getElementById(uniqueId);
         const qrContainer = document.getElementById(qrId);
         const barcodeReady = typeof JsBarcode !== 'undefined';
         const qrcodeReady = typeof QRCode !== 'undefined';
         
         if (svgElement && qrContainer && barcodeReady && qrcodeReady) {
-            console.log('? All conditions met! Generating codes...');
             generateCodes();
         } else if (attempts < maxAttempts) {
-            console.log('? Waiting for conditions...');
             setTimeout(tryGenerateCodes, 300);
         } else {
-            console.error('? Timeout: Could not generate codes after', maxAttempts, 'attempts');
             generateCodes(); // Tentar mesmo assim
         }
     }
     
-    // Come?ar tentativas ap?s um pequeno delay
     setTimeout(tryGenerateCodes, 300);
-    
-    console.log('========================================');
-    console.log('? PRINT REPORT FUNCTION COMPLETED');
-    console.log('========================================');
 };
 
 // Definir fun??o closePrintModal globalmente
@@ -1353,6 +1338,12 @@ function setupEventListeners() {
                 return;
             }
             await downloadProductsExcel(getFilteredSortedItems());
+        });
+    }
+    const printProductsBtn = document.getElementById('printProductsBtn');
+    if (printProductsBtn) {
+        printProductsBtn.addEventListener('click', () => {
+            window.openWarehousePrintModal();
         });
     }
     const closeProductSearchBtn = document.getElementById('closeProductSearchBtn');

@@ -410,6 +410,33 @@ document.addEventListener('DOMContentLoaded', () => {
     return full ? Number(full.siprSqNumber) : Number(situations[0].siprSqNumber);
   }
 
+  function getSituationDescriptionById(siprSqNumber) {
+    const found = situations.find((s) => String(s.siprSqNumber) === String(siprSqNumber));
+    return found ? String(found.siprNmDescription || '').trim() : '';
+  }
+
+  function isSituationRequiringDetails(descriptionOrId) {
+    const asDesc = getSituationDescriptionById(descriptionOrId);
+    const value = String(asDesc || descriptionOrId || '').trim().toLowerCase();
+    return value === 'missing' || value === 'damaged';
+  }
+
+  function syncSituationDetailsField(row) {
+    if (!row) return;
+    const situationSelect = row.querySelector('.new-row-situation');
+    const detailsCell = row.querySelector('.td-situation-details');
+    const detailsInput = row.querySelector('.new-row-situation-details');
+    if (!situationSelect || !detailsInput) return;
+    const required = isSituationRequiringDetails(situationSelect.value);
+    detailsInput.disabled = !required;
+    detailsInput.required = required;
+    if (detailsCell) detailsCell.classList.toggle('is-disabled', !required);
+    if (!required) detailsInput.value = '';
+    detailsInput.placeholder = required
+      ? 'Details of the situation *'
+      : 'Enabled for Missing or Damaged';
+  }
+
   function fillEntryDatalists() {
     const locList = document.getElementById('locationCodesList');
     const prodList = document.getElementById('productCodesList');
@@ -451,6 +478,11 @@ document.addEventListener('DOMContentLoaded', () => {
       <td data-label="Situation">
         <select class="new-row-situation" required>${getSituationOptionsHtml(defaults.siprSqNumber ?? getDefaultSituationValue())}</select>
       </td>
+      <td class="td-situation-details" data-label="Details of the situation">
+        <input type="text" class="new-row-situation-details" maxlength="500"
+               value="${escapeHtml(defaults.situationDetails || '')}"
+               placeholder="Enabled for Missing or Damaged" autocomplete="off" disabled>
+      </td>
       <td data-label="Quantity">
         <input type="number" class="new-row-qty-informed" min="1" step="1" value="${Number(defaults.quantityInformed ?? 1)}">
       </td>
@@ -467,6 +499,10 @@ document.addEventListener('DOMContentLoaded', () => {
         input.value = input.value.toUpperCase();
       });
     });
+
+    const situationSelect = tr.querySelector('.new-row-situation');
+    situationSelect?.addEventListener('change', () => syncSituationDetailsField(tr));
+    syncSituationDetailsField(tr);
 
     tr.querySelector('.btn-remove-row')?.addEventListener('click', () => {
       if (newRecordsBody.querySelectorAll('.new-record-row').length <= 1) {
@@ -495,13 +531,14 @@ document.addEventListener('DOMContentLoaded', () => {
       locationCode: row.querySelector('.new-row-location')?.value.trim().toUpperCase() || '',
       productCode: row.querySelector('.new-row-product')?.value.trim().toUpperCase() || '',
       siprSqNumber: parseInt(row.querySelector('.new-row-situation')?.value, 10),
+      situationDetails: row.querySelector('.new-row-situation-details')?.value.trim() || '',
       quantityInformed: parseInt(row.querySelector('.new-row-qty-informed')?.value, 10) || 0,
       quantityCurrent: parseInt(row.querySelector('.new-row-qty-informed')?.value, 10) || 0
     }));
   }
 
   function clearRowInputErrors() {
-    newRecordsBody?.querySelectorAll('.new-row-location, .new-row-product, .new-row-situation, .new-row-qty-informed')
+    newRecordsBody?.querySelectorAll('.new-row-location, .new-row-product, .new-row-situation, .new-row-situation-details, .new-row-qty-informed')
       .forEach((el) => {
         el.style.borderColor = '';
       });
@@ -548,6 +585,12 @@ document.addEventListener('DOMContentLoaded', () => {
       if (!row.siprSqNumber || Number.isNaN(row.siprSqNumber)) {
         errors.push(`Line ${row.lineNumber} - Situation: required.`);
         markFieldError(row.rowElement, '.new-row-situation');
+        continue;
+      }
+
+      if (isSituationRequiringDetails(row.siprSqNumber) && !row.situationDetails) {
+        errors.push(`Line ${row.lineNumber} - Details of the situation: required for Missing or Damaged.`);
+        markFieldError(row.rowElement, '.new-row-situation-details');
         continue;
       }
 
@@ -665,7 +708,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!hasSearched) {
       tbody.innerHTML = `
         <tr class="empty-state-row">
-          <td colspan="8" class="empty-state">
+          <td colspan="9" class="empty-state">
             <i class="fas fa-search"></i>
             <p>Use filters and click Search to load records.</p>
           </td>
@@ -678,7 +721,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!records.length) {
       tbody.innerHTML = `
         <tr class="empty-state-row">
-          <td colspan="8" class="empty-state">
+          <td colspan="9" class="empty-state">
             <i class="fas fa-inbox"></i>
             <p>No records. Click "New Record" to add.</p>
           </td>
@@ -698,6 +741,7 @@ document.addEventListener('DOMContentLoaded', () => {
           <td data-label="Product Code">${escapeHtml(r.productCode)}</td>
           <td data-label="Entry Date/Time">${formatDateTime(r.entryDatetime)}</td>
           <td data-label="Situation">${escapeHtml(r.situationDescription || '')}</td>
+          <td data-label="Details of the situation">${escapeHtml(r.situationDetails || '-')}</td>
           <td data-label="Qty Current">${r.quantityCurrent ?? 0}</td>
           <td data-label="Inserted by">${escapeHtml(r.usuarioInseriuNome || r.usuarioInseriu || '-')}</td>
           <td data-label="Date Time Last Update">${formatDateTime(r.lastUpdateDatetime || r.entryDatetime)}</td>
@@ -874,6 +918,7 @@ document.addEventListener('DOMContentLoaded', () => {
         siprSqNumber: row.siprSqNumber,
         quantityInformed: row.quantityInformed,
         quantityCurrent: row.quantityCurrent,
+        situationDetails: row.situationDetails || null,
         statCdId: 'A'
       };
 
@@ -1037,6 +1082,21 @@ document.addEventListener('DOMContentLoaded', () => {
       const fromProduct = String(product.barcode).trim();
       if (fromProduct) return fromProduct;
     }
+    return null;
+  }
+
+  function getRecordSituationDescription(record) {
+    const fromRecord = String(record?.situationDescription || record?.sipr_nm_description || '').trim();
+    if (fromRecord) return fromRecord;
+    return getSituationDescriptionById(record?.siprSqNumber ?? record?.sipr_sq_number);
+  }
+
+  /** For Missing/Damaged print: show situation text instead of product barcode. */
+  function getPrintSituationBarcodeReplacement(record) {
+    const desc = getRecordSituationDescription(record);
+    const lower = desc.toLowerCase();
+    if (lower === 'missing') return 'Missing';
+    if (lower === 'damaged') return 'Damaged';
     return null;
   }
 
@@ -1252,6 +1312,10 @@ document.addEventListener('DOMContentLoaded', () => {
         const barcodePrefix = 'bcPrint_' + Date.now() + '_';
         if (printBarcodes) {
           for (let i = 0; i < records.length; i++) {
+            if (getPrintSituationBarcodeReplacement(records[i])) {
+              barcodeSvgs.push('');
+              continue;
+            }
             const barcodeValue = getRecordBarcode(records[i]);
             if (!barcodeValue) {
               barcodeSvgs.push('');
@@ -1284,19 +1348,23 @@ document.addEventListener('DOMContentLoaded', () => {
         const rowsHtml = records.map((r, i) => {
           const productCode = escapeHtml(String(getRecordProductCode(r)));
           const quantityCurrent = r.quantityCurrent != null ? r.quantityCurrent : (r.quantity_current ?? 0);
+          const situationReplacement = getPrintSituationBarcodeReplacement(r);
           const productBarcode = getRecordBarcode(r);
-          const barcodeHtml = printBarcodes
-            ? (barcodeSvgs[i]
-                ? `<div class="report-barcode-wrapper">${barcodeSvgs[i]}</div>`
-                : (productBarcode
-                    ? `<div class="report-barcode-fallback">${escapeHtml(productBarcode)}</div>`
-                    : ''))
-            : '';
+          let markHtml = '';
+          if (printBarcodes) {
+            if (situationReplacement) {
+              markHtml = `<div class="report-situation-label">${escapeHtml(situationReplacement)}</div>`;
+            } else if (barcodeSvgs[i]) {
+              markHtml = `<div class="report-barcode-wrapper">${barcodeSvgs[i]}</div>`;
+            } else if (productBarcode) {
+              markHtml = `<div class="report-barcode-fallback">${escapeHtml(productBarcode)}</div>`;
+            }
+          }
           return `
             <tr>
               <td>
                 <div class="report-product-row">
-                  ${barcodeHtml}
+                  ${printBarcodes ? `<div class="report-product-mark">${markHtml}</div>` : ''}
                   <div class="report-product-code">${productCode}</div>
                 </div>
               </td>
@@ -1331,10 +1399,12 @@ document.addEventListener('DOMContentLoaded', () => {
   td{border:1px solid #aaa;padding:8px 12px;vertical-align:middle;}
   td:first-child{width:82%;}
   .report-product-row{display:flex;align-items:center;gap:16px;min-width:0;}
+  .report-product-mark{flex:0 0 180px;width:180px;max-width:180px;display:flex;align-items:center;justify-content:center;min-height:64px;}
   .report-product-code{flex:1 1 auto;min-width:0;max-width:100%;font-size:${printFontSize}px;font-weight:800;line-height:1.05;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-  .report-barcode-wrapper{display:flex;align-items:center;flex-shrink:0;max-width:430px;height:64px;overflow:hidden;}
-  .report-barcode{display:block;max-width:430px;height:62px;}
-  .report-barcode-fallback{font-size:14px;font-family:monospace;flex-shrink:0;}
+  .report-barcode-wrapper{display:flex;align-items:center;width:100%;height:64px;overflow:hidden;}
+  .report-barcode{display:block;max-width:100%;height:62px;}
+  .report-barcode-fallback{font-size:14px;font-family:monospace;width:100%;}
+  .report-situation-label{width:100%;font-size:22px;font-weight:800;letter-spacing:.03em;text-transform:uppercase;color:#111;line-height:1.1;text-align:center;}
   .report-quantity{width:18%;font-size:${printFontSize}px;font-weight:800;text-align:center;white-space:nowrap;}
 </style>
 </head><body>

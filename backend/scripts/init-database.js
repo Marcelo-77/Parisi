@@ -712,6 +712,22 @@ async function initDatabase() {
     `);
     console.log('✅ location_product.usuario_inseriu verificada');
 
+    await query(`
+      ALTER TABLE location_product
+      ADD COLUMN IF NOT EXISTS situation_details VARCHAR(500)
+    `);
+    console.log('✅ location_product.situation_details verificada');
+
+    await query(`
+      INSERT INTO situation_product (sipr_nm_description)
+      SELECT 'Damaged'
+      WHERE NOT EXISTS (
+        SELECT 1 FROM situation_product
+        WHERE LOWER(TRIM(sipr_nm_description)) = 'damaged'
+      )
+    `);
+    console.log('✅ situation_product Damaged verificada');
+
     // Migração: alterar PK de (location_code, product_code, entry_datetime, sipr_sq_number) para (location_code, product_code, sipr_sq_number)
     try {
       const cols = await query(`

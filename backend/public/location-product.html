@@ -167,11 +167,19 @@
         }
         .new-records-table { width: 100%; table-layout: fixed; }
         .new-records-table th:nth-child(1),
-        .new-records-table th:nth-child(2) { width: 27%; }
-        .new-records-table th:nth-child(3) { width: 23%; }
-        .new-records-table th:nth-child(4) { width: 16%; }
-        .new-records-table th:nth-child(5) { width: 7%; }
+        .new-records-table th:nth-child(2) { width: 18%; }
+        .new-records-table th:nth-child(3) { width: 16%; }
+        .new-records-table th:nth-child(4) { width: 28%; }
+        .new-records-table th:nth-child(5) { width: 12%; }
+        .new-records-table th:nth-child(6) { width: 8%; }
         .new-records-table td { vertical-align: middle; }
+        .new-records-table .td-situation-details.is-disabled {
+            opacity: 0.55;
+        }
+        .new-records-table .new-row-situation-details:disabled {
+            background: #f3f4f6;
+            cursor: not-allowed;
+        }
         .new-records-actions {
             flex: 0 0 auto;
             display: flex;
@@ -515,6 +523,7 @@
                                         <th>Location Code *</th>
                                         <th>Product Code *</th>
                                         <th>Situation *</th>
+                                        <th>Details of the situation</th>
                                         <th>Quantity *</th>
                                         <th class="th-actions"></th>
                                     </tr>
@@ -552,6 +561,7 @@
                                     <th>Product Code</th>
                                     <th>Entry Date/Time</th>
                                     <th>Situation</th>
+                                    <th>Details of the situation</th>
                                     <th>Qty Current</th>
                                     <th>Inserted by</th>
                                     <th>Date Time Last Update</th>
@@ -560,7 +570,7 @@
                             </thead>
                             <tbody id="tableBody">
                                 <tr class="empty-state-row">
-                                    <td colspan="8" class="empty-state">
+                                    <td colspan="9" class="empty-state">
                                         <i class="fas fa-inbox"></i>
                                         <p>No records. Click "New Record" to add.</p>
                                     </td>
@@ -685,8 +695,9 @@
                 <ul>
                     <li>Click <strong>New Record</strong> to open the line-entry panel.</li>
                     <li>Enter <strong>Location Code</strong>, <strong>Product Code</strong>, <strong>Situation</strong> and <strong>Quantity</strong>.</li>
+                    <li>When Situation is <strong>Missing</strong> or <strong>Damaged</strong>, fill <strong>Details of the situation</strong>.</li>
                     <li>Use <strong>Add Line</strong> for more rows, then <strong>Save All Lines</strong>.</li>
-                    <li>When Situation is <strong>Full</strong>, quantity updates warehouse stock.</li>
+                    <li>Only Situation <strong>Full</strong> updates warehouse stock. Missing and Damaged do not.</li>
                 </ul>
 
                 <h4>Edit and Delete</h4>

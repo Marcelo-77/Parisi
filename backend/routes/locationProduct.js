@@ -23,7 +23,8 @@ const validarCreate = [
   body('entryDatetime').notEmpty().withMessage('Entry date/time is required'),
   body('siprSqNumber').isInt({ min: 1 }).withMessage('Situation is required'),
   body('quantityInformed').optional().isInt({ min: 1 }),
-  body('quantityCurrent').optional().isInt({ min: 0 })
+  body('quantityCurrent').optional().isInt({ min: 0 }),
+  body('situationDetails').optional({ nullable: true }).isString().isLength({ max: 500 })
 ];
 
 // GET /api/location-product/location-codes-with-quantity
