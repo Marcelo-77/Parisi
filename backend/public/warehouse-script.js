@@ -247,6 +247,8 @@ const totalSaidasEl = document.getElementById('totalSaidas');
 let bathPrintItem = null;
 let bathPrintOptions = [];
 let bathPrintSearchTerm = '';
+let bathPrintSearchTimer = null;
+let bathPrintAwaitTyping = false;
 
 function isBathCategory(categoria) {
     return String(categoria || '').trim().toUpperCase() === 'BATH';
@@ -277,25 +279,6 @@ function syncWarehousePrintOptionsVisibility(item) {
     if (defaultHint) defaultHint.hidden = !item || isBath;
 }
 
-function getBathProductSearchHaystack(item) {
-    return [
-        item.codigo,
-        item.nome,
-        item.barcode,
-        item.categoria,
-        formatCategory(item.categoria),
-        item.subcategoria,
-        formatSubcategory(item.subcategoria),
-        item.supplierProductCode
-    ].map((v) => String(v || '').toLowerCase()).join(' ');
-}
-
-function filterBathPrintOptions(searchTerm) {
-    const term = String(searchTerm || '').trim().toLowerCase();
-    if (!term) return bathPrintOptions.slice();
-    return bathPrintOptions.filter((item) => getBathProductSearchHaystack(item).includes(term));
-}
-
 function getSelectedBathPrintItem() {
     const list = document.getElementById('bathPrintProductList');
     const selected = list?.querySelector('input[name="bathPrintProductId"]:checked');
@@ -304,16 +287,71 @@ function getSelectedBathPrintItem() {
     return bathPrintOptions.find((item) => String(item.id) === String(id)) || bathPrintItem;
 }
 
+function mergeWarehousePrintProducts(lists) {
+    const byId = new Map();
+    lists.flat().forEach((item) => {
+        if (!item || item.id == null) return;
+        byId.set(String(item.id), item);
+    });
+    return Array.from(byId.values()).sort((a, b) =>
+        String(a.codigo || '').localeCompare(String(b.codigo || ''), undefined, { sensitivity: 'base' })
+    );
+}
+
+async function fetchWarehousePrintProductsByField(field, value) {
+    const query = new URLSearchParams({
+        ordenarPor: 'codigo',
+        direcao: 'asc'
+    });
+    query.set(field, value);
+    const response = await fetch(`${API_BASE_URL}?${query.toString()}`);
+    const data = await response.json();
+    if (!response.ok || !data.success) {
+        throw new Error(data.message || data.error || 'Failed to search products');
+    }
+    return data.data || [];
+}
+
+async function searchWarehousePrintProducts(term) {
+    const value = String(term || '').trim();
+    if (!value) {
+        bathPrintOptions = [];
+        return;
+    }
+    const tasks = [
+        fetchWarehousePrintProductsByField('codigo', value),
+        fetchWarehousePrintProductsByField('nome', value)
+    ];
+    if (/^\d+$/.test(value)) {
+        tasks.push(fetchWarehousePrintProductsByField('barcode', value));
+    }
+    const results = await Promise.all(tasks);
+    bathPrintOptions = mergeWarehousePrintProducts(results);
+    if (bathPrintItem?.id) {
+        const stillThere = bathPrintOptions.some((p) => String(p.id) === String(bathPrintItem.id));
+        if (!stillThere) bathPrintItem = null;
+    }
+}
+
 function renderBathPrintProductOptions(searchTerm = bathPrintSearchTerm) {
     const list = document.getElementById('bathPrintProductList');
     if (!list) return;
 
     bathPrintSearchTerm = String(searchTerm || '');
     const selectedId = bathPrintItem ? String(bathPrintItem.id) : '';
-    const filtered = filterBathPrintOptions(bathPrintSearchTerm);
+    const term = bathPrintSearchTerm.trim();
+    const waitingForType = bathPrintAwaitTyping && !term;
 
-    const optionsHtml = filtered.length
-        ? filtered.map((item) => {
+    let optionsHtml;
+    if (waitingForType) {
+        optionsHtml = `
+            <div class="print-location-empty">
+                <i class="fas fa-keyboard"></i>
+                <p>Type a product code, name or barcode to see matching results.</p>
+            </div>
+        `;
+    } else if (bathPrintOptions.length) {
+        optionsHtml = bathPrintOptions.map((item) => {
             const id = String(item.id);
             const isSelected = id === selectedId;
             const categoryLabel = formatCategoryDisplay(item);
@@ -328,21 +366,22 @@ function renderBathPrintProductOptions(searchTerm = bathPrintSearchTerm) {
                 </span>
               </label>
             `;
-        }).join('')
-        : '<div class="print-location-empty"><i class="fas fa-search"></i><p>No matching products found.</p></div>';
+        }).join('');
+    } else {
+        optionsHtml = '<div class="print-location-empty"><i class="fas fa-search"></i><p>No matching products found.</p></div>';
+    }
 
     list.innerHTML = `
       <div class="print-location-picker-toolbar">
         <div class="print-location-search">
           <i class="fas fa-search"></i>
           <input id="bathPrintProductSearch" type="search"
-                 placeholder="Search product code, name, barcode or category"
+                 placeholder="Search product code, name or barcode"
                  value="${escapeHtml(bathPrintSearchTerm)}" autocomplete="off">
         </div>
       </div>
       <div class="print-location-picker-summary">
-        <span><strong>${bathPrintOptions.length}</strong> products</span>
-        <span>${filtered.length} shown</span>
+        <span>${waitingForType ? 'Enter a search to begin' : `<strong>${bathPrintOptions.length}</strong> shown`}</span>
       </div>
       <div class="print-location-cards" role="radiogroup" aria-label="Select product">
         ${optionsHtml}
@@ -355,7 +394,35 @@ function renderBathPrintProductOptions(searchTerm = bathPrintSearchTerm) {
         const len = searchInput.value.length;
         searchInput.setSelectionRange(len, len);
         searchInput.addEventListener('input', () => {
-            renderBathPrintProductOptions(searchInput.value);
+            const nextTerm = searchInput.value;
+            bathPrintSearchTerm = nextTerm;
+            if (bathPrintSearchTimer) clearTimeout(bathPrintSearchTimer);
+            const trimmed = String(nextTerm || '').trim();
+            if (!trimmed) {
+                bathPrintOptions = [];
+                bathPrintItem = null;
+                syncWarehousePrintOptionsVisibility(null);
+                renderBathPrintProductOptions('');
+                return;
+            }
+            bathPrintSearchTimer = setTimeout(async () => {
+                try {
+                    const cards = list.querySelector('.print-location-cards');
+                    if (cards) {
+                        cards.innerHTML = '<div class="print-location-empty"><i class="fas fa-spinner fa-spin"></i><p>Searching...</p></div>';
+                    }
+                    await searchWarehousePrintProducts(trimmed);
+                    renderBathPrintProductOptions(trimmed);
+                } catch (e) {
+                    console.error('Print product search error:', e);
+                    bathPrintOptions = [];
+                    renderBathPrintProductOptions(trimmed);
+                    const cardsEl = document.querySelector('#bathPrintProductList .print-location-cards');
+                    if (cardsEl) {
+                        cardsEl.innerHTML = '<div class="print-location-empty"><i class="fas fa-exclamation-triangle"></i><p>Error searching products.</p></div>';
+                    }
+                }
+            }, 300);
         });
     }
 
@@ -372,27 +439,16 @@ function renderBathPrintProductOptions(searchTerm = bathPrintSearchTerm) {
     syncWarehousePrintOptionsVisibility(bathPrintItem);
 }
 
-async function loadWarehousePrintProducts(bathOnly = false) {
-    const query = new URLSearchParams({
-        ordenarPor: 'codigo',
-        direcao: 'asc'
-    });
-    if (bathOnly) query.set('categoria', 'BATH');
-    const response = await fetch(`${API_BASE_URL}?${query.toString()}`);
-    const data = await response.json();
-    if (!response.ok || !data.success) {
-        throw new Error(data.message || data.error || 'Failed to load products');
-    }
-    bathPrintOptions = (data.data || [])
-        .filter((item) => (bathOnly ? isBathCategory(item.categoria) : true))
-        .sort((a, b) => String(a.codigo || '').localeCompare(String(b.codigo || ''), undefined, { sensitivity: 'base' }));
-}
-
 window.openBathPrintModal = async function(item, options = {}) {
-    const onlyBath = options.bathOnly === true;
-
+    bathPrintAwaitTyping = options.awaitTyping === true || !item;
     bathPrintItem = item || null;
     bathPrintSearchTerm = '';
+    bathPrintOptions = item ? [item] : [];
+    if (bathPrintSearchTimer) {
+        clearTimeout(bathPrintSearchTimer);
+        bathPrintSearchTimer = null;
+    }
+
     const modal = document.getElementById('bathPrintModal');
     const list = document.getElementById('bathPrintProductList');
     if (!modal || !list) {
@@ -402,40 +458,24 @@ window.openBathPrintModal = async function(item, options = {}) {
     resetBathPrintForm();
     syncWarehousePrintOptionsVisibility(bathPrintItem);
     modal.style.display = 'block';
-    list.innerHTML = '<p>Loading products...</p>';
-    try {
-        await loadWarehousePrintProducts(onlyBath);
-        if (bathPrintItem?.id) {
-            const matched = bathPrintOptions.find((p) => String(p.id) === String(bathPrintItem.id));
-            if (matched) {
-                bathPrintItem = matched;
-            } else if (bathPrintItem) {
-                bathPrintOptions.unshift(bathPrintItem);
-            }
-        }
-        if (bathPrintOptions.length === 0) {
-            list.innerHTML = '<p class="empty-state">No products found.</p>';
-            syncWarehousePrintOptionsVisibility(null);
-            return;
-        }
-        renderBathPrintProductOptions('');
-    } catch (e) {
-        console.error('Print modal error:', e);
-        list.innerHTML = '<p class="error-message">Error loading products. Check console and ensure the server is running.</p>';
-        syncWarehousePrintOptionsVisibility(null);
-    }
+    renderBathPrintProductOptions('');
 };
 
-window.openWarehousePrintModal = function(item) {
-    return window.openBathPrintModal(item || null, { bathOnly: false });
+window.openWarehousePrintModal = function() {
+    return window.openBathPrintModal(null, { awaitTyping: true });
 };
 
 window.closeBathPrintModal = function() {
     const modal = document.getElementById('bathPrintModal');
     if (modal) modal.style.display = 'none';
+    if (bathPrintSearchTimer) {
+        clearTimeout(bathPrintSearchTimer);
+        bathPrintSearchTimer = null;
+    }
     bathPrintItem = null;
     bathPrintOptions = [];
     bathPrintSearchTerm = '';
+    bathPrintAwaitTyping = false;
     syncWarehousePrintOptionsVisibility(null);
 };
 
