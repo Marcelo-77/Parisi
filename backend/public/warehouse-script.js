@@ -260,6 +260,35 @@ function getBathPrintFontSize() {
     return [64, 70, 80, 85, 95].includes(size) ? size : 95;
 }
 
+/** Max font that reliably fits 3 Bath label sections on one portrait page. */
+function getMaxBathPrintFontSizeForThreeSections(item) {
+    const codeLen = String(item?.codigo || '').trim().length;
+    const subLen = String(item?.subcategoria || '').trim().length;
+    if (codeLen >= 18 || subLen >= 18) return 70;
+    if (codeLen >= 14 || subLen >= 14) return 80;
+    if (codeLen >= 11 || subLen >= 12) return 85;
+    return 85;
+}
+
+function resolveBathPrintFontSizeForThreeSections(requestedSize, item) {
+    const requested = Number(requestedSize) || 95;
+    const maxSize = getMaxBathPrintFontSizeForThreeSections(item);
+    if (requested <= maxSize) return requested;
+
+    const useRecommended = window.confirm(
+        `Font size ${requested} may exceed 3 sections per page for this product.\n\n` +
+        `Recommended maximum font size: ${maxSize}.\n\n` +
+        `OK = print with font ${maxSize}\n` +
+        `Cancel = keep font ${requested}`
+    );
+    if (useRecommended) {
+        const radio = document.querySelector(`input[name="bathPrintFontSize"][value="${maxSize}"]`);
+        if (radio) radio.checked = true;
+        return maxSize;
+    }
+    return requested;
+}
+
 function resetBathPrintForm() {
     const containerEl = document.getElementById('bathPrintContainerNr');
     const copiesEl = document.getElementById('bathPrintCopies');
@@ -532,7 +561,7 @@ window.doBathPrint = function() {
         return;
     }
     const printBarcodes = document.getElementById('bathPrintBarcodesCheckbox')?.checked !== false;
-    const fontSize = getBathPrintFontSize();
+    const fontSize = resolveBathPrintFontSizeForThreeSections(getBathPrintFontSize(), item);
     const barcodeValue = String(item.barcode || '').trim();
     if (printBarcodes && !barcodeValue) {
         alert('This product has no barcode. Uncheck "Print barcodes" or update the product.');
@@ -622,7 +651,9 @@ window.doBathPrint = function() {
     display: flex;
     flex-direction: column;
     justify-content: flex-start;
-    min-height: 100vh;
+    height: 100vh;
+    max-height: 100vh;
+    overflow: hidden;
     page-break-after: always;
     break-after: page;
   }
@@ -631,9 +662,11 @@ window.doBathPrint = function() {
     break-after: auto;
   }
   .bath-label {
-    flex: 0 0 auto;
-    padding: 8mm 4mm 6mm;
-    min-height: 85mm;
+    flex: 0 0 33.333%;
+    max-height: 33.333%;
+    min-height: 0;
+    overflow: hidden;
+    padding: 4mm 3mm 3mm;
   }
   .bath-label-header-rule {
     margin-top: 0;
