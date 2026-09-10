@@ -1,8 +1,27 @@
 (function (global) {
   const DEFAULT_LEVEL_ZERO_ACCESS_TYPE = 'Shelf by Hand';
+  const LEVEL_ZERO_ACCESS_TYPES = ['Shelf by Hand', 'Shelf by Wave'];
+  const ALL_ACCESS_TYPES = ['Shelf by Hand', 'Shelf by Wave', 'Shelf By Fork'];
   const DEFAULT_A21X_SECTION = 'OTHER';
   const A21_SPECIAL_STREET = 'A';
   const A21_SPECIAL_BUILDING = '21';
+
+  function syncAccessTypeForLevel(accessEl, isGroundLevel) {
+    if (!accessEl) return;
+
+    const allowed = isGroundLevel ? LEVEL_ZERO_ACCESS_TYPES : ALL_ACCESS_TYPES;
+    Array.from(accessEl.options).forEach((opt) => {
+      if (!opt.value) return;
+      const isAllowed = allowed.includes(opt.value);
+      opt.disabled = !isAllowed;
+      opt.hidden = !isAllowed;
+    });
+
+    accessEl.disabled = false;
+    if (!allowed.includes(accessEl.value)) {
+      accessEl.value = isGroundLevel ? DEFAULT_LEVEL_ZERO_ACCESS_TYPE : '';
+    }
+  }
 
   function normalizeNumberValue(raw) {
     if (raw === '' || raw == null) return '';
@@ -411,8 +430,7 @@
         sideEl.required = false;
       }
       if (accessEl) {
-        accessEl.value = DEFAULT_LEVEL_ZERO_ACCESS_TYPE;
-        accessEl.disabled = true;
+        syncAccessTypeForLevel(accessEl, true);
       }
       if (sectionEl) {
         sectionEl.value = DEFAULT_A21X_SECTION;
@@ -493,8 +511,8 @@
       }
     }
 
-    if (isGroundLevel && accessEl) {
-      accessEl.value = DEFAULT_LEVEL_ZERO_ACCESS_TYPE;
+    if (accessEl) {
+      syncAccessTypeForLevel(accessEl, isGroundLevel);
     }
   }
 

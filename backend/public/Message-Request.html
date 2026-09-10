@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Double-Y Warehouse System - Message Request</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="warehouse-styles.css">
+    <link rel="stylesheet" href="pesquisa-styles.css">
+    <link rel="stylesheet" href="message-email-styles.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body class="message-email-page ic-control-page">
+    <script src="auth-check.js"></script>
+    <script src="header-menu.js"></script>
+    <script src="menu-access.js"></script>
+    <script src="application-write-access.js"></script>
+    <script src="double-y-logo-effect.js"></script>
+    <script src="dev-environment-badge.js"></script>
+    <div class="container">
+        <header class="header">
+            <div class="header-stats-row">
+                <div class="header-stats-left">
+                    <div class="header-stat header-stat-total">
+                        <span class="header-stat-value" id="totalItems">0</span>
+                        <span class="header-stat-label">Total Items</span>
+                    </div>
+                    <div class="header-stat header-stat-low">
+                        <span class="header-stat-value" id="lowStockItems">0</span>
+                        <span class="header-stat-label">Low Stock</span>
+                    </div>
+                </div>
+                <div class="double-y-wordmark" aria-label="Double Y">
+                    <img src="doubley-glyph.png" alt="" class="double-y-glyph" aria-hidden="true">
+                    <span class="double-y-name">Double Y</span>
+                    <img src="doubley-glyph-bottom.png" alt="" class="double-y-glyph double-y-glyph-bottom" aria-hidden="true">
+                </div>
+                <div class="header-stats-right">
+                    <div class="header-stat header-stat-entries">
+                        <span class="header-stat-value" id="totalEntradas">0</span>
+                        <span class="header-stat-label">Entries Today</span>
+                    </div>
+                    <div class="header-stat header-stat-exits">
+                        <span class="header-stat-value" id="totalSaidas">0</span>
+                        <span class="header-stat-label">Exits Today</span>
+                    </div>
+                </div>
+            </div>
+            <div class="header-content">
+                <h1><i class="fas fa-warehouse"></i> Double-Y Warehouse System</h1>
+                <p class="header-search-users-label">Message Request</p>
+                <div class="header-actions"></div>
+            </div>
+        </header>
+
+        <main class="main-content">
+            <div class="form-container" id="messageRequestPanel" tabindex="-1">
+                <div class="message-email-form-header">
+                    <div>
+                        <h2><i class="fas fa-inbox"></i> New Message Request</h2>
+                        <p>Create a request and assign it directly to the responsible user</p>
+                    </div>
+                    <a href="Search-Message-Request.html" class="btn btn-secondary message-email-open-search-btn" data-app="Search-Message-Request.html">
+                        <i class="fas fa-search"></i> Search
+                    </a>
+                </div>
+
+                <form id="messageRequestForm" class="warehouse-form" novalidate>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="messageType"><i class="fas fa-paper-plane"></i> Message type *</label>
+                            <select id="messageType" required>
+                                <option value="EMAIL" selected>Email</option>
+                                <option value="INTERNAL">Internal</option>
+                                <option value="SMS">SMS (future)</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="priority"><i class="fas fa-flag"></i> Priority *</label>
+                            <select id="priority" required>
+                                <option value="LOW">Low</option>
+                                <option value="NORMAL" selected>Normal</option>
+                                <option value="HIGH">High</option>
+                                <option value="URGENT">Urgent</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="desiredDate"><i class="fas fa-calendar"></i> Desired date</label>
+                            <input type="date" id="desiredDate">
+                        </div>
+                        <div class="form-group">
+                            <label for="assignedTo"><i class="fas fa-user-check"></i> Responsible *</label>
+                            <select id="assignedTo" required>
+                                <option value="">Select responsible user...</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="recipientName"><i class="fas fa-user"></i> Recipient name</label>
+                            <input type="text" id="recipientName" maxlength="150" placeholder="Recipient name" autocomplete="off">
+                        </div>
+                        <div class="form-group">
+                            <label for="recipientEmail"><i class="fas fa-at"></i> Recipient email</label>
+                            <input type="email" id="recipientEmail" maxlength="255" placeholder="name@example.com">
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group full-width">
+                            <label for="subject"><i class="fas fa-heading"></i> Subject *</label>
+                            <input type="text" id="subject" maxlength="255" placeholder="Message subject" required>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group full-width">
+                            <label for="messageContent"><i class="fas fa-align-left"></i> Message content *</label>
+                            <textarea id="messageContent" rows="8" placeholder="Write the message content" required></textarea>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group full-width">
+                            <label for="attachmentNote"><i class="fas fa-paperclip"></i> Attachments (note)</label>
+                            <input type="text" id="attachmentNote" maxlength="255" placeholder="Optional attachment description">
+                        </div>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="button" class="btn btn-secondary" id="clearMessageRequestBtn">
+                            <i class="fas fa-eraser"></i> Clear
+                        </button>
+                        <button type="submit" class="btn btn-primary" data-write-action="true">
+                            <i class="fas fa-save"></i> Submit Request
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </main>
+
+        <footer class="footer">
+            <p>&copy; 2026 Double-Y IT Systems. All rights reserved.</p>
+        </footer>
+    </div>
+    <script src="message-request-script.js"></script>
+</body>
+</html>

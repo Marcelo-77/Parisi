@@ -147,6 +147,20 @@
                                     </a>
                                 </div>
                             </div>
+                            <div class="dropdown-submenu-group" data-submenu="message-request">
+                                <button type="button" class="dropdown-submenu-trigger" aria-haspopup="true" aria-expanded="false">
+                                    <span><i class="fas fa-inbox"></i> Message Request</span>
+                                    <i class="fas fa-chevron-right submenu-chevron" aria-hidden="true"></i>
+                                </button>
+                                <div class="dropdown-submenu" aria-hidden="true">
+                                    <a href="Message-Request.html" class="dropdown-item" data-app="Message-Request.html" data-write-menu="true">
+                                        <i class="fas fa-plus"></i> New Message Request
+                                    </a>
+                                    <a href="Search-Message-Request.html" class="dropdown-item" data-app="Search-Message-Request.html">
+                                        <i class="fas fa-search"></i> Search Message Request
+                                    </a>
+                                </div>
+                            </div>
                         </div>
                     </div>
                     <div class="movement-dropdown">

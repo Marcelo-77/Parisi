@@ -382,6 +382,8 @@ async function initDatabase() {
       { application: 'Message-Email.html', menuName: 'Applications_Message_Email' },
       { application: 'Search-Message-Email.html', menuName: 'Applications_Message_Email_Search' },
       { application: 'Search-Email-Send-Log.html', menuName: 'Applications_Message_Email_Send_Log' },
+      { application: 'Message-Request.html', menuName: 'Applications_Message_Request' },
+      { application: 'Search-Message-Request.html', menuName: 'Applications_Message_Request_Search' },
       { application: 'location.html', menuName: 'Location' },
       { application: 'location-search.html', menuName: 'Location_Search' },
       { application: 'location-smart.html', menuName: 'Location_Smart' },
@@ -608,6 +610,43 @@ async function initDatabase() {
     await query(`CREATE INDEX IF NOT EXISTS idx_email_send_logs_criado ON email_send_logs(criado_em DESC)`);
     await query(`CREATE INDEX IF NOT EXISTS idx_email_send_logs_status ON email_send_logs(send_status)`);
     console.log('✅ Tabela email_send_logs criada/verificada');
+
+    await query(`CREATE SEQUENCE IF NOT EXISTS message_requests_request_number_seq`);
+    await query(`
+      CREATE TABLE IF NOT EXISTS message_requests (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        request_number BIGINT UNIQUE NOT NULL DEFAULT nextval('message_requests_request_number_seq'),
+        message_type VARCHAR(20) NOT NULL DEFAULT 'EMAIL',
+        recipient_name VARCHAR(150),
+        recipient_email VARCHAR(255),
+        subject VARCHAR(255) NOT NULL,
+        message_content TEXT NOT NULL,
+        priority VARCHAR(20) NOT NULL DEFAULT 'NORMAL',
+        desired_date DATE,
+        attachment_note VARCHAR(255),
+        status VARCHAR(30) NOT NULL DEFAULT 'PENDING',
+        assigned_to UUID REFERENCES funcionarios(id) ON DELETE SET NULL,
+        assigned_to_name VARCHAR(100),
+        rejection_reason TEXT,
+        final_subject VARCHAR(255),
+        final_content TEXT,
+        request_history TEXT,
+        created_by UUID REFERENCES funcionarios(id) ON DELETE SET NULL,
+        created_by_name VARCHAR(100),
+        criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        atualizado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        CONSTRAINT message_requests_type_chk
+          CHECK (message_type IN ('EMAIL', 'INTERNAL', 'SMS')),
+        CONSTRAINT message_requests_priority_chk
+          CHECK (priority IN ('LOW', 'NORMAL', 'HIGH', 'URGENT')),
+        CONSTRAINT message_requests_status_chk
+          CHECK (status IN ('PENDING', 'UNDER_REVIEW', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED', 'ON_HOLD'))
+      )
+    `);
+    await query(`CREATE INDEX IF NOT EXISTS idx_message_requests_criado ON message_requests(criado_em DESC)`);
+    await query(`CREATE INDEX IF NOT EXISTS idx_message_requests_status ON message_requests(status)`);
+    await query(`CREATE INDEX IF NOT EXISTS idx_message_requests_number ON message_requests(request_number)`);
+    console.log('✅ Tabela message_requests criada/verificada');
 
     await query(`CREATE SEQUENCE IF NOT EXISTS test_case_number_seq`);
     await query(`

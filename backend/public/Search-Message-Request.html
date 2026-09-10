@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en" class="message-email-search-root">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Double-Y Warehouse System - Search Message Request</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="warehouse-styles.css">
+    <link rel="stylesheet" href="pesquisa-styles.css">
+    <link rel="stylesheet" href="message-email-styles.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .status-under-review { color: #2563eb; font-weight: 700; }
+        .status-in-progress { color: #d97706; font-weight: 700; }
+        .status-completed { color: #15803d; font-weight: 700; }
+        .status-cancelled { color: #b91c1c; font-weight: 700; }
+        .status-on-hold { color: #7c3aed; font-weight: 700; }
+        .status-pending { color: #64748b; font-weight: 700; }
+        .mr-action-panel { display: none; margin-top: 8px; padding-top: 8px; border-top: 1px solid #e2e8f0; }
+        .mr-action-panel.is-visible { display: block; }
+        #requestModal .item-modal-content { max-width: min(960px, calc(100vw - 32px)); }
+        #requestHistory { white-space: pre-wrap; font-family: ui-monospace, Consolas, monospace; font-size: 0.85rem; background: #f8fafc; padding: 10px; border-radius: 6px; max-height: 180px; overflow: auto; }
+    </style>
+</head>
+<body class="message-email-search-page ic-search-page">
+    <script src="auth-check.js"></script>
+    <script src="header-menu.js"></script>
+    <script src="menu-access.js"></script>
+    <script src="application-write-access.js"></script>
+    <script src="double-y-logo-effect.js"></script>
+    <script src="dev-environment-badge.js"></script>
+    <div class="container">
+        <header class="header">
+            <div class="header-stats-row">
+                <div class="header-stats-left">
+                    <div class="header-stat header-stat-total">
+                        <span class="header-stat-value" id="totalItems">0</span>
+                        <span class="header-stat-label">Total Items</span>
+                    </div>
+                    <div class="header-stat header-stat-low">
+                        <span class="header-stat-value" id="lowStockItems">0</span>
+                        <span class="header-stat-label">Low Stock</span>
+                    </div>
+                </div>
+                <div class="double-y-wordmark" aria-label="Double Y">
+                    <img src="doubley-glyph.png" alt="" class="double-y-glyph" aria-hidden="true">
+                    <span class="double-y-name">Double Y</span>
+                    <img src="doubley-glyph-bottom.png" alt="" class="double-y-glyph double-y-glyph-bottom" aria-hidden="true">
+                </div>
+                <div class="header-stats-right">
+                    <div class="header-stat header-stat-entries">
+                        <span class="header-stat-value" id="totalEntradas">0</span>
+                        <span class="header-stat-label">Entries Today</span>
+                    </div>
+                    <div class="header-stat header-stat-exits">
+                        <span class="header-stat-value" id="totalSaidas">0</span>
+                        <span class="header-stat-label">Exits Today</span>
+                    </div>
+                </div>
+            </div>
+            <div class="header-content">
+                <h1><i class="fas fa-warehouse"></i> Double-Y Warehouse System</h1>
+                <p class="header-search-users-label">Search Message Request</p>
+                <div class="header-actions"></div>
+            </div>
+        </header>
+
+        <main class="main-content">
+            <div class="filters-section">
+                <div class="search-bar warehouse-search-bar">
+                    <i class="fas fa-search"></i>
+                    <input type="text" id="searchSubject" placeholder="Search by subject...">
+                    <div class="warehouse-search-actions">
+                        <button id="applySearchBtn" class="btn btn-primary" type="button" title="Search requests">
+                            <i class="fas fa-search"></i> Search
+                        </button>
+                        <button type="button" class="btn btn-secondary location-page-close-btn" title="Close">
+                            <i class="fas fa-door-open"></i> Close
+                        </button>
+                        <button id="clearSearchBtn" class="btn-icon" type="button" title="Clear filters">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="filters-row">
+                    <input type="number" id="searchRequestNumber" class="filter-select" placeholder="Request #" min="1">
+                    <select id="searchStatus" class="filter-select">
+                        <option value="">All status</option>
+                        <option value="PENDING">Pending</option>
+                        <option value="UNDER_REVIEW">Under Review</option>
+                        <option value="IN_PROGRESS">In Progress</option>
+                        <option value="ON_HOLD">On Hold</option>
+                        <option value="COMPLETED">Completed</option>
+                        <option value="CANCELLED">Cancelled</option>
+                    </select>
+                    <select id="searchMessageType" class="filter-select">
+                        <option value="">All types</option>
+                        <option value="EMAIL">Email</option>
+                        <option value="INTERNAL">Internal</option>
+                        <option value="SMS">SMS</option>
+                    </select>
+                    <select id="searchPriority" class="filter-select">
+                        <option value="">All priorities</option>
+                        <option value="LOW">Low</option>
+                        <option value="NORMAL">Normal</option>
+                        <option value="HIGH">High</option>
+                        <option value="URGENT">Urgent</option>
+                    </select>
+                    <input type="text" id="searchCreatedByName" class="filter-select" placeholder="Requester">
+                    <input type="text" id="searchAssignedToName" class="filter-select" placeholder="Operator">
+                    <input type="text" id="searchRecipientEmail" class="filter-select" placeholder="Recipient email">
+                </div>
+            </div>
+
+            <div class="table-container results-container ic-results-container">
+                <div class="results-info-bar">
+                    <span id="resultsCount">0 requests</span>
+                    <span id="resultsTime"></span>
+                    <a href="Message-Request.html" class="btn btn-secondary btn-sm message-email-new-link" data-app="Message-Request.html" data-write-menu="true">
+                        <i class="fas fa-plus"></i> New Request
+                    </a>
+                </div>
+                <div id="loadingIndicator" class="loading-indicator" style="display:none;">
+                    <i class="fas fa-spinner fa-spin"></i> Loading...
+                </div>
+                <div class="ic-table-scroll">
+                    <table class="warehouse-table">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Type</th>
+                                <th>Subject</th>
+                                <th>Priority</th>
+                                <th>Status</th>
+                                <th>Requester</th>
+                                <th>Operator</th>
+                                <th>Created</th>
+                            </tr>
+                        </thead>
+                        <tbody id="requestSearchTableBody">
+                            <tr class="empty-state-row">
+                                <td colspan="8" class="empty-state" id="emptyStateRow">
+                                    <i class="fas fa-search"></i>
+                                    <p>Use filters and click <strong>Search</strong> to load message requests.</p>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <div id="noResults" class="no-results" style="display:none;">
+                        <i class="fas fa-search"></i>
+                        <p>No message requests found. Try adjusting the filters or <a href="Message-Request.html">create a new request</a>.</p>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <div id="requestModal" class="modal" aria-hidden="true">
+            <div class="modal-content modal-large item-modal-content">
+                <div class="modal-header success">
+                    <h3 id="requestModalTitle"><i class="fas fa-inbox"></i> Message Request</h3>
+                    <p id="requestModalSubtitle" class="item-modal-subtitle">Review and process</p>
+                    <button type="button" class="modal-close" id="closeRequestModal" aria-label="Close">&times;</button>
+                </div>
+                <div class="warehouse-form item-modal-form">
+                    <input type="hidden" id="requestId">
+                    <div class="modal-body item-modal-body">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Request #</label>
+                                <input type="text" id="viewRequestNumber" readonly>
+                            </div>
+                            <div class="form-group">
+                                <label>Status</label>
+                                <input type="text" id="viewStatus" readonly>
+                            </div>
+                            <div class="form-group">
+                                <label>Priority</label>
+                                <input type="text" id="viewPriority" readonly>
+                            </div>
+                            <div class="form-group">
+                                <label>Type</label>
+                                <input type="text" id="viewMessageType" readonly>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Requester</label>
+                                <input type="text" id="viewCreatedByName" readonly>
+                            </div>
+                            <div class="form-group">
+                                <label>Operator</label>
+                                <input type="text" id="viewAssignedToName" readonly>
+                            </div>
+                            <div class="form-group">
+                                <label>Recipient</label>
+                                <input type="text" id="viewRecipientName" readonly>
+                            </div>
+                            <div class="form-group">
+                                <label>Recipient email</label>
+                                <input type="text" id="viewRecipientEmail" readonly>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group full-width">
+                                <label>Subject</label>
+                                <input type="text" id="viewSubject" readonly>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group full-width">
+                                <label>Message content</label>
+                                <textarea id="viewMessageContent" rows="5" readonly></textarea>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group full-width">
+                                <label>History</label>
+                                <div id="requestHistory"></div>
+                            </div>
+                        </div>
+
+                        <div id="approvePanel" class="mr-action-panel">
+                            <h4>Approve &amp; assign</h4>
+                            <div class="form-row">
+                                <div class="form-group full-width">
+                                    <label for="assignOperator">Operator *</label>
+                                    <select id="assignOperator"></select>
+                                </div>
+                            </div>
+                            <button type="button" class="btn btn-primary" id="approveBtn" data-write-action="true">
+                                <i class="fas fa-check"></i> Approve &amp; Assign
+                            </button>
+                        </div>
+
+                        <div id="rejectPanel" class="mr-action-panel">
+                            <h4>Reject</h4>
+                            <div class="form-row">
+                                <div class="form-group full-width">
+                                    <label for="rejectionReason">Reason *</label>
+                                    <textarea id="rejectionReason" rows="2"></textarea>
+                                </div>
+                            </div>
+                            <button type="button" class="btn btn-danger" id="rejectBtn" data-write-action="true">
+                                <i class="fas fa-times"></i> Reject
+                            </button>
+                        </div>
+
+                        <div id="holdPanel" class="mr-action-panel">
+                            <h4>On Hold / Resume</h4>
+                            <div class="form-row">
+                                <div class="form-group full-width">
+                                    <label for="holdNote">Hold note</label>
+                                    <input type="text" id="holdNote" maxlength="255">
+                                </div>
+                            </div>
+                            <button type="button" class="btn btn-secondary" id="holdBtn" data-write-action="true">
+                                <i class="fas fa-pause"></i> Put On Hold
+                            </button>
+                            <button type="button" class="btn btn-secondary" id="resumeBtn" data-write-action="true">
+                                <i class="fas fa-play"></i> Resume
+                            </button>
+                        </div>
+
+                        <div id="sendPanel" class="mr-action-panel">
+                            <h4>Send message</h4>
+                            <div class="form-row">
+                                <div class="form-group full-width">
+                                    <label for="finalSubject">Final subject</label>
+                                    <input type="text" id="finalSubject" maxlength="255">
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group full-width">
+                                    <label for="finalContent">Final content</label>
+                                    <textarea id="finalContent" rows="5"></textarea>
+                                </div>
+                            </div>
+                            <button type="button" class="btn btn-primary" id="sendBtn" data-write-action="true">
+                                <i class="fas fa-paper-plane"></i> Send &amp; Complete
+                            </button>
+                        </div>
+                    </div>
+                    <div id="requestStatusMsg" class="message-email-message" role="status" aria-live="polite"></div>
+                    <div class="modal-footer item-modal-footer form-actions">
+                        <button type="button" class="btn btn-secondary" id="closeRequestModalFooter">
+                            <i class="fas fa-times"></i> Close
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <footer class="footer">
+            <p>&copy; 2026 Double-Y IT Systems. All rights reserved.</p>
+        </footer>
+    </div>
+    <script src="search-message-request-script.js"></script>
+</body>
+</html>
