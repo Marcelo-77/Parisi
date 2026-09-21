@@ -1,3 +1,4 @@
+const dns = require('dns');
 const nodemailer = require('nodemailer');
 
 const DEFAULT_FROM = 'doubleyitsystem@gmail.com';
@@ -13,17 +14,40 @@ function isConfigured() {
   return Boolean(String(process.env.SMTP_USER || '').trim() && String(process.env.SMTP_PASS || '').trim());
 }
 
-function getSmtpFamily() {
-  return Number(process.env.SMTP_FAMILY || 4) === 6 ? 6 : 4;
+/** Force A-record (IPv4) only — Render often has no IPv6 route (ENETUNREACH). */
+function ipv4Lookup(hostname, options, callback) {
+  if (typeof options === 'function') {
+    callback = options;
+  }
+  dns.lookup(hostname, { family: 4, hints: dns.ADDRCONFIG }, (err, address, family) => {
+    if (err) {
+      // ADDRCONFIG can fail on some hosts; retry plain IPv4.
+      return dns.lookup(hostname, { family: 4 }, callback);
+    }
+    return callback(null, address, family || 4);
+  });
+}
+
+function getConfiguredPortSecure() {
+  const port = Number(process.env.SMTP_PORT || 465);
+  const secureEnv = String(process.env.SMTP_SECURE || '').trim().toLowerCase();
+  const secure = secureEnv === 'true' || secureEnv === '1' || (!secureEnv && port === 465);
+  return { port, secure };
 }
 
 function buildTransportOptions({ port, secure }) {
+  const hostName = String(process.env.SMTP_HOST || 'smtp.gmail.com').trim() || 'smtp.gmail.com';
   return {
-    host: process.env.SMTP_HOST || 'smtp.gmail.com',
+    host: hostName,
     port: Number(port),
     secure: !!secure,
-    // Render/Approval often has no IPv6 route (ENETUNREACH to smtp.gmail.com AAAA).
-    family: getSmtpFamily(),
+    // Critical on Render/Approval: avoid smtp.gmail.com AAAA (IPv6) ENETUNREACH.
+    family: 4,
+    lookup: ipv4Lookup,
+    name: hostName,
+    tls: {
+      servername: hostName
+    },
     auth: {
       user: process.env.SMTP_USER,
       pass: process.env.SMTP_PASS
@@ -32,13 +56,6 @@ function buildTransportOptions({ port, secure }) {
     greetingTimeout: Number(process.env.SMTP_GREETING_TIMEOUT_MS || 8000),
     socketTimeout: Number(process.env.SMTP_SOCKET_TIMEOUT_MS || 12000)
   };
-}
-
-function getConfiguredPortSecure() {
-  const port = Number(process.env.SMTP_PORT || 465);
-  const secureEnv = String(process.env.SMTP_SECURE || '').trim().toLowerCase();
-  const secure = secureEnv === 'true' || secureEnv === '1' || (!secureEnv && port === 465);
-  return { port, secure };
 }
 
 function getTransporter(forceOptions) {
@@ -81,13 +98,42 @@ function smtpBlockedError(originalError) {
   const detail = originalError && originalError.message ? originalError.message : 'Connection timeout';
   return new Error(
     `Email SMTP failed (${detail}). `
-    + 'On Approval/Render, set SMTP_PORT=465 and SMTP_SECURE=true, '
-    + 'or switch Setting Forklift Driver "Send request by" to SMS if outbound SMTP is blocked.'
+    + 'Approval/Render may block outbound SMTP. '
+    + 'Prefer Setting Forklift Driver "Send request by" = SMS, '
+    + 'or use an HTTP email API. If using Gmail, keep SMTP_PORT=465 and SMTP_SECURE=true.'
   );
 }
 
+async function resolveHostIpv4(hostname) {
+  return new Promise((resolve, reject) => {
+    dns.lookup(hostname, { family: 4 }, (err, address) => {
+      if (err) reject(err);
+      else resolve(address);
+    });
+  });
+}
+
 async function sendWithOptions(mailOptions, portSecure) {
-  const transport = getTransporter(portSecure);
+  const hostName = String(process.env.SMTP_HOST || 'smtp.gmail.com').trim() || 'smtp.gmail.com';
+  let transport;
+  try {
+    // Prefer connecting to literal IPv4 so Node never opens an IPv6 socket.
+    const ipv4 = await resolveHostIpv4(hostName);
+    const key = `${ipv4}:${portSecure.port}:${portSecure.secure ? 1 : 0}`;
+    if (!transporter || transporterKey !== key) {
+      transporter = nodemailer.createTransport({
+        ...buildTransportOptions(portSecure),
+        host: ipv4,
+        name: hostName,
+        tls: { servername: hostName }
+      });
+      transporterKey = key;
+    }
+    transport = transporter;
+  } catch (_) {
+    transport = getTransporter(portSecure);
+  }
+
   const info = await transport.sendMail(mailOptions);
   return {
     messageId: info && info.messageId ? info.messageId : null,
@@ -115,7 +161,6 @@ async function sendMail({ to, subject, text, html }) {
       throw firstError;
     }
 
-    // Fallback: Gmail SSL on 465 (often works better than 587/STARTTLS on cloud hosts).
     const fallback = { port: 465, secure: true };
     if (primary.port === fallback.port && primary.secure === fallback.secure) {
       throw smtpBlockedError(firstError);
