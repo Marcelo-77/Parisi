@@ -1150,15 +1150,27 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!pendingForkliftPayload) return;
     const btn = document.getElementById('confirmForkliftSendBtn');
     if (btn) btn.disabled = true;
+    const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
+    const timeoutId = controller
+      ? setTimeout(() => controller.abort(), 28000)
+      : null;
     try {
       const res = await fetch(`${API_MESSAGE_REQUEST}/forklift`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'same-origin',
-        body: JSON.stringify(pendingForkliftPayload)
+        body: JSON.stringify(pendingForkliftPayload),
+        signal: controller?.signal
       });
-      const data = await res.json();
+      const data = await res.json().catch(() => ({}));
       if (!res.ok || !data.success) {
+        const reqNo = data.data?.requestNumber != null ? data.data.requestNumber : '';
+        if (data.requestCreated || data.data?.id) {
+          throw new Error(
+            (data.error || 'Message send failed')
+            + (reqNo ? `\nRequest #${reqNo} was created — check Search Message Request.` : '')
+          );
+        }
         throw new Error(data.error || 'Failed to send forklift request');
       }
       const reqNo = data.data?.requestNumber != null ? data.data.requestNumber : '';
@@ -1177,8 +1189,13 @@ document.addEventListener('DOMContentLoaded', () => {
         );
       }
     } catch (err) {
-      alert(err.message || 'Error sending forklift request');
+      if (err && err.name === 'AbortError') {
+        alert('Request timed out waiting for the server. Check SMS/Email settings on Approval, then verify Search Message Request.');
+      } else {
+        alert(err.message || 'Error sending forklift request');
+      }
     } finally {
+      if (timeoutId) clearTimeout(timeoutId);
       if (btn) btn.disabled = false;
     }
   });

@@ -173,11 +173,22 @@ router.post('/forklift', async (req, res) => {
     const actorName = creator.createdByName || 'User';
     let sendResult = null;
     try {
-      sendResult = await messageRequestNotifyService.sendOutboundMessage(created, {
-        actorName,
-        subject,
-        content: messageContent
-      });
+      const sendTimeoutMs = Number(process.env.FORKLIFT_SEND_TIMEOUT_MS || 20000);
+      sendResult = await Promise.race([
+        messageRequestNotifyService.sendOutboundMessage(created, {
+          actorName,
+          subject,
+          content: messageContent
+        }),
+        new Promise((_, reject) => {
+          setTimeout(() => {
+            reject(new Error(
+              `Message send timed out after ${Math.round(sendTimeoutMs / 1000)}s. `
+              + 'Request was created; check SMS/Email settings on Approval.'
+            ));
+          }, sendTimeoutMs);
+        })
+      ]);
       await messageRequestService.appendHistoryLine(
         created.id,
         `Forklift driver notified by ${messageType} (${actorName})`
@@ -191,7 +202,8 @@ router.post('/forklift', async (req, res) => {
       return res.status(400).json({
         success: false,
         error: sendError.message || 'Request saved but message send failed',
-        data: refreshed
+        data: refreshed,
+        requestCreated: true
       });
     }
 

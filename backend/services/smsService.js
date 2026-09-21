@@ -1,6 +1,7 @@
 const { randomUUID } = require('crypto');
 
 const API_BASE = 'https://api.mobilemessage.com.au';
+const SMS_FETCH_TIMEOUT_MS = Number(process.env.SMS_FETCH_TIMEOUT_MS || 12000);
 
 function getProvider() {
   return String(process.env.SMS_PROVIDER || '').trim().toLowerCase();
@@ -49,18 +50,40 @@ function buildAuthHeader() {
   return `Basic ${token}`;
 }
 
+function createFetchTimeoutSignal(ms = SMS_FETCH_TIMEOUT_MS) {
+  if (typeof AbortSignal !== 'undefined' && typeof AbortSignal.timeout === 'function') {
+    return AbortSignal.timeout(ms);
+  }
+  const controller = new AbortController();
+  setTimeout(() => controller.abort(), ms);
+  return controller.signal;
+}
+
+function mapFetchError(error, actionLabel) {
+  if (error && (error.name === 'AbortError' || error.name === 'TimeoutError')) {
+    return new Error(`${actionLabel} timed out after ${Math.round(SMS_FETCH_TIMEOUT_MS / 1000)}s. Check SMS provider connectivity on Approval.`);
+  }
+  return error;
+}
+
 async function listSenders() {
   if (!isConfigured()) {
     throw new Error('SMS is not configured. Set SMS_PROVIDER=mobilemessage, SMS_API_USER and SMS_API_PASS.');
   }
 
-  const res = await fetch(`${API_BASE}/v1/senders`, {
-    method: 'GET',
-    headers: {
-      Authorization: buildAuthHeader(),
-      Accept: 'application/json'
-    }
-  });
+  let res;
+  try {
+    res = await fetch(`${API_BASE}/v1/senders`, {
+      method: 'GET',
+      headers: {
+        Authorization: buildAuthHeader(),
+        Accept: 'application/json'
+      },
+      signal: createFetchTimeoutSignal()
+    });
+  } catch (error) {
+    throw mapFetchError(error, 'Mobile Message senders');
+  }
 
   const body = await res.json().catch(() => ({}));
   if (!res.ok) {
@@ -101,16 +124,22 @@ async function sendSms({ to, message, sender, customRef }) {
     ]
   };
 
-  const res = await fetch(`${API_BASE}/v1/messages`, {
-    method: 'POST',
-    headers: {
-      Authorization: buildAuthHeader(),
-      'Content-Type': 'application/json',
-      Accept: 'application/json',
-      'Idempotency-Key': randomUUID()
-    },
-    body: JSON.stringify(payload)
-  });
+  let res;
+  try {
+    res = await fetch(`${API_BASE}/v1/messages`, {
+      method: 'POST',
+      headers: {
+        Authorization: buildAuthHeader(),
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+        'Idempotency-Key': randomUUID()
+      },
+      body: JSON.stringify(payload),
+      signal: createFetchTimeoutSignal()
+    });
+  } catch (error) {
+    throw mapFetchError(error, 'Mobile Message send');
+  }
 
   const body = await res.json().catch(() => ({}));
   if (!res.ok) {
