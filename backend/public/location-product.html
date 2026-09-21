@@ -169,7 +169,7 @@
             max-width: min(920px, calc(100vw - 20px));
             width: 100%;
             margin: 0 auto;
-            max-height: calc(100dvh - 20px - 3.5em);
+            max-height: calc(100dvh - 24px);
             overflow: hidden;
             display: flex;
             flex-direction: column;
@@ -211,31 +211,45 @@
             transform: translateY(-50%) rotate(90deg);
         }
 
-        .forklift-request-modal .modal-body {
-            flex: 1 1 auto;
-            min-height: 0;
-            overflow: hidden;
-            padding: 12px 18px 14px;
-        }
-
         .forklift-request-modal #forkliftRequestForm {
             display: flex;
             flex-direction: column;
-            gap: 8px;
-            height: 100%;
+            flex: 1 1 auto;
             min-height: 0;
+            margin: 0;
+            height: auto;
+            gap: 0;
         }
 
-        .forklift-request-modal .form-actions {
-            display: flex;
+        .forklift-request-modal .forklift-request-scroll {
+            flex: 1 1 auto;
+            min-height: 0;
+            overflow-y: auto;
+            overflow-x: hidden;
+            padding: 12px 18px 8px;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .forklift-request-modal .forklift-request-footer {
+            flex: 0 0 auto !important;
+            display: flex !important;
             align-items: center;
             justify-content: center;
             gap: 12px;
             flex-wrap: wrap;
-            flex: 0 0 auto;
-            margin-top: 8px;
-            padding-top: 8px;
+            visibility: visible !important;
+            opacity: 1 !important;
+            margin: 0 !important;
+            padding: 12px 16px 16px !important;
             border-top: 1px solid #e2e8f0;
+            background: #fff;
+            position: relative;
+            z-index: 5;
+        }
+
+        .forklift-request-modal .forklift-request-footer .btn {
+            display: inline-flex !important;
+            min-width: 140px;
         }
 
         .forklift-request-modal .form-row {
@@ -275,7 +289,7 @@
             display: grid;
             grid-template-columns: repeat(4, minmax(0, 1fr));
             gap: 10px;
-            flex: 0 0 auto;
+            margin-bottom: 10px;
         }
 
         .forklift-request-modal .forklift-meta-grid .form-group {
@@ -286,33 +300,22 @@
             display: grid;
             grid-template-columns: 1fr 1.15fr;
             gap: 12px;
-            flex: 1 1 auto;
-            min-height: 0;
-            align-items: stretch;
+            align-items: start;
         }
 
         .forklift-request-modal .forklift-main-left,
         .forklift-request-modal .forklift-main-right {
             min-width: 0;
-            min-height: 0;
             display: flex;
             flex-direction: column;
             gap: 8px;
         }
 
-        .forklift-request-modal .forklift-main-right .form-group {
-            flex: 1 1 auto;
-            min-height: 0;
-            display: flex;
-            flex-direction: column;
-        }
-
-        /* ~3 lines shorter than before so Cancel/Continue stay visible */
         .forklift-request-modal #forkliftMessageContent {
-            flex: 1 1 auto;
-            min-height: 72px;
-            max-height: 120px;
-            resize: none;
+            min-height: 96px;
+            max-height: 140px;
+            height: 110px;
+            resize: vertical;
             overflow: auto;
         }
 
@@ -335,8 +338,23 @@
 
         #forkliftConfirmModal .modal-content {
             max-width: min(520px, calc(100vw - 20px));
-            max-height: none;
-            overflow: visible;
+            max-height: calc(100dvh - 24px);
+            overflow: hidden;
+        }
+
+        #forkliftConfirmModal .modal-body {
+            overflow: auto;
+            padding: 12px 18px 8px;
+        }
+
+        #forkliftConfirmModal .forklift-confirm-footer {
+            flex: 0 0 auto !important;
+            display: flex !important;
+            justify-content: center;
+            gap: 12px;
+            padding: 12px 16px 16px;
+            border-top: 1px solid #e2e8f0;
+            background: #fff;
         }
 
         @media (max-width: 820px) {
@@ -346,12 +364,9 @@
             .forklift-request-modal .forklift-main-grid {
                 grid-template-columns: 1fr;
             }
-            .forklift-request-modal .modal-content {
-                overflow: auto;
-                max-height: calc(100dvh - 16px - 3.5em);
-            }
             .forklift-request-modal #forkliftMessageContent {
-                max-height: 100px;
+                height: 96px;
+                max-height: 120px;
             }
         }
 
@@ -986,8 +1001,8 @@
                 <h3><i class="fas fa-truck"></i> Request Forklift Driver</h3>
                 <button type="button" class="modal-close" id="closeForkliftRequestModal">&times;</button>
             </div>
-            <div class="modal-body">
-                <form id="forkliftRequestForm" novalidate>
+            <form id="forkliftRequestForm" novalidate>
+                <div class="forklift-request-scroll">
                     <div class="forklift-meta-grid">
                         <div class="form-group">
                             <label for="forkliftRequestNumber">Request #</label>
@@ -1039,14 +1054,14 @@
                             </div>
                         </div>
                     </div>
-                    <div class="form-actions">
-                        <button type="button" class="btn btn-secondary" id="cancelForkliftRequestBtn">Cancel</button>
-                        <button type="submit" class="btn btn-primary" data-write-action="true">
-                            <i class="fas fa-paper-plane"></i> Continue
-                        </button>
-                    </div>
-                </form>
-            </div>
+                </div>
+                <div class="forklift-request-footer form-actions">
+                    <button type="button" class="btn btn-secondary" id="cancelForkliftRequestBtn">Cancel</button>
+                    <button type="submit" class="btn btn-primary" data-write-action="true">
+                        <i class="fas fa-paper-plane"></i> Continue
+                    </button>
+                </div>
+            </form>
         </div>
     </div>
 
@@ -1058,12 +1073,12 @@
             </div>
             <div class="modal-body">
                 <p class="forklift-confirm-text" id="forkliftConfirmText"></p>
-                <div class="form-actions" style="margin-top:20px;">
-                    <button type="button" class="btn btn-secondary" id="cancelForkliftConfirmBtn">Cancel</button>
-                    <button type="button" class="btn btn-primary" id="confirmForkliftSendBtn" data-write-action="true">
-                        <i class="fas fa-check"></i> Confirm &amp; Send
-                    </button>
-                </div>
+            </div>
+            <div class="forklift-confirm-footer form-actions">
+                <button type="button" class="btn btn-secondary" id="cancelForkliftConfirmBtn">Cancel</button>
+                <button type="button" class="btn btn-primary" id="confirmForkliftSendBtn" data-write-action="true">
+                    <i class="fas fa-check"></i> Confirm &amp; Send
+                </button>
             </div>
         </div>
     </div>
