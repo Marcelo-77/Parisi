@@ -3,6 +3,8 @@ const messageRequestService = require('../services/messageRequestService');
 const messageRequestNotifyService = require('../services/messageRequestNotifyService');
 const funcionarioServiceDB = require('../services/funcionarioServiceDB');
 const forkliftDriverService = require('../services/forkliftDriverService');
+const smsService = require('../services/smsService');
+const mailService = require('../services/mailService');
 const { getSessionUserId, isRootSession, ROOT_USER } = require('../middleware/auth');
 
 const router = express.Router();
@@ -154,6 +156,19 @@ router.post('/forklift', async (req, res) => {
       return res.status(400).json({ success: false, error: 'Selected driver has no phone registered' });
     }
 
+    if (messageType === 'SMS' && !smsService.isConfigured()) {
+      return res.status(400).json({
+        success: false,
+        error: 'SMS is not configured on Approval. Set SMS_PROVIDER, SMS_API_USER, SMS_API_PASS and SMS_SENDER.'
+      });
+    }
+    if (messageType === 'EMAIL' && !mailService.isConfigured()) {
+      return res.status(400).json({
+        success: false,
+        error: 'Email/SMTP is not configured on Approval. Set SMTP_USER and SMTP_PASS (SMTP_HOST=smtp.gmail.com).'
+      });
+    }
+
     const created = await messageRequestService.criar({
       messageType,
       priority,
@@ -171,52 +186,44 @@ router.post('/forklift', async (req, res) => {
     });
 
     const actorName = creator.createdByName || 'User';
-    let sendResult = null;
-    try {
-      const sendTimeoutMs = Number(process.env.FORKLIFT_SEND_TIMEOUT_MS || 20000);
-      sendResult = await Promise.race([
-        messageRequestNotifyService.sendOutboundMessage(created, {
-          actorName,
-          subject,
-          content: messageContent
-        }),
-        new Promise((_, reject) => {
-          setTimeout(() => {
-            reject(new Error(
-              `Message send timed out after ${Math.round(sendTimeoutMs / 1000)}s. `
-              + 'Request was created; check SMS/Email settings on Approval.'
-            ));
-          }, sendTimeoutMs);
-        })
-      ]);
-      await messageRequestService.appendHistoryLine(
-        created.id,
-        `Forklift driver notified by ${messageType} (${actorName})`
-      );
-    } catch (sendError) {
-      await messageRequestService.appendHistoryLine(
-        created.id,
-        `Forklift notification failed: ${sendError.message || 'Send failed'}`
-      );
-      const refreshed = await messageRequestService.buscarPorId(created.id);
-      return res.status(400).json({
-        success: false,
-        error: sendError.message || 'Request saved but message send failed',
-        data: refreshed,
-        requestCreated: true
-      });
-    }
 
-    const refreshed = await messageRequestService.buscarPorId(created.id);
+    // Respond immediately so Approval/Render does not time out while SMS/Email is sending.
     res.status(201).json({
       success: true,
-      message: 'Forklift driver request created and message sent',
-      data: refreshed,
-      send: sendResult
+      message: 'Forklift driver request created; notification is being sent',
+      data: created,
+      sendPending: true,
+      waitingForDriver: false
     });
+
+    setImmediate(() => {
+      messageRequestNotifyService.sendOutboundMessage(created, {
+        actorName,
+        subject,
+        content: messageContent
+      }).then(async () => {
+        await messageRequestService.appendHistoryLine(
+          created.id,
+          `Forklift driver notified by ${messageType} (${actorName})`
+        );
+      }).catch(async (sendError) => {
+        console.error('Forklift background notify error:', sendError);
+        try {
+          await messageRequestService.appendHistoryLine(
+            created.id,
+            `Forklift notification failed: ${sendError.message || 'Send failed'}`
+          );
+        } catch (historyError) {
+          console.error('Forklift history update error:', historyError);
+        }
+      });
+    });
+    return;
   } catch (error) {
     console.error('Forklift request create error:', error);
-    res.status(400).json({ success: false, error: error.message || 'Error creating forklift request' });
+    if (!res.headersSent) {
+      res.status(400).json({ success: false, error: error.message || 'Error creating forklift request' });
+    }
   }
 });
 

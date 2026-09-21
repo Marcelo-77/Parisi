@@ -1152,7 +1152,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (btn) btn.disabled = true;
     const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
     const timeoutId = controller
-      ? setTimeout(() => controller.abort(), 28000)
+      ? setTimeout(() => controller.abort(), 45000)
       : null;
     try {
       const res = await fetch(`${API_MESSAGE_REQUEST}/forklift`, {
@@ -1164,13 +1164,6 @@ document.addEventListener('DOMContentLoaded', () => {
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok || !data.success) {
-        const reqNo = data.data?.requestNumber != null ? data.data.requestNumber : '';
-        if (data.requestCreated || data.data?.id) {
-          throw new Error(
-            (data.error || 'Message send failed')
-            + (reqNo ? `\nRequest #${reqNo} was created — check Search Message Request.` : '')
-          );
-        }
         throw new Error(data.error || 'Failed to send forklift request');
       }
       const reqNo = data.data?.requestNumber != null ? data.data.requestNumber : '';
@@ -1183,6 +1176,10 @@ document.addEventListener('DOMContentLoaded', () => {
         alert(
           `Request #${reqNo} created.\nStatus: Waiting for driver for request.`
         );
+      } else if (data.sendPending) {
+        alert(
+          `Request #${reqNo} created.\nStatus: Forklift driver request selected.\nNotification is being sent to ${driverName}.`
+        );
       } else {
         alert(
           `Request #${reqNo} created.\nStatus: Forklift driver request selected.\nMessage sent to ${driverName}.`
@@ -1190,7 +1187,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     } catch (err) {
       if (err && err.name === 'AbortError') {
-        alert('Request timed out waiting for the server. Check SMS/Email settings on Approval, then verify Search Message Request.');
+        alert('Request timed out waiting for the server. Check Search Message Request — the request may still have been created.');
       } else {
         alert(err.message || 'Error sending forklift request');
       }
