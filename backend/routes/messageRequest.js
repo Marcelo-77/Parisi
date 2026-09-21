@@ -165,7 +165,7 @@ router.post('/forklift', async (req, res) => {
     if (messageType === 'EMAIL' && !mailService.isConfigured()) {
       return res.status(400).json({
         success: false,
-        error: 'Email/SMTP is not configured on Approval. Set SMTP_USER and SMTP_PASS (SMTP_HOST=smtp.gmail.com).'
+        error: 'Email is not configured on Approval. Set RESEND_API_KEY (or BREVO_API_KEY), or switch Send request by to SMS.'
       });
     }
 

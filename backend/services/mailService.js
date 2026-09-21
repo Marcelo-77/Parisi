@@ -2,16 +2,64 @@ const dns = require('dns');
 const nodemailer = require('nodemailer');
 
 const DEFAULT_FROM = 'doubleyitsystem@gmail.com';
+const HTTP_FETCH_TIMEOUT_MS = Number(process.env.EMAIL_HTTP_TIMEOUT_MS || 15000);
 
 let transporter = null;
 let transporterKey = '';
 
 function getFromAddress() {
-  return String(process.env.SMTP_FROM || process.env.SMTP_USER || DEFAULT_FROM).trim();
+  return String(
+    process.env.EMAIL_FROM
+    || process.env.SMTP_FROM
+    || process.env.SMTP_USER
+    || DEFAULT_FROM
+  ).trim();
+}
+
+function isRenderHost() {
+  return String(process.env.RENDER || '').toLowerCase() === 'true'
+    || Boolean(String(process.env.RENDER_SERVICE_ID || '').trim())
+    || String(process.env.NODE_ENV || '').toLowerCase() === 'approval';
+}
+
+function hasResend() {
+  return Boolean(String(process.env.RESEND_API_KEY || '').trim());
+}
+
+function hasBrevo() {
+  return Boolean(String(process.env.BREVO_API_KEY || process.env.SENDINBLUE_API_KEY || '').trim());
+}
+
+function isHttpConfigured() {
+  return hasResend() || hasBrevo();
+}
+
+function isSmtpConfigured() {
+  return Boolean(String(process.env.SMTP_USER || '').trim() && String(process.env.SMTP_PASS || '').trim());
 }
 
 function isConfigured() {
-  return Boolean(String(process.env.SMTP_USER || '').trim() && String(process.env.SMTP_PASS || '').trim());
+  return isHttpConfigured() || isSmtpConfigured();
+}
+
+function getTransportMode() {
+  const mode = String(process.env.EMAIL_TRANSPORT || 'auto').trim().toLowerCase();
+  if (mode === 'http' || mode === 'resend' || mode === 'brevo' || mode === 'smtp') return mode;
+  // auto: prefer HTTP on Render (SMTP ports are usually blocked)
+  if (isHttpConfigured()) return 'http';
+  if (isRenderHost() && String(process.env.SMTP_ALLOW_ON_RENDER || '').toLowerCase() !== 'true') {
+    return 'http-required';
+  }
+  return 'smtp';
+}
+
+function createFetchTimeoutSignal(ms = HTTP_FETCH_TIMEOUT_MS) {
+  if (typeof AbortSignal !== 'undefined' && typeof AbortSignal.timeout === 'function') {
+    return AbortSignal.timeout(ms);
+  }
+  const controller = new AbortController();
+  setTimeout(() => controller.abort(), ms);
+  return controller.signal;
 }
 
 /** Force A-record (IPv4) only — Render often has no IPv6 route (ENETUNREACH). */
@@ -19,13 +67,7 @@ function ipv4Lookup(hostname, options, callback) {
   if (typeof options === 'function') {
     callback = options;
   }
-  dns.lookup(hostname, { family: 4, hints: dns.ADDRCONFIG }, (err, address, family) => {
-    if (err) {
-      // ADDRCONFIG can fail on some hosts; retry plain IPv4.
-      return dns.lookup(hostname, { family: 4 }, callback);
-    }
-    return callback(null, address, family || 4);
-  });
+  dns.lookup(hostname, { family: 4 }, callback);
 }
 
 function getConfiguredPortSecure() {
@@ -41,13 +83,10 @@ function buildTransportOptions({ port, secure }) {
     host: hostName,
     port: Number(port),
     secure: !!secure,
-    // Critical on Render/Approval: avoid smtp.gmail.com AAAA (IPv6) ENETUNREACH.
     family: 4,
     lookup: ipv4Lookup,
     name: hostName,
-    tls: {
-      servername: hostName
-    },
+    tls: { servername: hostName },
     auth: {
       user: process.env.SMTP_USER,
       pass: process.env.SMTP_PASS
@@ -59,8 +98,8 @@ function buildTransportOptions({ port, secure }) {
 }
 
 function getTransporter(forceOptions) {
-  if (!isConfigured()) {
-    throw new Error('SMTP is not configured. Set SMTP_USER and SMTP_PASS in config.env');
+  if (!isSmtpConfigured()) {
+    throw new Error('SMTP is not configured. Set SMTP_USER and SMTP_PASS, or set RESEND_API_KEY for HTTP email.');
   }
 
   const opts = forceOptions || getConfiguredPortSecure();
@@ -98,10 +137,96 @@ function smtpBlockedError(originalError) {
   const detail = originalError && originalError.message ? originalError.message : 'Connection timeout';
   return new Error(
     `Email SMTP failed (${detail}). `
-    + 'Approval/Render may block outbound SMTP. '
-    + 'Prefer Setting Forklift Driver "Send request by" = SMS, '
-    + 'or use an HTTP email API. If using Gmail, keep SMTP_PORT=465 and SMTP_SECURE=true.'
+    + 'Approval/Render blocks outbound SMTP. '
+    + 'Set RESEND_API_KEY (https://resend.com) or BREVO_API_KEY, '
+    + 'or switch Setting Forklift Driver "Send request by" to SMS.'
   );
+}
+
+function httpRequiredError() {
+  return new Error(
+    'Email over SMTP is blocked on Approval/Render. '
+    + 'Set RESEND_API_KEY (recommended) or BREVO_API_KEY in Render env, '
+    + 'or switch Setting Forklift Driver "Send request by" to SMS.'
+  );
+}
+
+async function sendViaResend({ to, subject, text, html }) {
+  const apiKey = String(process.env.RESEND_API_KEY || '').trim();
+  const from = getFromAddress();
+  const res = await fetch('https://api.resend.com/emails', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      'Content-Type': 'application/json',
+      Accept: 'application/json'
+    },
+    body: JSON.stringify({
+      from,
+      to: [to],
+      subject,
+      text: text || undefined,
+      html: html || undefined
+    }),
+    signal: createFetchTimeoutSignal()
+  });
+  const body = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    const msg = body?.message || body?.error || `HTTP ${res.status}`;
+    throw new Error(`Resend email failed: ${msg}`);
+  }
+  return {
+    messageId: body?.id || null,
+    from,
+    to,
+    provider: 'resend'
+  };
+}
+
+async function sendViaBrevo({ to, subject, text, html }) {
+  const apiKey = String(process.env.BREVO_API_KEY || process.env.SENDINBLUE_API_KEY || '').trim();
+  const from = getFromAddress();
+  const res = await fetch('https://api.brevo.com/v3/smtp/email', {
+    method: 'POST',
+    headers: {
+      'api-key': apiKey,
+      'Content-Type': 'application/json',
+      Accept: 'application/json'
+    },
+    body: JSON.stringify({
+      sender: { email: from },
+      to: [{ email: to }],
+      subject,
+      textContent: text || undefined,
+      htmlContent: html || undefined
+    }),
+    signal: createFetchTimeoutSignal()
+  });
+  const body = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    const msg = body?.message || body?.error || `HTTP ${res.status}`;
+    throw new Error(`Brevo email failed: ${msg}`);
+  }
+  return {
+    messageId: body?.messageId || null,
+    from,
+    to,
+    provider: 'brevo'
+  };
+}
+
+async function sendViaHttp(mailOptions) {
+  const mode = String(process.env.EMAIL_TRANSPORT || 'auto').trim().toLowerCase();
+  if (mode === 'brevo' || (!hasResend() && hasBrevo())) {
+    return sendViaBrevo(mailOptions);
+  }
+  if (hasResend()) {
+    return sendViaResend(mailOptions);
+  }
+  if (hasBrevo()) {
+    return sendViaBrevo(mailOptions);
+  }
+  throw httpRequiredError();
 }
 
 async function resolveHostIpv4(hostname) {
@@ -113,11 +238,10 @@ async function resolveHostIpv4(hostname) {
   });
 }
 
-async function sendWithOptions(mailOptions, portSecure) {
+async function sendWithSmtpOptions(mailOptions, portSecure) {
   const hostName = String(process.env.SMTP_HOST || 'smtp.gmail.com').trim() || 'smtp.gmail.com';
   let transport;
   try {
-    // Prefer connecting to literal IPv4 so Node never opens an IPv6 socket.
     const ipv4 = await resolveHostIpv4(hostName);
     const key = `${ipv4}:${portSecure.port}:${portSecure.secure ? 1 : 0}`;
     if (!transporter || transporterKey !== key) {
@@ -140,22 +264,15 @@ async function sendWithOptions(mailOptions, portSecure) {
     from: getFromAddress(),
     to: mailOptions.to,
     port: portSecure.port,
-    secure: portSecure.secure
+    secure: portSecure.secure,
+    provider: 'smtp'
   };
 }
 
-async function sendMail({ to, subject, text, html }) {
-  const mailOptions = {
-    from: getFromAddress(),
-    to,
-    subject,
-    text: text || undefined,
-    html: html || undefined
-  };
-
+async function sendViaSmtp(mailOptions) {
   const primary = getConfiguredPortSecure();
   try {
-    return await sendWithOptions(mailOptions, primary);
+    return await sendWithSmtpOptions(mailOptions, primary);
   } catch (firstError) {
     if (!isSmtpConnectivityError(firstError)) {
       throw firstError;
@@ -168,17 +285,47 @@ async function sendMail({ to, subject, text, html }) {
 
     resetTransporter();
     try {
-      return await sendWithOptions(mailOptions, fallback);
+      return await sendWithSmtpOptions(mailOptions, fallback);
     } catch (secondError) {
       throw smtpBlockedError(secondError);
     }
   }
 }
 
+async function sendMail({ to, subject, text, html }) {
+  const mailOptions = {
+    from: getFromAddress(),
+    to,
+    subject,
+    text: text || undefined,
+    html: html || undefined
+  };
+
+  const mode = getTransportMode();
+  if (mode === 'http' || mode === 'resend' || mode === 'brevo') {
+    return sendViaHttp(mailOptions);
+  }
+  if (mode === 'http-required') {
+    if (isHttpConfigured()) return sendViaHttp(mailOptions);
+    throw httpRequiredError();
+  }
+  if (mode === 'smtp') {
+    return sendViaSmtp(mailOptions);
+  }
+
+  // auto
+  if (isHttpConfigured()) {
+    return sendViaHttp(mailOptions);
+  }
+  return sendViaSmtp(mailOptions);
+}
+
 module.exports = {
   DEFAULT_FROM,
   getFromAddress,
   isConfigured,
+  isHttpConfigured,
+  isSmtpConfigured,
   sendMail,
   resetTransporter
 };
