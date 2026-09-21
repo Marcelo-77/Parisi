@@ -19,6 +19,7 @@ async function ensureChurchServiceOrderSchema() {
       priestly_blessing_leader VARCHAR(150),
       announcements_position INTEGER NOT NULL DEFAULT 8,
       scripture_position INTEGER NOT NULL DEFAULT 4,
+      praise_position INTEGER NOT NULL DEFAULT 5,
       created_by UUID REFERENCES funcionarios(id) ON DELETE SET NULL,
       criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
       atualizado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -33,6 +34,26 @@ async function ensureChurchServiceOrderSchema() {
   await query(`
     ALTER TABLE church_service_order
     ADD COLUMN IF NOT EXISTS scripture_position INTEGER NOT NULL DEFAULT 4
+  `);
+
+  await query(`
+    ALTER TABLE church_service_order
+    ADD COLUMN IF NOT EXISTS praise_position INTEGER NOT NULL DEFAULT 5
+  `);
+
+  await query(`
+    ALTER TABLE church_service_order
+    ADD COLUMN IF NOT EXISTS custom_item_label VARCHAR(150)
+  `);
+
+  await query(`
+    ALTER TABLE church_service_order
+    ADD COLUMN IF NOT EXISTS custom_item_description VARCHAR(500)
+  `);
+
+  await query(`
+    ALTER TABLE church_service_order
+    ADD COLUMN IF NOT EXISTS custom_item_position INTEGER NOT NULL DEFAULT 8
   `);
 
   await query(`

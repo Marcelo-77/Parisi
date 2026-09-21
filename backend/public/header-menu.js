@@ -91,7 +91,16 @@
                                     <a href="System-Documentation-Search.html" class="dropdown-item" data-app="System-Documentation-Search.html"><i class="fas fa-search"></i> Search System Documentation</a>
                                 </div>
                             </div>
-                            <a href="System-settings.html" class="dropdown-item" data-app="System-settings.html"><i class="fas fa-sliders-h"></i> System Settings</a>
+                            <div class="dropdown-submenu-group" data-submenu="settings">
+                                <button type="button" class="dropdown-submenu-trigger" aria-haspopup="true" aria-expanded="false">
+                                    <span><i class="fas fa-cog"></i> Settings</span>
+                                    <i class="fas fa-chevron-right submenu-chevron" aria-hidden="true"></i>
+                                </button>
+                                <div class="dropdown-submenu" aria-hidden="true">
+                                    <a href="System-settings.html" class="dropdown-item" data-app="System-settings.html"><i class="fas fa-sliders-h"></i> System Settings</a>
+                                    <a href="Setting-Forklift-Driver.html" class="dropdown-item" data-app="Setting-Forklift-Driver.html" data-write-menu="true"><i class="fas fa-truck"></i> Setting Forklift Driver</a>
+                                </div>
+                            </div>
                             <div class="dropdown-submenu-group" data-submenu="news">
                                 <button type="button" class="dropdown-submenu-trigger" aria-haspopup="true" aria-expanded="false">
                                     <span><i class="fas fa-newspaper"></i> News</span>

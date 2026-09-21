@@ -104,9 +104,8 @@
                                     <option value="3">2 — Após Abertura</option>
                                     <option value="4" selected>3 — Após Louvores (padrão)</option>
                                     <option value="5">4 — Após Louvor</option>
-                                    <option value="6">5 — Após Ofertas e oração</option>
-                                    <option value="8">6 — Após Mensagem</option>
-                                    <option value="9">7 — Último item</option>
+                                    <option value="8">5 — Após Mensagem</option>
+                                    <option value="9">6 — Último item</option>
                                 </select>
                             </div>
                         </div>
@@ -116,13 +115,16 @@
                                 <input type="text" id="praiseLeader" name="praiseLeader" placeholder="Ex: Irmão Apolo">
                             </div>
                             <div class="form-group">
-                                <label for="praiseStatus"><i class="fas fa-circle-info"></i> Observação do louvor</label>
-                                <input type="text" id="praiseStatus" name="praiseStatus" placeholder="Ex: A Confirmar">
+                                <label for="praisePosition"><i class="fas fa-sort-numeric-down"></i> Posição do Louvor</label>
+                                <select id="praisePosition" name="praisePosition">
+                                    <option value="1">1 — Primeiro item</option>
+                                    <option value="3">2 — Após Abertura</option>
+                                    <option value="4">3 — Após Louvores</option>
+                                    <option value="5" selected>4 — Após Leitura da palavra (padrão)</option>
+                                    <option value="8">5 — Após Mensagem</option>
+                                    <option value="9">6 — Último item</option>
+                                </select>
                             </div>
-                        </div>
-                        <div class="form-group full-width">
-                            <label for="offeringsInstruction"><i class="fas fa-hand-holding-heart"></i> Ofertas e oração</label>
-                            <textarea id="offeringsInstruction" name="offeringsInstruction" rows="2" placeholder="Ex: Ao término de Apolo, convidar Antônio para reconhecer as ofertas e fazer a oração.">Ao término de Apolo. Convidar Antônio para reconhecer as ofertas e fazer a oração.</textarea>
                         </div>
                         <div class="form-group">
                             <label for="messageSpeaker"><i class="fas fa-microphone"></i> Mensagem</label>
@@ -140,15 +142,40 @@
                                     <option value="3">2 — Após Abertura</option>
                                     <option value="4">3 — Após Louvores</option>
                                     <option value="5">4 — Após Louvor</option>
-                                    <option value="6">5 — Após Ofertas e oração</option>
-                                    <option value="8" selected>6 — Após Mensagem (padrão)</option>
-                                    <option value="9">7 — Último item</option>
+                                    <option value="8" selected>5 — Após Mensagem (padrão)</option>
+                                    <option value="9">6 — Último item</option>
                                 </select>
                             </div>
                         </div>
                         <div class="form-group">
                             <label for="priestlyBlessingLeader"><i class="fas fa-hands-praying"></i> Benção Sacerdotal</label>
                             <input type="text" id="priestlyBlessingLeader" name="priestlyBlessingLeader" placeholder="Ex: Pr Nautilio">
+                        </div>
+                        <div class="order-custom-item-block">
+                            <h4 style="margin: 1rem 0 0.75rem; font-size: 1rem;"><i class="fas fa-plus-circle"></i> Item personalizado</h4>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="customItemLabel"><i class="fas fa-tag"></i> Label</label>
+                                    <input type="text" id="customItemLabel" name="customItemLabel" placeholder="Ex: Testemunho" maxlength="150">
+                                </div>
+                                <div class="form-group">
+                                    <label for="customItemPosition"><i class="fas fa-sort-numeric-down"></i> Posição do item personalizado</label>
+                                    <select id="customItemPosition" name="customItemPosition">
+                                        <option value="1">1 — Primeiro item</option>
+                                        <option value="3">2 — Após Abertura</option>
+                                        <option value="4">3 — Após Louvores</option>
+                                        <option value="10">4 — Após Leitura da palavra</option>
+                                        <option value="5">5 — Após Louvor</option>
+                                        <option value="8" selected>6 — Após Mensagem (padrão)</option>
+                                        <option value="11">7 — Após Anúncios</option>
+                                        <option value="9">8 — Último item (após Benção Sacerdotal)</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="form-group full-width">
+                                <label for="customItemDescription"><i class="fas fa-align-left"></i> Descrição</label>
+                                <textarea id="customItemDescription" name="customItemDescription" rows="2" placeholder="Ex: Irmão Carlos compartilha o testemunho" maxlength="500"></textarea>
+                            </div>
                         </div>
                     </div>
 

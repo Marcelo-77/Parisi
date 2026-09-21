@@ -479,10 +479,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     <div class="action-buttons loc-result-actions">
                         <button type="button" class="loc-action-btn btn-edit" data-id="${escapeHtml(loc.id || '')}" title="Edit">
                             <i class="fas fa-edit"></i><span>Edit</span>
-                        </button>
+                    </button>
                         <button type="button" class="loc-action-btn btn-print" data-location="${escapeHtml(loc.location || '')}" title="Print bin label">
                             <i class="fas fa-print"></i><span>Print</span>
-                        </button>
+                    </button>
                         <button type="button" class="loc-action-btn btn-delete" data-id="${escapeHtml(loc.id || '')}" data-location="${escapeHtml(loc.location || '')}" title="Delete">
                             <i class="fas fa-trash-alt"></i><span>Delete</span>
                         </button>

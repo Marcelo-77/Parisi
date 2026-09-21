@@ -373,6 +373,7 @@ async function initDatabase() {
       { application: 'System-Documentation.html', menuName: 'Applications_System_Documentation' },
       { application: 'System-Documentation-Search.html', menuName: 'Applications_System_Documentation_Search' },
       { application: 'System-settings.html', menuName: 'Applications_System_Settings' },
+      { application: 'Setting-Forklift-Driver.html', menuName: 'Applications_Settings_Forklift_Driver' },
       { application: 'News.html', menuName: 'Applications_News' },
       { application: 'News-Search.html', menuName: 'Applications_News_Search' },
       { application: 'Improvements-and-Corrections-Control.html', menuName: 'Applications_Improvements_Corrections' },
@@ -619,6 +620,7 @@ async function initDatabase() {
         message_type VARCHAR(20) NOT NULL DEFAULT 'EMAIL',
         recipient_name VARCHAR(150),
         recipient_email VARCHAR(255),
+        recipient_phone VARCHAR(40),
         subject VARCHAR(255) NOT NULL,
         message_content TEXT NOT NULL,
         priority VARCHAR(20) NOT NULL DEFAULT 'NORMAL',
@@ -636,17 +638,83 @@ async function initDatabase() {
         criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         atualizado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         CONSTRAINT message_requests_type_chk
-          CHECK (message_type IN ('EMAIL', 'INTERNAL', 'SMS')),
+          CHECK (message_type IN ('EMAIL', 'INTERNAL', 'SMS', 'WHATSAPP')),
         CONSTRAINT message_requests_priority_chk
           CHECK (priority IN ('LOW', 'NORMAL', 'HIGH', 'URGENT')),
         CONSTRAINT message_requests_status_chk
-          CHECK (status IN ('PENDING', 'UNDER_REVIEW', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED', 'ON_HOLD'))
+          CHECK (status IN ('PENDING', 'UNDER_REVIEW', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED', 'ON_HOLD', 'WAITING_FOR_DRIVER', 'FORKLIFT_DRIVER_SELECTED'))
       )
     `);
+    await query(`ALTER TABLE message_requests ADD COLUMN IF NOT EXISTS recipient_phone VARCHAR(40)`).catch(() => {});
+    await query(`ALTER TABLE message_requests DROP CONSTRAINT IF EXISTS message_requests_type_chk`).catch(() => {});
+    await query(`
+      ALTER TABLE message_requests
+      ADD CONSTRAINT message_requests_type_chk
+        CHECK (message_type IN ('EMAIL', 'INTERNAL', 'SMS', 'WHATSAPP'))
+    `).catch(() => {});
+    await query(`ALTER TABLE message_requests DROP CONSTRAINT IF EXISTS message_requests_status_chk`).catch(() => {});
+    await query(`
+      ALTER TABLE message_requests
+      ADD CONSTRAINT message_requests_status_chk
+        CHECK (status IN ('PENDING', 'UNDER_REVIEW', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED', 'ON_HOLD', 'WAITING_FOR_DRIVER', 'FORKLIFT_DRIVER_SELECTED'))
+    `).catch(() => {});
     await query(`CREATE INDEX IF NOT EXISTS idx_message_requests_criado ON message_requests(criado_em DESC)`);
     await query(`CREATE INDEX IF NOT EXISTS idx_message_requests_status ON message_requests(status)`);
     await query(`CREATE INDEX IF NOT EXISTS idx_message_requests_number ON message_requests(request_number)`);
     console.log('✅ Tabela message_requests criada/verificada');
+
+    await query(`
+      CREATE TABLE IF NOT EXISTS forklift_drivers (
+        funcionario_id UUID PRIMARY KEY REFERENCES funcionarios(id) ON DELETE CASCADE,
+        assigned_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        assigned_by UUID,
+        assigned_by_name VARCHAR(100)
+      )
+    `);
+    await query(`
+      CREATE INDEX IF NOT EXISTS idx_forklift_drivers_assigned_at
+      ON forklift_drivers (assigned_at DESC)
+    `);
+    console.log('✅ Tabela forklift_drivers criada/verificada');
+
+    await query(`
+      CREATE TABLE IF NOT EXISTS forklift_driver_settings (
+        id SMALLINT PRIMARY KEY DEFAULT 1 CHECK (id = 1),
+        preferred_message_type VARCHAR(10) NOT NULL DEFAULT 'SMS',
+        allow_reassign_to_other_driver BOOLEAN NOT NULL DEFAULT false,
+        waiting_timeout_enabled BOOLEAN NOT NULL DEFAULT false,
+        waiting_timeout_minutes INTEGER NOT NULL DEFAULT 15,
+        waiting_timeout_notify_user_ids TEXT NOT NULL DEFAULT '[]',
+        updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        CONSTRAINT forklift_driver_settings_type_chk
+          CHECK (preferred_message_type IN ('SMS', 'EMAIL'))
+      )
+    `);
+    await query(`
+      ALTER TABLE forklift_driver_settings
+      ADD COLUMN IF NOT EXISTS allow_reassign_to_other_driver BOOLEAN NOT NULL DEFAULT false
+    `).catch(() => {});
+    await query(`
+      ALTER TABLE forklift_driver_settings
+      ADD COLUMN IF NOT EXISTS waiting_timeout_enabled BOOLEAN NOT NULL DEFAULT false
+    `).catch(() => {});
+    await query(`
+      ALTER TABLE forklift_driver_settings
+      ADD COLUMN IF NOT EXISTS waiting_timeout_minutes INTEGER NOT NULL DEFAULT 15
+    `).catch(() => {});
+    await query(`
+      ALTER TABLE forklift_driver_settings
+      ADD COLUMN IF NOT EXISTS waiting_timeout_notify_user_ids TEXT NOT NULL DEFAULT '[]'
+    `).catch(() => {});
+    await query(`
+      INSERT INTO forklift_driver_settings (
+        id, preferred_message_type, allow_reassign_to_other_driver,
+        waiting_timeout_enabled, waiting_timeout_minutes, waiting_timeout_notify_user_ids
+      )
+      VALUES (1, 'SMS', false, false, 15, '[]')
+      ON CONFLICT (id) DO NOTHING
+    `);
+    console.log('✅ Tabela forklift_driver_settings criada/verificada');
 
     await query(`CREATE SEQUENCE IF NOT EXISTS test_case_number_seq`);
     await query(`

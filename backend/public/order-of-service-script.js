@@ -18,11 +18,13 @@
       scriptureReader: document.getElementById('scriptureReader')?.value.trim(),
       scripturePosition: document.getElementById('scripturePosition')?.value || '4',
       praiseLeader: document.getElementById('praiseLeader')?.value.trim(),
-      praiseStatus: document.getElementById('praiseStatus')?.value.trim(),
-      offeringsInstruction: document.getElementById('offeringsInstruction')?.value.trim(),
+      praisePosition: document.getElementById('praisePosition')?.value || '5',
       messageSpeaker: document.getElementById('messageSpeaker')?.value.trim(),
       closingPrayerLeader: document.getElementById('closingPrayerLeader')?.value.trim(),
       priestlyBlessingLeader: document.getElementById('priestlyBlessingLeader')?.value.trim(),
+      customItemLabel: document.getElementById('customItemLabel')?.value.trim(),
+      customItemDescription: document.getElementById('customItemDescription')?.value.trim(),
+      customItemPosition: document.getElementById('customItemPosition')?.value || '8',
       announcementsPosition: document.getElementById('announcementsPosition')?.value || '8'
     };
   }
@@ -105,11 +107,23 @@
       4
     );
     document.getElementById('praiseLeader').value = order.praiseLeader;
-    document.getElementById('praiseStatus').value = order.praiseStatus;
-    document.getElementById('offeringsInstruction').value = order.offeringsInstruction;
+    setSelectValue(
+      document.getElementById('praisePosition'),
+      order.praisePosition,
+      OrderOfServiceUtils.normalizePraisePosition,
+      5
+    );
     document.getElementById('messageSpeaker').value = order.messageSpeaker;
     document.getElementById('closingPrayerLeader').value = order.closingPrayerLeader;
     document.getElementById('priestlyBlessingLeader').value = order.priestlyBlessingLeader;
+    document.getElementById('customItemLabel').value = order.customItemLabel || '';
+    document.getElementById('customItemDescription').value = order.customItemDescription || '';
+    setSelectValue(
+      document.getElementById('customItemPosition'),
+      order.customItemPosition,
+      OrderOfServiceUtils.normalizeCustomItemPosition,
+      8
+    );
     setSelectValue(
       document.getElementById('announcementsPosition'),
       order.announcementsPosition,

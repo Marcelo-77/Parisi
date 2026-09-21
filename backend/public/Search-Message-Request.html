@@ -15,11 +15,228 @@
         .status-completed { color: #15803d; font-weight: 700; }
         .status-cancelled { color: #b91c1c; font-weight: 700; }
         .status-on-hold { color: #7c3aed; font-weight: 700; }
-        .status-pending { color: #64748b; font-weight: 700; }
+        .status-forklift { color: #0f766e; font-weight: 700; }
+        .status-waiting-driver { color: #b91c1c; font-weight: 700; }
+        .status-pending { color: #b91c1c; font-weight: 700; }
+        @keyframes mr-waiting-driver-blink {
+            0%, 100% { background-color: rgba(254, 226, 226, 0.95); }
+            50% { background-color: rgba(239, 68, 68, 0.45); }
+        }
+        tr.item-data-row.waiting-driver-alert > td,
+        tr.item-actions-row.waiting-driver-alert > td {
+            animation: mr-waiting-driver-blink 1.1s ease-in-out infinite;
+        }
+        tr.item-data-row.waiting-driver-alert .status-waiting-driver,
+        tr.item-data-row.waiting-driver-alert .status-pending {
+            color: #991b1b;
+            font-weight: 800;
+        }
         .mr-action-panel { display: none; margin-top: 8px; padding-top: 8px; border-top: 1px solid #e2e8f0; }
         .mr-action-panel.is-visible { display: block; }
-        #requestModal .item-modal-content { max-width: min(960px, calc(100vw - 32px)); }
-        #requestHistory { white-space: pre-wrap; font-family: ui-monospace, Consolas, monospace; font-size: 0.85rem; background: #f8fafc; padding: 10px; border-radius: 6px; max-height: 180px; overflow: auto; }
+        #forkliftPendingRequestPanel .forklift-pending-actions,
+        #forkliftClaimPanel .forklift-claim-actions {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-top: 12px;
+        }
+        #forkliftResponsePanel .forklift-response-actions {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-top: 4.5em;
+        }
+        #forkliftResponsePanel .forklift-status-row {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            flex-wrap: nowrap;
+        }
+        #forkliftResponsePanel .forklift-status-group {
+            flex: 0 0 180px;
+            max-width: 180px;
+            min-width: 140px;
+        }
+        #forkliftNewStatus {
+            width: 100%;
+            max-width: 180px;
+        }
+        #forkliftResponsePanel .forklift-note-group {
+            flex: 1 1 auto;
+            min-width: 0;
+        }
+        #forkliftResponsePanel .forklift-note-group.is-hidden {
+            display: none;
+        }
+        #forkliftNoteToRequester {
+            width: 100%;
+            min-height: 56px;
+            max-height: 90px;
+            resize: vertical;
+        }
+        #requestModal.show {
+            display: flex !important;
+            align-items: stretch;
+            justify-content: stretch;
+            padding: 8px;
+            box-sizing: border-box;
+        }
+        #requestModal:not(.show) {
+            display: none !important;
+        }
+        #requestModal .item-modal-content.modal-large {
+            width: calc(100vw - 16px);
+            max-width: none;
+            height: calc(100dvh - 16px);
+            max-height: calc(100dvh - 16px);
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        #requestModal .modal-header {
+            flex: 0 0 auto;
+            padding: 10px 16px;
+        }
+        #requestModal .modal-header h3 {
+            margin: 0;
+            font-size: 1.05rem;
+        }
+        #requestModal .item-modal-subtitle {
+            margin: 2px 0 0;
+            font-size: 0.85rem;
+        }
+        #requestModal .item-modal-form {
+            flex: 1 1 auto;
+            min-height: 0;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            margin: 0;
+            padding: 0;
+        }
+        #requestModal .item-modal-body {
+            flex: 1 1 auto;
+            min-height: 0;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            padding: 10px 16px;
+        }
+        #requestModal .item-modal-body > .form-row {
+            flex: 0 0 auto;
+            margin-bottom: 0;
+            gap: 8px;
+        }
+        #requestModal .item-modal-body .form-group {
+            margin-bottom: 0;
+        }
+        #requestModal .item-modal-body .form-group label {
+            margin-bottom: 2px;
+            font-size: 0.78rem;
+        }
+        #requestModal .item-modal-body .form-group input,
+        #requestModal .item-modal-body .form-group select,
+        #requestModal .item-modal-body .form-group textarea {
+            padding: 6px 8px;
+            font-size: 0.9rem;
+        }
+        #requestModal .mr-meta-grid {
+            display: grid;
+            grid-template-columns: repeat(5, minmax(0, 1fr));
+            gap: 8px;
+        }
+        #requestModal .mr-meta-grid .form-group {
+            min-width: 0;
+        }
+        #requestModal .mr-content-split {
+            flex: 0 0 auto;
+            display: grid;
+            grid-template-columns: 1.2fr 1fr;
+            gap: 10px;
+            align-items: stretch;
+            max-height: 190px;
+        }
+        #requestModal .mr-content-split > .form-group {
+            min-width: 0;
+            min-height: 0;
+            display: flex;
+            flex-direction: column;
+            grid-column: auto;
+        }
+        #requestModal #viewMessageContent {
+            flex: 0 0 auto;
+            height: 156px;
+            min-height: 156px;
+            max-height: 156px;
+            resize: none;
+            overflow: auto;
+        }
+        #requestHistory {
+            flex: 0 0 auto;
+            height: 156px;
+            min-height: 156px;
+            max-height: 156px;
+            white-space: pre-wrap;
+            font-family: ui-monospace, Consolas, monospace;
+            font-size: 0.8rem;
+            background: #f8fafc;
+            padding: 8px;
+            border-radius: 6px;
+            overflow: auto;
+        }
+        #requestModal .mr-action-panel {
+            flex: 0 0 auto;
+            margin-top: 4px;
+            padding-top: 6px;
+        }
+        #requestModal #forkliftResponsePanel.is-visible {
+            margin-top: 2px;
+        }
+        #requestModal .mr-action-panel h4 {
+            margin: 0 0 6px;
+            font-size: 0.95rem;
+        }
+        #requestModal .mr-action-panel p {
+            margin: 0 0 6px !important;
+            font-size: 0.82rem;
+        }
+        #requestModal #forkliftNoteToRequester {
+            min-height: 56px;
+            max-height: 90px;
+            resize: vertical;
+        }
+        #requestModal .item-modal-footer,
+        #requestModal #requestStatusMsg {
+            flex: 0 0 auto;
+        }
+        #requestModal .item-modal-footer {
+            padding: 8px 16px 12px;
+        }
+        #requestStatusMsg:empty {
+            display: none;
+        }
+        @media (max-width: 900px) {
+            #requestModal .mr-meta-grid {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+            #requestModal .mr-content-split {
+                grid-template-columns: 1fr;
+            }
+            #requestModal .item-modal-body {
+                overflow-y: auto;
+            }
+        }
+        .btn-action.edit:disabled,
+        .btn-action.edit.is-disabled {
+            opacity: 0.45;
+            cursor: not-allowed;
+            pointer-events: none;
+        }
+        #forkliftNoteGroup.is-hidden { display: none; }
     </style>
 </head>
 <body class="message-email-search-page ic-search-page">
@@ -90,6 +307,8 @@
                         <option value="UNDER_REVIEW">Under Review</option>
                         <option value="IN_PROGRESS">In Progress</option>
                         <option value="ON_HOLD">On Hold</option>
+                        <option value="WAITING_FOR_DRIVER">Waiting for driver for request</option>
+                        <option value="FORKLIFT_DRIVER_SELECTED">Forklift driver request selected</option>
                         <option value="COMPLETED">Completed</option>
                         <option value="CANCELLED">Cancelled</option>
                     </select>
@@ -98,6 +317,7 @@
                         <option value="EMAIL">Email</option>
                         <option value="INTERNAL">Internal</option>
                         <option value="SMS">SMS</option>
+                        <option value="WHATSAPP">WhatsApp</option>
                     </select>
                     <select id="searchPriority" class="filter-select">
                         <option value="">All priorities</option>
@@ -164,7 +384,7 @@
                 <div class="warehouse-form item-modal-form">
                     <input type="hidden" id="requestId">
                     <div class="modal-body item-modal-body">
-                        <div class="form-row">
+                        <div class="form-row mr-meta-grid">
                             <div class="form-group">
                                 <label>Request #</label>
                                 <input type="text" id="viewRequestNumber" readonly>
@@ -181,8 +401,10 @@
                                 <label>Type</label>
                                 <input type="text" id="viewMessageType" readonly>
                             </div>
-                        </div>
-                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Subject</label>
+                                <input type="text" id="viewSubject" readonly>
+                            </div>
                             <div class="form-group">
                                 <label>Requester</label>
                                 <input type="text" id="viewCreatedByName" readonly>
@@ -199,21 +421,17 @@
                                 <label>Recipient email</label>
                                 <input type="text" id="viewRecipientEmail" readonly>
                             </div>
-                        </div>
-                        <div class="form-row">
-                            <div class="form-group full-width">
-                                <label>Subject</label>
-                                <input type="text" id="viewSubject" readonly>
+                            <div class="form-group">
+                                <label>Recipient phone</label>
+                                <input type="text" id="viewRecipientPhone" readonly>
                             </div>
                         </div>
-                        <div class="form-row">
-                            <div class="form-group full-width">
+                        <div class="mr-content-split">
+                            <div class="form-group">
                                 <label>Message content</label>
-                                <textarea id="viewMessageContent" rows="5" readonly></textarea>
+                                <textarea id="viewMessageContent" rows="6" readonly></textarea>
                             </div>
-                        </div>
-                        <div class="form-row">
-                            <div class="form-group full-width">
+                            <div class="form-group">
                                 <label>History</label>
                                 <div id="requestHistory"></div>
                             </div>
@@ -276,12 +494,75 @@
                                 </div>
                             </div>
                             <button type="button" class="btn btn-primary" id="sendBtn" data-write-action="true">
-                                <i class="fas fa-paper-plane"></i> Send &amp; Complete
+                                <i class="fas fa-paper-plane"></i> <span id="sendBtnLabel">Send &amp; Complete</span>
                             </button>
+                        </div>
+
+                        <div id="forkliftPendingRequestPanel" class="mr-action-panel">
+                            <h4>Request forklift driver</h4>
+                            <p style="margin:0 0 10px;color:#64748b;">Select an available forklift driver, or ~Driver not defined. With a driver selected the request goes to Forklift driver request selected; otherwise it goes to Waiting for driver for request.</p>
+                            <div class="form-row">
+                                <div class="form-group full-width">
+                                    <label for="forkliftPendingDriver">Forklift driver *</label>
+                                    <select id="forkliftPendingDriver">
+                                        <option value="">Select forklift driver...</option>
+                                        <option value="__NOT_DEFINED__">~Driver not defined</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="forklift-pending-actions">
+                                <button type="button" class="btn btn-primary" id="forkliftPendingRequestBtn" data-write-action="true">
+                                    <i class="fas fa-truck"></i> Forklift Request
+                                </button>
+                            </div>
+                        </div>
+
+                        <div id="forkliftClaimPanel" class="mr-action-panel">
+                            <h4>Assign forklift driver</h4>
+                            <p style="margin:0 0 10px;color:#64748b;">This request is waiting for a driver. Only registered forklift drivers can assign it. If reassign is disabled in Settings, only the logged-in driver name is available.</p>
+                            <div class="form-row">
+                                <div class="form-group full-width">
+                                    <label for="forkliftClaimDriver">Forklift driver *</label>
+                                    <select id="forkliftClaimDriver">
+                                        <option value="">Select forklift driver...</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="forklift-claim-actions">
+                                <button type="button" class="btn btn-primary" id="forkliftClaimBtn" data-write-action="true">
+                                    <i class="fas fa-user-check"></i> Assign driver &amp; notify
+                                </button>
+                            </div>
+                        </div>
+
+                        <div id="forkliftResponsePanel" class="mr-action-panel">
+                            <h4>Forklift operator update</h4>
+                            <div class="form-row forklift-status-row">
+                                <div class="form-group forklift-status-group">
+                                    <label for="forkliftNewStatus">New status *</label>
+                                    <select id="forkliftNewStatus">
+                                        <option value="PENDING">Pending</option>
+                                        <option value="COMPLETED" selected>Completed</option>
+                                        <option value="CANCELLED">Cancelled</option>
+                                    </select>
+                                </div>
+                                <div class="form-group forklift-note-group" id="forkliftNoteGroup">
+                                    <label for="forkliftNoteToRequester">Message to requester *</label>
+                                    <textarea id="forkliftNoteToRequester" rows="2" placeholder="Add information for the requester (required for Pending or Cancelled)"></textarea>
+                                </div>
+                            </div>
+                            <div class="forklift-response-actions">
+                                <button type="button" class="btn btn-primary" id="forkliftResponseBtn" data-write-action="true">
+                                    <i class="fas fa-save"></i> Save status
+                                </button>
+                                <button type="button" class="btn btn-secondary" id="forkliftResponseCloseBtn">
+                                    <i class="fas fa-times"></i> Close
+                                </button>
+                            </div>
                         </div>
                     </div>
                     <div id="requestStatusMsg" class="message-email-message" role="status" aria-live="polite"></div>
-                    <div class="modal-footer item-modal-footer form-actions">
+                    <div class="modal-footer item-modal-footer form-actions" id="requestModalFooter">
                         <button type="button" class="btn btn-secondary" id="closeRequestModalFooter">
                             <i class="fas fa-times"></i> Close
                         </button>
@@ -294,6 +575,7 @@
             <p>&copy; 2026 Double-Y IT Systems. All rights reserved.</p>
         </footer>
     </div>
+    <script src="location-page-close.js"></script>
     <script src="search-message-request-script.js"></script>
 </body>
 </html>

@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Double-Y Warehouse System - Setting Forklift Driver</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="warehouse-styles.css">
+    <link rel="stylesheet" href="pesquisa-styles.css">
+    <link rel="stylesheet" href="application-users-styles.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body class="application-users-page setting-forklift-driver-page">
+    <script src="auth-check.js"></script>
+    <script src="header-menu.js"></script>
+    <script src="menu-access.js"></script>
+    <script src="application-write-access.js"></script>
+    <script src="double-y-logo-effect.js"></script>
+    <script src="dev-environment-badge.js"></script>
+    <div class="container">
+        <header class="header">
+            <div class="header-stats-row">
+                <div class="header-stats-left">
+                    <div class="header-stat header-stat-total">
+                        <span class="header-stat-value" id="totalItems">0</span>
+                        <span class="header-stat-label">Total Items</span>
+                    </div>
+                    <div class="header-stat header-stat-low">
+                        <span class="header-stat-value" id="lowStockItems">0</span>
+                        <span class="header-stat-label">Low Stock</span>
+                    </div>
+                </div>
+                <div class="double-y-wordmark" aria-label="Double Y"><img src="doubley-glyph.png" alt="" class="double-y-glyph" aria-hidden="true"><span class="double-y-name">Double Y</span><img src="doubley-glyph-bottom.png" alt="" class="double-y-glyph double-y-glyph-bottom" aria-hidden="true"></div>
+                <div class="header-stats-right">
+                    <div class="header-stat header-stat-entries">
+                        <span class="header-stat-value" id="totalEntradas">0</span>
+                        <span class="header-stat-label">Entries Today</span>
+                    </div>
+                    <div class="header-stat header-stat-exits">
+                        <span class="header-stat-value" id="totalSaidas">0</span>
+                        <span class="header-stat-label">Exits Today</span>
+                    </div>
+                </div>
+            </div>
+            <div class="header-content">
+                <h1><i class="fas fa-warehouse"></i> Double-Y Warehouse System</h1>
+                <p class="header-search-users-label">Setting Forklift Driver</p>
+                <div class="header-actions"></div>
+            </div>
+        </header>
+
+        <main class="main-content app-users-main">
+            <section class="app-users-section">
+                <div class="app-users-white-panel" id="forkliftDriversPanel">
+                    <div class="app-users-page-intro">
+                        <div class="app-users-page-intro-text">
+                            <h2><i class="fas fa-truck"></i> Setting Forklift Driver</h2>
+                            <p>Select active Parisi users as forklift drivers. Available users are on the left; assigned drivers are on the right. Save when you are done.</p>
+                        </div>
+                        <div class="app-users-page-intro-actions">
+                            <span id="forkliftDirtyBadge" class="app-users-dirty-badge" hidden>
+                                <i class="fas fa-circle" aria-hidden="true"></i> Unsaved changes
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="app-users-layout">
+                        <div class="app-users-main-col">
+                            <div class="app-users-card" id="assignmentCard">
+                                <div class="app-users-card-head">
+                                    <h3><i class="fas fa-users"></i> Forklift driver assignment</h3>
+                                    <span class="app-users-card-tag">Settings</span>
+                                </div>
+                                <p class="app-users-help">Double-click a user to move between lists, or use the arrow buttons. Only assigned drivers appear in Location Product forklift requests. Choose Email or SMS below — that option is used when requesting a forklift driver.</p>
+
+                                <div class="form-row" style="margin: 0 0 1rem; gap: 12px; display:flex; flex-wrap:wrap;">
+                                    <div class="form-group" style="max-width: 280px; flex:1 1 220px;">
+                                        <label for="forkliftPreferredMessageType"><i class="fas fa-paper-plane"></i> Send request by *</label>
+                                        <select id="forkliftPreferredMessageType" class="app-users-select">
+                                            <option value="SMS">SMS</option>
+                                            <option value="EMAIL">Email</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-group" style="max-width: 320px; flex:1 1 240px;">
+                                        <label for="forkliftAllowReassign"><i class="fas fa-exchange-alt"></i> Driver can reassign to another driver *</label>
+                                        <select id="forkliftAllowReassign" class="app-users-select">
+                                            <option value="false">No</option>
+                                            <option value="true">Yes</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-group" style="max-width: 360px; flex:1 1 260px;">
+                                        <label for="forkliftWaitingTimeoutEnabled"><i class="fas fa-hourglass-half"></i> Control time Waiting for driver for request *</label>
+                                        <select id="forkliftWaitingTimeoutEnabled" class="app-users-select">
+                                            <option value="false">No</option>
+                                            <option value="true">Yes</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div id="waitingTimeoutOptions" class="form-row" style="margin: 0 0 1rem; gap: 12px; display:none; flex-wrap:wrap;">
+                                    <div class="form-group" style="max-width: 220px; flex:1 1 180px;">
+                                        <label for="forkliftWaitingTimeoutMinutes"><i class="fas fa-clock"></i> Waiting time (minutes) *</label>
+                                        <input type="number" id="forkliftWaitingTimeoutMinutes" class="app-users-select" min="1" max="1440" step="1" value="15">
+                                    </div>
+                                    <div class="form-group" style="flex:1 1 320px; min-width: 260px;">
+                                        <label for="forkliftWaitingTimeoutNotifyUsers"><i class="fas fa-bell"></i> User(s) to receive message after time *</label>
+                                        <select id="forkliftWaitingTimeoutNotifyUsers" class="app-users-select" multiple size="6" aria-label="Users to notify after waiting timeout"></select>
+                                        <small style="display:block;margin-top:6px;color:#64748b;">Hold Ctrl (Windows) or Cmd (Mac) to select more than one user. They receive an email when a request stays Waiting for driver longer than the time above.</small>
+                                    </div>
+                                </div>
+
+                                <div class="form-row" style="margin: 0 0 1rem; gap: 12px; display:flex; flex-wrap:wrap;">
+                                    <div class="form-group" style="max-width: 420px; flex:1 1 280px;">
+                                        <label for="forkliftDailyInactiveEnabled"><i class="fas fa-moon"></i> Mark all day requests Inactive after cutoff time *</label>
+                                        <select id="forkliftDailyInactiveEnabled" class="app-users-select">
+                                            <option value="false">No</option>
+                                            <option value="true">Yes</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-group" style="max-width: 420px; flex:1 1 280px;">
+                                        <label for="forkliftNotifyRequesterOnComplete"><i class="fas fa-envelope-open-text"></i> Notify requester when status is Completed *</label>
+                                        <select id="forkliftNotifyRequesterOnComplete" class="app-users-select">
+                                            <option value="false" selected>No</option>
+                                            <option value="true">Yes</option>
+                                        </select>
+                                        <small style="display:block;margin-top:6px;color:#64748b;">If Yes, the requester receives a message when the forklift operator sets the request to Completed.</small>
+                                    </div>
+                                </div>
+                                <div id="dailyInactiveOptions" class="form-row" style="margin: 0 0 1rem; gap: 12px; display:none; flex-wrap:wrap;">
+                                    <div class="form-group" style="max-width: 220px; flex:1 1 180px;">
+                                        <label for="forkliftDailyInactiveTime"><i class="fas fa-clock"></i> Cutoff time *</label>
+                                        <input type="time" id="forkliftDailyInactiveTime" class="app-users-select" value="15:52">
+                                        <small style="display:block;margin-top:6px;color:#64748b;">After this time, all Message Requests created today become Inactive. Search Message Request shows Active only.</small>
+                                    </div>
+                                </div>
+
+                                <div class="app-lists-wrapper">
+                                    <div class="app-list-panel">
+                                        <div class="app-list-panel-head">
+                                            <h4><i class="fas fa-list"></i> Available</h4>
+                                            <span class="app-list-count" id="availableCount">0</span>
+                                        </div>
+                                        <select id="availableList" multiple aria-label="Available users"></select>
+                                    </div>
+
+                                    <div class="app-list-actions" aria-label="Move users">
+                                        <button type="button" class="btn btn-secondary" id="addSelectedBtn" title="Add selected" aria-label="Add selected users" data-write-action="true">
+                                            <i class="fas fa-angle-right"></i>
+                                        </button>
+                                        <button type="button" class="btn btn-secondary" id="addAllBtn" title="Add all" aria-label="Add all users" data-write-action="true">
+                                            <i class="fas fa-angle-double-right"></i>
+                                        </button>
+                                        <button type="button" class="btn btn-secondary" id="removeSelectedBtn" title="Remove selected" aria-label="Remove selected users" data-write-action="true">
+                                            <i class="fas fa-angle-left"></i>
+                                        </button>
+                                        <button type="button" class="btn btn-secondary" id="removeAllBtn" title="Remove all" aria-label="Remove all users" data-write-action="true">
+                                            <i class="fas fa-angle-double-left"></i>
+                                        </button>
+                                    </div>
+
+                                    <div class="app-list-panel">
+                                        <div class="app-list-panel-head">
+                                            <h4><i class="fas fa-check-square"></i> Assigned</h4>
+                                            <span class="app-list-count" id="selectedCount">0</span>
+                                        </div>
+                                        <select id="selectedList" multiple aria-label="Assigned forklift drivers"></select>
+                                    </div>
+                                </div>
+
+                                <div class="app-users-actions" id="forkliftDriversActions">
+                                    <div class="app-users-actions-buttons">
+                                        <button type="button" class="btn btn-secondary" id="cancelForkliftDriversBtn">
+                                            <i class="fas fa-times"></i> Cancel
+                                        </button>
+                                        <button type="button" class="btn btn-primary" id="saveForkliftDriversBtn" data-write-action="true">
+                                            <i class="fas fa-save"></i> Save assignments
+                                        </button>
+                                        <button type="button" class="btn btn-secondary" id="closeForkliftDriversBtn">
+                                            <i class="fas fa-door-open"></i> Close
+                                        </button>
+                                    </div>
+                                    <div id="assignmentStatus" class="app-users-message" role="status" aria-live="polite"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <aside class="app-users-aside" aria-label="Assignment summary">
+                            <div class="app-users-summary-panel">
+                                <div class="app-users-summary-panel-head">
+                                    <h3><i class="fas fa-clipboard-list"></i> Summary</h3>
+                                    <p>Overview of forklift driver assignment.</p>
+                                </div>
+                                <ul class="app-users-summary-list">
+                                    <li>
+                                        <span class="app-users-summary-label">Send by</span>
+                                        <span id="summarySendBy" class="app-users-summary-value">SMS</span>
+                                    </li>
+                                    <li>
+                                        <span class="app-users-summary-label">Can reassign</span>
+                                        <span id="summaryCanReassign" class="app-users-summary-value">No</span>
+                                    </li>
+                                    <li>
+                                        <span class="app-users-summary-label">Waiting timeout</span>
+                                        <span id="summaryWaitingTimeout" class="app-users-summary-value">Off</span>
+                                    </li>
+                                    <li>
+                                        <span class="app-users-summary-label">Daily inactive</span>
+                                        <span id="summaryDailyInactive" class="app-users-summary-value">Off</span>
+                                    </li>
+                                    <li>
+                                        <span class="app-users-summary-label">Notify on Complete</span>
+                                        <span id="summaryNotifyOnComplete" class="app-users-summary-value">No</span>
+                                    </li>
+                                    <li>
+                                        <span class="app-users-summary-label">Available</span>
+                                        <span id="summaryAvailable" class="app-users-summary-value">0</span>
+                                    </li>
+                                    <li>
+                                        <span class="app-users-summary-label">Assigned</span>
+                                        <span id="summaryAssigned" class="app-users-summary-value">0</span>
+                                    </li>
+                                    <li>
+                                        <span class="app-users-summary-label">Status</span>
+                                        <span id="summaryStatus" class="app-users-status-badge idle">Loading</span>
+                                    </li>
+                                </ul>
+                                <div class="app-users-tips">
+                                    <h4><i class="fas fa-lightbulb"></i> Tips</h4>
+                                    <ul>
+                                        <li>Choose <strong>SMS</strong> or <strong>Email</strong> as the default send method for Location Product requests.</li>
+                                        <li>If <strong>Driver can reassign</strong> is Yes, any forklift driver can pass Waiting requests to another driver.</li>
+                                        <li>If No, Waiting requests can only be taken by the logged-in driver.</li>
+                                        <li>If <strong>Control time Waiting</strong> is Yes, set minutes and who gets an email after that wait.</li>
+                                        <li>If <strong>Mark all day requests Inactive</strong> is Yes, after the cutoff time all requests of the day become Inactive and Search shows Active only.</li>
+                                        <li>If <strong>Notify requester when Completed</strong> is Yes, the requester is messaged when status becomes Completed (default is No).</li>
+                                        <li>Only <strong>active Parisi</strong> users can be assigned or selected for timeout messages.</li>
+                                        <li>Assigned drivers must have phone and/or email for SMS or Email requests.</li>
+                                        <li>Location Product forklift requests use this Assigned list.</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </aside>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <footer class="footer">
+            <p>&copy; 2026 Double-Y IT Systems. All rights reserved.</p>
+        </footer>
+    </div>
+
+    <script src="setting-forklift-driver-script.js"></script>
+</body>
+</html>

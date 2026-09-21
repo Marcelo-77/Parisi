@@ -318,7 +318,7 @@ async function buscarTodos(filtros = {}) {
   const where = `WHERE ${whereClauses.join(' AND ')}`;
 
   const selectSql = `
-    SELECT lp.*, sp.sipr_nm_description, wi.barcode,
+    SELECT lp.*, sp.sipr_nm_description, wi.barcode, wi.nome AS product_name,
       CASE
         WHEN LOWER(TRIM(COALESCE(lp.usuario_inseriu, ''))) = 'root' THEN 'Root'
         ELSE f.nome
@@ -345,6 +345,7 @@ async function buscarTodos(filtros = {}) {
     const result = await query(selectSql, values);
     return result.rows.map(row => ({
       ...mapRow(row),
+      productName: row.product_name != null ? String(row.product_name).trim() : '',
       situationDescription: row.sipr_nm_description,
       lastUpdateDatetime: row.last_update_datetime || row.entry_datetime || null
     }));

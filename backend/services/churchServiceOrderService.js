@@ -2,6 +2,29 @@ const { query } = require('../config/database');
 
 const TABLE = 'church_service_order';
 
+const POSITION_SELECT_VALUES = [1, 3, 4, 5, 8, 9];
+const CUSTOM_ITEM_POSITION_VALUES = [1, 3, 4, 5, 8, 9, 10, 11];
+
+function normalizePositionSelectValue(value, fallback) {
+  const parsed = parseInt(value, 10);
+  const normalized = Number.isNaN(parsed) ? fallback : parsed;
+  if (normalized === 2) return 3;
+  if (normalized === 6) return 5; // legacy "Após Ofertas e oração"
+  if (normalized === 7) return 8;
+  if (POSITION_SELECT_VALUES.includes(normalized)) return normalized;
+  return fallback;
+}
+
+function normalizeCustomItemPosition(value) {
+  const parsed = parseInt(value, 10);
+  const normalized = Number.isNaN(parsed) ? 8 : parsed;
+  if (normalized === 2) return 3;
+  if (normalized === 6) return 5;
+  if (normalized === 7) return 8;
+  if (CUSTOM_ITEM_POSITION_VALUES.includes(normalized)) return normalized;
+  return 8;
+}
+
 function mapRow(row) {
   let worshipSongs = row.worship_songs;
   if (typeof worshipSongs === 'string') {
@@ -28,23 +51,16 @@ function mapRow(row) {
     messageSpeaker: row.message_speaker,
     closingPrayerLeader: row.closing_prayer_leader,
     priestlyBlessingLeader: row.priestly_blessing_leader,
+    customItemLabel: row.custom_item_label || '',
+    customItemDescription: row.custom_item_description || '',
     announcementsPosition: normalizePositionSelectValue(row.announcements_position, 8),
     scripturePosition: normalizePositionSelectValue(row.scripture_position, 4),
+    praisePosition: normalizePositionSelectValue(row.praise_position, 5),
+    customItemPosition: normalizeCustomItemPosition(row.custom_item_position),
     createdBy: row.created_by,
     criadoEm: row.criado_em,
     atualizadoEm: row.atualizado_em
   };
-}
-
-const POSITION_SELECT_VALUES = [1, 3, 4, 5, 6, 8, 9];
-
-function normalizePositionSelectValue(value, fallback) {
-  const parsed = parseInt(value, 10);
-  const normalized = Number.isNaN(parsed) ? fallback : parsed;
-  if (normalized === 2) return 3;
-  if (normalized === 7) return 8;
-  if (POSITION_SELECT_VALUES.includes(normalized)) return normalized;
-  return fallback;
 }
 
 function normalizePayload(data) {
@@ -61,13 +77,17 @@ function normalizePayload(data) {
     worshipSongs,
     scriptureReader: data.scriptureReader ? String(data.scriptureReader).trim() : null,
     praiseLeader: data.praiseLeader ? String(data.praiseLeader).trim() : null,
-    praiseStatus: data.praiseStatus ? String(data.praiseStatus).trim() : null,
-    offeringsInstruction: data.offeringsInstruction ? String(data.offeringsInstruction).trim() : null,
+    praiseStatus: null,
+    offeringsInstruction: null,
     messageSpeaker: data.messageSpeaker ? String(data.messageSpeaker).trim() : null,
     closingPrayerLeader: data.closingPrayerLeader ? String(data.closingPrayerLeader).trim() : null,
     priestlyBlessingLeader: data.priestlyBlessingLeader ? String(data.priestlyBlessingLeader).trim() : null,
+    customItemLabel: data.customItemLabel ? String(data.customItemLabel).trim() : null,
+    customItemDescription: data.customItemDescription ? String(data.customItemDescription).trim() : null,
     announcementsPosition: normalizePositionSelectValue(data.announcementsPosition, 8),
-    scripturePosition: normalizePositionSelectValue(data.scripturePosition, 4)
+    scripturePosition: normalizePositionSelectValue(data.scripturePosition, 4),
+    praisePosition: normalizePositionSelectValue(data.praisePosition, 5),
+    customItemPosition: normalizeCustomItemPosition(data.customItemPosition)
   };
 }
 
@@ -135,11 +155,13 @@ async function create(data, createdBy) {
     `INSERT INTO ${TABLE} (
       title, service_date, church_name, dirigente, opening_act, worship_songs,
       scripture_reader, praise_leader, praise_status, offerings_instruction,
-      message_speaker, closing_prayer_leader, priestly_blessing_leader, announcements_position, scripture_position, created_by
+      message_speaker, closing_prayer_leader, priestly_blessing_leader,
+      custom_item_label, custom_item_description, custom_item_position,
+      announcements_position, scripture_position, praise_position, created_by
     ) VALUES (
       $1, $2, $3, $4, $5, $6::jsonb,
       $7, $8, $9, $10,
-      $11, $12, $13, $14, $15, $16
+      $11, $12, $13, $14, $15, $16, $17, $18, $19, $20
     )
     RETURNING *`,
     [
@@ -156,8 +178,12 @@ async function create(data, createdBy) {
       payload.messageSpeaker,
       payload.closingPrayerLeader,
       payload.priestlyBlessingLeader,
+      payload.customItemLabel,
+      payload.customItemDescription,
+      payload.customItemPosition,
       payload.announcementsPosition,
       payload.scripturePosition,
+      payload.praisePosition,
       createdBy || null
     ]
   );
@@ -182,8 +208,12 @@ async function update(id, data) {
          message_speaker = $12,
          closing_prayer_leader = $13,
          priestly_blessing_leader = $14,
-         announcements_position = $15,
-         scripture_position = $16,
+         custom_item_label = $15,
+         custom_item_description = $16,
+         custom_item_position = $17,
+         announcements_position = $18,
+         scripture_position = $19,
+         praise_position = $20,
          atualizado_em = CURRENT_TIMESTAMP
      WHERE id = $1
      RETURNING *`,
@@ -202,8 +232,12 @@ async function update(id, data) {
       payload.messageSpeaker,
       payload.closingPrayerLeader,
       payload.priestlyBlessingLeader,
+      payload.customItemLabel,
+      payload.customItemDescription,
+      payload.customItemPosition,
       payload.announcementsPosition,
-      payload.scripturePosition
+      payload.scripturePosition,
+      payload.praisePosition
     ]
   );
 

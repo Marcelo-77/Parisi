@@ -49,18 +49,19 @@
   };
 
   const DEFAULT_SCRIPTURE_POSITION = 4;
+  const DEFAULT_PRAISE_POSITION = 5;
   const DEFAULT_ANNOUNCEMENTS_POSITION = 8;
-  const BASE_ORDER_ITEM_KEYS = ['opening', 'worship', 'praise', 'offerings', 'message', 'priestly'];
-  const MAX_ORDER_POSITION = 9;
+  const DEFAULT_CUSTOM_ITEM_POSITION = 8;
+  const BASE_ORDER_ITEM_KEYS = ['opening', 'worship', 'message', 'priestly'];
+  const MAX_ORDER_POSITION = 11;
 
   const ORDER_POSITION_LABELS = {
     1: '1 — Primeiro item',
     3: '2 — Após Abertura',
     4: '3 — Após Louvores',
     5: '4 — Após Louvor',
-    6: '5 — Após Ofertas e oração',
-    8: '6 — Após Mensagem',
-    9: '7 — Último item'
+    8: '5 — Após Mensagem',
+    9: '6 — Último item'
   };
 
   const SCRIPTURE_POSITION_LABELS = {
@@ -68,40 +69,45 @@
     4: '3 — Após Louvores (padrão)'
   };
 
-  const ANNOUNCEMENTS_POSITION_LABELS = {
+  const PRAISE_POSITION_LABELS = {
     ...ORDER_POSITION_LABELS,
-    8: '6 — Após Mensagem (padrão)'
+    5: '4 — Após Leitura da palavra (padrão)'
   };
 
-  const POSITION_SELECT_VALUES = [1, 3, 4, 5, 6, 8, 9];
+  const ANNOUNCEMENTS_POSITION_LABELS = {
+    ...ORDER_POSITION_LABELS,
+    8: '5 — Após Mensagem (padrão)'
+  };
+
+  const CUSTOM_ITEM_POSITION_LABELS = {
+    1: '1 — Primeiro item',
+    3: '2 — Após Abertura',
+    4: '3 — Após Louvores',
+    10: '4 — Após Leitura da palavra',
+    5: '5 — Após Louvor',
+    8: '6 — Após Mensagem (padrão)',
+    11: '7 — Após Anúncios',
+    9: '8 — Último item (após Benção Sacerdotal)'
+  };
+
+  const POSITION_SELECT_VALUES = [1, 3, 4, 5, 8, 9];
+  const CUSTOM_ITEM_POSITION_VALUES = [1, 3, 4, 5, 8, 9, 10, 11];
+  const INSERT_PRIORITY = { scripture: 0, praise: 1, announcements: 2 };
 
   function normalizePositionSelectValue(value, fallback) {
     const parsed = parseInt(value, 10);
     const normalized = Number.isNaN(parsed) ? fallback : parsed;
     if (normalized === 2) return 3;
+    if (normalized === 6) return 5; // legacy "Após Ofertas e oração"
     if (normalized === 7) return 8;
     if (POSITION_SELECT_VALUES.includes(normalized)) return normalized;
     return fallback;
   }
 
-  // Tradução apenas dos campos 2 (abertura) e 6 (ofertas/oração)
+  // Tradução do campo de abertura
   const FIELD_PHRASES = [
     { pt: 'Abrir o Culto e fazer a oração Inicial', en: 'Open the service and offer the opening prayer', es: 'Abrir el culto y hacer la oración inicial' },
-    { pt: 'Abrir o Culto e fazer a oração inicial', en: 'Open the service and offer the opening prayer', es: 'Abrir el culto y hacer la oración inicial' },
-    {
-      pt: 'Ao término de Apolo. Convidar Antônio para reconhecer as ofertas e fazer a oração.',
-      en: 'At the end of Apolo\'s praise, invite Antônio to receive the offerings and offer prayer.',
-      es: 'Al término de Apolo, invitar a Antônio para recibir las ofrendas y hacer la oración.'
-    },
-    {
-      pt: 'Ao término de Apolo, convidar Antônio para reconhecer as ofertas e fazer a oração.',
-      en: 'At the end of Apolo\'s praise, invite Antônio to receive the offerings and offer prayer.',
-      es: 'Al término de Apolo, invitar a Antônio para recibir las ofrendas y hacer la oración.'
-    },
-    { pt: 'Ao término de', en: 'At the end of', es: 'Al término de' },
-    { pt: 'Convidar', en: 'Invite', es: 'Invitar' },
-    { pt: 'para reconhecer as ofertas e fazer a oração', en: 'to receive the offerings and offer prayer', es: 'para recibir las ofrendas y hacer la oración' },
-    { pt: 'para reconhecer as ofertas e fazer a oração.', en: 'to receive the offerings and offer prayer.', es: 'para recibir las ofrendas y hacer la oración.' }
+    { pt: 'Abrir o Culto e fazer a oração inicial', en: 'Open the service and offer the opening prayer', es: 'Abrir el culto y hacer la oración inicial' }
   ];
 
   function normalizeOrderPosition(value, fallback) {
@@ -114,24 +120,65 @@
     return normalizePositionSelectValue(value, DEFAULT_SCRIPTURE_POSITION);
   }
 
+  function normalizePraisePosition(value) {
+    return normalizePositionSelectValue(value, DEFAULT_PRAISE_POSITION);
+  }
+
   function normalizeAnnouncementsPosition(value) {
     return normalizePositionSelectValue(value, DEFAULT_ANNOUNCEMENTS_POSITION);
   }
 
+  function normalizeCustomItemPosition(value) {
+    const parsed = parseInt(value, 10);
+    const normalized = Number.isNaN(parsed) ? DEFAULT_CUSTOM_ITEM_POSITION : parsed;
+    if (normalized === 2) return 3;
+    if (normalized === 6) return 5;
+    if (normalized === 7) return 8;
+    if (CUSTOM_ITEM_POSITION_VALUES.includes(normalized)) return normalized;
+    return DEFAULT_CUSTOM_ITEM_POSITION;
+  }
+
   function positionToAnchor(position, defaultPosition) {
-    const normalized = normalizeOrderPosition(position, defaultPosition);
+    const normalized = normalizePositionSelectValue(position, defaultPosition);
     const anchorByPosition = {
       1: 'start',
-      2: 'opening',
       3: 'opening',
       4: 'worship',
       5: 'praise',
-      6: 'offerings',
-      7: 'message',
       8: 'message',
       9: 'priestly'
     };
     return anchorByPosition[normalized] || anchorByPosition[defaultPosition] || 'worship';
+  }
+
+  function customPositionToAnchor(position) {
+    const normalized = normalizeCustomItemPosition(position);
+    const anchorByPosition = {
+      1: 'start',
+      3: 'opening',
+      4: 'worship',
+      10: 'scripture',
+      5: 'praise',
+      8: 'message',
+      11: 'announcements',
+      9: 'priestly'
+    };
+    return anchorByPosition[normalized] || 'message';
+  }
+
+  function positionToAnchorForPraise(position) {
+    const normalized = normalizePraisePosition(position);
+    // Option 5 ("Após Louvor") cannot anchor to itself — use after laptop songs,
+    // then scripture (default 4) inserts first at the same spot so Louvor follows Leitura.
+    if (normalized === 5) return 'worship';
+    return positionToAnchor(normalized, DEFAULT_PRAISE_POSITION);
+  }
+
+  function hasCustomItem(order) {
+    return Boolean(
+      (order?.customItemLabel && String(order.customItemLabel).trim())
+      || (order?.customItemDescription && String(order.customItemDescription).trim())
+    );
   }
 
   function anchorIndex(anchor) {
@@ -155,23 +202,30 @@
     return keys;
   }
 
-  function buildOrderedItemKeys(scripturePosition, announcementsPosition) {
-    const scriptureAnchor = positionToAnchor(scripturePosition, DEFAULT_SCRIPTURE_POSITION);
-    const announcementsAnchor = positionToAnchor(announcementsPosition, DEFAULT_ANNOUNCEMENTS_POSITION);
-
+  function buildOrderedItemKeys(scripturePosition, announcementsPosition, praisePosition, customPosition, includeCustom) {
     let keys = [...BASE_ORDER_ITEM_KEYS];
+
+    // Place Louvor first so "Após Louvor" remains available for other items.
+    const praiseAnchor = positionToAnchorForPraise(praisePosition);
+    keys = insertAfterAnchor(keys, praiseAnchor, 'praise');
+
     const toInsert = [
-      { key: 'scripture', anchor: scriptureAnchor },
-      { key: 'announcements', anchor: announcementsAnchor }
+      { key: 'scripture', anchor: positionToAnchor(scripturePosition, DEFAULT_SCRIPTURE_POSITION) },
+      { key: 'announcements', anchor: positionToAnchor(announcementsPosition, DEFAULT_ANNOUNCEMENTS_POSITION) }
     ].sort((a, b) => {
       const diff = anchorIndex(a.anchor) - anchorIndex(b.anchor);
       if (diff !== 0) return diff;
-      return a.key === 'scripture' ? -1 : 1;
+      return (INSERT_PRIORITY[b.key] || 0) - (INSERT_PRIORITY[a.key] || 0);
     });
 
     toInsert.forEach((item) => {
       keys = insertAfterAnchor(keys, item.anchor, item.key);
     });
+
+    // Custom item last so it can sit after any fixed or dynamic item.
+    if (includeCustom) {
+      keys = insertAfterAnchor(keys, customPositionToAnchor(customPosition), 'custom');
+    }
 
     return keys;
   }
@@ -310,13 +364,15 @@
       worshipSongs,
       scriptureReader: source.scriptureReader || '',
       praiseLeader: source.praiseLeader || '',
-      praiseStatus: source.praiseStatus || '',
-      offeringsInstruction: source.offeringsInstruction || '',
       messageSpeaker: source.messageSpeaker || '',
       closingPrayerLeader: source.closingPrayerLeader || '',
       priestlyBlessingLeader: source.priestlyBlessingLeader || '',
+      customItemLabel: source.customItemLabel ? String(source.customItemLabel).trim() : '',
+      customItemDescription: source.customItemDescription ? String(source.customItemDescription).trim() : '',
       scripturePosition: normalizeScripturePosition(source.scripturePosition),
-      announcementsPosition: normalizeAnnouncementsPosition(source.announcementsPosition)
+      praisePosition: normalizePraisePosition(source.praisePosition),
+      announcementsPosition: normalizeAnnouncementsPosition(source.announcementsPosition),
+      customItemPosition: normalizeCustomItemPosition(source.customItemPosition)
     };
   }
 
@@ -328,10 +384,7 @@
 
     return {
       ...order,
-      openingAct: translateFieldText(order.openingAct, language),
-      offeringsInstruction: order.offeringsInstruction
-        ? translateFieldText(order.offeringsInstruction, language)
-        : ''
+      openingAct: translateFieldText(order.openingAct, language)
     };
   }
 
@@ -349,7 +402,7 @@
       : `<div class="order-print-note">${escapeHtml(empty)}</div>`;
 
     const praiseLine = order.praiseLeader
-      ? `${escapeHtml(order.praiseLeader)}${order.praiseStatus ? ` ---- ${escapeHtml(order.praiseStatus)}` : ''}`
+      ? escapeHtml(order.praiseLeader)
       : escapeHtml(empty);
 
     const itemBuilders = {
@@ -357,13 +410,30 @@
       worship: () => `<li><strong>${escapeHtml(t.worshipSongs)}</strong>${songsHtml}</li>`,
       scripture: () => renderPersonLine(t.scriptureReading, order.scriptureReader),
       praise: () => `<li><span class="order-print-label">${escapeHtml(t.praise)}</span> <span class="order-print-person">${praiseLine}</span></li>`,
-      offerings: () => (order.offeringsInstruction ? `<li>${escapeHtml(order.offeringsInstruction)}</li>` : ''),
       message: () => renderPersonLine(t.message, order.messageSpeaker),
-      announcements: () => `<li><span class="order-print-label">${escapeHtml(t.closing)}</span>${order.closingPrayerLeader ? ` <span class="order-print-person">${escapeHtml(order.closingPrayerLeader)}</span>` : ''}${order.closingPrayerLeader ? `<span class="order-print-note"> ${escapeHtml(t.closingFollowedBy)}</span>` : ''}</li>`,
+      custom: () => {
+        const label = order.customItemLabel || '';
+        const description = order.customItemDescription || '';
+        if (!label && !description) return '';
+        if (label && description) {
+          return `<li><span class="order-print-label">${escapeHtml(label)}:</span> <span class="order-print-person">${escapeHtml(description)}</span></li>`;
+        }
+        if (label) {
+          return `<li><span class="order-print-label">${escapeHtml(label)}</span></li>`;
+        }
+        return `<li>${escapeHtml(description)}</li>`;
+      },
+      announcements: () => `<li><span class="order-print-label">${escapeHtml(t.closing)}</span>${order.closingPrayerLeader ? ` <span class="order-print-person">${escapeHtml(order.closingPrayerLeader)}</span>` : ''}</li>`,
       priestly: () => renderPersonLine(t.priestlyBlessing, order.priestlyBlessingLeader)
     };
 
-    return buildOrderedItemKeys(order.scripturePosition, order.announcementsPosition)
+    return buildOrderedItemKeys(
+      order.scripturePosition,
+      order.announcementsPosition,
+      order.praisePosition,
+      order.customItemPosition,
+      hasCustomItem(order)
+    )
       .map((key) => itemBuilders[key]?.() || '')
       .filter(Boolean)
       .join('');
@@ -603,19 +673,26 @@
     FIELD_PHRASES,
     ANNOUNCEMENTS_POSITION_LABELS,
     SCRIPTURE_POSITION_LABELS,
+    PRAISE_POSITION_LABELS,
+    CUSTOM_ITEM_POSITION_LABELS,
     ORDER_POSITION_LABELS,
     DEFAULT_SCRIPTURE_POSITION,
+    DEFAULT_PRAISE_POSITION,
     DEFAULT_ANNOUNCEMENTS_POSITION,
+    DEFAULT_CUSTOM_ITEM_POSITION,
     escapeHtml,
     formatDate,
     formatDateOnly,
     getLocalDateInputValue,
     normalizeLanguage,
     normalizeScripturePosition,
+    normalizePraisePosition,
     normalizeAnnouncementsPosition,
+    normalizeCustomItemPosition,
     normalizePositionSelectValue,
     POSITION_SELECT_VALUES,
     buildOrderedItemKeys,
+    hasCustomItem,
     getTranslations,
     getPrintLanguage,
     setPrintLanguage,

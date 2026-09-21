@@ -76,7 +76,11 @@ const orderBodyValidators = [
   body('closingPrayerLeader').optional({ nullable: true }).isLength({ max: 150 }).trim(),
   body('priestlyBlessingLeader').optional({ nullable: true }).isLength({ max: 150 }).trim(),
   body('announcementsPosition').optional({ nullable: true }).toInt().isInt({ min: 1, max: 9 }),
-  body('scripturePosition').optional({ nullable: true }).toInt().isInt({ min: 1, max: 9 })
+  body('scripturePosition').optional({ nullable: true }).toInt().isInt({ min: 1, max: 9 }),
+  body('praisePosition').optional({ nullable: true }).toInt().isInt({ min: 1, max: 9 }),
+  body('customItemLabel').optional({ nullable: true }).isLength({ max: 150 }).trim(),
+  body('customItemDescription').optional({ nullable: true }).isLength({ max: 500 }).trim(),
+  body('customItemPosition').optional({ nullable: true }).toInt().isInt({ min: 1, max: 11 })
 ];
 
 router.post('/', orderBodyValidators, handleValidationErrors, async (req, res) => {

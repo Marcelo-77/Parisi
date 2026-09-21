@@ -28,6 +28,7 @@ const messageEmailRoutes = require('./routes/messageEmail');
 const messageRequestRoutes = require('./routes/messageRequest');
 const emailSendLogRoutes = require('./routes/emailSendLog');
 const testCasesRoutes = require('./routes/testCases');
+const forkliftDriversRoutes = require('./routes/forkliftDrivers');
 const systemSettingsService = require('./services/systemSettingsService');
 const { isAuthenticated, protectPages, requireAuth } = require('./middleware/auth');
 const funcionarioServiceDB = require('./services/funcionarioServiceDB');
@@ -210,6 +211,7 @@ app.use('/api/message-email', messageEmailRoutes);
 app.use('/api/message-request', messageRequestRoutes);
 app.use('/api/email-send-log', emailSendLogRoutes);
 app.use('/api/test-cases', testCasesRoutes);
+app.use('/api/forklift-drivers', forkliftDriversRoutes);
 app.use('/api/system-settings', systemSettingsRoutes);
 app.use('/api/logged-in-users', loggedInUsersRoutes);
 
@@ -238,6 +240,20 @@ async function startServer() {
     await initDatabase();
     console.log('✅ Database initialized successfully');
     
+    try {
+      const forkliftWaitingTimeoutService = require('./services/forkliftWaitingTimeoutService');
+      forkliftWaitingTimeoutService.startWaitingDriverTimeoutMonitor();
+    } catch (monitorError) {
+      console.error('Waiting-for-driver timeout monitor failed to start:', monitorError.message || monitorError);
+    }
+
+    try {
+      const messageRequestDailyInactiveService = require('./services/messageRequestDailyInactiveService');
+      messageRequestDailyInactiveService.startDailyInactiveMonitor();
+    } catch (monitorError) {
+      console.error('Daily inactive cutoff monitor failed to start:', monitorError.message || monitorError);
+    }
+
     const server = app.listen(PORT, () => {
       console.log(`🚀 Server running on port ${PORT}`);
       console.log(`📋 User registration API available at http://localhost:${PORT}/api/funcionarios`);

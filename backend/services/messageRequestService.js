@@ -3,9 +3,20 @@ const { query } = require('../config/database');
 const TABLE = 'message_requests';
 const REQUEST_NUMBER_SEQ = 'message_requests_request_number_seq';
 
-const MESSAGE_TYPES = ['EMAIL', 'INTERNAL', 'SMS'];
+const MESSAGE_TYPES = ['EMAIL', 'INTERNAL', 'SMS', 'WHATSAPP'];
 const PRIORITIES = ['LOW', 'NORMAL', 'HIGH', 'URGENT'];
-const STATUSES = ['PENDING', 'UNDER_REVIEW', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED', 'ON_HOLD'];
+const STATUSES = [
+  'PENDING',
+  'UNDER_REVIEW',
+  'IN_PROGRESS',
+  'COMPLETED',
+  'CANCELLED',
+  'ON_HOLD',
+  'WAITING_FOR_DRIVER',
+  'FORKLIFT_DRIVER_SELECTED'
+];
+
+const STATUS_CHECK = `'PENDING', 'UNDER_REVIEW', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED', 'ON_HOLD', 'WAITING_FOR_DRIVER', 'FORKLIFT_DRIVER_SELECTED'`;
 
 let tableReady = false;
 
@@ -20,6 +31,7 @@ async function ensureTable() {
       message_type VARCHAR(20) NOT NULL DEFAULT 'EMAIL',
       recipient_name VARCHAR(150),
       recipient_email VARCHAR(255),
+      recipient_phone VARCHAR(40),
       subject VARCHAR(255) NOT NULL,
       message_content TEXT NOT NULL,
       priority VARCHAR(20) NOT NULL DEFAULT 'NORMAL',
@@ -37,17 +49,43 @@ async function ensureTable() {
       criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
       atualizado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
       CONSTRAINT message_requests_type_chk
-        CHECK (message_type IN ('EMAIL', 'INTERNAL', 'SMS')),
+        CHECK (message_type IN ('EMAIL', 'INTERNAL', 'SMS', 'WHATSAPP')),
       CONSTRAINT message_requests_priority_chk
         CHECK (priority IN ('LOW', 'NORMAL', 'HIGH', 'URGENT')),
       CONSTRAINT message_requests_status_chk
-        CHECK (status IN ('PENDING', 'UNDER_REVIEW', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED', 'ON_HOLD'))
+        CHECK (status IN (${STATUS_CHECK}))
     )
   `);
+
+  await query(`ALTER TABLE ${TABLE} ADD COLUMN IF NOT EXISTS recipient_phone VARCHAR(40)`).catch(() => {});
+  await query(`ALTER TABLE ${TABLE} DROP CONSTRAINT IF EXISTS message_requests_type_chk`).catch(() => {});
+  await query(`
+    ALTER TABLE ${TABLE}
+    ADD CONSTRAINT message_requests_type_chk
+      CHECK (message_type IN ('EMAIL', 'INTERNAL', 'SMS', 'WHATSAPP'))
+  `).catch(() => {});
+  await query(`ALTER TABLE ${TABLE} DROP CONSTRAINT IF EXISTS message_requests_status_chk`).catch(() => {});
+  await query(`
+    ALTER TABLE ${TABLE}
+    ADD CONSTRAINT message_requests_status_chk
+      CHECK (status IN (${STATUS_CHECK}))
+  `).catch(() => {});
 
   await query(`CREATE INDEX IF NOT EXISTS idx_message_requests_criado ON ${TABLE}(criado_em DESC)`);
   await query(`CREATE INDEX IF NOT EXISTS idx_message_requests_status ON ${TABLE}(status)`);
   await query(`CREATE INDEX IF NOT EXISTS idx_message_requests_number ON ${TABLE}(request_number)`);
+  await query(`
+    ALTER TABLE ${TABLE}
+    ADD COLUMN IF NOT EXISTS waiting_timeout_notified_at TIMESTAMP WITH TIME ZONE
+  `).catch(() => {});
+  await query(`
+    ALTER TABLE ${TABLE}
+    ADD COLUMN IF NOT EXISTS is_active BOOLEAN NOT NULL DEFAULT true
+  `).catch(() => {});
+  await query(`
+    CREATE INDEX IF NOT EXISTS idx_message_requests_is_active
+    ON ${TABLE} (is_active)
+  `).catch(() => {});
 
   tableReady = true;
 }
@@ -72,6 +110,8 @@ function formatStatusLabel(status) {
   if (value === 'COMPLETED') return 'Completed';
   if (value === 'CANCELLED') return 'Cancelled';
   if (value === 'ON_HOLD') return 'On Hold';
+  if (value === 'WAITING_FOR_DRIVER') return 'Waiting for driver for request';
+  if (value === 'FORKLIFT_DRIVER_SELECTED') return 'Forklift driver request selected';
   return status || '-';
 }
 
@@ -89,6 +129,7 @@ function formatMessageTypeLabel(type) {
   if (value === 'EMAIL') return 'Email';
   if (value === 'INTERNAL') return 'Internal';
   if (value === 'SMS') return 'SMS';
+  if (value === 'WHATSAPP') return 'WhatsApp';
   return type || '-';
 }
 
@@ -116,6 +157,7 @@ function mapRow(row) {
     messageType: row.message_type || 'EMAIL',
     recipientName: row.recipient_name || null,
     recipientEmail: row.recipient_email || null,
+    recipientPhone: row.recipient_phone || null,
     subject: row.subject,
     messageContent: row.message_content,
     priority: row.priority || 'NORMAL',
@@ -130,6 +172,7 @@ function mapRow(row) {
     requestHistory: row.request_history || '',
     createdBy: row.created_by || null,
     createdByName: row.created_by_name || null,
+    isActive: row.is_active !== false,
     criadoEm: row.criado_em,
     atualizadoEm: row.atualizado_em
   };
@@ -142,15 +185,23 @@ function validateCreate(dados) {
   const subject = String(dados.subject || '').trim();
   const messageContent = String(dados.messageContent || '').trim();
   const recipientEmail = String(dados.recipientEmail || '').trim();
+  const recipientPhone = String(dados.recipientPhone || '').trim();
   const assignedTo = dados.assignedTo != null ? String(dados.assignedTo).trim() : '';
   const assignedToName = String(dados.assignedToName || '').trim();
+  const initialStatus = normalizeStatus(dados.initialStatus || 'IN_PROGRESS');
+  const waitingForDriver = initialStatus === 'WAITING_FOR_DRIVER';
 
   if (!MESSAGE_TYPES.includes(messageType)) errors.push('Invalid message type');
   if (!PRIORITIES.includes(priority)) errors.push('Invalid priority');
   if (!subject) errors.push('Subject is required');
   if (!messageContent) errors.push('Message content is required');
   if (!assignedTo && !assignedToName) errors.push('Responsible user is required');
-  if (messageType === 'EMAIL' && !recipientEmail) errors.push('Recipient email is required for Email type');
+  if (!waitingForDriver) {
+    if (messageType === 'EMAIL' && !recipientEmail) errors.push('Recipient email is required for Email type');
+    if ((messageType === 'SMS' || messageType === 'WHATSAPP') && !recipientPhone) {
+      errors.push('Recipient phone is required for SMS and WhatsApp');
+    }
+  }
   if (recipientEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(recipientEmail)) {
     errors.push('Recipient email is invalid');
   }
@@ -168,35 +219,42 @@ async function criar(dados) {
   const messageContent = String(dados.messageContent || '').trim();
   const recipientName = String(dados.recipientName || '').trim() || null;
   const recipientEmail = String(dados.recipientEmail || '').trim() || null;
+  const recipientPhone = String(dados.recipientPhone || '').trim() || null;
   const desiredDate = dados.desiredDate || null;
   const attachmentNote = String(dados.attachmentNote || '').trim() || null;
   const assignedTo = dados.assignedTo || null;
   const assignedToName = String(dados.assignedToName || '').trim() || null;
   const actor = String(dados.createdByName || 'User').trim() || 'User';
+  const initialStatus = normalizeStatus(dados.initialStatus || 'IN_PROGRESS');
+  if (!STATUSES.includes(initialStatus)) {
+    throw new Error('Invalid initial status');
+  }
 
   const history = appendHistory('', [
     `Request created by ${actor}`,
     `Assigned to ${assignedToName || 'responsible user'}`,
-    `Status set to In Progress`
+    `Status set to ${formatStatusLabel(initialStatus)}`
   ]);
 
   const result = await query(
     `INSERT INTO ${TABLE} (
-      message_type, recipient_name, recipient_email, subject, message_content,
+      message_type, recipient_name, recipient_email, recipient_phone, subject, message_content,
       priority, desired_date, attachment_note, status,
       assigned_to, assigned_to_name, request_history,
       created_by, created_by_name, final_subject, final_content
-    ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,'IN_PROGRESS',$9,$10,$11,$12,$13,$4,$5)
+    ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$5,$6)
     RETURNING *`,
     [
       messageType,
       recipientName,
       recipientEmail,
+      recipientPhone,
       subject,
       messageContent,
       priority,
       desiredDate || null,
       attachmentNote,
+      initialStatus,
       assignedTo,
       assignedToName,
       history,
@@ -206,6 +264,14 @@ async function criar(dados) {
   );
 
   return mapRow(result.rows[0]);
+}
+
+async function peekNextRequestNumber() {
+  await ensureTable();
+  const result = await query(
+    `SELECT COALESCE(MAX(request_number), 0) + 1 AS next_number FROM ${TABLE}`
+  );
+  return Number(result.rows[0]?.next_number || 1);
 }
 
 async function listar(filtros = {}) {
@@ -247,6 +313,16 @@ async function listar(filtros = {}) {
     values.push(`%${String(filtros.recipientEmail).trim()}%`);
   }
 
+  const includeInactive = filtros.includeInactive === true
+    || filtros.includeInactive === 'true'
+    || filtros.includeInactive === '1';
+  const activeOnly = filtros.activeOnly === false || filtros.activeOnly === 'false'
+    ? false
+    : true;
+  if (activeOnly && !includeInactive) {
+    where.push(`COALESCE(is_active, true) = true`);
+  }
+
   const sql = `
     SELECT * FROM ${TABLE}
     ${where.length ? `WHERE ${where.join(' AND ')}` : ''}
@@ -280,6 +356,9 @@ async function atualizar(id, dados, actorName = 'User') {
   const recipientEmail = dados.recipientEmail != null
     ? (String(dados.recipientEmail).trim() || null)
     : existing.recipientEmail;
+  const recipientPhone = dados.recipientPhone != null
+    ? (String(dados.recipientPhone).trim() || null)
+    : existing.recipientPhone;
   const desiredDate = dados.desiredDate !== undefined ? (dados.desiredDate || null) : existing.desiredDate;
   const attachmentNote = dados.attachmentNote !== undefined
     ? (String(dados.attachmentNote || '').trim() || null)
@@ -301,21 +380,23 @@ async function atualizar(id, dados, actorName = 'User') {
      SET message_type = $1,
          recipient_name = $2,
          recipient_email = $3,
-         subject = $4,
-         message_content = $5,
-         priority = $6,
-         desired_date = $7,
-         attachment_note = $8,
-         final_subject = $9,
-         final_content = $10,
-         request_history = $11,
+         recipient_phone = $4,
+         subject = $5,
+         message_content = $6,
+         priority = $7,
+         desired_date = $8,
+         attachment_note = $9,
+         final_subject = $10,
+         final_content = $11,
+         request_history = $12,
          atualizado_em = CURRENT_TIMESTAMP
-     WHERE id = $12
+     WHERE id = $13
      RETURNING *`,
     [
       messageType,
       recipientName,
       recipientEmail,
+      recipientPhone,
       subject,
       messageContent,
       priority,
@@ -441,6 +522,130 @@ async function markCompleted(id, actorName, { finalSubject, finalContent } = {})
   });
 }
 
+async function respondForkliftDriver(id, actorName, { status, noteToRequester } = {}) {
+  const existing = await buscarPorId(id);
+  if (!existing) throw new Error('Message request not found');
+  if (normalizeStatus(existing.status) !== 'FORKLIFT_DRIVER_SELECTED') {
+    throw new Error('Only Forklift driver request selected can be updated by the operator');
+  }
+
+  const nextStatus = normalizeStatus(status);
+  if (nextStatus !== 'PENDING' && nextStatus !== 'COMPLETED' && nextStatus !== 'CANCELLED') {
+    throw new Error('Forklift operator can set status to Pending, Completed or Cancelled only');
+  }
+
+  const note = String(noteToRequester || '').trim();
+  if ((nextStatus === 'PENDING' || nextStatus === 'CANCELLED') && !note) {
+    throw new Error('Message to requester is required when setting status to Pending or Cancelled');
+  }
+
+  let historyNote;
+  if (nextStatus === 'PENDING') {
+    historyNote = `Forklift operator update by ${actorName}: set to Pending. Message to requester: ${note}`;
+  } else if (nextStatus === 'CANCELLED') {
+    historyNote = `Forklift operator update by ${actorName}: set to Cancelled. Message to requester: ${note}`;
+  } else {
+    historyNote = `Forklift operator update by ${actorName}: set to Completed${note ? `. Note: ${note}` : ''}`;
+  }
+
+  return setStatus(id, nextStatus, actorName, {
+    historyNote,
+    rejectionReason: nextStatus === 'CANCELLED' ? note : undefined,
+    finalContent: note || existing.finalContent || null
+  });
+}
+
+async function assignForkliftDriver(id, actorName, {
+  assignedTo,
+  assignedToName,
+  recipientName,
+  recipientEmail,
+  recipientPhone,
+  messageType,
+  fromStatuses = ['WAITING_FOR_DRIVER']
+} = {}) {
+  const existing = await buscarPorId(id);
+  if (!existing) throw new Error('Message request not found');
+  const allowed = (Array.isArray(fromStatuses) ? fromStatuses : [fromStatuses])
+    .map((s) => normalizeStatus(s));
+  if (!allowed.includes(normalizeStatus(existing.status))) {
+    throw new Error('Request cannot be assigned to a forklift driver from the current status');
+  }
+  if (!assignedTo) {
+    throw new Error('Forklift driver is required');
+  }
+
+  const driverName = String(assignedToName || 'Forklift driver').trim() || 'Forklift driver';
+  const nextMessageType = messageType
+    ? normalizeMessageType(messageType)
+    : normalizeMessageType(existing.messageType);
+  const history = appendHistory(existing.requestHistory, [
+    `Status changed from ${formatStatusLabel(existing.status)} to ${formatStatusLabel('FORKLIFT_DRIVER_SELECTED')} by ${actorName}`,
+    `Forklift driver assigned: ${driverName}`
+  ]);
+
+  const result = await query(
+    `UPDATE ${TABLE}
+     SET status = $1,
+         assigned_to = $2,
+         assigned_to_name = $3,
+         recipient_name = COALESCE($4, recipient_name),
+         recipient_email = COALESCE($5, recipient_email),
+         recipient_phone = COALESCE($6, recipient_phone),
+         message_type = $7,
+         request_history = $8,
+         atualizado_em = CURRENT_TIMESTAMP
+     WHERE id = $9
+     RETURNING *`,
+    [
+      'FORKLIFT_DRIVER_SELECTED',
+      assignedTo,
+      driverName,
+      recipientName || driverName,
+      recipientEmail || null,
+      recipientPhone || null,
+      nextMessageType,
+      history,
+      id
+    ]
+  );
+  return mapRow(result.rows[0]);
+}
+
+async function setWaitingForDriver(id, actorName) {
+  const existing = await buscarPorId(id);
+  if (!existing) throw new Error('Message request not found');
+  if (normalizeStatus(existing.status) !== 'PENDING') {
+    throw new Error('Only Pending requests can be set to Waiting for driver for request');
+  }
+
+  const history = appendHistory(existing.requestHistory, [
+    `Status changed from ${formatStatusLabel(existing.status)} to ${formatStatusLabel('WAITING_FOR_DRIVER')} by ${actorName}`,
+    'Forklift request set to Waiting for driver for request'
+  ]);
+
+  const result = await query(
+    `UPDATE ${TABLE}
+     SET status = $1,
+         assigned_to = NULL,
+         assigned_to_name = $2,
+         recipient_name = NULL,
+         recipient_email = NULL,
+         recipient_phone = NULL,
+         request_history = $3,
+         atualizado_em = CURRENT_TIMESTAMP
+     WHERE id = $4
+     RETURNING *`,
+    [
+      'WAITING_FOR_DRIVER',
+      'Driver not defined',
+      history,
+      id
+    ]
+  );
+  return mapRow(result.rows[0]);
+}
+
 async function appendHistoryLine(id, line) {
   await ensureTable();
   const existing = await buscarPorId(id);
@@ -465,6 +670,7 @@ module.exports = {
   formatPriorityLabel,
   formatMessageTypeLabel,
   criar,
+  peekNextRequestNumber,
   listar,
   buscarPorId,
   atualizar,
@@ -474,5 +680,8 @@ module.exports = {
   putOnHold,
   resumeProgress,
   markCompleted,
+  respondForkliftDriver,
+  assignForkliftDriver,
+  setWaitingForDriver,
   appendHistoryLine
 };
