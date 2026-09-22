@@ -353,8 +353,22 @@
     setPanel(els.forkliftResponsePanel, showForkliftRespond);
     setPanel(els.forkliftClaimPanel, showForkliftClaim);
     setPanel(els.forkliftPendingRequestPanel, showPendingForkliftRequest);
+    const footerGroups = {
+      default: document.getElementById('footerActionsDefault'),
+      pending: document.getElementById('footerActionsPending'),
+      claim: document.getElementById('footerActionsClaim'),
+      respond: document.getElementById('footerActionsRespond')
+    };
+    Object.values(footerGroups).forEach((el) => {
+      if (el) el.classList.remove('is-visible');
+    });
+    let activeFooter = footerGroups.default;
+    if (showForkliftRespond) activeFooter = footerGroups.respond;
+    else if (showForkliftClaim) activeFooter = footerGroups.claim;
+    else if (showPendingForkliftRequest) activeFooter = footerGroups.pending;
+    if (activeFooter) activeFooter.classList.add('is-visible');
     const footer = document.getElementById('requestModalFooter');
-    if (footer) footer.style.display = showForkliftRespond ? 'none' : '';
+    if (footer) footer.style.display = '';
     if (showForkliftClaim) {
       fillClaimDriverOptions();
     }
@@ -627,6 +641,16 @@
     closeModal();
   });
   document.getElementById('forkliftResponseCloseBtn')?.addEventListener('click', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    closeModal();
+  });
+  document.getElementById('forkliftPendingCloseBtn')?.addEventListener('click', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    closeModal();
+  });
+  document.getElementById('forkliftClaimCloseBtn')?.addEventListener('click', (e) => {
     e.preventDefault();
     e.stopPropagation();
     closeModal();

@@ -35,18 +35,10 @@
         .mr-action-panel.is-visible { display: block; }
         #forkliftPendingRequestPanel .forklift-pending-actions,
         #forkliftClaimPanel .forklift-claim-actions {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            margin-top: 12px;
+            display: none;
         }
         #forkliftResponsePanel .forklift-response-actions {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            gap: 12px;
-            flex-wrap: wrap;
-            margin-top: 4.5em;
+            display: none;
         }
         #forkliftResponsePanel .forklift-status-row {
             display: flex;
@@ -89,7 +81,9 @@
         #requestModal .item-modal-content.modal-large {
             width: calc(100vw - 16px);
             max-width: none;
+            height: calc(100vh - 16px);
             height: calc(100dvh - 16px);
+            max-height: calc(100vh - 16px);
             max-height: calc(100dvh - 16px);
             margin: 0;
             display: flex;
@@ -120,11 +114,13 @@
         #requestModal .item-modal-body {
             flex: 1 1 auto;
             min-height: 0;
-            overflow: hidden;
+            overflow-x: hidden;
+            overflow-y: auto;
             display: flex;
             flex-direction: column;
             gap: 8px;
             padding: 10px 16px;
+            -webkit-overflow-scrolling: touch;
         }
         #requestModal .item-modal-body > .form-row {
             flex: 0 0 auto;
@@ -170,7 +166,7 @@
         #requestModal #viewMessageContent {
             flex: 0 0 auto;
             height: 156px;
-            min-height: 156px;
+            min-height: 110px;
             max-height: 156px;
             resize: none;
             overflow: auto;
@@ -178,7 +174,7 @@
         #requestHistory {
             flex: 0 0 auto;
             height: 156px;
-            min-height: 156px;
+            min-height: 110px;
             max-height: 156px;
             white-space: pre-wrap;
             font-family: ui-monospace, Consolas, monospace;
@@ -214,7 +210,26 @@
             flex: 0 0 auto;
         }
         #requestModal .item-modal-footer {
-            padding: 8px 16px 12px;
+            display: flex !important;
+            justify-content: center;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 12px;
+            padding: 10px 16px 14px;
+            border-top: 1px solid #e2e8f0;
+            background: #fff;
+            z-index: 3;
+        }
+        #requestModal .item-modal-footer .footer-actions-group {
+            display: none;
+            justify-content: center;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 12px;
+            width: 100%;
+        }
+        #requestModal .item-modal-footer .footer-actions-group.is-visible {
+            display: flex;
         }
         #requestStatusMsg:empty {
             display: none;
@@ -225,9 +240,36 @@
             }
             #requestModal .mr-content-split {
                 grid-template-columns: 1fr;
+                max-height: none;
+            }
+        }
+        @media (max-height: 820px) {
+            #requestModal #viewMessageContent,
+            #requestHistory {
+                height: 110px;
+                min-height: 96px;
+                max-height: 110px;
+            }
+            #requestModal .mr-content-split {
+                max-height: 140px;
+            }
+            #requestModal .modal-header {
+                padding: 8px 14px;
             }
             #requestModal .item-modal-body {
-                overflow-y: auto;
+                padding: 8px 14px;
+                gap: 6px;
+            }
+        }
+        @media (max-height: 700px) {
+            #requestModal #viewMessageContent,
+            #requestHistory {
+                height: 88px;
+                min-height: 80px;
+                max-height: 88px;
+            }
+            #requestModal .mr-content-split {
+                max-height: 110px;
             }
         }
         .btn-action.edit:disabled,
@@ -510,11 +552,6 @@
                                     </select>
                                 </div>
                             </div>
-                            <div class="forklift-pending-actions">
-                                <button type="button" class="btn btn-primary" id="forkliftPendingRequestBtn" data-write-action="true">
-                                    <i class="fas fa-truck"></i> Forklift Request
-                                </button>
-                            </div>
                         </div>
 
                         <div id="forkliftClaimPanel" class="mr-action-panel">
@@ -527,11 +564,6 @@
                                         <option value="">Select forklift driver...</option>
                                     </select>
                                 </div>
-                            </div>
-                            <div class="forklift-claim-actions">
-                                <button type="button" class="btn btn-primary" id="forkliftClaimBtn" data-write-action="true">
-                                    <i class="fas fa-user-check"></i> Assign driver &amp; notify
-                                </button>
                             </div>
                         </div>
 
@@ -551,21 +583,39 @@
                                     <textarea id="forkliftNoteToRequester" rows="2" placeholder="Add information for the requester (required for Pending or Cancelled)"></textarea>
                                 </div>
                             </div>
-                            <div class="forklift-response-actions">
-                                <button type="button" class="btn btn-primary" id="forkliftResponseBtn" data-write-action="true">
-                                    <i class="fas fa-save"></i> Save status
-                                </button>
-                                <button type="button" class="btn btn-secondary" id="forkliftResponseCloseBtn">
-                                    <i class="fas fa-times"></i> Close
-                                </button>
-                            </div>
                         </div>
                     </div>
                     <div id="requestStatusMsg" class="message-email-message" role="status" aria-live="polite"></div>
                     <div class="modal-footer item-modal-footer form-actions" id="requestModalFooter">
-                        <button type="button" class="btn btn-secondary" id="closeRequestModalFooter">
-                            <i class="fas fa-times"></i> Close
-                        </button>
+                        <div class="footer-actions-group is-visible" id="footerActionsDefault">
+                            <button type="button" class="btn btn-secondary" id="closeRequestModalFooter">
+                                <i class="fas fa-times"></i> Close
+                            </button>
+                        </div>
+                        <div class="footer-actions-group" id="footerActionsPending">
+                            <button type="button" class="btn btn-primary" id="forkliftPendingRequestBtn" data-write-action="true">
+                                <i class="fas fa-truck"></i> Forklift Request
+                            </button>
+                            <button type="button" class="btn btn-secondary" id="forkliftPendingCloseBtn">
+                                <i class="fas fa-times"></i> Close
+                            </button>
+                        </div>
+                        <div class="footer-actions-group" id="footerActionsClaim">
+                            <button type="button" class="btn btn-primary" id="forkliftClaimBtn" data-write-action="true">
+                                <i class="fas fa-user-check"></i> Assign driver &amp; notify
+                            </button>
+                            <button type="button" class="btn btn-secondary" id="forkliftClaimCloseBtn">
+                                <i class="fas fa-times"></i> Close
+                            </button>
+                        </div>
+                        <div class="footer-actions-group" id="footerActionsRespond">
+                            <button type="button" class="btn btn-primary" id="forkliftResponseBtn" data-write-action="true">
+                                <i class="fas fa-save"></i> Save status
+                            </button>
+                            <button type="button" class="btn btn-secondary" id="forkliftResponseCloseBtn">
+                                <i class="fas fa-times"></i> Close
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
