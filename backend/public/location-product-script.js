@@ -874,6 +874,10 @@ document.addEventListener('DOMContentLoaded', () => {
   let forkliftDrivers = [];
   let forkliftPreferredMessageType = 'SMS';
   let pendingForkliftPayload = null;
+  let cachedRequesterName = null;
+  let forkliftDriversLoadedAt = 0;
+  let forkliftDriversLoading = null;
+  const FORKLIFT_DRIVERS_TTL_MS = 90 * 1000;
 
   function getLocationSection(locationCode) {
     const code = String(locationCode || '').trim().toUpperCase();
@@ -897,13 +901,30 @@ document.addEventListener('DOMContentLoaded', () => {
     return lines.join('\n');
   }
 
+  function refreshForkliftMessageContent(dataset, requester) {
+    const el = document.getElementById('forkliftMessageContent');
+    if (!el) return;
+    el.value = buildForkliftMessageContent({
+      locationCode: dataset.location || '',
+      productCode: dataset.product || '',
+      productName: dataset.productName || '',
+      requester: requester || document.getElementById('forkliftRequester')?.value || '',
+      locationSection: getLocationSection(dataset.location || '')
+    });
+  }
+
   async function getLoggedRequesterName() {
+    if (cachedRequesterName) return cachedRequesterName;
     try {
       const res = await fetch('/api/auth/check', { credentials: 'same-origin' });
       const data = await res.json();
       if (data.authenticated && data.user) {
-        if (data.user.isRoot) return 'Root';
-        return data.user.nome || data.user.email || 'User';
+        if (data.user.isRoot) {
+          cachedRequesterName = 'Root';
+          return cachedRequesterName;
+        }
+        cachedRequesterName = data.user.nome || data.user.email || 'User';
+        return cachedRequesterName;
       }
     } catch (_) { /* ignore */ }
     return 'User';
@@ -918,6 +939,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (!res.ok || !data.success) {
         forkliftDrivers = [];
         forkliftPreferredMessageType = 'SMS';
+        forkliftDriversLoadedAt = 0;
         return;
       }
       // Only drivers assigned in Settings → Setting Forklift Driver
@@ -925,11 +947,47 @@ document.addEventListener('DOMContentLoaded', () => {
       forkliftPreferredMessageType = String(data.preferredMessageType || 'SMS').trim().toUpperCase() === 'EMAIL'
         ? 'EMAIL'
         : 'SMS';
+      forkliftDriversLoadedAt = Date.now();
     } catch (err) {
       console.error('Error loading forklift drivers:', err);
       forkliftDrivers = [];
       forkliftPreferredMessageType = 'SMS';
+      forkliftDriversLoadedAt = 0;
     }
+  }
+
+  function loadForkliftDriversCached(force = false) {
+    const fresh = forkliftDriversLoadedAt
+      && (Date.now() - forkliftDriversLoadedAt) < FORKLIFT_DRIVERS_TTL_MS
+      && forkliftDrivers.length >= 0
+      && !force;
+    if (fresh && !forkliftDriversLoading) {
+      return Promise.resolve();
+    }
+    if (forkliftDriversLoading) return forkliftDriversLoading;
+    forkliftDriversLoading = loadForkliftDrivers().finally(() => {
+      forkliftDriversLoading = null;
+    });
+    return forkliftDriversLoading;
+  }
+
+  function prefetchForkliftRequestData() {
+    loadForkliftDriversCached().catch(() => {});
+    getLoggedRequesterName().catch(() => {});
+    if (!locations.length) {
+      loadLocations().catch(() => {});
+    }
+  }
+
+  async function fetchNextForkliftRequestNumber() {
+    try {
+      const metaRes = await fetch(`${API_MESSAGE_REQUEST}/meta`, { credentials: 'same-origin' });
+      const metaData = await metaRes.json();
+      if (metaRes.ok && metaData.success && metaData.data?.nextRequestNumber != null) {
+        return String(metaData.data.nextRequestNumber);
+      }
+    } catch (_) { /* ignore */ }
+    return 'Next available';
   }
 
   function fillForkliftDriverOptions(messageType) {
@@ -1005,47 +1063,51 @@ document.addEventListener('DOMContentLoaded', () => {
     const productCode = dataset.product || '';
     const productName = dataset.productName || '';
 
+    // Show modal immediately — do not wait for network on homolog/Approval.
     document.getElementById('forkliftRequestNumber').value = 'Loading...';
     document.getElementById('forkliftRequestDatetime').value = new Date().toLocaleString();
     document.getElementById('forkliftSubject').value = 'Lower the pallet';
-
-    await loadLocations();
-    const requester = await getLoggedRequesterName();
-    document.getElementById('forkliftRequester').value = requester;
-    const locationSection = getLocationSection(locationCode);
-
-    document.getElementById('forkliftMessageContent').value = buildForkliftMessageContent({
-      locationCode,
-      productCode,
-      productName,
-      requester,
-      locationSection
-    });
-
-    await loadForkliftDrivers();
-    if (forkliftMessageType) {
-      forkliftMessageType.value = forkliftPreferredMessageType;
-      forkliftMessageType.disabled = true;
-      forkliftMessageType.title = 'Configured in Settings → Setting Forklift Driver';
-    }
+    document.getElementById('forkliftRequester').value = cachedRequesterName || 'Loading...';
     const prioritySelect = document.getElementById('forkliftPriority');
     if (prioritySelect) prioritySelect.value = 'NORMAL';
-    fillForkliftDriverOptions(forkliftPreferredMessageType);
+    if (forkliftDriverSelect && !forkliftDriverSelect.options.length) {
+      forkliftDriverSelect.innerHTML = '<option value="">Loading drivers...</option>'
+        + '<option value="__NOT_DEFINED__">~Driver not defined</option>';
+    }
+    refreshForkliftMessageContent(dataset, cachedRequesterName || '');
+    forkliftRequestModal.classList.add('show');
 
-    try {
-      const metaRes = await fetch(`${API_MESSAGE_REQUEST}/meta`, { credentials: 'same-origin' });
-      const metaData = await metaRes.json();
-      if (metaRes.ok && metaData.success && metaData.data?.nextRequestNumber != null) {
-        document.getElementById('forkliftRequestNumber').value = String(metaData.data.nextRequestNumber);
-      } else {
-        document.getElementById('forkliftRequestNumber').value = 'Next available';
-      }
-    } catch (_) {
-      document.getElementById('forkliftRequestNumber').value = 'Next available';
+    const tasks = [
+      getLoggedRequesterName(),
+      loadForkliftDriversCached(),
+      fetchNextForkliftRequestNumber()
+    ];
+    if (!locations.length) {
+      tasks.push(loadLocations());
     }
 
-    forkliftRequestModal.classList.add('show');
-    forkliftDriverSelect?.focus();
+    try {
+      const [requester, , nextRequestNumber] = await Promise.all(tasks);
+      document.getElementById('forkliftRequester').value = requester;
+      document.getElementById('forkliftRequestNumber').value = nextRequestNumber;
+      if (forkliftMessageType) {
+        forkliftMessageType.value = forkliftPreferredMessageType;
+        forkliftMessageType.disabled = true;
+        forkliftMessageType.title = 'Configured in Settings → Setting Forklift Driver';
+      }
+      fillForkliftDriverOptions(forkliftPreferredMessageType);
+      refreshForkliftMessageContent(dataset, requester);
+      forkliftDriverSelect?.focus();
+    } catch (err) {
+      console.error('Error preparing forklift request modal:', err);
+      document.getElementById('forkliftRequestNumber').value = 'Next available';
+      if (!document.getElementById('forkliftRequester').value
+        || document.getElementById('forkliftRequester').value === 'Loading...') {
+        document.getElementById('forkliftRequester').value = cachedRequesterName || 'User';
+      }
+      fillForkliftDriverOptions(forkliftPreferredMessageType);
+      refreshForkliftMessageContent(dataset, document.getElementById('forkliftRequester').value);
+    }
   }
 
   function closeForkliftRequestModal() {
@@ -1841,5 +1903,7 @@ document.addEventListener('DOMContentLoaded', () => {
     await Promise.all([loadLocations(), loadProducts(), loadSituations()]);
     fillFilterSituation();
     renderTable();
+    // Warm forklift modal data so the first click is fast on Approval/homolog.
+    prefetchForkliftRequestData();
   })();
 });
