@@ -298,24 +298,18 @@
 
         .forklift-request-modal .forklift-requester-row {
             display: grid;
-            grid-template-columns: 1fr 1fr;
+            grid-template-columns: 1fr 1fr 1fr;
             gap: 12px;
             margin-bottom: 10px;
-        }
-
-        .forklift-request-modal .forklift-main-grid {
-            display: grid;
-            grid-template-columns: 1fr 1.15fr;
-            gap: 12px;
             align-items: start;
         }
 
-        .forklift-request-modal .forklift-main-left,
-        .forklift-request-modal .forklift-main-right {
-            min-width: 0;
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
+        .forklift-request-modal .forklift-message-row {
+            margin-bottom: 0;
+        }
+
+        .forklift-request-modal .forklift-message-row .form-group {
+            width: 100%;
         }
 
         .forklift-request-modal #forkliftMessageContent {
@@ -368,8 +362,7 @@
             .forklift-request-modal .forklift-meta-grid {
                 grid-template-columns: repeat(2, minmax(0, 1fr));
             }
-            .forklift-request-modal .forklift-requester-row,
-            .forklift-request-modal .forklift-main-grid {
+            .forklift-request-modal .forklift-requester-row {
                 grid-template-columns: 1fr;
             }
             .forklift-request-modal #forkliftMessageContent {
@@ -1046,22 +1039,18 @@
                             <label for="forkliftRequester">Requested by</label>
                             <input type="text" id="forkliftRequester" class="input-readonly" readonly>
                         </div>
-                    </div>
-                    <div class="forklift-main-grid">
-                        <div class="forklift-main-left">
-                            <div class="form-group">
-                                <label for="forkliftMessageContent">Message content *</label>
-                                <textarea id="forkliftMessageContent" rows="4" required></textarea>
-                            </div>
+                        <div class="form-group">
+                            <label for="forkliftDriver">Forklift driver *</label>
+                            <select id="forkliftDriver" required>
+                                <option value="">Select forklift driver...</option>
+                            </select>
+                            <small id="forkliftDriverContact"></small>
                         </div>
-                        <div class="forklift-main-right">
-                            <div class="form-group">
-                                <label for="forkliftDriver">Forklift driver *</label>
-                                <select id="forkliftDriver" required>
-                                    <option value="">Select forklift driver...</option>
-                                </select>
-                                <small id="forkliftDriverContact"></small>
-                            </div>
+                    </div>
+                    <div class="forklift-message-row">
+                        <div class="form-group">
+                            <label for="forkliftMessageContent">Message content *</label>
+                            <textarea id="forkliftMessageContent" rows="4" required></textarea>
                         </div>
                     </div>
                 </div>
