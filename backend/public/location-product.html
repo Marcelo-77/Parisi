@@ -296,6 +296,13 @@
             flex: none;
         }
 
+        .forklift-request-modal .forklift-requester-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 10px;
+        }
+
         .forklift-request-modal .forklift-main-grid {
             display: grid;
             grid-template-columns: 1fr 1.15fr;
@@ -361,6 +368,7 @@
             .forklift-request-modal .forklift-meta-grid {
                 grid-template-columns: repeat(2, minmax(0, 1fr));
             }
+            .forklift-request-modal .forklift-requester-row,
             .forklift-request-modal .forklift-main-grid {
                 grid-template-columns: 1fr;
             }
@@ -1029,16 +1037,18 @@
                             </select>
                         </div>
                     </div>
+                    <div class="forklift-requester-row">
+                        <div class="form-group">
+                            <label for="forkliftRequester">Requested by</label>
+                            <input type="text" id="forkliftRequester" class="input-readonly" readonly>
+                        </div>
+                        <div class="form-group">
+                            <label for="forkliftSubject">Subject *</label>
+                            <input type="text" id="forkliftSubject" maxlength="255" value="Lower the pallet" required>
+                        </div>
+                    </div>
                     <div class="forklift-main-grid">
                         <div class="forklift-main-left">
-                            <div class="form-group">
-                                <label for="forkliftRequester">Requested by</label>
-                                <input type="text" id="forkliftRequester" class="input-readonly" readonly>
-                            </div>
-                            <div class="form-group">
-                                <label for="forkliftSubject">Subject *</label>
-                                <input type="text" id="forkliftSubject" maxlength="255" value="Lower the pallet" required>
-                            </div>
                             <div class="form-group">
                                 <label for="forkliftDriver">Forklift driver *</label>
                                 <select id="forkliftDriver" required>
