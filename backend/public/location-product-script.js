@@ -751,7 +751,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 <i class="fas fa-edit"></i> <span>Edit</span>
               </button>
               <button type="button" class="btn btn-forklift btn-request-forklift" data-location="${escapeHtml(r.locationCode)}" data-product="${escapeHtml(r.productCode)}" data-product-name="${escapeHtml(r.productName || '')}" title="Request Forklift Driver">
-                <i class="fas fa-truck"></i> <span>Forklift</span>
+                <svg class="icon-forklift" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M1.25 6.25h1.4v8.5H1.25zm1.4 7.75H6.1v1.35H2.65zM6.85 3.25h1.55v13.75H6.85z"/><path d="M8.4 8.5H17.1a2.65 2.65 0 0 1 2.65 2.65V15.4h-1.4a2.35 2.35 0 0 0-4.5 0h-2.7a2.35 2.35 0 0 0-4.5 0H8.4V8.5zm7.75 1.35v2.9h2.65v-1.35a1.3 1.3 0 0 0-1.3-1.3h-1.35z"/><circle cx="10.85" cy="17.1" r="2.05"/><circle cx="18.45" cy="17.1" r="2.05"/></svg> <span>Forklift</span>
               </button>
               <button type="button" class="btn btn-delete btn-delete-record" data-location="${escapeHtml(r.locationCode)}" data-product="${escapeHtml(r.productCode)}" data-entry="${escapeHtml(entryDt)}" data-sipr="${r.siprSqNumber}" title="Delete">
                 <i class="fas fa-trash-alt"></i> <span>Del</span>
