@@ -222,6 +222,7 @@ function setFormActionsMode(mode) {
     const viewActions = document.getElementById('formActionsView');
     if (editActions) editActions.style.display = mode === 'view' ? 'none' : '';
     if (viewActions) viewActions.style.display = mode === 'view' ? '' : 'none';
+    document.body.classList.toggle('users-view-mode', mode === 'view');
 }
 
 function setFormReadonly(readonly) {
