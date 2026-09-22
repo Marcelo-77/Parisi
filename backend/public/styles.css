@@ -415,6 +415,11 @@ body.header-stats-hidden .header-stats-right .header-stat {
     margin: 20px 0;
 }
 
+.users-page.users-view-mode .form-container {
+    max-width: min(96vw, 1240px);
+    padding: 44px 48px;
+}
+
 .form-header {
     text-align: center;
     margin-bottom: 30px;
