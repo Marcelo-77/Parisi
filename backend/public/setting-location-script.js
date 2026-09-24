@@ -56,7 +56,7 @@
       separator: String(els.separator?.value || '-').trim() || '-',
       allowLevelOnly: readBool(els.allowLevelOnly, true),
       allowPosition: readBool(els.allowPosition, true),
-      bayPatternHint: String(els.bayPatternHint?.value || '').trim() || 'A1, A2, B1…',
+      bayPatternHint: String(els.bayPatternHint?.value || '').trim() || 'A1, A2, B1...',
       minLevel: readInt(els.minLevel, 0),
       maxLevel: readInt(els.maxLevel, 99),
       minPosition: readInt(els.minPosition, 1),
@@ -91,7 +91,7 @@
     if (els.separator) els.separator.value = data.separator || '-';
     boolSelect(els.allowLevelOnly, data.allowLevelOnly !== false);
     boolSelect(els.allowPosition, data.allowPosition !== false);
-    if (els.bayPatternHint) els.bayPatternHint.value = data.bayPatternHint || 'A1, A2, B1…';
+    if (els.bayPatternHint) els.bayPatternHint.value = data.bayPatternHint || 'A1, A2, B1...';
     if (els.minLevel) els.minLevel.value = data.minLevel ?? 0;
     if (els.maxLevel) els.maxLevel.value = data.maxLevel ?? 99;
     if (els.minPosition) els.minPosition.value = data.minPosition ?? 1;
