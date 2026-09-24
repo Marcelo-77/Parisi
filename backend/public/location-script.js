@@ -1,4 +1,5 @@
 const LOCATIONS_API_URL = '/api/locations';
+const LOCATION_CODE_SETTINGS_API = '/api/location-code-settings';
 
 const LOCATION_FIELD_IDS = {
     streetId: 'locationStreet',
@@ -17,6 +18,91 @@ const LOCATION_FIELD_IDS = {
     accessTypeId: 'accessType',
     sectionId: 'locationSection'
 };
+
+let locationCodeSettings = {
+    activeScheme: 'classic',
+    levelOnlyUsesLPrefix: true,
+    withPositionOmitsL: true,
+    separator: '-',
+    allowLevelOnly: true,
+    allowPosition: true,
+    bayPatternHint: 'A1, A2, B1…',
+    minLevel: 0,
+    maxLevel: 99,
+    minPosition: 1,
+    maxPosition: 99
+};
+
+function isBayScheme() {
+    return String(locationCodeSettings.activeScheme || '') === 'bay_level_position';
+}
+
+function composeBayLocationCode() {
+    const bay = String(document.getElementById('locationBay')?.value || '').trim().toUpperCase();
+    const level = Number(document.getElementById('locationBayLevel')?.value);
+    const positionRaw = String(document.getElementById('locationBayPosition')?.value ?? '').trim();
+    const sep = locationCodeSettings.separator || '-';
+    if (!bay || !/^[A-Z0-9]{1,10}$/.test(bay)) return '';
+    if (!Number.isInteger(level) || level < locationCodeSettings.minLevel || level > locationCodeSettings.maxLevel) return '';
+    if (!positionRaw) {
+        if (!locationCodeSettings.allowLevelOnly) return '';
+        const levelToken = locationCodeSettings.levelOnlyUsesLPrefix ? `L${level}` : String(level);
+        return `${bay}${sep}${levelToken}`;
+    }
+    if (!locationCodeSettings.allowPosition) return '';
+    const position = Number(positionRaw);
+    if (!Number.isInteger(position) || position < locationCodeSettings.minPosition || position > locationCodeSettings.maxPosition) return '';
+    const levelToken = locationCodeSettings.withPositionOmitsL ? String(level) : `L${level}`;
+    return `${bay}${sep}${levelToken}${sep}${position}`;
+}
+
+function updateBayComposedLocation() {
+    const codeEl = document.getElementById('locationCode');
+    if (codeEl) codeEl.value = composeBayLocationCode();
+}
+
+function setClassicFieldsRequired(required) {
+    ['locationStreet', 'locationBuilding', 'locationLevel'].forEach((id) => {
+        const el = document.getElementById(id);
+        if (el) el.required = required;
+    });
+    ['locationBay', 'locationBayLevel'].forEach((id) => {
+        const el = document.getElementById(id);
+        if (el) el.required = !required && isBayScheme();
+    });
+}
+
+function applyLocationSchemeUi() {
+    const classic = document.getElementById('locationClassicSchemeFields');
+    const bay = document.getElementById('locationBaySchemeFields');
+    const hint = document.getElementById('locationSchemeHint');
+    const codeEl = document.getElementById('locationCode');
+    const useBay = isBayScheme();
+    if (classic) classic.style.display = useBay ? 'none' : '';
+    if (bay) bay.style.display = useBay ? '' : 'none';
+    setClassicFieldsRequired(!useBay);
+    if (hint) {
+        hint.textContent = useBay
+            ? `Active scheme: Bay / Level / Position (from Setting Location). Bay examples: ${locationCodeSettings.bayPatternHint || 'A1, A2'}.`
+            : 'Active scheme: Classic Street / Building / Level (from Setting Location).';
+    }
+    if (codeEl) codeEl.placeholder = useBay ? 'Ex: A1-L2, A2-2-1' : 'Ex: B1-00, B15-1L';
+    if (useBay) updateBayComposedLocation();
+    else if (typeof LocationCodeUtils !== 'undefined') LocationCodeUtils.updateComposedLocation(LOCATION_FIELD_IDS);
+}
+
+async function loadLocationCodeSettings() {
+    try {
+        const res = await fetch(LOCATION_CODE_SETTINGS_API, { credentials: 'include' });
+        const data = await res.json();
+        if (res.ok && data.success && data.data) {
+            locationCodeSettings = { ...locationCodeSettings, ...data.data };
+        }
+    } catch (err) {
+        console.warn('Location code settings unavailable; using classic scheme.', err);
+    }
+    applyLocationSchemeUi();
+}
 
 function setupHeaderDropdowns() {
     const usersMenuBtn = document.getElementById('usersMenuBtn');
@@ -136,6 +222,12 @@ function setupHeaderDropdowns() {
 
 document.addEventListener('DOMContentLoaded', () => {
     LocationCodeUtils.setupLocationComposition(LOCATION_FIELD_IDS);
+    loadLocationCodeSettings();
+    ['locationBay', 'locationBayLevel', 'locationBayPosition'].forEach((id) => {
+        const el = document.getElementById(id);
+        el?.addEventListener('input', updateBayComposedLocation);
+        el?.addEventListener('change', updateBayComposedLocation);
+    });
 
     function revealLocationForm() {
         const target = document.getElementById('locationFormPanel');
@@ -227,51 +319,56 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function validate() {
         clearErrors();
-        LocationCodeUtils.updateComposedLocation(LOCATION_FIELD_IDS);
-
         let valid = true;
-        const validation = LocationCodeUtils.validateLocationParts(
-            LocationCodeUtils.getLocationParts(LOCATION_FIELD_IDS)
-        );
         const status = document.getElementById('locationStatus').value;
         const accessType = document.getElementById('accessType').value;
         const section = document.getElementById('locationSection').value;
 
-        if (validation.errors.street) {
-            showError('locationStreet', validation.errors.street);
-            valid = false;
-        }
-        if (validation.errors.building) {
-            showError('locationBuilding', validation.errors.building);
-            valid = false;
-        }
-        if (validation.errors.buildingX) {
-            showError('locationBuildingX', validation.errors.buildingX);
-            valid = false;
-        }
-        if (validation.errors.level) {
-            showError('locationLevel', validation.errors.level);
-            valid = false;
-        }
-        if (validation.errors.levelZeroMode) {
-            showError('locationLevelZeroMode', validation.errors.levelZeroMode);
-            valid = false;
-        }
-        if (validation.errors.side) {
-            showError('locationSide', validation.errors.side);
-            valid = false;
-        }
-        if (validation.errors.sublevel) {
-            showError('locationSublevel', validation.errors.sublevel);
-            valid = false;
-        }
-        if (validation.errors.behind) {
-            showError('locationBehind', validation.errors.behind);
-            valid = false;
-        }
-        if (validation.errors.code) {
-            showError('locationCode', validation.errors.code);
-            valid = false;
+        if (isBayScheme()) {
+            updateBayComposedLocation();
+            const bay = String(document.getElementById('locationBay')?.value || '').trim().toUpperCase();
+            const level = Number(document.getElementById('locationBayLevel')?.value);
+            const positionRaw = String(document.getElementById('locationBayPosition')?.value ?? '').trim();
+
+            if (!bay || !/^[A-Z0-9]{1,10}$/.test(bay)) {
+                showError('locationBay', 'Enter a valid Bay (letters/numbers)');
+                valid = false;
+            }
+            if (!Number.isInteger(level) || level < locationCodeSettings.minLevel || level > locationCodeSettings.maxLevel) {
+                showError('locationBayLevel', `Level must be between ${locationCodeSettings.minLevel} and ${locationCodeSettings.maxLevel}`);
+                valid = false;
+            }
+            if (positionRaw) {
+                const position = Number(positionRaw);
+                if (!locationCodeSettings.allowPosition) {
+                    showError('locationBayPosition', 'Position codes are disabled in Setting Location');
+                    valid = false;
+                } else if (!Number.isInteger(position) || position < locationCodeSettings.minPosition || position > locationCodeSettings.maxPosition) {
+                    showError('locationBayPosition', `Position must be between ${locationCodeSettings.minPosition} and ${locationCodeSettings.maxPosition}`);
+                    valid = false;
+                }
+            } else if (!locationCodeSettings.allowLevelOnly) {
+                showError('locationBayPosition', 'Position is required (level-only codes are disabled)');
+                valid = false;
+            }
+            if (!composeBayLocationCode() || composeBayLocationCode().length < 2) {
+                showError('locationCode', 'Complete Bay, Level and optional Position to compose the location');
+                valid = false;
+            }
+        } else {
+            LocationCodeUtils.updateComposedLocation(LOCATION_FIELD_IDS);
+            const validation = LocationCodeUtils.validateLocationParts(
+                LocationCodeUtils.getLocationParts(LOCATION_FIELD_IDS)
+            );
+            if (validation.errors.street) { showError('locationStreet', validation.errors.street); valid = false; }
+            if (validation.errors.building) { showError('locationBuilding', validation.errors.building); valid = false; }
+            if (validation.errors.buildingX) { showError('locationBuildingX', validation.errors.buildingX); valid = false; }
+            if (validation.errors.level) { showError('locationLevel', validation.errors.level); valid = false; }
+            if (validation.errors.levelZeroMode) { showError('locationLevelZeroMode', validation.errors.levelZeroMode); valid = false; }
+            if (validation.errors.side) { showError('locationSide', validation.errors.side); valid = false; }
+            if (validation.errors.sublevel) { showError('locationSublevel', validation.errors.sublevel); valid = false; }
+            if (validation.errors.behind) { showError('locationBehind', validation.errors.behind); valid = false; }
+            if (validation.errors.code) { showError('locationCode', validation.errors.code); valid = false; }
         }
 
         if (!status) {
@@ -296,8 +393,14 @@ document.addEventListener('DOMContentLoaded', () => {
         form.reset();
         clearErrors();
         document.getElementById('locationStatus').value = 'active';
-        LocationCodeUtils.updateComposedLocation(LOCATION_FIELD_IDS);
-        document.getElementById('locationStreet').focus();
+        applyLocationSchemeUi();
+        if (isBayScheme()) {
+            updateBayComposedLocation();
+            document.getElementById('locationBay')?.focus();
+        } else {
+            LocationCodeUtils.updateComposedLocation(LOCATION_FIELD_IDS);
+            document.getElementById('locationStreet')?.focus();
+        }
     }
 
     form.addEventListener('submit', (e) => {

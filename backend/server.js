@@ -29,6 +29,7 @@ const messageRequestRoutes = require('./routes/messageRequest');
 const emailSendLogRoutes = require('./routes/emailSendLog');
 const testCasesRoutes = require('./routes/testCases');
 const forkliftDriversRoutes = require('./routes/forkliftDrivers');
+const locationCodeSettingsRoutes = require('./routes/locationCodeSettings');
 const systemSettingsService = require('./services/systemSettingsService');
 const { isAuthenticated, protectPages, requireAuth } = require('./middleware/auth');
 const funcionarioServiceDB = require('./services/funcionarioServiceDB');
@@ -212,6 +213,7 @@ app.use('/api/message-request', messageRequestRoutes);
 app.use('/api/email-send-log', emailSendLogRoutes);
 app.use('/api/test-cases', testCasesRoutes);
 app.use('/api/forklift-drivers', forkliftDriversRoutes);
+app.use('/api/location-code-settings', locationCodeSettingsRoutes);
 app.use('/api/system-settings', systemSettingsRoutes);
 app.use('/api/logged-in-users', loggedInUsersRoutes);
 

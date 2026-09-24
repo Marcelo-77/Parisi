@@ -99,6 +99,7 @@
                                 <div class="dropdown-submenu" aria-hidden="true">
                                     <a href="System-settings.html" class="dropdown-item" data-app="System-settings.html"><i class="fas fa-sliders-h"></i> System Settings</a>
                                     <a href="Setting-Forklift-Driver.html" class="dropdown-item" data-app="Setting-Forklift-Driver.html" data-write-menu="true"><i class="fas fa-truck"></i> Setting Forklift Driver</a>
+                                    <a href="Setting-Location.html" class="dropdown-item" data-app="Setting-Location.html" data-write-menu="true"><i class="fas fa-map-marker-alt"></i> Setting Location</a>
                                 </div>
                             </div>
                             <div class="dropdown-submenu-group" data-submenu="news">

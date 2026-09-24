@@ -374,6 +374,7 @@ async function initDatabase() {
       { application: 'System-Documentation-Search.html', menuName: 'Applications_System_Documentation_Search' },
       { application: 'System-settings.html', menuName: 'Applications_System_Settings' },
       { application: 'Setting-Forklift-Driver.html', menuName: 'Applications_Settings_Forklift_Driver' },
+      { application: 'Setting-Location.html', menuName: 'Applications_Settings_Location' },
       { application: 'News.html', menuName: 'Applications_News' },
       { application: 'News-Search.html', menuName: 'Applications_News_Search' },
       { application: 'Improvements-and-Corrections-Control.html', menuName: 'Applications_Improvements_Corrections' },

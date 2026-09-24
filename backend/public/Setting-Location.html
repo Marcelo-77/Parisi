@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Double-Y Warehouse System - Setting Location</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="warehouse-styles.css">
+    <link rel="stylesheet" href="pesquisa-styles.css">
+    <link rel="stylesheet" href="application-users-styles.css">
+    <link rel="stylesheet" href="setting-location-styles.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body class="application-users-page setting-location-page">
+    <script src="auth-check.js"></script>
+    <script src="header-menu.js"></script>
+    <script src="menu-access.js"></script>
+    <script src="application-write-access.js"></script>
+    <script src="double-y-logo-effect.js"></script>
+    <script src="dev-environment-badge.js"></script>
+    <div class="container">
+        <header class="header">
+            <div class="header-stats-row">
+                <div class="header-stats-left">
+                    <div class="header-stat header-stat-total">
+                        <span class="header-stat-value" id="totalItems">0</span>
+                        <span class="header-stat-label">Total Items</span>
+                    </div>
+                    <div class="header-stat header-stat-low">
+                        <span class="header-stat-value" id="lowStockItems">0</span>
+                        <span class="header-stat-label">Low Stock</span>
+                    </div>
+                </div>
+                <div class="double-y-wordmark" aria-label="Double Y">
+                    <img src="doubley-glyph.png" alt="" class="double-y-glyph" aria-hidden="true">
+                    <span class="double-y-name">Double Y</span>
+                    <img src="doubley-glyph-bottom.png" alt="" class="double-y-glyph double-y-glyph-bottom" aria-hidden="true">
+                </div>
+                <div class="header-stats-right">
+                    <div class="header-stat header-stat-entries">
+                        <span class="header-stat-value" id="totalEntradas">0</span>
+                        <span class="header-stat-label">Entries Today</span>
+                    </div>
+                    <div class="header-stat header-stat-exits">
+                        <span class="header-stat-value" id="totalSaidas">0</span>
+                        <span class="header-stat-label">Exits Today</span>
+                    </div>
+                </div>
+            </div>
+            <div class="header-content">
+                <h1><i class="fas fa-warehouse"></i> Double-Y Warehouse System</h1>
+                <p class="header-search-users-label">Setting Location</p>
+                <div class="header-actions"></div>
+            </div>
+        </header>
+
+        <main class="main-content app-users-main">
+            <section class="app-users-section">
+                <div class="app-users-white-panel" id="locationSettingsPanel">
+                    <div class="app-users-page-intro">
+                        <div class="app-users-page-intro-text">
+                            <h2><i class="fas fa-map-marker-alt"></i> Setting Location</h2>
+                            <p>Review how location codes are built today (Classic), and configure the new Bay / Level / Position parameterization from the warehouse rack diagram.</p>
+                        </div>
+                        <div class="app-users-page-intro-actions">
+                            <span id="locationDirtyBadge" class="app-users-dirty-badge" hidden>
+                                <i class="fas fa-circle" aria-hidden="true"></i> Unsaved changes
+                            </span>
+                        </div>
+                    </div>
+
+                    <div id="locationSettingsStatus" class="setting-location-status" role="status" aria-live="polite"></div>
+
+                    <div class="app-users-card setting-location-card">
+                        <div class="app-users-card-head">
+                            <h3><i class="fas fa-toggle-on"></i> Active location code scheme</h3>
+                            <span class="app-users-card-tag">Applies to New Location</span>
+                        </div>
+                        <p class="app-users-help">Choose which rules New Location uses when composing the Location field. Existing locations already saved are not renamed.</p>
+                        <div class="form-row setting-location-scheme-row">
+                            <div class="form-group">
+                                <label for="activeScheme"><i class="fas fa-code"></i> Active scheme *</label>
+                                <select id="activeScheme" class="app-users-select">
+                                    <option value="classic">Classic — Street / Building / Level (current)</option>
+                                    <option value="bay_level_position">Bay / Level / Position (new diagram)</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="app-users-card setting-location-card">
+                        <div class="app-users-card-head">
+                            <h3><i class="fas fa-history"></i> Classic format (how location is created today)</h3>
+                            <span class="app-users-card-tag">Read-only reference</span>
+                        </div>
+                        <p class="app-users-help">Today New Location builds codes from Street + Building + Level + Side/Sublevel (and optional Behind / A21X). Only the composed code is saved.</p>
+                        <div class="setting-location-classic-grid">
+                            <div>
+                                <h4>Format</h4>
+                                <p class="setting-location-mono">{street}{building}-{level}{side|sublevel}[B]</p>
+                                <ul class="setting-location-list">
+                                    <li><strong>Street</strong> — one letter A–Z</li>
+                                    <li><strong>Building</strong> — number (≥ 0)</li>
+                                    <li><strong>Level</strong> — number (≥ 0)</li>
+                                    <li><strong>Side</strong> — R / L / M</li>
+                                    <li><strong>Sublevel</strong> — number (Level 0 or A21X)</li>
+                                    <li><strong>Behind</strong> — optional B (Street A or H)</li>
+                                    <li><strong>A21X</strong> — A21X1-00, A21X2-00…</li>
+                                </ul>
+                            </div>
+                            <div>
+                                <h4>Examples</h4>
+                                <table class="setting-location-table">
+                                    <thead><tr><th>Parts</th><th>Location code</th></tr></thead>
+                                    <tbody>
+                                        <tr><td>B / 1 / L0 / sublevel 0</td><td><code>B1-00</code></td></tr>
+                                        <tr><td>A / 7 / L0 / side R</td><td><code>A7-0R</code></td></tr>
+                                        <tr><td>B / 15 / L1 / side L</td><td><code>B15-1L</code></td></tr>
+                                        <tr><td>A / 7 / L0 / sublevel 0 / Behind</td><td><code>A7-00B</code></td></tr>
+                                        <tr><td>A / 21 / X1 / sublevel 0</td><td><code>A21X1-00</code></td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="app-users-card setting-location-card">
+                        <div class="app-users-card-head">
+                            <h3><i class="fas fa-sitemap"></i> New parameterization — Bay / Level / Position</h3>
+                            <span class="app-users-card-tag">Configurable</span>
+                        </div>
+                        <p class="app-users-help">Level-only uses L (e.g. <code>A1-L2</code>). With position: Bay-Level-Position without L (e.g. <code>A2-2-1</code>, <code>A2-0-2</code>).</p>
+                        <div class="setting-location-diagram-wrap">
+                            <img src="images/location-code-bay-level-position.jpg" alt="Bay Level Position location code diagram" class="setting-location-diagram">
+                        </div>
+                        <div class="form-row setting-location-params">
+                            <div class="form-group">
+                                <label for="levelOnlyUsesLPrefix"><i class="fas fa-font"></i> Level-only uses “L” *</label>
+                                <select id="levelOnlyUsesLPrefix" class="app-users-select">
+                                    <option value="true">Yes — A1-L2</option>
+                                    <option value="false">No — A1-2</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="withPositionOmitsL"><i class="fas fa-grip-lines"></i> With position, omit “L” *</label>
+                                <select id="withPositionOmitsL" class="app-users-select">
+                                    <option value="true">Yes — A2-2-1</option>
+                                    <option value="false">No — A2-L2-1</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="separator"><i class="fas fa-minus"></i> Separator *</label>
+                                <input type="text" id="separator" class="app-users-select" maxlength="3" value="-">
+                            </div>
+                            <div class="form-group">
+                                <label for="allowLevelOnly"><i class="fas fa-layer-group"></i> Allow level-only *</label>
+                                <select id="allowLevelOnly" class="app-users-select">
+                                    <option value="true">Yes</option>
+                                    <option value="false">No</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="allowPosition"><i class="fas fa-th"></i> Allow position *</label>
+                                <select id="allowPosition" class="app-users-select">
+                                    <option value="true">Yes</option>
+                                    <option value="false">No</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="bayPatternHint"><i class="fas fa-info-circle"></i> Bay hint</label>
+                                <input type="text" id="bayPatternHint" class="app-users-select" maxlength="80" placeholder="A1, A2, B1…">
+                            </div>
+                            <div class="form-group">
+                                <label for="minLevel">Min level</label>
+                                <input type="number" id="minLevel" class="app-users-select" min="0" max="999" step="1" value="0">
+                            </div>
+                            <div class="form-group">
+                                <label for="maxLevel">Max level</label>
+                                <input type="number" id="maxLevel" class="app-users-select" min="0" max="999" step="1" value="99">
+                            </div>
+                            <div class="form-group">
+                                <label for="minPosition">Min position</label>
+                                <input type="number" id="minPosition" class="app-users-select" min="1" max="999" step="1" value="1">
+                            </div>
+                            <div class="form-group">
+                                <label for="maxPosition">Max position</label>
+                                <input type="number" id="maxPosition" class="app-users-select" min="1" max="999" step="1" value="99">
+                            </div>
+                        </div>
+
+                        <h4 class="setting-location-preview-title">Live preview (diagram examples)</h4>
+                        <table class="setting-location-table">
+                            <thead>
+                                <tr><th>Bay</th><th>Level</th><th>Position</th><th>Location code</th><th>Description</th></tr>
+                            </thead>
+                            <tbody>
+                                <tr><td>A1</td><td>2</td><td>—</td><td><code id="previewA1L2">A1-L2</code></td><td>Level only</td></tr>
+                                <tr><td>A2</td><td>2</td><td>1</td><td><code id="previewA221">A2-2-1</code></td><td>Level 2, position 1</td></tr>
+                                <tr><td>A2</td><td>0</td><td>2</td><td><code id="previewA202">A2-0-2</code></td><td>Level 0, position 2</td></tr>
+                            </tbody>
+                        </table>
+
+                        <div class="setting-location-try">
+                            <h4>Try your own</h4>
+                            <div class="form-row setting-location-params">
+                                <div class="form-group">
+                                    <label for="tryBay">Bay</label>
+                                    <input type="text" id="tryBay" class="app-users-select" maxlength="10" value="A1" style="text-transform:uppercase;">
+                                </div>
+                                <div class="form-group">
+                                    <label for="tryLevel">Level</label>
+                                    <input type="number" id="tryLevel" class="app-users-select" min="0" step="1" value="2">
+                                </div>
+                                <div class="form-group">
+                                    <label for="tryPosition">Position (optional)</label>
+                                    <input type="number" id="tryPosition" class="app-users-select" min="1" step="1" placeholder="empty = level only">
+                                </div>
+                                <div class="form-group">
+                                    <label>Result</label>
+                                    <div class="setting-location-try-result" id="tryResult">A1-L2</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="app-users-actions" id="locationSettingsActions">
+                        <button type="button" class="btn btn-secondary" id="cancelLocationSettingsBtn"><i class="fas fa-undo"></i> Cancel</button>
+                        <button type="button" class="btn btn-primary" id="saveLocationSettingsBtn" data-write-action="true"><i class="fas fa-save"></i> Save</button>
+                        <button type="button" class="btn btn-secondary" id="closeLocationSettingsBtn"><i class="fas fa-times"></i> Close</button>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <footer class="footer">
+            <p>&copy; 2026 Double-Y IT Systems. All rights reserved.</p>
+        </footer>
+    </div>
+    <script src="setting-location-script.js"></script>
+</body>
+</html>

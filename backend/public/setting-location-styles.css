@@ -1,0 +1,24 @@
+.setting-location-page .setting-location-card { margin-bottom: 1.25rem; }
+.setting-location-status { min-height: 1.25rem; margin: 0 0 1rem; font-size: 0.92rem; }
+.setting-location-status.is-success { color: #15803d; }
+.setting-location-status.is-error { color: #b91c1c; }
+.setting-location-scheme-row .form-group { max-width: 520px; flex: 1 1 320px; }
+.setting-location-classic-grid { display: grid; grid-template-columns: 1.1fr 1fr; gap: 1.25rem; }
+.setting-location-classic-grid h4, .setting-location-preview-title, .setting-location-try h4 { margin: 0 0 0.55rem; color: #1f2937; font-size: 1rem; }
+.setting-location-mono { font-family: ui-monospace, Consolas, monospace; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 0.65rem 0.85rem; color: #0f766e; font-weight: 600; }
+.setting-location-list { margin: 0.75rem 0 0; padding-left: 1.15rem; color: #475569; line-height: 1.55; }
+.setting-location-table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+.setting-location-table th, .setting-location-table td { border: 1px solid #e2e8f0; padding: 0.55rem 0.65rem; text-align: left; vertical-align: top; }
+.setting-location-table th { background: #f8fafc; color: #334155; }
+.setting-location-table code { font-weight: 700; color: #0f766e; }
+.setting-location-diagram-wrap { margin: 0.75rem 0 1.15rem; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; background: #fff; }
+.setting-location-diagram { display: block; width: 100%; max-height: 420px; object-fit: contain; background: #f8fafc; }
+.setting-location-params { display: flex; flex-wrap: wrap; gap: 12px; margin: 0 0 1rem; }
+.setting-location-params .form-group { flex: 1 1 180px; max-width: 240px; margin-bottom: 0; }
+.setting-location-try { margin-top: 1rem; padding-top: 0.85rem; border-top: 1px solid #eef2f7; }
+.setting-location-try-result { min-height: 42px; display: flex; align-items: center; padding: 0.55rem 0.75rem; border-radius: 8px; border: 1px solid #99f6e4; background: #f0fdfa; color: #0f766e; font-family: ui-monospace, Consolas, monospace; font-weight: 700; font-size: 1.05rem; }
+#locationSettingsActions { display: flex; flex-wrap: wrap; gap: 0.75rem; justify-content: center; padding-top: 1rem; border-top: 1px solid #eef2f7; margin-top: 0.5rem; }
+@media (max-width: 900px) {
+  .setting-location-classic-grid { grid-template-columns: 1fr; }
+  .setting-location-params .form-group { max-width: none; }
+}

@@ -528,10 +528,34 @@
                                    readonly placeholder="Ex: B1-00, B15-1L"
                                    class="input-readonly">
                             <span class="error-message" id="locationCode-error"></span>
+                            <small id="locationSchemeHint" style="display:block;margin-top:6px;color:#64748b;"></small>
                         </div>
                     </div>
 
-                    <div class="form-row location-row-address location-row-compact">
+                    <div id="locationBaySchemeFields" class="form-row location-row-address location-row-compact" style="display:none;">
+                        <div class="form-group">
+                            <label for="locationBay"><i class="fas fa-warehouse"></i> Bay *</label>
+                            <input type="text" id="locationBay" name="locationBay"
+                                   placeholder="Ex: A1" maxlength="10" autocomplete="off"
+                                   style="text-transform: uppercase;">
+                            <span class="error-message" id="locationBay-error"></span>
+                        </div>
+                        <div class="form-group">
+                            <label for="locationBayLevel"><i class="fas fa-layer-group"></i> Level *</label>
+                            <input type="number" id="locationBayLevel" name="locationBayLevel"
+                                   placeholder="Ex: 2" min="0" step="1" inputmode="numeric">
+                            <span class="error-message" id="locationBayLevel-error"></span>
+                        </div>
+                        <div class="form-group">
+                            <label for="locationBayPosition"><i class="fas fa-th"></i> Position</label>
+                            <input type="number" id="locationBayPosition" name="locationBayPosition"
+                                   placeholder="Optional" min="1" step="1" inputmode="numeric">
+                            <span class="error-message" id="locationBayPosition-error"></span>
+                            <small style="display:block;margin-top:4px;color:#64748b;">Leave empty for level-only codes (e.g. A1-L2).</small>
+                        </div>
+                    </div>
+
+                    <div id="locationClassicSchemeFields" class="form-row location-row-address location-row-compact">
                         <div class="location-address-half location-address-half--left">
                             <div class="form-group">
                                 <label for="locationStreet">
