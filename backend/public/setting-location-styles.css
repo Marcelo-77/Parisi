@@ -199,13 +199,13 @@
   color: #0f766e;
 }
 
-/* Align form fields in a consistent grid */
+/* Align form fields in a consistent grid — compact in Bay / Level / Position */
 .setting-location-page .setting-location-params.form-row,
 .setting-location-params {
   display: grid !important;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px 14px;
-  margin: 0 0 0.85rem;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px 10px;
+  margin: 0 0 0.75rem;
   width: 100%;
   align-items: end;
 }
@@ -218,14 +218,15 @@
   margin: 0 !important;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 2px;
 }
 
 .setting-location-params .form-group label {
-  font-size: 0.78rem;
+  font-size: 0.7rem;
   margin: 0;
-  line-height: 1.25;
-  min-height: 2.1em;
+  line-height: 1.2;
+  min-height: 1.6em;
+  color: #475569;
 }
 
 .setting-location-params .form-group .app-users-select,
@@ -233,7 +234,12 @@
 .setting-location-params .form-group select.app-users-select {
   width: 100%;
   box-sizing: border-box;
-  min-height: 40px;
+  min-height: 30px;
+  height: 30px;
+  padding: 0.25rem 0.5rem;
+  font-size: 0.82rem;
+  border-radius: 7px;
+  line-height: 1.2;
 }
 
 .setting-location-try .setting-location-params {
@@ -243,29 +249,30 @@
 
 .setting-location-preview-title,
 .setting-location-try h4 {
-  margin: 0.75rem 0 0.45rem;
+  margin: 0.65rem 0 0.35rem;
   color: #1f2937;
-  font-size: 0.95rem;
+  font-size: 0.88rem;
 }
 
 .setting-location-try {
   margin-top: auto;
-  padding-top: 0.75rem;
+  padding-top: 0.65rem;
   border-top: 1px solid #eef2f7;
 }
 
 .setting-location-try-result {
-  min-height: 40px;
+  min-height: 30px;
+  height: 30px;
   display: flex;
   align-items: center;
-  padding: 0.45rem 0.7rem;
-  border-radius: 8px;
+  padding: 0.2rem 0.5rem;
+  border-radius: 7px;
   border: 1px solid #99f6e4;
   background: #f0fdfa;
   color: #0f766e;
   font-family: ui-monospace, Consolas, monospace;
   font-weight: 700;
-  font-size: 1.05rem;
+  font-size: 0.88rem;
   box-sizing: border-box;
   width: 100%;
 }
@@ -307,6 +314,11 @@
   .setting-location-scheme-cards,
   .setting-location-rule-boxes {
     grid-template-columns: 1fr;
+  }
+
+  .setting-location-page .setting-location-params.form-row,
+  .setting-location-params {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .setting-location-try .setting-location-params {
