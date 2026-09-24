@@ -1,7 +1,20 @@
+const dns = require('dns');
 const { Pool, types } = require('pg');
 
 // Keep PostgreSQL DATE values as YYYY-MM-DD strings (avoid timezone day shifts).
 types.setTypeParser(1082, (value) => value);
+
+/**
+ * Force A-record (IPv4) only — Render often has no IPv6 route (ENETUNREACH to Neon).
+ * Same approach used by mailService.js for SMTP.
+ */
+function ipv4Lookup(hostname, options, callback) {
+  if (typeof options === 'function') {
+    callback = options;
+    options = {};
+  }
+  dns.lookup(hostname, { ...options, family: 4 }, callback);
+}
 
 // Configurações do banco de dados (lidas de backend/config.env)
 const host = process.env.DB_HOST || 'localhost';
@@ -17,7 +30,10 @@ const dbConfig = {
   password: process.env.DB_PASSWORD || 'postgres',
   max: 20,
   idleTimeoutMillis: 30000,
-  connectionTimeoutMillis: useSsl ? 10000 : 2000,
+  connectionTimeoutMillis: useSsl ? 15000 : 2000,
+  // Prefer IPv4 on Approval/Render (Neon AAAA records cause ENETUNREACH).
+  family: 4,
+  lookup: ipv4Lookup
 };
 
 if (useSsl) {
@@ -59,5 +75,5 @@ module.exports = {
   query,
   getClient,
   closePool,
-  pool,
+  pool
 };

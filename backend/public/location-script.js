@@ -26,7 +26,7 @@ let locationCodeSettings = {
     separator: '-',
     allowLevelOnly: true,
     allowPosition: true,
-    bayPatternHint: 'A1, A2, B1…',
+    bayPatternHint: 'A1, A2, B1...',
     minLevel: 0,
     maxLevel: 99,
     minPosition: 1,
