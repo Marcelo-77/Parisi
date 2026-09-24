@@ -83,9 +83,18 @@
     return `${bay}${sep}${levelToken}${sep}${position}`;
   }
 
+  function syncSchemeRadios(scheme) {
+    const value = scheme === 'bay_level_position' ? 'bay_level_position' : 'classic';
+    if (els.activeScheme) els.activeScheme.value = value;
+    const classicRadio = document.getElementById('schemeClassicRadio');
+    const bayRadio = document.getElementById('schemeBayRadio');
+    if (classicRadio) classicRadio.checked = value === 'classic';
+    if (bayRadio) bayRadio.checked = value === 'bay_level_position';
+  }
+
   function applyData(data) {
     saved = { ...data };
-    if (els.activeScheme) els.activeScheme.value = data.activeScheme || 'classic';
+    syncSchemeRadios(data.activeScheme || 'classic');
     boolSelect(els.levelOnlyUsesLPrefix, data.levelOnlyUsesLPrefix !== false);
     boolSelect(els.withPositionOmitsL, data.withPositionOmitsL !== false);
     if (els.separator) els.separator.value = data.separator || '-';
@@ -164,6 +173,14 @@
     ].forEach((el) => {
       el?.addEventListener('change', () => { updateDirty(); refreshPreviews(); });
       el?.addEventListener('input', () => { updateDirty(); refreshPreviews(); });
+    });
+    document.querySelectorAll('input[name="activeSchemeRadio"]').forEach((radio) => {
+      radio.addEventListener('change', () => {
+        if (!radio.checked) return;
+        syncSchemeRadios(radio.value);
+        updateDirty();
+        refreshPreviews();
+      });
     });
     [els.tryBay, els.tryLevel, els.tryPosition].forEach((el) => {
       el?.addEventListener('input', refreshPreviews);
