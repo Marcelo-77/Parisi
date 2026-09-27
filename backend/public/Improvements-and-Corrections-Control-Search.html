@@ -399,27 +399,47 @@
             display: flex !important;
             align-items: center;
             justify-content: center;
-            padding: 12px;
-            z-index: 1100;
+            padding: 16px;
+            z-index: 1200;
+            box-sizing: border-box;
         }
 
         #icRequestSavedModal .modal-content {
-            max-width: 440px;
-            width: min(440px, 100%);
+            max-width: 420px;
+            width: min(420px, 100%);
+            max-height: min(80vh, 360px);
             margin: 0 auto !important;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        #icRequestSavedModal .modal-header {
+            flex-shrink: 0;
         }
 
         #icRequestSavedModal .modal-body {
+            flex: 1 1 auto;
             text-align: center;
-            padding: 18px 20px 8px;
+            padding: 20px 22px 12px;
+            overflow-y: auto;
+            min-height: 0;
         }
 
         #icRequestSavedModal .modal-footer {
+            flex-shrink: 0;
             display: flex;
             justify-content: center;
-            gap: 10px;
+            align-items: center;
+            gap: 12px;
             flex-wrap: wrap;
             padding: 12px 18px 18px;
+            border-top: 1px solid #e2e8f0;
+            background: #fff;
+        }
+
+        #icRequestSavedModal .modal-footer .btn {
+            min-width: 110px;
         }
 
         #editRequestModal.is-view-mode #saveEditRequestBtn {
