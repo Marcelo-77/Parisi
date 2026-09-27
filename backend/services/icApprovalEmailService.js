@@ -95,18 +95,58 @@ function buildSubject(templateSubject, request) {
 }
 
 async function resolveRequesterEmail(request) {
-  if (!request || !request.createdBy) {
-    return { email: null, name: request?.createdByName || null };
+  const nameHint = request?.createdByName ? String(request.createdByName).trim() : null;
+  const createdByRaw = request?.createdBy != null ? String(request.createdBy).trim() : '';
+  const createdBy = createdByRaw && createdByRaw.toLowerCase() !== 'root' ? createdByRaw : '';
+
+  if (createdBy) {
+    try {
+      const user = await funcionarioServiceDB.buscarPorId(createdBy);
+      const profile = user && typeof user.toJSON === 'function' ? user.toJSON() : user;
+      const email = profile?.email ? String(profile.email).trim().toLowerCase() : null;
+      const name = profile?.nome || nameHint || null;
+      return {
+        email: isValidEmail(email) ? email : null,
+        name
+      };
+    } catch (_) {
+      // Fall through to name/email heuristics when requester id is missing or invalid.
+    }
   }
 
-  const user = await funcionarioServiceDB.buscarPorId(request.createdBy);
-  const profile = user && typeof user.toJSON === 'function' ? user.toJSON() : user;
-  const email = profile?.email ? String(profile.email).trim().toLowerCase() : null;
-  const name = profile?.nome || request.createdByName || null;
-  return {
-    email: isValidEmail(email) ? email : null,
-    name
-  };
+  if (isValidEmail(nameHint)) {
+    return {
+      email: String(nameHint).trim().toLowerCase(),
+      name: nameHint
+    };
+  }
+
+  if (nameHint && nameHint.toLowerCase() !== 'root') {
+    try {
+      const users = await funcionarioServiceDB.listar({
+        nome: nameHint,
+        ativo: true,
+        ordenarPor: 'nome',
+        direcao: 'asc'
+      });
+      const exact = (Array.isArray(users) ? users : []).find((user) => {
+        const profile = user && typeof user.toJSON === 'function' ? user.toJSON() : user;
+        return String(profile?.nome || '').trim().toLowerCase() === nameHint.toLowerCase();
+      });
+      if (exact) {
+        const profile = exact && typeof exact.toJSON === 'function' ? exact.toJSON() : exact;
+        const email = profile?.email ? String(profile.email).trim().toLowerCase() : null;
+        return {
+          email: isValidEmail(email) ? email : null,
+          name: profile?.nome || nameHint
+        };
+      }
+    } catch (_) {
+      // ignore lookup errors
+    }
+  }
+
+  return { email: null, name: nameHint };
 }
 
 async function loadApprovalTemplate() {
@@ -146,17 +186,36 @@ async function buildApprovalEmailPreview(request) {
     ? applyTemplateText(template.body, request, requester.name || request.createdByName)
     : null;
 
+  const hasValidRecipientEmail = Boolean(requester.email);
+  const templateAvailable = Boolean(template);
+  const mailConfigured = mailService.isConfigured();
+  const readyToSend = hasValidRecipientEmail && templateAvailable && mailConfigured;
+
+  let readinessMessage = '';
+  if (readyToSend) {
+    readinessMessage = `Ready to send to ${requester.email} from ${fromEmail}.`;
+  } else if (!templateAvailable) {
+    readinessMessage = templateError || 'APPROVAL template is unavailable.';
+  } else if (!hasValidRecipientEmail) {
+    readinessMessage = 'Requester does not have a valid email address. Update the user in Users, then try again.';
+  } else if (!mailConfigured) {
+    readinessMessage = 'Email transport is not configured on the server (set RESEND_API_KEY or SMTP_USER/SMTP_PASS).';
+  }
+
   return {
     fromEmail,
     templateCode: APPROVAL_TEMPLATE_CODE,
     recipientName: requester.name || request.createdByName || '-',
     recipientEmail: requester.email,
-    hasValidRecipientEmail: Boolean(requester.email),
+    hasValidRecipientEmail,
+    mailConfigured,
+    readyToSend,
+    readinessMessage,
     subjectPreview,
     bodyPreview,
     applicationUrl: buildApplicationUrl(request) || null,
     description: request.description || null,
-    templateAvailable: Boolean(template),
+    templateAvailable,
     templateError,
     functionalityName: functionalityLabel(request) || null
   };
