@@ -54,6 +54,7 @@
   const approvalEmailSubject = document.getElementById('approvalEmailSubject');
   const approvalEmailAppUrl = document.getElementById('approvalEmailAppUrl');
   const approvalEmailDescription = document.getElementById('approvalEmailDescription');
+  const approvalEmailReadyStatus = document.getElementById('approvalEmailReadyStatus');
   const approvalEmailDialogNote = document.getElementById('approvalEmailDialogNote');
   const closeApprovalEmailDialogBtn = document.getElementById('closeApprovalEmailDialog');
   const cancelApprovalEmailDialogBtn = document.getElementById('cancelApprovalEmailDialog');
@@ -663,6 +664,9 @@
     if (Object.prototype.hasOwnProperty.call(payload, 'createdBy')) {
       previewPayload.createdBy = payload.createdBy;
     }
+    if (Object.prototype.hasOwnProperty.call(payload, 'createdByName')) {
+      previewPayload.createdByName = payload.createdByName;
+    }
 
     const res = await fetch(REQUESTS_API + '/' + encodeURIComponent(id) + '/approval-email-preview', {
       method: 'POST',
@@ -678,13 +682,15 @@
   }
 
   function showApprovalEmailDialog(preview) {
+    const fromEmail = preview.fromEmail || 'noreply@double-y.online';
     if (approvalEmailFrom) {
-      approvalEmailFrom.textContent = preview.fromEmail || 'doubleyitsystem@gmail.com';
+      approvalEmailFrom.textContent = fromEmail;
     }
     if (approvalEmailRecipient) {
       approvalEmailRecipient.textContent = preview.hasValidRecipientEmail
         ? ((preview.recipientName || 'Requester') + ' <' + preview.recipientEmail + '>')
         : ((preview.recipientName || 'Requester') + ' (no valid email on file)');
+      approvalEmailRecipient.style.color = preview.hasValidRecipientEmail ? '#15803d' : '#b91c1c';
     }
     if (approvalEmailSubject) {
       approvalEmailSubject.textContent = preview.subjectPreview || '-';
@@ -695,14 +701,31 @@
     if (approvalEmailDescription) {
       approvalEmailDescription.textContent = preview.description || '-';
     }
-    if (approvalEmailDialogNote) {
-      if (!preview.templateAvailable) {
-        approvalEmailDialogNote.textContent = 'Warning: ' + (preview.templateError || 'APPROVAL template is unavailable.') + ' The request will still be saved, but the email may fail.';
-      } else if (!preview.hasValidRecipientEmail) {
-        approvalEmailDialogNote.textContent = 'The request will be saved, but no approval email will be sent because the requester does not have a valid email address. You can review the result in Search Email Send Log.';
+    if (approvalEmailReadyStatus) {
+      if (preview.readyToSend) {
+        approvalEmailReadyStatus.textContent = 'OK — email ready to send to ' + (preview.recipientEmail || '');
+        approvalEmailReadyStatus.style.color = '#15803d';
       } else {
-        approvalEmailDialogNote.textContent = 'An approval email will be sent from doubleyitsystem@gmail.com using the APPROVAL template. You can verify delivery in Search Email Send Log.';
+        approvalEmailReadyStatus.textContent = 'Not ready — ' + (preview.readinessMessage || 'email cannot be sent yet');
+        approvalEmailReadyStatus.style.color = '#b91c1c';
       }
+    }
+    if (approvalEmailDialogNote) {
+      if (preview.readyToSend) {
+        approvalEmailDialogNote.textContent = preview.readinessMessage
+          || ('An approval email will be sent from ' + fromEmail + ' using the APPROVAL template.');
+        approvalEmailDialogNote.style.color = '#15803d';
+      } else {
+        approvalEmailDialogNote.textContent = preview.readinessMessage
+          || 'The request can still be saved, but the approval email will not be sent until the issue above is fixed.';
+        approvalEmailDialogNote.style.color = '#b91c1c';
+      }
+    }
+    if (confirmApprovalEmailDialogBtn) {
+      confirmApprovalEmailDialogBtn.disabled = false;
+      confirmApprovalEmailDialogBtn.innerHTML = preview.readyToSend
+        ? '<i class="fas fa-paper-plane"></i> Save and send email'
+        : '<i class="fas fa-save"></i> Save without sending email';
     }
 
     if (approvalEmailDialog) {
@@ -937,6 +960,11 @@
     }
     if (isRootUser && editRequestedBySelect && editRequestedBySelect.value) {
       payload.createdBy = editRequestedBySelect.value;
+      const selected = editRequestedBySelect.options[editRequestedBySelect.selectedIndex];
+      if (selected && selected.textContent) {
+        // Prefer "Name (email)" → Name for greeting; email still resolved server-side by id.
+        payload.createdByName = selected.textContent.replace(/\s*\([^)]*\)\s*$/, '').trim() || selected.textContent.trim();
+      }
     }
 
     try {
@@ -947,7 +975,7 @@
           showEditMessage('Save cancelled. Approval email was not sent.', 'info');
           return;
         }
-        await performSaveRequest(id, payload, true);
+        await performSaveRequest(id, payload, preview.readyToSend === true);
         return;
       }
 

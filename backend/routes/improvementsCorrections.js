@@ -148,6 +148,11 @@ router.post('/:id/approval-email-preview', async (req, res) => {
         : existing.createdByName
     };
 
+    // When Root picks a requester, resolve display name from body if provided.
+    if (Object.prototype.hasOwnProperty.call(req.body, 'createdBy') && req.body.createdByName) {
+      merged.createdByName = req.body.createdByName;
+    }
+
     const preview = await icApprovalEmailService.buildApprovalEmailPreview(merged);
     res.json({ success: true, data: preview });
   } catch (error) {
