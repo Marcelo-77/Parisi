@@ -155,6 +155,7 @@ async function buildApprovalEmailPreview(request) {
     subjectPreview,
     bodyPreview,
     applicationUrl: buildApplicationUrl(request) || null,
+    description: request.description || null,
     templateAvailable: Boolean(template),
     templateError,
     functionalityName: functionalityLabel(request) || null

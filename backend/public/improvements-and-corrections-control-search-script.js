@@ -50,6 +50,7 @@
   const approvalEmailRecipient = document.getElementById('approvalEmailRecipient');
   const approvalEmailSubject = document.getElementById('approvalEmailSubject');
   const approvalEmailAppUrl = document.getElementById('approvalEmailAppUrl');
+  const approvalEmailDescription = document.getElementById('approvalEmailDescription');
   const approvalEmailDialogNote = document.getElementById('approvalEmailDialogNote');
   const closeApprovalEmailDialogBtn = document.getElementById('closeApprovalEmailDialog');
   const cancelApprovalEmailDialogBtn = document.getElementById('cancelApprovalEmailDialog');
@@ -551,6 +552,9 @@
     }
     if (approvalEmailAppUrl) {
       approvalEmailAppUrl.textContent = preview.applicationUrl || '-';
+    }
+    if (approvalEmailDescription) {
+      approvalEmailDescription.textContent = preview.description || '-';
     }
     if (approvalEmailDialogNote) {
       if (!preview.templateAvailable) {
