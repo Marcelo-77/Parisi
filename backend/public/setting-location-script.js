@@ -13,16 +13,31 @@
     allowLevelOnly: document.getElementById('allowLevelOnly'),
     allowPosition: document.getElementById('allowPosition'),
     bayPatternHint: document.getElementById('bayPatternHint'),
+    levelZeroLocationLetter: document.getElementById('levelZeroLocationLetter'),
+    minSublevel: document.getElementById('minSublevel'),
+    maxSublevel: document.getElementById('maxSublevel'),
     minLevel: document.getElementById('minLevel'),
     maxLevel: document.getElementById('maxLevel'),
     minPosition: document.getElementById('minPosition'),
     maxPosition: document.getElementById('maxPosition'),
     previewA1L2: document.getElementById('previewA1L2'),
     previewA221: document.getElementById('previewA221'),
-    previewA202: document.getElementById('previewA202'),
-    tryBay: document.getElementById('tryBay'),
+    previewA1L0: document.getElementById('previewA1L0'),
+    previewA21X1: document.getElementById('previewA21X1'),
+    previewA101: document.getElementById('previewA101'),
+    tryStreet: document.getElementById('tryStreet'),
+    tryBuilding: document.getElementById('tryBuilding'),
+    tryBuildingX: document.getElementById('tryBuildingX'),
+    tryBuildingXGroup: document.getElementById('tryBuildingXGroup'),
     tryLevel: document.getElementById('tryLevel'),
+    tryZeroType: document.getElementById('tryZeroType'),
+    tryZeroTypeGroup: document.getElementById('tryZeroTypeGroup'),
+    trySublevel: document.getElementById('trySublevel'),
+    trySublevelGroup: document.getElementById('trySublevelGroup'),
+    tryBehind: document.getElementById('tryBehind'),
+    tryBehindGroup: document.getElementById('tryBehindGroup'),
     tryPosition: document.getElementById('tryPosition'),
+    tryPositionLabel: document.getElementById('tryPositionLabel'),
     tryResult: document.getElementById('tryResult')
   };
 
@@ -32,6 +47,30 @@
     els.status.classList.remove('is-success', 'is-error');
     if (type === 'success') els.status.classList.add('is-success');
     if (type === 'error') els.status.classList.add('is-error');
+  }
+
+  function showSavedModal(message) {
+    const modal = document.getElementById('locationSettingsSavedModal');
+    const messageEl = document.getElementById('locationSettingsSavedMessage');
+    if (messageEl && message) messageEl.textContent = message;
+    if (!modal) return;
+    modal.classList.add('show');
+    modal.setAttribute('aria-hidden', 'false');
+    document.getElementById('locationSettingsSavedOkBtn')?.focus();
+  }
+
+  function hideSavedModal() {
+    const modal = document.getElementById('locationSettingsSavedModal');
+    if (!modal) return;
+    modal.classList.remove('show');
+    modal.setAttribute('aria-hidden', 'true');
+  }
+
+  function setupSavedModal() {
+    document.getElementById('locationSettingsSavedOkBtn')?.addEventListener('click', hideSavedModal);
+    document.getElementById('locationSettingsSavedModal')?.addEventListener('click', (event) => {
+      if (event.target?.id === 'locationSettingsSavedModal') hideSavedModal();
+    });
   }
 
   function boolSelect(el, value) {
@@ -48,15 +87,23 @@
     return Number.isInteger(n) ? n : fallback;
   }
 
+  function readLetter(el, fallback) {
+    const letter = String(el?.value || fallback || 'L').trim().toUpperCase();
+    return /^[A-Z]$/.test(letter) ? letter : fallback || 'L';
+  }
+
   function getFormSettings() {
     return {
       activeScheme: String(els.activeScheme?.value || 'classic'),
-      levelOnlyUsesLPrefix: readBool(els.levelOnlyUsesLPrefix, true),
-      withPositionOmitsL: readBool(els.withPositionOmitsL, true),
+      levelOnlyUsesLPrefix: false,
+      withPositionOmitsL: true,
       separator: String(els.separator?.value || '-').trim() || '-',
-      allowLevelOnly: readBool(els.allowLevelOnly, true),
+      allowLevelOnly: false,
       allowPosition: readBool(els.allowPosition, true),
       bayPatternHint: String(els.bayPatternHint?.value || '').trim() || 'A1, A2, B1...',
+      levelZeroLocationLetter: readLetter(els.levelZeroLocationLetter, 'L'),
+      minSublevel: readInt(els.minSublevel, 0),
+      maxSublevel: readInt(els.maxSublevel, 99),
       minLevel: readInt(els.minLevel, 0),
       maxLevel: readInt(els.maxLevel, 99),
       minPosition: readInt(els.minPosition, 1),
@@ -65,22 +112,45 @@
   }
 
   function composeBayLevelPositionCode(parts, settings) {
-    const bay = String(parts.bay || '').trim().toUpperCase();
+    const street = String(parts.street || '').trim().toUpperCase();
+    const building = String(parts.building ?? '').trim();
+    const bayFromParts = String(parts.bay || '').trim().toUpperCase();
+    const bay = bayFromParts || `${street}${building}`;
     const sep = String(settings.separator || '-');
+    const letter = String(settings.levelZeroLocationLetter || 'L').toUpperCase();
     if (!bay || !/^[A-Z0-9]{1,10}$/.test(bay)) return '';
     const level = Number(parts.level);
     if (!Number.isInteger(level) || level < settings.minLevel || level > settings.maxLevel) return '';
+
     const hasPosition = parts.position !== '' && parts.position != null;
+    const position = hasPosition ? Number(parts.position) : NaN;
+    if (hasPosition) {
+      if (!Number.isInteger(position) || position < settings.minPosition || position > settings.maxPosition) return '';
+    }
+
+    if (level === 0) {
+      const zeroType = String(parts.zeroType || '').toLowerCase();
+      const streetHint = street || bay.charAt(0);
+      const behindRaw = String(parts.behind || '').trim().toUpperCase();
+      const behind = behindRaw === 'B' && (streetHint === 'A' || streetHint === 'H') ? 'B' : '';
+      if (zeroType === 'pallet') {
+        if (!hasPosition) return '';
+        return `${bay}${sep}0${sep}${position}`;
+      }
+      if (zeroType !== 'location') return '';
+      const sublevel = Number(parts.sublevel);
+      if (!Number.isInteger(sublevel) || sublevel < settings.minSublevel || sublevel > settings.maxSublevel) return '';
+      const base = `${bay}${sep}${letter}${sublevel}`;
+      const withPos = hasPosition ? `${base}${sep}${position}` : base;
+      return `${withPos}${behind}`;
+    }
+
     if (!hasPosition) {
-      if (!settings.allowLevelOnly) return '';
-      const levelToken = settings.levelOnlyUsesLPrefix ? `L${level}` : String(level);
-      return `${bay}${sep}${levelToken}`;
+      // Level > 0: Position is always required
+      return '';
     }
     if (!settings.allowPosition) return '';
-    const position = Number(parts.position);
-    if (!Number.isInteger(position) || position < settings.minPosition || position > settings.maxPosition) return '';
-    const levelToken = settings.withPositionOmitsL ? String(level) : `L${level}`;
-    return `${bay}${sep}${levelToken}${sep}${position}`;
+    return `${bay}${sep}${level}${sep}${position}`;
   }
 
   function syncSchemeRadios(scheme) {
@@ -90,17 +160,75 @@
     const bayRadio = document.getElementById('schemeBayRadio');
     if (classicRadio) classicRadio.checked = value === 'classic';
     if (bayRadio) bayRadio.checked = value === 'bay_level_position';
+    const panels = document.querySelector('.setting-location-two-col');
+    if (panels) {
+      panels.classList.toggle('is-scheme-classic', value === 'classic');
+      panels.classList.toggle('is-scheme-bay', value === 'bay_level_position');
+    }
+  }
+
+  function syncTryZeroUi() {
+    const street = String(els.tryStreet?.value || '').trim().toUpperCase();
+    const building = String(els.tryBuilding?.value ?? '').trim();
+    const a21Special = street === 'A' && building === '21';
+    const xRaw = String(els.tryBuildingX?.value || '').replace(/[^\d]/g, '');
+    const buildingX = (() => {
+      if (!xRaw) return '';
+      const n = Number(xRaw);
+      return Number.isInteger(n) && n >= 1 ? String(n) : '';
+    })();
+    const a21WithX = a21Special && buildingX !== '';
+
+    if (els.tryBuildingXGroup) els.tryBuildingXGroup.hidden = !a21Special;
+    if (!a21Special && els.tryBuildingX) els.tryBuildingX.value = '';
+    else if (els.tryBuildingX && buildingX && els.tryBuildingX.value !== buildingX) {
+      els.tryBuildingX.value = buildingX;
+    }
+
+    if (a21WithX && els.tryLevel) {
+      els.tryLevel.value = '0';
+      els.tryLevel.readOnly = true;
+    } else if (els.tryLevel) {
+      els.tryLevel.readOnly = false;
+    }
+    if (a21WithX && els.tryZeroType) els.tryZeroType.value = 'location';
+
+    const level = a21WithX ? 0 : Number(els.tryLevel?.value);
+    const isZero = Number.isInteger(level) && level === 0;
+    const zeroType = a21WithX ? 'location' : String(els.tryZeroType?.value || 'location');
+    // Behind not used on A21X (photo-search bins)
+    const showBehind = isZero && !a21WithX && (street === 'A' || street === 'H') && zeroType === 'location';
+    if (els.tryZeroTypeGroup) els.tryZeroTypeGroup.hidden = !isZero || a21WithX;
+    if (els.trySublevelGroup) els.trySublevelGroup.hidden = !(isZero && zeroType === 'location');
+    if (els.tryBehindGroup) {
+      els.tryBehindGroup.hidden = !showBehind;
+      if (!showBehind && els.tryBehind) els.tryBehind.value = '';
+    }
+    if (els.tryPositionLabel) {
+      if (!isZero || zeroType === 'pallet') {
+        els.tryPositionLabel.textContent = 'Position *';
+      } else {
+        els.tryPositionLabel.textContent = 'Position';
+      }
+    }
+    if (els.tryPosition) {
+      els.tryPosition.placeholder = (!isZero || zeroType === 'pallet') ? 'required' : 'optional';
+      if (!isZero && String(els.tryPosition.value || '').trim() === '') {
+        els.tryPosition.value = '1';
+      }
+    }
   }
 
   function applyData(data) {
     saved = { ...data };
     syncSchemeRadios(data.activeScheme || 'classic');
-    boolSelect(els.levelOnlyUsesLPrefix, data.levelOnlyUsesLPrefix !== false);
-    boolSelect(els.withPositionOmitsL, data.withPositionOmitsL !== false);
     if (els.separator) els.separator.value = data.separator || '-';
     boolSelect(els.allowLevelOnly, data.allowLevelOnly !== false);
     boolSelect(els.allowPosition, data.allowPosition !== false);
     if (els.bayPatternHint) els.bayPatternHint.value = data.bayPatternHint || 'A1, A2, B1...';
+    if (els.levelZeroLocationLetter) els.levelZeroLocationLetter.value = data.levelZeroLocationLetter || 'L';
+    if (els.minSublevel) els.minSublevel.value = data.minSublevel ?? 0;
+    if (els.maxSublevel) els.maxSublevel.value = data.maxSublevel ?? 99;
     if (els.minLevel) els.minLevel.value = data.minLevel ?? 0;
     if (els.maxLevel) els.maxLevel.value = data.maxLevel ?? 99;
     if (els.minPosition) els.minPosition.value = data.minPosition ?? 1;
@@ -117,16 +245,49 @@
 
   function refreshPreviews() {
     const settings = getFormSettings();
-    if (els.previewA1L2) els.previewA1L2.textContent = composeBayLevelPositionCode({ bay: 'A1', level: 2 }, settings) || '—';
-    if (els.previewA221) els.previewA221.textContent = composeBayLevelPositionCode({ bay: 'A2', level: 2, position: 1 }, settings) || '—';
-    if (els.previewA202) els.previewA202.textContent = composeBayLevelPositionCode({ bay: 'A2', level: 0, position: 2 }, settings) || '—';
-    if (els.tryResult) {
-      const positionRaw = String(els.tryPosition?.value ?? '').trim();
-      els.tryResult.textContent = composeBayLevelPositionCode({
-        bay: els.tryBay?.value,
-        level: els.tryLevel?.value,
-        position: positionRaw === '' ? '' : positionRaw
+    syncTryZeroUi();
+    if (els.previewA1L2) els.previewA1L2.textContent = composeBayLevelPositionCode({ street: 'A', building: '1', level: 2, position: 1 }, settings) || '—';
+    if (els.previewA221) els.previewA221.textContent = composeBayLevelPositionCode({ street: 'A', building: '2', level: 2, position: 1 }, settings) || '—';
+    if (els.previewA1L0) {
+      els.previewA1L0.textContent = composeBayLevelPositionCode({
+        street: 'A', building: '1', level: 0, zeroType: 'location', sublevel: 0
       }, settings) || '—';
+    }
+    if (els.previewA21X1) {
+      els.previewA21X1.textContent = composeBayLevelPositionCode({
+        bay: 'A21X1', street: 'A', building: '21', level: 0, zeroType: 'location', sublevel: 0
+      }, settings) || '—';
+    }
+    if (els.previewA101) {
+      els.previewA101.textContent = composeBayLevelPositionCode({
+        street: 'A', building: '1', level: 0, zeroType: 'pallet', position: 1
+      }, settings) || '—';
+    }
+    if (els.tryResult) {
+      const street = String(els.tryStreet?.value || '').trim().toUpperCase();
+      const building = String(els.tryBuilding?.value ?? '').trim();
+      const xRaw = String(els.tryBuildingX?.value || '').replace(/[^\d]/g, '');
+      const buildingX = (() => {
+        if (street !== 'A' || building !== '21' || !xRaw) return '';
+        const n = Number(xRaw);
+        return Number.isInteger(n) && n >= 1 ? String(n) : '';
+      })();
+      const a21WithX = buildingX !== '';
+      const level = a21WithX ? 0 : Number(els.tryLevel?.value);
+      const positionRaw = String(els.tryPosition?.value ?? '').trim();
+      const parts = {
+        street,
+        building,
+        bay: a21WithX ? `A21X${buildingX}` : '',
+        level,
+        position: positionRaw === '' ? '' : positionRaw
+      };
+      if (level === 0) {
+        parts.zeroType = a21WithX ? 'location' : (els.tryZeroType?.value || 'location');
+        parts.sublevel = els.trySublevel?.value ?? 0;
+        parts.behind = a21WithX ? '' : (els.tryBehind?.value || '');
+      }
+      els.tryResult.textContent = composeBayLevelPositionCode(parts, settings) || '—';
     }
   }
 
@@ -143,21 +304,270 @@
     }
   }
 
+  async function persistSettings() {
+    const res = await fetch(API, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify(getFormSettings())
+    });
+    const data = await res.json();
+    if (!res.ok || !data.success) throw new Error(data.error || 'Unable to save location settings');
+    applyData(data.data);
+    return data;
+  }
+
+  function showMigrateConfirmModal() {
+    const modal = document.getElementById('locationMigrateConfirmModal');
+    if (!modal) return;
+    modal.classList.add('show');
+    modal.setAttribute('aria-hidden', 'false');
+  }
+
+  function hideMigrateConfirmModal() {
+    const modal = document.getElementById('locationMigrateConfirmModal');
+    if (!modal) return;
+    modal.classList.remove('show');
+    modal.setAttribute('aria-hidden', 'true');
+  }
+
+  function clearMigrateErrors() {
+    const box = document.getElementById('locationMigrateErrors');
+    const list = document.getElementById('locationMigrateErrorsList');
+    if (list) list.innerHTML = '';
+    if (box) box.hidden = true;
+  }
+
+  function showMigrateErrors(errors) {
+    const box = document.getElementById('locationMigrateErrors');
+    const list = document.getElementById('locationMigrateErrorsList');
+    if (!box || !list) return;
+    list.innerHTML = '';
+    const items = Array.isArray(errors) ? errors.filter(Boolean) : [];
+    if (!items.length) {
+      box.hidden = true;
+      return;
+    }
+    items.slice(0, 100).forEach((msg) => {
+      const li = document.createElement('li');
+      li.textContent = msg;
+      list.appendChild(li);
+    });
+    if (items.length > 100) {
+      const li = document.createElement('li');
+      li.textContent = `…and ${items.length - 100} more`;
+      list.appendChild(li);
+    }
+    box.hidden = false;
+  }
+
+  function showMigrateOverlay(title, detail) {
+    const overlay = document.getElementById('locationMigrateOverlay');
+    const card = document.getElementById('locationMigrateCard');
+    const icon = document.getElementById('locationMigrateIcon');
+    const okBtn = document.getElementById('locationMigrateOkBtn');
+    clearMigrateErrors();
+    if (document.getElementById('locationMigrateTitle')) {
+      document.getElementById('locationMigrateTitle').textContent = title || 'Updating history…';
+    }
+    if (document.getElementById('locationMigrateDetail')) {
+      document.getElementById('locationMigrateDetail').textContent = detail || '';
+    }
+    if (card) {
+      card.classList.remove('is-success', 'is-error');
+      card.classList.add('is-processing');
+    }
+    if (icon) icon.className = 'fas fa-sync-alt fa-spin';
+    if (okBtn) {
+      okBtn.style.display = 'none';
+    }
+    setMigrateProgress(0, 0);
+    if (overlay) {
+      overlay.classList.add('is-open');
+      overlay.setAttribute('aria-hidden', 'false');
+    }
+    document.body.classList.add('setting-location-migrating');
+  }
+
+  function setMigrateProgress(current, total) {
+    const pct = total > 0 ? Math.round((current / total) * 100) : 0;
+    const fill = document.getElementById('locationMigrateBarFill');
+    const progress = document.getElementById('locationMigrateProgress');
+    if (fill) fill.style.width = `${pct}%`;
+    if (progress) progress.textContent = total > 0 ? `${pct}% (${current} of ${total})` : `${pct}%`;
+  }
+
+  function finishMigrateOverlay(ok, title, detail, errors) {
+    const card = document.getElementById('locationMigrateCard');
+    const icon = document.getElementById('locationMigrateIcon');
+    const okBtn = document.getElementById('locationMigrateOkBtn');
+    if (document.getElementById('locationMigrateTitle')) {
+      document.getElementById('locationMigrateTitle').textContent = title;
+    }
+    if (document.getElementById('locationMigrateDetail')) {
+      document.getElementById('locationMigrateDetail').textContent = detail;
+    }
+    if (card) {
+      card.classList.remove('is-processing');
+      card.classList.toggle('is-success', !!ok);
+      card.classList.toggle('is-error', !ok);
+    }
+    if (icon) icon.className = ok ? 'fas fa-check-circle' : 'fas fa-exclamation-triangle';
+    showMigrateErrors(errors);
+    if (okBtn) {
+      okBtn.style.display = 'inline-flex';
+    }
+  }
+
+  function hideMigrateOverlay() {
+    const overlay = document.getElementById('locationMigrateOverlay');
+    if (overlay) {
+      overlay.classList.remove('is-open');
+      overlay.setAttribute('aria-hidden', 'true');
+    }
+    clearMigrateErrors();
+    document.body.classList.remove('setting-location-migrating');
+  }
+
+  async function runHistoryMigration(fromScheme, toScheme, settings) {
+    showMigrateOverlay('Updating history…', 'Building migration plan…');
+    const planRes = await fetch(`${API}/migrate-plan`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ fromScheme, toScheme, settings })
+    });
+    const planData = await planRes.json();
+    if (!planRes.ok || !planData.success) {
+      throw new Error(planData.error || 'Unable to build migration plan');
+    }
+
+    const items = planData.data?.items || [];
+    const skipped = Array.isArray(planData.data?.skipped) ? planData.data.skipped : [];
+    const skippedCount = Number(planData.data?.skippedCount || skipped.length || 0);
+    const total = items.length;
+
+    const errorMessages = skipped
+      .filter((s) => s && s.reason && !/already matches/i.test(String(s.reason)))
+      .map((s) => `${s.from || '?'}${s.to ? ` → ${s.to}` : ''}: ${s.reason}`);
+
+    if (total === 0) {
+      setMigrateProgress(1, 1);
+      const hasProblemSkips = errorMessages.length > 0;
+      finishMigrateOverlay(
+        !hasProblemSkips,
+        hasProblemSkips ? 'Migration finished with issues' : 'No renames needed',
+        hasProblemSkips
+          ? `Settings saved. ${skippedCount} location(s) could not be migrated.`
+          : (skippedCount
+            ? `Settings saved. ${skippedCount} location(s) skipped (already matching).`
+            : 'Settings saved. No location codes required renaming.'),
+        errorMessages
+      );
+      return;
+    }
+
+    let done = 0;
+    let failed = 0;
+    setMigrateProgress(0, total);
+    if (document.getElementById('locationMigrateDetail')) {
+      document.getElementById('locationMigrateDetail').textContent =
+        'Updating locations, product locations and logs…';
+    }
+
+    for (const item of items) {
+      try {
+        const applyRes = await fetch(`${API}/migrate-apply`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ item })
+        });
+        const applyData = await applyRes.json().catch(() => ({}));
+        if (!applyRes.ok || !applyData.success) {
+          failed += 1;
+          errorMessages.push(
+            `${item.from} → ${item.to}: ${applyData.error || applyData.message || 'Update failed'}`
+          );
+        }
+      } catch (err) {
+        failed += 1;
+        errorMessages.push(`${item.from} → ${item.to}: ${err.message || 'Network error'}`);
+      }
+      done += 1;
+      setMigrateProgress(done, total);
+    }
+
+    if (failed > 0 || errorMessages.length > 0) {
+      finishMigrateOverlay(
+        failed === 0 && errorMessages.every((m) => /already matching/i.test(m)),
+        failed > 0 ? 'Migration finished with errors' : 'Migration finished with warnings',
+        `Updated ${total - failed} of ${total}. Failed: ${failed}. Skipped: ${skippedCount}.`,
+        errorMessages
+      );
+    } else {
+      finishMigrateOverlay(
+        true,
+        'History updated',
+        `Updated ${total} location(s) (product locations + logs). Skipped: ${skippedCount}.`,
+        []
+      );
+    }
+  }
+
   async function saveSettings() {
     const btn = document.getElementById('saveLocationSettingsBtn');
     if (btn) btn.disabled = true;
     showStatus('Saving…');
+    const previousScheme = String(saved?.activeScheme || 'classic');
+    const nextSettings = getFormSettings();
+    const schemeChanged = previousScheme !== String(nextSettings.activeScheme || 'classic');
+
     try {
-      const res = await fetch(API, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify(getFormSettings())
-      });
-      const data = await res.json();
-      if (!res.ok || !data.success) throw new Error(data.error || 'Unable to save location settings');
-      applyData(data.data);
+      if (!schemeChanged) {
+        const data = await persistSettings();
+        showStatus(data.message || 'Location settings saved.', 'success');
+        showSavedModal(data.message || 'Location settings saved successfully.');
+        return;
+      }
+
+      // Save settings first, then ask about history migration
+      const data = await persistSettings();
       showStatus(data.message || 'Location settings saved.', 'success');
+      showMigrateConfirmModal();
+      const yesBtn = document.getElementById('locationMigrateYesBtn');
+      const noBtn = document.getElementById('locationMigrateNoBtn');
+
+      await new Promise((resolve) => {
+        const onNo = async () => {
+          cleanup();
+          hideMigrateConfirmModal();
+          showSavedModal('Settings saved. Location history was not changed.');
+          resolve();
+        };
+        const onYes = async () => {
+          cleanup();
+          hideMigrateConfirmModal();
+          try {
+            await runHistoryMigration(previousScheme, nextSettings.activeScheme, nextSettings);
+          } catch (error) {
+            showMigrateOverlay('Migration failed', error.message || 'Unable to update history.');
+            finishMigrateOverlay(
+              false,
+              'Migration failed',
+              error.message || 'Unable to update history.',
+              [error.message || 'Unable to update history.']
+            );
+          }
+          resolve();
+        };
+        function cleanup() {
+          yesBtn?.removeEventListener('click', onYes);
+          noBtn?.removeEventListener('click', onNo);
+        }
+        yesBtn?.addEventListener('click', onYes);
+        noBtn?.addEventListener('click', onNo);
+      });
     } catch (error) {
       showStatus(error.message || 'Error saving settings.', 'error');
     } finally {
@@ -165,10 +575,20 @@
     }
   }
 
+  function setupMigrateUi() {
+    document.getElementById('locationMigrateOkBtn')?.addEventListener('click', hideMigrateOverlay);
+    document.getElementById('locationMigrateConfirmModal')?.addEventListener('click', (event) => {
+      if (event.target?.id === 'locationMigrateConfirmModal') {
+        // ignore backdrop dismiss while waiting for Yes/No — user must choose
+      }
+    });
+  }
+
   function bindDirtyWatchers() {
     [
-      els.activeScheme, els.levelOnlyUsesLPrefix, els.withPositionOmitsL, els.separator,
-      els.allowLevelOnly, els.allowPosition, els.bayPatternHint,
+      els.activeScheme, els.separator,
+      els.allowLevelOnly, els.allowPosition, els.bayPatternHint, els.levelZeroLocationLetter,
+      els.minSublevel, els.maxSublevel,
       els.minLevel, els.maxLevel, els.minPosition, els.maxPosition
     ].forEach((el) => {
       el?.addEventListener('change', () => { updateDirty(); refreshPreviews(); });
@@ -182,7 +602,7 @@
         refreshPreviews();
       });
     });
-    [els.tryBay, els.tryLevel, els.tryPosition].forEach((el) => {
+    [els.tryStreet, els.tryBuilding, els.tryBuildingX, els.tryLevel, els.tryZeroType, els.trySublevel, els.tryBehind, els.tryPosition].forEach((el) => {
       el?.addEventListener('input', refreshPreviews);
       el?.addEventListener('change', refreshPreviews);
     });
@@ -198,5 +618,7 @@
   });
 
   bindDirtyWatchers();
+  setupSavedModal();
+  setupMigrateUi();
   loadSettings();
 })();

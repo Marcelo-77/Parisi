@@ -5,12 +5,15 @@ const SCHEMES = ['classic', 'bay_level_position'];
 
 const DEFAULTS = {
   activeScheme: 'classic',
-  levelOnlyUsesLPrefix: true,
+  levelOnlyUsesLPrefix: false,
   withPositionOmitsL: true,
   separator: '-',
-  allowLevelOnly: true,
+  allowLevelOnly: false,
   allowPosition: true,
   bayPatternHint: 'A1, A2, B1...',
+  levelZeroLocationLetter: 'L',
+  minSublevel: 0,
+  maxSublevel: 99,
   minLevel: 0,
   maxLevel: 99,
   minPosition: 1,
@@ -40,6 +43,17 @@ function normalizeInt(value, fallback, min, max) {
   return n;
 }
 
+function normalizeLetter(value, fallback = DEFAULTS.levelZeroLocationLetter) {
+  const letter = String(value == null ? fallback : value).trim().toUpperCase();
+  if (/^[A-Z]$/.test(letter)) return letter;
+  return fallback;
+}
+
+function normalizeZeroType(value) {
+  const type = String(value || '').trim().toLowerCase();
+  return type === 'pallet' ? 'pallet' : type === 'location' ? 'location' : '';
+}
+
 function mapSettings(row) {
   if (!row) return { ...DEFAULTS };
   return {
@@ -50,6 +64,9 @@ function mapSettings(row) {
     allowLevelOnly: normalizeBoolean(row.allow_level_only, DEFAULTS.allowLevelOnly),
     allowPosition: normalizeBoolean(row.allow_position, DEFAULTS.allowPosition),
     bayPatternHint: String(row.bay_pattern_hint || DEFAULTS.bayPatternHint).trim() || DEFAULTS.bayPatternHint,
+    levelZeroLocationLetter: normalizeLetter(row.level_zero_location_letter, DEFAULTS.levelZeroLocationLetter),
+    minSublevel: normalizeInt(row.min_sublevel, DEFAULTS.minSublevel, 0, 999),
+    maxSublevel: normalizeInt(row.max_sublevel, DEFAULTS.maxSublevel, 0, 999),
     minLevel: normalizeInt(row.min_level, DEFAULTS.minLevel, 0, 999),
     maxLevel: normalizeInt(row.max_level, DEFAULTS.maxLevel, 0, 999),
     minPosition: normalizeInt(row.min_position, DEFAULTS.minPosition, 1, 999),
@@ -68,6 +85,9 @@ async function ensureTable() {
       allow_level_only BOOLEAN NOT NULL DEFAULT true,
       allow_position BOOLEAN NOT NULL DEFAULT true,
       bay_pattern_hint VARCHAR(80) NOT NULL DEFAULT 'A1, A2, B1...',
+      level_zero_location_letter VARCHAR(1) NOT NULL DEFAULT 'L',
+      min_sublevel INTEGER NOT NULL DEFAULT 0,
+      max_sublevel INTEGER NOT NULL DEFAULT 99,
       min_level INTEGER NOT NULL DEFAULT 0,
       max_level INTEGER NOT NULL DEFAULT 99,
       min_position INTEGER NOT NULL DEFAULT 1,
@@ -76,6 +96,19 @@ async function ensureTable() {
       CONSTRAINT location_code_settings_scheme_chk
         CHECK (active_scheme IN ('classic', 'bay_level_position'))
     )
+  `);
+
+  await query(`
+    ALTER TABLE ${SETTINGS_TABLE}
+      ADD COLUMN IF NOT EXISTS level_zero_location_letter VARCHAR(1) NOT NULL DEFAULT 'L'
+  `);
+  await query(`
+    ALTER TABLE ${SETTINGS_TABLE}
+      ADD COLUMN IF NOT EXISTS min_sublevel INTEGER NOT NULL DEFAULT 0
+  `);
+  await query(`
+    ALTER TABLE ${SETTINGS_TABLE}
+      ADD COLUMN IF NOT EXISTS max_sublevel INTEGER NOT NULL DEFAULT 99
   `);
 
   await query(`
@@ -109,6 +142,12 @@ async function saveSettings(payload = {}) {
     allowLevelOnly: normalizeBoolean(payload.allowLevelOnly ?? current.allowLevelOnly, DEFAULTS.allowLevelOnly),
     allowPosition: normalizeBoolean(payload.allowPosition ?? current.allowPosition, DEFAULTS.allowPosition),
     bayPatternHint: String(payload.bayPatternHint ?? current.bayPatternHint).trim() || DEFAULTS.bayPatternHint,
+    levelZeroLocationLetter: normalizeLetter(
+      payload.levelZeroLocationLetter ?? current.levelZeroLocationLetter,
+      DEFAULTS.levelZeroLocationLetter
+    ),
+    minSublevel: normalizeInt(payload.minSublevel ?? current.minSublevel, DEFAULTS.minSublevel, 0, 999),
+    maxSublevel: normalizeInt(payload.maxSublevel ?? current.maxSublevel, DEFAULTS.maxSublevel, 0, 999),
     minLevel: normalizeInt(payload.minLevel ?? current.minLevel, DEFAULTS.minLevel, 0, 999),
     maxLevel: normalizeInt(payload.maxLevel ?? current.maxLevel, DEFAULTS.maxLevel, 0, 999),
     minPosition: normalizeInt(payload.minPosition ?? current.minPosition, DEFAULTS.minPosition, 1, 999),
@@ -121,6 +160,9 @@ async function saveSettings(payload = {}) {
   if (next.minPosition > next.maxPosition) {
     throw new Error('Minimum position cannot be greater than maximum position');
   }
+  if (next.minSublevel > next.maxSublevel) {
+    throw new Error('Minimum sublevel cannot be greater than maximum sublevel');
+  }
   if (!next.allowLevelOnly && !next.allowPosition) {
     throw new Error('Enable at least Level-only or Level + Position');
   }
@@ -130,9 +172,10 @@ async function saveSettings(payload = {}) {
     INSERT INTO ${SETTINGS_TABLE} (
       id, active_scheme, level_only_uses_l_prefix, with_position_omits_l, separator,
       allow_level_only, allow_position, bay_pattern_hint,
+      level_zero_location_letter, min_sublevel, max_sublevel,
       min_level, max_level, min_position, max_position, updated_at
     ) VALUES (
-      1, $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, CURRENT_TIMESTAMP
+      1, $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, CURRENT_TIMESTAMP
     )
     ON CONFLICT (id) DO UPDATE SET
       active_scheme = EXCLUDED.active_scheme,
@@ -142,6 +185,9 @@ async function saveSettings(payload = {}) {
       allow_level_only = EXCLUDED.allow_level_only,
       allow_position = EXCLUDED.allow_position,
       bay_pattern_hint = EXCLUDED.bay_pattern_hint,
+      level_zero_location_letter = EXCLUDED.level_zero_location_letter,
+      min_sublevel = EXCLUDED.min_sublevel,
+      max_sublevel = EXCLUDED.max_sublevel,
       min_level = EXCLUDED.min_level,
       max_level = EXCLUDED.max_level,
       min_position = EXCLUDED.min_position,
@@ -156,6 +202,9 @@ async function saveSettings(payload = {}) {
       next.allowLevelOnly,
       next.allowPosition,
       next.bayPatternHint,
+      next.levelZeroLocationLetter,
+      next.minSublevel,
+      next.maxSublevel,
       next.minLevel,
       next.maxLevel,
       next.minPosition,
@@ -166,11 +215,17 @@ async function saveSettings(payload = {}) {
   return getSettings();
 }
 
-function composeBayLevelPositionCode(parts = {}, settings = DEFAULTS) {
-  const bay = String(parts.bay || '').trim().toUpperCase();
+function composeBayLevelPositionCode(parts = {}, settingsInput = DEFAULTS) {
+  const settings = { ...DEFAULTS, ...settingsInput };
+  const street = String(parts.street || '').trim().toUpperCase();
+  const building = String(parts.building ?? '').trim();
+  const bayFromParts = String(parts.bay || '').trim().toUpperCase();
+  const bay = bayFromParts || `${street}${building}`;
   const levelRaw = parts.level;
   const positionRaw = parts.position;
+  const sublevelRaw = parts.sublevel;
   const sep = normalizeSeparator(settings.separator);
+  const letter = normalizeLetter(settings.levelZeroLocationLetter);
 
   if (!bay) return '';
   if (!/^[A-Z0-9]{1,10}$/.test(bay)) return '';
@@ -181,20 +236,39 @@ function composeBayLevelPositionCode(parts = {}, settings = DEFAULTS) {
   }
 
   const hasPosition = positionRaw !== '' && positionRaw != null;
-  if (!hasPosition) {
-    if (!settings.allowLevelOnly) return '';
-    const levelToken = settings.levelOnlyUsesLPrefix ? `L${level}` : String(level);
-    return `${bay}${sep}${levelToken}`;
+  const position = hasPosition ? Number(positionRaw) : NaN;
+  if (hasPosition) {
+    if (!Number.isInteger(position) || position < settings.minPosition || position > settings.maxPosition) {
+      return '';
+    }
   }
 
+  if (level === 0) {
+    const zeroType = normalizeZeroType(parts.zeroType);
+    if (!zeroType) return '';
+
+    if (zeroType === 'pallet') {
+      if (!hasPosition) return '';
+      return `${bay}${sep}0${sep}${position}`;
+    }
+
+    // Location: letter + sublevel (from 0), position optional, optional Behind (A/H only)
+    const sublevel = Number(sublevelRaw);
+    if (!Number.isInteger(sublevel) || sublevel < settings.minSublevel || sublevel > settings.maxSublevel) {
+      return '';
+    }
+    const behindRaw = String(parts.behind || '').trim().toUpperCase();
+    const streetHint = String(parts.street || parts.bay || '').trim().toUpperCase().charAt(0);
+    const behind = behindRaw === 'B' && (streetHint === 'A' || streetHint === 'H') ? 'B' : '';
+    const base = `${bay}${sep}${letter}${sublevel}`;
+    if (!hasPosition) return `${base}${behind}`;
+    return `${base}${sep}${position}${behind}`;
+  }
+
+  // Level > 0 — Position required; never use “L” (L only for Level 0 Location)
+  if (!hasPosition) return '';
   if (!settings.allowPosition) return '';
-  const position = Number(positionRaw);
-  if (!Number.isInteger(position) || position < settings.minPosition || position > settings.maxPosition) {
-    return '';
-  }
-
-  const levelToken = settings.withPositionOmitsL ? String(level) : `L${level}`;
-  return `${bay}${sep}${levelToken}${sep}${position}`;
+  return `${bay}${sep}${level}${sep}${position}`;
 }
 
 module.exports = {
@@ -204,5 +278,7 @@ module.exports = {
   getSettings,
   saveSettings,
   composeBayLevelPositionCode,
-  mapSettings
+  mapSettings,
+  normalizeLetter,
+  normalizeZeroType
 };

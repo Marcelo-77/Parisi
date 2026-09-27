@@ -471,6 +471,7 @@
     const useSide = hasUpperLevel || (isGroundLevel && mode === 'side');
     const useSublevel = isGroundLevel && mode === 'sublevel';
     const sublevelFilled = useSublevel && sublevelEl && String(sublevelEl.value || '').trim() !== '';
+    // Behind only for Street A/H at Level 0 Sublevel (Classic config 1)
     const useBehind = canUseBehind(street) && sublevelFilled;
 
     if (modeGroupEl) {

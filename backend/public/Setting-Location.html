@@ -89,23 +89,23 @@
                             <label class="setting-location-scheme-card">
                                 <input type="radio" name="activeSchemeRadio" value="bay_level_position" id="schemeBayRadio">
                                 <span class="setting-location-scheme-card-body">
-                                    <strong>Bay / Level / Position</strong>
-                                    <small>Level-only or with position</small>
-                                    <code>A1-L2</code> · <code>A2-2-1</code>
+                                    <strong>Street / Building / Level</strong>
+                                    <small>Level 0 → Location or Pallet</small>
+                                    <code>A1-2-1</code> · <code>A1-L0</code> · <code>A1-0-1</code>
                                 </span>
                             </label>
                         </div>
                         <select id="activeScheme" class="app-users-select setting-location-scheme-select" aria-hidden="true" tabindex="-1">
                             <option value="classic">Classic</option>
-                            <option value="bay_level_position">Bay / Level / Position</option>
+                            <option value="bay_level_position">Street / Building / Level</option>
                         </select>
                     </div>
 
                     <div class="setting-location-two-col">
-                        <div class="app-users-card setting-location-card">
+                        <div class="app-users-card setting-location-card" id="settingLocationClassicPanel">
                             <div class="app-users-card-head">
                                 <h3><i class="fas fa-history"></i> Classic (today)</h3>
-                                <span class="app-users-card-tag">Reference</span>
+                                <span class="app-users-card-tag">Street / Building</span>
                             </div>
                             <p class="setting-location-mono">{street}{building}-{level}{side|sublevel}[B]</p>
                             <div class="setting-location-chips">
@@ -114,7 +114,7 @@
                                 <span>Level #</span>
                                 <span>Side R/L/M</span>
                                 <span>Sublevel</span>
-                                <span>Behind B</span>
+                                <span>Behind B (Sublevel A/H)</span>
                                 <span>A21X</span>
                             </div>
                             <table class="setting-location-table">
@@ -123,65 +123,79 @@
                                     <tr><td>B / 1 / L0 / sub 0</td><td><code>B1-00</code></td></tr>
                                     <tr><td>A / 7 / L0 / side R</td><td><code>A7-0R</code></td></tr>
                                     <tr><td>B / 15 / L1 / side L</td><td><code>B15-1L</code></td></tr>
+                                    <tr><td>A / 7 / L0 / sub 0 / Behind</td><td><code>A7-00B</code></td></tr>
                                     <tr><td>A / 21 / X1 / sub 0</td><td><code>A21X1-00</code></td></tr>
                                 </tbody>
                             </table>
                         </div>
 
-                        <div class="app-users-card setting-location-card">
+                        <div class="app-users-card setting-location-card setting-location-bay-simple" id="settingLocationBayPanel">
                             <div class="app-users-card-head">
-                                <h3><i class="fas fa-sitemap"></i> Bay / Level / Position</h3>
-                                <span class="app-users-card-tag">Configurable</span>
+                                <h3><i class="fas fa-sitemap"></i> Street / Building / Level</h3>
+                                <span class="app-users-card-tag">Option 2</span>
                             </div>
-                            <div class="setting-location-rule-boxes">
+
+                            <div class="setting-location-rule-boxes setting-location-rule-boxes-4">
                                 <div class="setting-location-rule-box">
-                                    <span class="setting-location-rule-label">Level only</span>
-                                    <code>A1-L2</code>
-                                    <small>Bay + L + Level</small>
+                                    <span class="setting-location-rule-label">Level &gt; 0</span>
+                                    <code>A1-2-1</code>
                                 </div>
                                 <div class="setting-location-rule-box">
-                                    <span class="setting-location-rule-label">With position</span>
+                                    <span class="setting-location-rule-label">Level &gt; 0 + Pos</span>
                                     <code>A2-2-1</code>
-                                    <small>Bay + Level + Position</small>
+                                </div>
+                                <div class="setting-location-rule-box">
+                                    <span class="setting-location-rule-label">Level 0 Location</span>
+                                    <code>A1-L0</code>
+                                </div>
+                                <div class="setting-location-rule-box">
+                                    <span class="setting-location-rule-label">A21 + X (photo)</span>
+                                    <code>A21X1-L0</code>
+                                </div>
+                                <div class="setting-location-rule-box">
+                                    <span class="setting-location-rule-label">L0 Location + Behind</span>
+                                    <code>A1-L0B</code>
+                                </div>
+                                <div class="setting-location-rule-box">
+                                    <span class="setting-location-rule-label">Level 0 Pallet</span>
+                                    <code>A1-0-1</code>
                                 </div>
                             </div>
 
-                            <div class="form-row setting-location-params">
-                                <div class="form-group">
-                                    <label for="levelOnlyUsesLPrefix">Level-only uses “L” *</label>
-                                    <select id="levelOnlyUsesLPrefix" class="app-users-select">
-                                        <option value="true">Yes — A1-L2</option>
-                                        <option value="false">No — A1-2</option>
-                                    </select>
-                                </div>
-                                <div class="form-group">
-                                    <label for="withPositionOmitsL">With position, omit “L” *</label>
-                                    <select id="withPositionOmitsL" class="app-users-select">
-                                        <option value="true">Yes — A2-2-1</option>
-                                        <option value="false">No — A2-L2-1</option>
-                                    </select>
-                                </div>
+                            <div class="form-row setting-location-params setting-location-params-compact">
                                 <div class="form-group">
                                     <label for="separator">Separator *</label>
                                     <input type="text" id="separator" class="app-users-select" maxlength="3" value="-">
                                 </div>
                                 <div class="form-group">
+                                    <label for="levelZeroLocationLetter">Location letter *</label>
+                                    <input type="text" id="levelZeroLocationLetter" class="app-users-select" maxlength="1" value="L" style="text-transform:uppercase;" title="Only when Level is 0 and type is Location">
+                                </div>
+                                <div class="form-group" hidden>
                                     <label for="allowLevelOnly">Allow level-only *</label>
                                     <select id="allowLevelOnly" class="app-users-select">
+                                        <option value="false" selected>No</option>
                                         <option value="true">Yes</option>
-                                        <option value="false">No</option>
                                     </select>
                                 </div>
-                                <div class="form-group">
+                                <div class="form-group" hidden>
                                     <label for="allowPosition">Allow position *</label>
                                     <select id="allowPosition" class="app-users-select">
-                                        <option value="true">Yes</option>
+                                        <option value="true" selected>Yes</option>
                                         <option value="false">No</option>
                                     </select>
                                 </div>
                                 <div class="form-group">
-                                    <label for="bayPatternHint">Bay hint</label>
+                                    <label for="bayPatternHint">Hint</label>
                                     <input type="text" id="bayPatternHint" class="app-users-select" maxlength="80" placeholder="A1, A2, B1...">
+                                </div>
+                                <div class="form-group">
+                                    <label for="minSublevel">Min sublevel</label>
+                                    <input type="number" id="minSublevel" class="app-users-select" min="0" max="999" step="1" value="0">
+                                </div>
+                                <div class="form-group">
+                                    <label for="maxSublevel">Max sublevel</label>
+                                    <input type="number" id="maxSublevel" class="app-users-select" min="0" max="999" step="1" value="99">
                                 </div>
                                 <div class="form-group">
                                     <label for="minLevel">Min level</label>
@@ -201,36 +215,59 @@
                                 </div>
                             </div>
 
-                            <h4 class="setting-location-preview-title">Live preview</h4>
-                            <table class="setting-location-table">
-                                <thead>
-                                    <tr><th>Bay</th><th>Level</th><th>Pos</th><th>Code</th></tr>
-                                </thead>
-                                <tbody>
-                                    <tr><td>A1</td><td>2</td><td>—</td><td><code id="previewA1L2">A1-L2</code></td></tr>
-                                    <tr><td>A2</td><td>2</td><td>1</td><td><code id="previewA221">A2-2-1</code></td></tr>
-                                    <tr><td>A2</td><td>0</td><td>2</td><td><code id="previewA202">A2-0-2</code></td></tr>
-                                </tbody>
-                            </table>
+                            <div class="setting-location-preview-inline">
+                                <span>Preview:</span>
+                                <code id="previewA1L2">A1-2-1</code>
+                                <code id="previewA221">A2-2-1</code>
+                                <code id="previewA1L0">A1-L0</code>
+                                <code id="previewA21X1">A21X1-L0</code>
+                                <code id="previewA101">A1-0-1</code>
+                            </div>
 
                             <div class="setting-location-try">
-                                <h4>Try your own</h4>
-                                <div class="form-row setting-location-params">
+                                <h4>Try</h4>
+                                <div class="form-row setting-location-params setting-location-params-try">
                                     <div class="form-group">
-                                        <label for="tryBay">Bay</label>
-                                        <input type="text" id="tryBay" class="app-users-select" maxlength="10" value="A1" style="text-transform:uppercase;">
+                                        <label for="tryStreet">Street</label>
+                                        <input type="text" id="tryStreet" class="app-users-select" maxlength="1" value="A" style="text-transform:uppercase;">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="tryBuilding">Building</label>
+                                        <input type="number" id="tryBuilding" class="app-users-select" min="0" step="1" value="1">
+                                    </div>
+                                    <div class="form-group" id="tryBuildingXGroup" hidden>
+                                        <label for="tryBuildingX">X (A21)</label>
+                                        <input type="text" id="tryBuildingX" class="app-users-select" inputmode="numeric" placeholder="opt." maxlength="3" title="Optional X for Street A / Building 21 → A21Xn-L0">
                                     </div>
                                     <div class="form-group">
                                         <label for="tryLevel">Level</label>
                                         <input type="number" id="tryLevel" class="app-users-select" min="0" step="1" value="2">
                                     </div>
-                                    <div class="form-group">
-                                        <label for="tryPosition">Position</label>
-                                        <input type="number" id="tryPosition" class="app-users-select" min="1" step="1" placeholder="optional">
+                                    <div class="form-group" id="tryZeroTypeGroup" hidden>
+                                        <label for="tryZeroType">Type</label>
+                                        <select id="tryZeroType" class="app-users-select">
+                                            <option value="location">Location</option>
+                                            <option value="pallet">Pallet</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-group" id="trySublevelGroup" hidden>
+                                        <label for="trySublevel">Sublevel</label>
+                                        <input type="number" id="trySublevel" class="app-users-select" min="0" step="1" value="0">
+                                    </div>
+                                    <div class="form-group" id="tryBehindGroup" hidden>
+                                        <label for="tryBehind">Behind</label>
+                                        <select id="tryBehind" class="app-users-select">
+                                            <option value="">None</option>
+                                            <option value="B">B</option>
+                                        </select>
                                     </div>
                                     <div class="form-group">
+                                        <label for="tryPosition" id="tryPositionLabel">Position *</label>
+                                        <input type="number" id="tryPosition" class="app-users-select" min="1" step="1" value="1" placeholder="required">
+                                    </div>
+                                    <div class="form-group setting-location-try-result-group">
                                         <label>Result</label>
-                                        <div class="setting-location-try-result" id="tryResult">A1-L2</div>
+                                        <div class="setting-location-try-result" id="tryResult">A1-2-1</div>
                                     </div>
                                 </div>
                             </div>
@@ -252,6 +289,61 @@
             <p>&copy; 2026 Double-Y IT Systems. All rights reserved.</p>
         </footer>
     </div>
+
+    <div id="locationSettingsSavedModal" class="modal" role="dialog" aria-labelledby="locationSettingsSavedTitle" aria-modal="true" aria-hidden="true">
+        <div class="modal-content">
+            <div class="modal-header success">
+                <h3 id="locationSettingsSavedTitle"><i class="fas fa-check-circle"></i> Settings Saved</h3>
+            </div>
+            <div class="modal-body">
+                <p id="locationSettingsSavedMessage">Location settings saved successfully.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary" id="locationSettingsSavedOkBtn">OK</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="locationMigrateConfirmModal" class="modal" role="dialog" aria-labelledby="locationMigrateConfirmTitle" aria-modal="true" aria-hidden="true">
+        <div class="modal-content">
+            <div class="modal-header" style="background:linear-gradient(135deg,#4f46e5,#6366f1);color:#fff;">
+                <h3 id="locationMigrateConfirmTitle"><i class="fas fa-history"></i> Update location history?</h3>
+            </div>
+            <div class="modal-body" style="text-align:left;">
+                <p id="locationMigrateConfirmMessage">
+                    You changed the New Location scheme. Do you want to update existing history
+                    (locations, product locations and logs) to the new parameterization?
+                </p>
+                <p style="margin:0;font-size:0.88rem;color:#64748b;">
+                    Mapping: Side R→Pos 1, L→Pos 2, M→Pos 3. Level 0 Sublevel → Location letter + Sublevel. Level 0 Side → Pallet.
+                </p>
+            </div>
+            <div class="modal-footer" style="display:flex;justify-content:center;gap:10px;flex-wrap:wrap;">
+                <button type="button" class="btn btn-secondary" id="locationMigrateNoBtn">No, settings only</button>
+                <button type="button" class="btn btn-primary" id="locationMigrateYesBtn">Yes, update history</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="locationMigrateOverlay" class="setting-location-migrate-overlay" aria-hidden="true">
+        <div id="locationMigrateCard" class="setting-location-migrate-card is-processing" role="dialog" aria-modal="true" aria-labelledby="locationMigrateTitle">
+            <div class="setting-location-migrate-icon"><i class="fas fa-sync-alt fa-spin" id="locationMigrateIcon"></i></div>
+            <h3 id="locationMigrateTitle">Updating history…</h3>
+            <p id="locationMigrateDetail">Preparing migration plan</p>
+            <div class="setting-location-migrate-bar" aria-hidden="true">
+                <div class="setting-location-migrate-bar-fill" id="locationMigrateBarFill" style="width:0%"></div>
+            </div>
+            <div class="setting-location-migrate-progress" id="locationMigrateProgress">0%</div>
+            <div id="locationMigrateErrors" class="setting-location-migrate-errors" hidden>
+                <strong>Errors</strong>
+                <ul id="locationMigrateErrorsList"></ul>
+            </div>
+            <div class="setting-location-migrate-actions">
+                <button type="button" class="btn btn-primary" id="locationMigrateOkBtn" style="display:none;">OK</button>
+            </div>
+        </div>
+    </div>
+
     <script src="setting-location-script.js"></script>
 </body>
 </html>
