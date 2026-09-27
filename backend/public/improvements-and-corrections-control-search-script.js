@@ -756,6 +756,8 @@
   }
 
   function showRequestSavedModal(message) {
+    // Close edit first so Cancel / Save changes are not left behind the success dialog.
+    closeEditModal();
     if (icRequestSavedMessage) {
       icRequestSavedMessage.textContent = message || 'Request updated successfully.';
     }
@@ -774,7 +776,6 @@
 
   function closeRequestSavedAndEdit() {
     hideRequestSavedModal();
-    closeEditModal();
   }
 
   async function performSaveRequest(id, payload, sendApprovalEmail) {
