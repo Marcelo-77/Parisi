@@ -859,6 +859,9 @@
                     </div>
                     <div id="editRequestMessage" class="ic-edit-message" role="status" aria-live="polite"></div>
                     <div class="modal-footer item-modal-footer form-actions">
+                        <button type="button" class="btn btn-secondary" id="closeEditRequestFooterBtn">
+                            <i class="fas fa-door-open"></i> Close
+                        </button>
                         <button type="button" class="btn btn-secondary" id="cancelEditRequestBtn">
                             <i class="fas fa-times"></i> Cancel
                         </button>
@@ -908,7 +911,6 @@
             <div class="modal-content">
                 <div class="modal-header success">
                     <h3 id="icRequestSavedTitle"><i class="fas fa-check-circle"></i> Changes saved</h3>
-                    <button type="button" class="modal-close" id="icRequestSavedCloseX" aria-label="Close">&times;</button>
                 </div>
                 <div class="modal-body">
                     <p id="icRequestSavedMessage" style="margin:0;line-height:1.55;color:#334155;">
@@ -916,9 +918,6 @@
                     </p>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" id="icRequestSavedCloseBtn">
-                        <i class="fas fa-times"></i> Close
-                    </button>
                     <button type="button" class="btn btn-primary" id="icRequestSavedOkBtn">
                         OK
                     </button>
