@@ -38,6 +38,9 @@
   const editRequestedByDisplay = document.getElementById('editRequestedByDisplay');
   const editRequestedBySelect = document.getElementById('editRequestedBySelect');
   const editRequestDescription = document.getElementById('editRequestDescription');
+  const editRequestAttachment = document.getElementById('editRequestAttachment');
+  const editAttachmentsList = document.getElementById('editAttachmentsList');
+  const editAttachmentUploadGroup = document.getElementById('editAttachmentUploadGroup');
   const editRequestHistory = document.getElementById('editRequestHistory');
   const editHistoryNote = document.getElementById('editHistoryNote');
   const editRequestMessage = document.getElementById('editRequestMessage');
@@ -503,6 +506,142 @@
     originalSituationWhenOpened = item.situation || 'NOT_STARTED';
   }
 
+  function formatFileSize(bytes) {
+    const size = Number(bytes);
+    if (!Number.isFinite(size) || size < 0) return '';
+    if (size < 1024) return size + ' B';
+    if (size < 1024 * 1024) return (size / 1024).toFixed(1) + ' KB';
+    return (size / (1024 * 1024)).toFixed(1) + ' MB';
+  }
+
+  function renderAttachments(rows, viewMode) {
+    if (!editAttachmentsList) return;
+    if (!rows || !rows.length) {
+      editAttachmentsList.innerHTML = '<p class="field-hint" style="margin:0;">No documents attached.</p>';
+      return;
+    }
+    editAttachmentsList.innerHTML = rows.map((row) => {
+      const id = encodeURIComponent(row.id);
+      const requestId = encodeURIComponent(editRequestId?.value || '');
+      const sizeLabel = formatFileSize(row.fileSize);
+      const by = row.uploadedByName ? (' · ' + escapeHtml(row.uploadedByName)) : '';
+      const removeBtn = viewMode
+        ? ''
+        : `<button type="button" class="btn btn-secondary ic-attachment-remove" data-id="${escapeHtml(row.id)}"><i class="fas fa-trash"></i></button>`;
+      return `
+        <div class="ic-attachment-row">
+          <div class="ic-attachment-meta">
+            <strong title="${escapeHtml(row.fileName || '')}"><i class="fas fa-file"></i> ${escapeHtml(row.fileName || 'document')}</strong>
+            <span>${escapeHtml(sizeLabel)}${by}</span>
+          </div>
+          <div class="ic-attachment-actions">
+            <a class="btn btn-secondary" href="${REQUESTS_API}/${requestId}/attachments/${id}/download" target="_blank" rel="noopener">
+              <i class="fas fa-download"></i>
+            </a>
+            ${removeBtn}
+          </div>
+        </div>`;
+    }).join('');
+
+    editAttachmentsList.querySelectorAll('.ic-attachment-remove').forEach((btn) => {
+      btn.addEventListener('click', () => removeAttachment(btn.getAttribute('data-id')));
+    });
+  }
+
+  async function loadAttachments(requestId, viewMode) {
+    if (!requestId || !editAttachmentsList) return;
+    editAttachmentsList.innerHTML = '<p class="field-hint" style="margin:0;">Loading documents…</p>';
+    try {
+      const res = await fetch(REQUESTS_API + '/' + encodeURIComponent(requestId) + '/attachments', {
+        credentials: 'include'
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error((data && data.error) || 'Unable to load documents');
+      }
+      const locked = viewMode === true
+        || (editModal && editModal.classList.contains('is-view-mode'));
+      renderAttachments(data.data || [], locked);
+    } catch (error) {
+      editAttachmentsList.innerHTML = '<p class="field-hint" style="margin:0;color:#b91c1c;">' +
+        escapeHtml(error.message || 'Unable to load documents') + '</p>';
+    }
+  }
+
+  function readFileAsBase64(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(String(reader.result || ''));
+      reader.onerror = () => reject(new Error('Unable to read file'));
+      reader.readAsDataURL(file);
+    });
+  }
+
+  async function uploadSelectedAttachment() {
+    const requestId = editRequestId?.value;
+    const file = editRequestAttachment?.files && editRequestAttachment.files[0];
+    if (!requestId || !file) return;
+
+    if (file.size > 7 * 1024 * 1024) {
+      showEditMessage('File size must be less than 7MB.', 'error');
+      editRequestAttachment.value = '';
+      return;
+    }
+
+    showEditMessage('Uploading document…', 'info');
+    try {
+      const dataUrl = await readFileAsBase64(file);
+      const res = await fetch(REQUESTS_API + '/' + encodeURIComponent(requestId) + '/attachments', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          fileName: file.name,
+          mimeType: file.type || 'application/octet-stream',
+          fileBase64: dataUrl
+        })
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error((data && data.error) || 'Unable to attach document');
+      }
+      if (editRequestHistory && data.requestHistory) {
+        editRequestHistory.value = data.requestHistory;
+      }
+      editRequestAttachment.value = '';
+      await loadAttachments(requestId);
+      showEditMessage('Document attached successfully.', 'success');
+      await runSearch();
+    } catch (error) {
+      showEditMessage(error.message || 'Unable to attach document', 'error');
+      editRequestAttachment.value = '';
+    }
+  }
+
+  async function removeAttachment(attachmentId) {
+    const requestId = editRequestId?.value;
+    if (!requestId || !attachmentId) return;
+    if (!confirm('Remove this document from the request?')) return;
+    try {
+      const res = await fetch(
+        REQUESTS_API + '/' + encodeURIComponent(requestId) + '/attachments/' + encodeURIComponent(attachmentId),
+        { method: 'DELETE', credentials: 'include' }
+      );
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error((data && data.error) || 'Unable to remove document');
+      }
+      if (editRequestHistory && data.requestHistory) {
+        editRequestHistory.value = data.requestHistory;
+      }
+      await loadAttachments(requestId);
+      showEditMessage('Document removed successfully.', 'success');
+      await runSearch();
+    } catch (error) {
+      showEditMessage(error.message || 'Unable to remove document', 'error');
+    }
+  }
+
   function closeApprovalEmailDialog(confirmed) {
     if (approvalEmailDialog) {
       approvalEmailDialog.classList.remove('show');
@@ -648,6 +787,8 @@
       }
 
       setEditModalMode(viewMode);
+      if (editRequestAttachment) editRequestAttachment.value = '';
+      await loadAttachments(item.id, viewMode);
       openEditModal();
     } catch (error) {
       console.error(error);
@@ -872,6 +1013,11 @@
     }
     if (editRequestedBySelect) {
       editRequestedBySelect.addEventListener('change', refreshEditSummaryFromForm);
+    }
+    if (editRequestAttachment) {
+      editRequestAttachment.addEventListener('change', () => {
+        uploadSelectedAttachment();
+      });
     }
     if (editForm) editForm.addEventListener('submit', saveEditRequest);
     if (closeEditBtn) closeEditBtn.addEventListener('click', closeEditModal);
