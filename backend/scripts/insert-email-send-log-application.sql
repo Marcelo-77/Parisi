@@ -41,10 +41,10 @@ INSERT INTO message_emails (message_code, subject, body, category, status, notes
 SELECT
   'APPROVAL',
   'Approval required: Request #{{requestNumber}}',
-  'Hello {{requesterName}},\n\nA request is waiting for your approval validation.\n\nRequest #: {{requestNumber}}\nType: {{requestType}}\nApplication / functionality: {{functionality}}\nDescription: {{description}}\n\nPlease review the request in Improvements and Corrections Search.\n\nDouble-Y IT Systems',
+  'Hi Dear {{requesterName}},\n\nI would like to request the **approval of the functionality/process provided**.\n\n{{applicationUrl}}\n\nPlease review the solution in the approval environment and validate it according to the business process, confirming that it meets the requested requirements and works as expected.\n\nOnce the approval is completed, please confirm one of the following:\n\n* **Approved:** The process has been reviewed and is working as expected.\n* **Not Approved:** Please provide the necessary adjustments so we can make the required changes.\n\nYour approval is important to confirm that the solution has been **validated and approved for use**.\n\nThank you for your collaboration.\n\nDouble-Y System It',
   'NOTIFICATION',
   'ACTIVE',
-  'Default approval email template for Improvements and Corrections',
+  'Default approval email template for Improvements and Corrections. Tokens: {{requesterName}}, {{applicationUrl}}, {{requestNumber}}, {{functionality}}',
   'System'
 WHERE NOT EXISTS (
   SELECT 1 FROM message_emails WHERE TRIM(UPPER(message_code)) = 'APPROVAL'

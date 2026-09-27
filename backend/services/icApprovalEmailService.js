@@ -32,8 +32,36 @@ function functionalityLabel(request) {
   return label ? label.replace(/_/g, ' ') : '';
 }
 
+function getPublicBaseUrl() {
+  const configured = String(
+    process.env.APP_PUBLIC_URL
+    || process.env.PUBLIC_BASE_URL
+    || process.env.APP_BASE_URL
+    || ''
+  ).trim().replace(/\/+$/, '');
+  if (configured) return configured;
+
+  const env = String(process.env.APP_ENV || process.env.NODE_ENV || '').trim().toLowerCase();
+  if (env === 'approval') return 'https://approval.double-y.online';
+  if (env === 'production' || env === 'prod') return 'https://double-y.online';
+  if (env === 'staging' || env === 'homolog') return 'https://homolog.double-y.online';
+  return 'http://localhost:3000';
+}
+
+function buildApplicationUrl(request) {
+  const app = String(request?.applicationName || '').trim();
+  if (!app) return '';
+  // Already a full URL
+  if (/^https?:\/\//i.test(app)) return app;
+  const page = app.replace(/^\/+/, '');
+  if (!page) return '';
+  return `${getPublicBaseUrl()}/${page}`;
+}
+
 function applyTemplateText(template, request, requesterName) {
   const functionality = functionalityLabel(request);
+  const recipientName = String(requesterName || request.createdByName || '').trim();
+  const applicationUrl = buildApplicationUrl(request);
   const replacements = {
     '{{requestNumber}}': request.requestNumber != null ? String(request.requestNumber) : '',
     '{{description}}': request.description || '',
@@ -41,7 +69,10 @@ function applyTemplateText(template, request, requesterName) {
     '{{applicationName}}': request.applicationName || '',
     '{{applicationMenu}}': functionality,
     '{{functionality}}': functionality,
-    '{{requesterName}}': requesterName || request.createdByName || '',
+    '{{applicationUrl}}': applicationUrl,
+    '{{applicationLink}}': applicationUrl,
+    '{{requesterName}}': recipientName,
+    '{{recipientName}}': recipientName,
     '{{situation}}': 'In approval validation'
   };
 
@@ -111,6 +142,9 @@ async function buildApprovalEmailPreview(request) {
   const subjectPreview = template
     ? buildSubject(template.subject, request)
     : null;
+  const bodyPreview = template
+    ? applyTemplateText(template.body, request, requester.name || request.createdByName)
+    : null;
 
   return {
     fromEmail,
@@ -119,6 +153,8 @@ async function buildApprovalEmailPreview(request) {
     recipientEmail: requester.email,
     hasValidRecipientEmail: Boolean(requester.email),
     subjectPreview,
+    bodyPreview,
+    applicationUrl: buildApplicationUrl(request) || null,
     templateAvailable: Boolean(template),
     templateError,
     functionalityName: functionalityLabel(request) || null
@@ -277,5 +313,7 @@ module.exports = {
   shouldSendApprovalEmail,
   buildApprovalEmailPreview,
   previewForRequestId,
-  sendApprovalEmail
+  sendApprovalEmail,
+  buildApplicationUrl,
+  getPublicBaseUrl
 };
