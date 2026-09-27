@@ -450,6 +450,134 @@ async function appendHistoryLines(id, lines) {
   return mapRow(result.rows[0]);
 }
 
+const ATTACHMENTS_TABLE = 'improvements_corrections_attachments';
+const MAX_ATTACHMENT_BYTES = 7 * 1024 * 1024;
+let attachmentsTableReady = false;
+
+async function ensureAttachmentsTable() {
+  if (attachmentsTableReady) return;
+  await ensureTable();
+  await query(`
+    CREATE TABLE IF NOT EXISTS ${ATTACHMENTS_TABLE} (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      request_id UUID NOT NULL REFERENCES ${TABLE}(id) ON DELETE CASCADE,
+      file_name VARCHAR(255) NOT NULL,
+      mime_type VARCHAR(120),
+      file_size INTEGER,
+      file_data BYTEA NOT NULL,
+      uploaded_by UUID REFERENCES funcionarios(id) ON DELETE SET NULL,
+      uploaded_by_name VARCHAR(100),
+      criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+  await query(
+    `CREATE INDEX IF NOT EXISTS idx_ic_attachments_request
+     ON ${ATTACHMENTS_TABLE}(request_id, criado_em DESC)`
+  ).catch(() => {});
+  attachmentsTableReady = true;
+}
+
+function mapAttachmentRow(row) {
+  if (!row) return null;
+  return {
+    id: row.id,
+    requestId: row.request_id,
+    fileName: row.file_name,
+    mimeType: row.mime_type || null,
+    fileSize: row.file_size != null ? Number(row.file_size) : null,
+    uploadedBy: row.uploaded_by || null,
+    uploadedByName: row.uploaded_by_name || null,
+    criadoEm: row.criado_em
+  };
+}
+
+function sanitizeAttachmentFileName(name) {
+  const base = String(name || 'document').split(/[/\\]/).pop() || 'document';
+  return base.replace(/[^\w.\- ()]/g, '_').substring(0, 200) || 'document';
+}
+
+async function listAttachments(requestId) {
+  await ensureAttachmentsTable();
+  const result = await query(
+    `SELECT id, request_id, file_name, mime_type, file_size, uploaded_by, uploaded_by_name, criado_em
+     FROM ${ATTACHMENTS_TABLE}
+     WHERE request_id = $1
+     ORDER BY criado_em DESC`,
+    [requestId]
+  );
+  return (result.rows || []).map(mapAttachmentRow);
+}
+
+async function addAttachment(requestId, data = {}) {
+  await ensureAttachmentsTable();
+  const request = await buscarPorId(requestId);
+  if (!request) throw new Error('Request not found');
+
+  const fileName = sanitizeAttachmentFileName(data.fileName);
+  const mimeType = data.mimeType ? String(data.mimeType).trim().substring(0, 120) : null;
+  const rawBase64 = String(data.fileBase64 || '').replace(/^data:[^;]+;base64,/, '');
+  if (!fileName) throw new Error('File name is required');
+  if (!rawBase64) throw new Error('File content is required');
+
+  const buffer = Buffer.from(rawBase64, 'base64');
+  if (!buffer.length) throw new Error('File content is empty');
+  if (buffer.length > MAX_ATTACHMENT_BYTES) {
+    throw new Error('File size must be less than 7MB');
+  }
+
+  const result = await query(
+    `INSERT INTO ${ATTACHMENTS_TABLE}
+      (request_id, file_name, mime_type, file_size, file_data, uploaded_by, uploaded_by_name)
+     VALUES ($1, $2, $3, $4, $5, $6, $7)
+     RETURNING id, request_id, file_name, mime_type, file_size, uploaded_by, uploaded_by_name, criado_em`,
+    [
+      requestId,
+      fileName,
+      mimeType,
+      buffer.length,
+      buffer,
+      data.uploadedBy || null,
+      data.uploadedByName ? String(data.uploadedByName).trim().substring(0, 100) : null
+    ]
+  );
+
+  const actor = data.uploadedByName || 'User';
+  await appendHistoryLines(requestId, `Document attached by ${actor}: ${fileName}`);
+  return mapAttachmentRow(result.rows[0]);
+}
+
+async function getAttachmentDownload(requestId, attachmentId) {
+  await ensureAttachmentsTable();
+  const result = await query(
+    `SELECT file_name, mime_type, file_data
+     FROM ${ATTACHMENTS_TABLE}
+     WHERE id = $1 AND request_id = $2`,
+    [attachmentId, requestId]
+  );
+  if (!result.rows.length) return null;
+  const row = result.rows[0];
+  const buffer = Buffer.isBuffer(row.file_data) ? row.file_data : Buffer.from(row.file_data);
+  return {
+    fileName: row.file_name,
+    mimeType: row.mime_type || 'application/octet-stream',
+    buffer
+  };
+}
+
+async function deleteAttachment(requestId, attachmentId, actorName = 'User') {
+  await ensureAttachmentsTable();
+  const result = await query(
+    `DELETE FROM ${ATTACHMENTS_TABLE}
+     WHERE id = $1 AND request_id = $2
+     RETURNING file_name`,
+    [attachmentId, requestId]
+  );
+  if (!result.rows.length) throw new Error('Attachment not found');
+  const fileName = result.rows[0].file_name;
+  await appendHistoryLines(requestId, `Document removed by ${actorName}: ${fileName}`);
+  return { id: attachmentId, fileName };
+}
+
 module.exports = {
   ensureTable,
   criar,
@@ -458,6 +586,10 @@ module.exports = {
   atualizar,
   excluir,
   appendHistoryLines,
+  listAttachments,
+  addAttachment,
+  getAttachmentDownload,
+  deleteAttachment,
   REQUEST_TYPES,
   normalizeRequestType,
   requiresApplication,

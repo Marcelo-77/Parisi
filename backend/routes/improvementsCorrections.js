@@ -160,6 +160,100 @@ router.post('/:id/approval-email-preview', async (req, res) => {
   }
 });
 
+router.get('/:id/attachments', async (req, res) => {
+  try {
+    const request = await improvementsCorrectionsService.buscarPorId(req.params.id);
+    if (!request) {
+      return res.status(404).json({ success: false, error: 'Request not found' });
+    }
+    const data = await improvementsCorrectionsService.listAttachments(req.params.id);
+    res.json({ success: true, data, total: data.length });
+  } catch (error) {
+    console.error('Improvements/Corrections list attachments error:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message || 'Error listing attachments'
+    });
+  }
+});
+
+router.post('/:id/attachments', async (req, res) => {
+  try {
+    const actorName = await getActorName(req);
+    const userId = isRootSession(req) ? null : getSessionUserId(req);
+    const created = await improvementsCorrectionsService.addAttachment(req.params.id, {
+      fileName: req.body.fileName,
+      mimeType: req.body.mimeType,
+      fileBase64: req.body.fileBase64,
+      uploadedBy: userId,
+      uploadedByName: actorName
+    });
+    const request = await improvementsCorrectionsService.buscarPorId(req.params.id);
+    res.status(201).json({
+      success: true,
+      message: 'Document attached successfully',
+      data: created,
+      requestHistory: request?.requestHistory || ''
+    });
+  } catch (error) {
+    console.error('Improvements/Corrections add attachment error:', error);
+    const status = /not found/i.test(error.message || '') ? 404 : 400;
+    res.status(status).json({
+      success: false,
+      error: error.message || 'Error attaching document'
+    });
+  }
+});
+
+router.get('/:id/attachments/:attachmentId/download', async (req, res) => {
+  try {
+    const file = await improvementsCorrectionsService.getAttachmentDownload(
+      req.params.id,
+      req.params.attachmentId
+    );
+    if (!file) {
+      return res.status(404).json({ success: false, error: 'Attachment not found' });
+    }
+    res.setHeader('Content-Type', file.mimeType || 'application/octet-stream');
+    res.setHeader(
+      'Content-Disposition',
+      `attachment; filename="${String(file.fileName || 'document').replace(/"/g, '')}"`
+    );
+    res.send(file.buffer);
+  } catch (error) {
+    console.error('Improvements/Corrections download attachment error:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message || 'Error downloading attachment'
+    });
+  }
+});
+
+router.delete('/:id/attachments/:attachmentId', async (req, res) => {
+  try {
+    const actorName = await getActorName(req);
+    const deleted = await improvementsCorrectionsService.deleteAttachment(
+      req.params.id,
+      req.params.attachmentId,
+      actorName
+    );
+    const request = await improvementsCorrectionsService.buscarPorId(req.params.id);
+    res.json({
+      success: true,
+      message: 'Document removed successfully',
+      data: deleted,
+      requestHistory: request?.requestHistory || ''
+    });
+  } catch (error) {
+    console.error('Improvements/Corrections delete attachment error:', error);
+    const status = /not found/i.test(error.message || '') ? 404 : 400;
+    res.status(status).json({
+      success: false,
+      error: error.message || 'Error removing attachment'
+    });
+  }
+});
+
 router.get('/:id', async (req, res) => {
   try {
     const data = await improvementsCorrectionsService.buscarPorId(req.params.id);

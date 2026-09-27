@@ -290,6 +290,58 @@
         #editRequestModal .ic-edit-message.show.error { color: #b91c1c; }
         #editRequestModal .ic-edit-message.show.info { color: #1d4ed8; }
 
+        #editRequestModal .ic-attachments-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-top: 4px;
+        }
+
+        #editRequestModal .ic-attachment-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            padding: 10px 12px;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            background: #f8fafc;
+        }
+
+        #editRequestModal .ic-attachment-meta {
+            min-width: 0;
+            flex: 1;
+            font-size: 0.92rem;
+            color: #334155;
+        }
+
+        #editRequestModal .ic-attachment-meta strong {
+            display: block;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        #editRequestModal .ic-attachment-meta span {
+            color: #64748b;
+            font-size: 0.82rem;
+        }
+
+        #editRequestModal .ic-attachment-actions {
+            display: flex;
+            gap: 6px;
+            flex-shrink: 0;
+        }
+
+        #editRequestModal .ic-attachment-actions .btn {
+            padding: 6px 10px;
+            font-size: 0.82rem;
+        }
+
+        #editRequestModal.is-view-mode #editAttachmentUploadGroup {
+            display: none;
+        }
+
         #editRequestModal.is-view-mode #saveEditRequestBtn {
             display: none;
         }
@@ -671,6 +723,18 @@
                                             placeholder="Explain what is being requested..."></textarea>
                                     </div>
                                 </div>
+                            </section>
+
+                            <section class="item-form-section" id="editAttachmentSection">
+                                <h4 class="item-form-section-title"><i class="fas fa-paperclip"></i> Documents</h4>
+                                <div class="form-row" id="editAttachmentUploadGroup">
+                                    <div class="form-group full-width">
+                                        <label for="editRequestAttachment"><i class="fas fa-file-upload"></i> Attach document</label>
+                                        <input type="file" id="editRequestAttachment" accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg,.txt,.csv,.zip">
+                                        <span class="field-hint">Optional. Max 7MB. PDF, Office, image, text or ZIP.</span>
+                                    </div>
+                                </div>
+                                <div id="editAttachmentsList" class="ic-attachments-list" aria-live="polite"></div>
                             </section>
 
                             <section class="item-form-section">
