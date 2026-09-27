@@ -45,6 +45,7 @@
   const editHistoryNote = document.getElementById('editHistoryNote');
   const editRequestMessage = document.getElementById('editRequestMessage');
   const closeEditBtn = document.getElementById('closeEditRequestModal');
+  const closeEditFooterBtn = document.getElementById('closeEditRequestFooterBtn');
   const cancelEditBtn = document.getElementById('cancelEditRequestBtn');
   const saveEditBtn = document.getElementById('saveEditRequestBtn');
 
@@ -62,8 +63,6 @@
   const icRequestSavedModal = document.getElementById('icRequestSavedModal');
   const icRequestSavedMessage = document.getElementById('icRequestSavedMessage');
   const icRequestSavedOkBtn = document.getElementById('icRequestSavedOkBtn');
-  const icRequestSavedCloseBtn = document.getElementById('icRequestSavedCloseBtn');
-  const icRequestSavedCloseX = document.getElementById('icRequestSavedCloseX');
 
   let originalSituationWhenOpened = '';
   let approvalDialogResolver = null;
@@ -456,11 +455,7 @@
     }
 
     if (saveEditBtn) saveEditBtn.hidden = viewMode;
-    if (cancelEditBtn) {
-      cancelEditBtn.innerHTML = viewMode
-        ? '<i class="fas fa-door-open"></i> Close'
-        : '<i class="fas fa-times"></i> Cancel';
-    }
+    if (cancelEditBtn) cancelEditBtn.hidden = viewMode;
     if (editRequestModalTitle) {
       editRequestModalTitle.innerHTML = viewMode
         ? '<i class="fas fa-eye"></i> View Request'
@@ -1084,6 +1079,7 @@
     }
     if (editForm) editForm.addEventListener('submit', saveEditRequest);
     if (closeEditBtn) closeEditBtn.addEventListener('click', closeEditModal);
+    if (closeEditFooterBtn) closeEditFooterBtn.addEventListener('click', closeEditModal);
     if (cancelEditBtn) cancelEditBtn.addEventListener('click', closeEditModal);
     if (editModal) {
       editModal.addEventListener('click', (event) => {
@@ -1108,12 +1104,6 @@
 
     if (icRequestSavedOkBtn) {
       icRequestSavedOkBtn.addEventListener('click', closeRequestSavedAndEdit);
-    }
-    if (icRequestSavedCloseBtn) {
-      icRequestSavedCloseBtn.addEventListener('click', closeRequestSavedAndEdit);
-    }
-    if (icRequestSavedCloseX) {
-      icRequestSavedCloseX.addEventListener('click', closeRequestSavedAndEdit);
     }
     if (icRequestSavedModal) {
       icRequestSavedModal.addEventListener('click', (event) => {
