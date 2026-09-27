@@ -59,6 +59,11 @@
   const closeApprovalEmailDialogBtn = document.getElementById('closeApprovalEmailDialog');
   const cancelApprovalEmailDialogBtn = document.getElementById('cancelApprovalEmailDialog');
   const confirmApprovalEmailDialogBtn = document.getElementById('confirmApprovalEmailDialog');
+  const icRequestSavedModal = document.getElementById('icRequestSavedModal');
+  const icRequestSavedMessage = document.getElementById('icRequestSavedMessage');
+  const icRequestSavedOkBtn = document.getElementById('icRequestSavedOkBtn');
+  const icRequestSavedCloseBtn = document.getElementById('icRequestSavedCloseBtn');
+  const icRequestSavedCloseX = document.getElementById('icRequestSavedCloseX');
 
   let originalSituationWhenOpened = '';
   let approvalDialogResolver = null;
@@ -744,6 +749,34 @@
     return next === 'IN_CLIENT_VALIDATION' && previous !== 'IN_CLIENT_VALIDATION';
   }
 
+  function hideRequestSavedModal() {
+    if (!icRequestSavedModal) return;
+    icRequestSavedModal.classList.remove('show');
+    icRequestSavedModal.setAttribute('aria-hidden', 'true');
+  }
+
+  function showRequestSavedModal(message) {
+    if (icRequestSavedMessage) {
+      icRequestSavedMessage.textContent = message || 'Request updated successfully.';
+    }
+    if (icRequestSavedModal) {
+      icRequestSavedModal.classList.add('show');
+      icRequestSavedModal.setAttribute('aria-hidden', 'false');
+    }
+    requestAnimationFrame(() => {
+      try {
+        icRequestSavedOkBtn?.focus({ preventScroll: true });
+      } catch (_) {
+        icRequestSavedOkBtn?.focus();
+      }
+    });
+  }
+
+  function closeRequestSavedAndEdit() {
+    hideRequestSavedModal();
+    closeEditModal();
+  }
+
   async function performSaveRequest(id, payload, sendApprovalEmail) {
     if (sendApprovalEmail) {
       payload.sendApprovalEmail = true;
@@ -777,9 +810,10 @@
         }
       }
 
-      showEditMessage(message, data.emailResult && !data.emailResult.sent ? 'info' : 'success');
+      clearEditMessage();
       originalSituationWhenOpened = data.data && data.data.situation ? data.data.situation : payload.situation;
       await runSearch();
+      showRequestSavedModal(message);
     } finally {
       if (saveEditBtn) saveEditBtn.disabled = false;
     }
@@ -1068,6 +1102,21 @@
     if (approvalEmailDialog) {
       approvalEmailDialog.addEventListener('click', (event) => {
         if (event.target === approvalEmailDialog) closeApprovalEmailDialog(false);
+      });
+    }
+
+    if (icRequestSavedOkBtn) {
+      icRequestSavedOkBtn.addEventListener('click', closeRequestSavedAndEdit);
+    }
+    if (icRequestSavedCloseBtn) {
+      icRequestSavedCloseBtn.addEventListener('click', closeRequestSavedAndEdit);
+    }
+    if (icRequestSavedCloseX) {
+      icRequestSavedCloseX.addEventListener('click', closeRequestSavedAndEdit);
+    }
+    if (icRequestSavedModal) {
+      icRequestSavedModal.addEventListener('click', (event) => {
+        if (event.target === icRequestSavedModal) closeRequestSavedAndEdit();
       });
     }
 

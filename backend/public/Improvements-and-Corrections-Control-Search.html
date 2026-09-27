@@ -395,6 +395,33 @@
             margin-bottom: 0;
         }
 
+        #icRequestSavedModal.modal.show {
+            display: flex !important;
+            align-items: center;
+            justify-content: center;
+            padding: 12px;
+            z-index: 1100;
+        }
+
+        #icRequestSavedModal .modal-content {
+            max-width: 440px;
+            width: min(440px, 100%);
+            margin: 0 auto !important;
+        }
+
+        #icRequestSavedModal .modal-body {
+            text-align: center;
+            padding: 18px 20px 8px;
+        }
+
+        #icRequestSavedModal .modal-footer {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            flex-wrap: wrap;
+            padding: 12px 18px 18px;
+        }
+
         #editRequestModal.is-view-mode #saveEditRequestBtn {
             display: none;
         }
@@ -852,6 +879,28 @@
                     </button>
                     <button type="button" class="btn btn-primary" id="confirmApprovalEmailDialog">
                         <i class="fas fa-paper-plane"></i> Save and send email
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div id="icRequestSavedModal" class="modal" role="dialog" aria-labelledby="icRequestSavedTitle" aria-modal="true" aria-hidden="true">
+            <div class="modal-content">
+                <div class="modal-header success">
+                    <h3 id="icRequestSavedTitle"><i class="fas fa-check-circle"></i> Changes saved</h3>
+                    <button type="button" class="modal-close" id="icRequestSavedCloseX" aria-label="Close">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <p id="icRequestSavedMessage" style="margin:0;line-height:1.55;color:#334155;">
+                        Request updated successfully.
+                    </p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" id="icRequestSavedCloseBtn">
+                        <i class="fas fa-times"></i> Close
+                    </button>
+                    <button type="button" class="btn btn-primary" id="icRequestSavedOkBtn">
+                        OK
                     </button>
                 </div>
             </div>
