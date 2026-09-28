@@ -119,6 +119,8 @@ class LocationService {
   }
 
   async ensureLocationProductFkCascade(client) {
+    // DDL once per process — repeating DROP/ADD on every rename is extremely slow.
+    if (this._locationProductFkCascadeEnsured) return;
     await client.query(`
       ALTER TABLE location_product
       DROP CONSTRAINT IF EXISTS location_product_location_code_fkey
@@ -131,6 +133,7 @@ class LocationService {
       ON DELETE CASCADE
       ON UPDATE CASCADE
     `);
+    this._locationProductFkCascadeEnsured = true;
   }
 
   async atualizar(id, dados) {

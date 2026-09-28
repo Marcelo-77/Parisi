@@ -161,6 +161,33 @@ function markApplyFailure(item = {}, errorMessage) {
   return getStatus();
 }
 
+function markApplyBatchProgress({ doneDelta = 0, failedDelta = 0, currentFrom = null, currentTo = null, lastError = null } = {}) {
+  if (!job) {
+    job = {
+      ...emptyJob(),
+      id: `mig-${Date.now()}`,
+      status: 'running',
+      startedAt: nowIso()
+    };
+  }
+  job.status = 'running';
+  job.done = Number(job.done || 0) + Number(doneDelta || 0);
+  job.failed = Number(job.failed || 0) + Number(failedDelta || 0);
+  job.updatedAt = nowIso();
+  if (currentFrom != null) job.currentFrom = currentFrom;
+  if (currentTo != null) job.currentTo = currentTo;
+  if (lastError != null) job.lastError = lastError;
+  const processed = job.done + job.failed;
+  job.summary = `Updated ${job.done} of ${job.plannedTotal || processed}`
+    + (job.failed ? ` (failed: ${job.failed})` : '');
+  if (job.plannedTotal > 0 && processed >= job.plannedTotal) {
+    job.status = job.failed > 0 ? 'completed_with_errors' : 'completed';
+    job.finishedAt = nowIso();
+    job.summary = `Finished. Updated ${job.done} of ${job.plannedTotal}. Failed: ${job.failed}. Skipped: ${job.skippedCount}.`;
+  }
+  return getStatus();
+}
+
 function finish(payload = {}) {
   if (!job) {
     job = {
@@ -215,6 +242,7 @@ module.exports = {
   markApplyStart,
   markApplySuccess,
   markApplyFailure,
+  markApplyBatchProgress,
   finish,
   fail,
   heartbeat,

@@ -125,6 +125,42 @@ router.post('/migrate-apply', async (req, res) => {
   }
 });
 
+/** Apply a batch of renames in one request (much faster than one-by-one). */
+router.post('/migrate-apply-batch', async (req, res) => {
+  try {
+    const items = Array.isArray(req.body?.items) ? req.body.items : [];
+    if (!items.length) {
+      return res.status(400).json({ success: false, error: 'items array is required' });
+    }
+    if (items.length > 100) {
+      return res.status(400).json({ success: false, error: 'Maximum 100 items per batch' });
+    }
+
+    const userKey = userKeyFromReq(req);
+    const first = items[0] || {};
+    locationCodeMigrateStatusService.markApplyStart(first);
+
+    const result = await locationCodeHistoryMigrateService.applyMigrationBatch(items, userKey, {
+      onItemStart: (item) => locationCodeMigrateStatusService.markApplyStart(item),
+      onItemDone: (item) => locationCodeMigrateStatusService.markApplySuccess(item),
+      onItemFail: (item, reason) => locationCodeMigrateStatusService.markApplyFailure(item, reason)
+    });
+
+    res.json({
+      success: true,
+      data: result,
+      status: locationCodeMigrateStatusService.getStatus()
+    });
+  } catch (error) {
+    console.error('Location history migrate-apply-batch error:', error);
+    locationCodeMigrateStatusService.fail(error.message || 'Unable to migrate batch');
+    res.status(500).json({
+      success: false,
+      error: error.message || 'Unable to migrate batch'
+    });
+  }
+});
+
 /** Persist a detailed migration error log under backend/logs and return file info. */
 router.post('/migrate-log', async (req, res) => {
   try {

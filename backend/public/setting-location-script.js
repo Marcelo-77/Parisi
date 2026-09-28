@@ -734,43 +734,67 @@
 
       let done = 0;
       let failed = 0;
+      const BATCH_SIZE = 50;
       setMigrateProgress(0, total);
       if (document.getElementById('locationMigrateDetail')) {
         document.getElementById('locationMigrateDetail').textContent =
-          'Updating locations, product locations and logs…';
+          `Updating locations in batches of ${BATCH_SIZE}…`;
       }
 
-      for (const item of items) {
+      for (let offset = 0; offset < items.length; offset += BATCH_SIZE) {
+        const batch = items.slice(offset, offset + BATCH_SIZE);
         try {
-          const applyRes = await fetch(`${API}/migrate-apply`, {
+          const applyRes = await fetch(`${API}/migrate-apply-batch`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             credentials: 'include',
-            body: JSON.stringify({ item })
+            body: JSON.stringify({ items: batch })
           });
           const applyData = await applyRes.json().catch(() => ({}));
           if (!applyRes.ok || !applyData.success) {
-            failed += 1;
+            failed += batch.length;
+            batch.forEach((item) => {
+              problems.push({
+                stage: 'apply',
+                id: item.id != null ? item.id : null,
+                from: item.from || '',
+                to: item.to || '',
+                reason: applyData.error || applyData.message || 'Batch update failed'
+              });
+            });
+          } else {
+            const batchDone = Number(applyData.data?.done || 0);
+            const batchFailed = Number(applyData.data?.failed || 0);
+            done += batchDone;
+            failed += batchFailed;
+            const failures = Array.isArray(applyData.data?.failures) ? applyData.data.failures : [];
+            failures.forEach((f) => {
+              problems.push({
+                stage: 'apply',
+                id: f.id != null ? f.id : null,
+                from: f.from || '',
+                to: f.to || '',
+                reason: f.reason || 'Update failed'
+              });
+            });
+          }
+        } catch (err) {
+          failed += batch.length;
+          batch.forEach((item) => {
             problems.push({
               stage: 'apply',
               id: item.id != null ? item.id : null,
               from: item.from || '',
               to: item.to || '',
-              reason: applyData.error || applyData.message || 'Update failed'
+              reason: err.message || 'Network error'
             });
-          }
-        } catch (err) {
-          failed += 1;
-          problems.push({
-            stage: 'apply',
-            id: item.id != null ? item.id : null,
-            from: item.from || '',
-            to: item.to || '',
-            reason: err.message || 'Network error'
           });
         }
-        done += 1;
-        setMigrateProgress(done, total);
+        setMigrateProgress(Math.min(total, done + failed), total);
+        if (document.getElementById('locationMigrateDetail')) {
+          document.getElementById('locationMigrateDetail').textContent =
+            `Updated ${done} of ${total} (failed: ${failed})…`;
+        }
       }
 
       const errorMessages = buildProblemMessages(problems);

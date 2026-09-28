@@ -474,9 +474,126 @@ async function applyMigrationItem(item, usuarioAlterou) {
   return updated;
 }
 
+/**
+ * Apply many renames in one request.
+ * Ensures FK cascade once, then updates each location without repeating DDL.
+ */
+async function applyMigrationBatch(items, usuarioAlterou, options = {}) {
+  const list = Array.isArray(items) ? items.filter((item) => item && item.id && item.to) : [];
+  const onItemStart = typeof options.onItemStart === 'function' ? options.onItemStart : null;
+  const onItemDone = typeof options.onItemDone === 'function' ? options.onItemDone : null;
+  const onItemFail = typeof options.onItemFail === 'function' ? options.onItemFail : null;
+
+  const results = {
+    total: list.length,
+    done: 0,
+    failed: 0,
+    successes: [],
+    failures: []
+  };
+
+  if (!list.length) return results;
+
+  const { getClient } = require('../config/database');
+  const client = await getClient();
+  try {
+    await locationService.ensureLocationProductFkCascade(client);
+
+    for (const item of list) {
+      const from = String(item.from || '').trim();
+      const to = String(item.to || '').trim();
+      const idStr = String(item.id).trim();
+      if (onItemStart) onItemStart(item);
+
+      try {
+        await client.query('BEGIN');
+        const existingRes = await client.query(
+          `SELECT id, location, status, access_type, section
+           FROM warehouse_locations
+           WHERE id = $1::uuid
+           FOR UPDATE`,
+          [idStr]
+        );
+        if (!existingRes.rows.length) {
+          throw new Error('Location not found');
+        }
+        const row = existingRes.rows[0];
+        const oldLocation = String(row.location || '').trim();
+
+        if (to.toLowerCase() !== oldLocation.toLowerCase()) {
+          const conflict = await client.query(
+            `SELECT id FROM warehouse_locations
+             WHERE TRIM(LOWER(location)) = TRIM(LOWER($1))
+               AND id <> $2::uuid
+             LIMIT 1`,
+            [to, idStr]
+          );
+          if (conflict.rows.length) {
+            throw new Error('Location already registered');
+          }
+        }
+
+        const updatedRes = await client.query(
+          `UPDATE warehouse_locations
+           SET location = $2,
+               status = COALESCE($3, status),
+               access_type = COALESCE($4, access_type),
+               section = COALESCE($5, section),
+               usuario_alterou = COALESCE($6, usuario_alterou),
+               atualizado_em = CURRENT_TIMESTAMP
+           WHERE id = $1::uuid
+           RETURNING *`,
+          [
+            idStr,
+            to,
+            item.status || row.status,
+            item.accessType || row.access_type,
+            item.section || row.section,
+            usuarioAlterou || 'Setting Location migrate'
+          ]
+        );
+
+        if (to !== oldLocation) {
+          await client.query(
+            `UPDATE location_product_log
+             SET location_code_log = $1
+             WHERE TRIM(LOWER(location_code_log)) = TRIM(LOWER($2))`,
+            [to, oldLocation]
+          );
+        }
+
+        await client.query('COMMIT');
+        results.done += 1;
+        results.successes.push({ id: idStr, from: from || oldLocation, to });
+        if (onItemDone) onItemDone(item, updatedRes.rows[0]);
+      } catch (error) {
+        try {
+          await client.query('ROLLBACK');
+        } catch (_) {
+          // ignore
+        }
+        results.failed += 1;
+        const failure = {
+          id: idStr,
+          from,
+          to,
+          reason: error.message || 'Update failed'
+        };
+        results.failures.push(failure);
+        if (onItemFail) onItemFail(item, failure.reason);
+      }
+    }
+  } finally {
+    client.release();
+  }
+
+  return results;
+}
+
 module.exports = {
   buildMigrationPlan,
   applyMigrationItem,
+  applyMigrationBatch,
   writeMigrationErrorLog,
   convertLocationCode,
   parseClassicLocationCode,
