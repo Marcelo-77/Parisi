@@ -93,4 +93,31 @@ router.post('/migrate-apply', async (req, res) => {
   }
 });
 
+/** Persist a detailed migration error log under backend/logs and return file info. */
+router.post('/migrate-log', async (req, res) => {
+  try {
+    const userKey = req.session?.user?.email || req.session?.user?.username || 'Setting Location migrate';
+    const report = {
+      ...(req.body || {}),
+      user: req.body?.user || userKey
+    };
+    const saved = await locationCodeHistoryMigrateService.writeMigrationErrorLog(report);
+    res.json({
+      success: true,
+      data: {
+        fileName: saved.fileName,
+        relativePath: saved.relativePath,
+        lineCount: saved.lineCount,
+        content: saved.content
+      }
+    });
+  } catch (error) {
+    console.error('Location history migrate-log error:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message || 'Unable to write migration error log'
+    });
+  }
+});
+
 module.exports = router;

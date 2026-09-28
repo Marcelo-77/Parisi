@@ -116,6 +116,20 @@ function parseClassicLocationCode(code) {
     }
   }
 
+  // Legacy no-dash Level 0 Sublevel: 101 / 100B → building + 0 + sublevel [+B]
+  // Example: A101 → Street A, Building 1, Level 0, Sublevel 1
+  const legacySublevelMatch = rest.match(/^(.+)0(\d+)(B)?$/);
+  if (legacySublevelMatch) {
+    return emptyParts({
+      street,
+      building: legacySublevelMatch[1] === '' ? '0' : legacySublevelMatch[1],
+      level: '0',
+      sublevel: normalizeNumberValue(legacySublevelMatch[2]),
+      behind: legacySublevelMatch[3] === 'B' ? 'B' : '',
+      levelZeroMode: 'sublevel'
+    });
+  }
+
   return emptyParts({ street });
 }
 
@@ -353,7 +367,96 @@ async function buildMigrationPlan(fromScheme, toScheme, settingsInput = {}) {
     total: items.length,
     skippedCount: skipped.length,
     items,
-    skipped: skipped.slice(0, 200)
+    skippedPreview: skipped.slice(0, 200),
+    skipped
+  };
+}
+
+function pad2(n) {
+  return String(n).padStart(2, '0');
+}
+
+function formatLogTimestamp(date = new Date()) {
+  return (
+    date.getFullYear()
+    + '-' + pad2(date.getMonth() + 1)
+    + '-' + pad2(date.getDate())
+    + '_' + pad2(date.getHours())
+    + pad2(date.getMinutes())
+    + pad2(date.getSeconds())
+  );
+}
+
+/**
+ * Writes a detailed migration error log under backend/logs.
+ * Returns { fileName, relativePath, absolutePath, lineCount }.
+ */
+async function writeMigrationErrorLog(report = {}) {
+  const fs = require('fs');
+  const path = require('path');
+  const logsDir = path.join(__dirname, '..', 'logs');
+  await fs.promises.mkdir(logsDir, { recursive: true });
+
+  const stamp = formatLogTimestamp();
+  const fileName = `location-history-migrate-${stamp}.log`;
+  const absolutePath = path.join(logsDir, fileName);
+  const relativePath = path.join('logs', fileName).replace(/\\/g, '/');
+
+  const lines = [];
+  lines.push('================================================================================');
+  lines.push('Setting Location — History migration error log');
+  lines.push('================================================================================');
+  lines.push(`Generated at : ${new Date().toISOString()}`);
+  lines.push(`From scheme  : ${report.fromScheme || '-'}`);
+  lines.push(`To scheme    : ${report.toScheme || '-'}`);
+  lines.push(`User         : ${report.user || '-'}`);
+  lines.push(`Summary      : ${report.summary || '-'}`);
+  lines.push(`Planned      : ${report.plannedCount != null ? report.plannedCount : '-'}`);
+  lines.push(`Updated      : ${report.updatedCount != null ? report.updatedCount : '-'}`);
+  lines.push(`Failed apply : ${report.failedCount != null ? report.failedCount : '-'}`);
+  lines.push(`Skipped      : ${report.skippedCount != null ? report.skippedCount : '-'}`);
+  lines.push(`Problem rows : ${report.problemCount != null ? report.problemCount : '-'}`);
+  if (report.settings && typeof report.settings === 'object') {
+    lines.push('Settings     : ' + JSON.stringify(report.settings));
+  }
+  lines.push('--------------------------------------------------------------------------------');
+
+  const problems = Array.isArray(report.problems) ? report.problems : [];
+  if (!problems.length) {
+    lines.push('No detailed problem rows were provided.');
+  } else {
+    lines.push(`Detailed problems (${problems.length}):`);
+    lines.push('');
+    problems.forEach((p, index) => {
+      const n = String(index + 1).padStart(4, '0');
+      const stage = p.stage || 'unknown';
+      const id = p.id != null ? String(p.id) : '-';
+      const from = p.from || '-';
+      const to = p.to || '-';
+      const reason = p.reason || p.message || 'Unknown error';
+      lines.push(`[${n}] stage=${stage}`);
+      lines.push(`      id=${id}`);
+      lines.push(`      from=${from}`);
+      lines.push(`      to=${to}`);
+      lines.push(`      reason=${reason}`);
+      if (p.detail) lines.push(`      detail=${p.detail}`);
+      lines.push('');
+    });
+  }
+
+  lines.push('--------------------------------------------------------------------------------');
+  lines.push('End of log');
+  lines.push('');
+
+  const content = lines.join('\n');
+  await fs.promises.writeFile(absolutePath, content, 'utf8');
+
+  return {
+    fileName,
+    relativePath,
+    absolutePath,
+    lineCount: lines.length,
+    content
   };
 }
 
@@ -374,6 +477,7 @@ async function applyMigrationItem(item, usuarioAlterou) {
 module.exports = {
   buildMigrationPlan,
   applyMigrationItem,
+  writeMigrationErrorLog,
   convertLocationCode,
   parseClassicLocationCode,
   SIDE_TO_POS,

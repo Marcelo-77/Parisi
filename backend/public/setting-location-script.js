@@ -2,6 +2,7 @@
   const API = '/api/location-code-settings';
   let saved = null;
   let dirty = false;
+  let lastMigrateLog = null;
 
   const els = {
     status: document.getElementById('locationSettingsStatus'),
@@ -334,18 +335,33 @@
   function clearMigrateErrors() {
     const box = document.getElementById('locationMigrateErrors');
     const list = document.getElementById('locationMigrateErrorsList');
+    const logInfo = document.getElementById('locationMigrateLogInfo');
+    const downloadBtn = document.getElementById('locationMigrateDownloadLogBtn');
     if (list) list.innerHTML = '';
     if (box) box.hidden = true;
+    if (logInfo) {
+      logInfo.hidden = true;
+      logInfo.textContent = '';
+    }
+    if (downloadBtn) {
+      downloadBtn.style.display = 'none';
+      downloadBtn.onclick = null;
+    }
+    lastMigrateLog = null;
   }
 
-  function showMigrateErrors(errors) {
+  function showMigrateErrors(errors, logMeta) {
     const box = document.getElementById('locationMigrateErrors');
     const list = document.getElementById('locationMigrateErrorsList');
+    const logInfo = document.getElementById('locationMigrateLogInfo');
+    const downloadBtn = document.getElementById('locationMigrateDownloadLogBtn');
     if (!box || !list) return;
     list.innerHTML = '';
     const items = Array.isArray(errors) ? errors.filter(Boolean) : [];
-    if (!items.length) {
+    if (!items.length && !logMeta) {
       box.hidden = true;
+      if (logInfo) logInfo.hidden = true;
+      if (downloadBtn) downloadBtn.style.display = 'none';
       return;
     }
     items.slice(0, 100).forEach((msg) => {
@@ -355,10 +371,107 @@
     });
     if (items.length > 100) {
       const li = document.createElement('li');
-      li.textContent = `…and ${items.length - 100} more`;
+      li.textContent = `…and ${items.length - 100} more (see error log file)`;
       list.appendChild(li);
     }
+    if (logInfo) {
+      if (logMeta?.fileName) {
+        logInfo.hidden = false;
+        logInfo.textContent = logMeta.serverSaved
+          ? `Detailed error log saved on server: ${logMeta.relativePath || logMeta.fileName}`
+          : `Detailed error log ready: ${logMeta.fileName}`;
+      } else {
+        logInfo.hidden = true;
+        logInfo.textContent = '';
+      }
+    }
+    if (downloadBtn) {
+      if (logMeta?.content && logMeta?.fileName) {
+        downloadBtn.style.display = 'inline-flex';
+        downloadBtn.onclick = () => downloadTextFile(logMeta.fileName, logMeta.content);
+      } else {
+        downloadBtn.style.display = 'none';
+        downloadBtn.onclick = null;
+      }
+    }
     box.hidden = false;
+  }
+
+  function downloadTextFile(fileName, content) {
+    const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = fileName || 'location-history-migrate.log';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }
+
+  function buildProblemMessages(problems) {
+    return (Array.isArray(problems) ? problems : []).map((p) => {
+      const from = p.from || '?';
+      const to = p.to ? ` → ${p.to}` : '';
+      const reason = p.reason || p.message || 'Unknown error';
+      return `${from}${to}: ${reason}`;
+    });
+  }
+
+  async function persistAndDownloadErrorLog(report) {
+    let logMeta = null;
+    try {
+      const res = await fetch(`${API}/migrate-log`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(report)
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && data.success && data.data) {
+        logMeta = {
+          fileName: data.data.fileName,
+          relativePath: data.data.relativePath,
+          content: data.data.content,
+          serverSaved: true
+        };
+      }
+    } catch (_) {
+      // Fall back to client-only download below.
+    }
+
+    if (!logMeta) {
+      const stamp = new Date().toISOString().replace(/[:.]/g, '-');
+      const fileName = `location-history-migrate-${stamp}.log`;
+      const lines = [
+        'Setting Location — History migration error log',
+        `Generated at : ${new Date().toISOString()}`,
+        `From scheme  : ${report.fromScheme || '-'}`,
+        `To scheme    : ${report.toScheme || '-'}`,
+        `Summary      : ${report.summary || '-'}`,
+        `Planned      : ${report.plannedCount ?? '-'}`,
+        `Updated      : ${report.updatedCount ?? '-'}`,
+        `Failed apply : ${report.failedCount ?? '-'}`,
+        `Skipped      : ${report.skippedCount ?? '-'}`,
+        `Problem rows : ${report.problemCount ?? '-'}`,
+        '--------------------------------------------------------------------------------'
+      ];
+      (report.problems || []).forEach((p, index) => {
+        lines.push(
+          `[${String(index + 1).padStart(4, '0')}] stage=${p.stage || 'unknown'} id=${p.id ?? '-'} from=${p.from || '-'} to=${p.to || '-'} reason=${p.reason || p.message || 'Unknown error'}`
+        );
+      });
+      logMeta = {
+        fileName,
+        relativePath: fileName,
+        content: lines.join('\n') + '\n',
+        serverSaved: false
+      };
+    }
+
+    lastMigrateLog = logMeta;
+    downloadTextFile(logMeta.fileName, logMeta.content);
+    return logMeta;
   }
 
   function showMigrateOverlay(title, detail) {
@@ -366,6 +479,7 @@
     const card = document.getElementById('locationMigrateCard');
     const icon = document.getElementById('locationMigrateIcon');
     const okBtn = document.getElementById('locationMigrateOkBtn');
+    const downloadBtn = document.getElementById('locationMigrateDownloadLogBtn');
     clearMigrateErrors();
     if (document.getElementById('locationMigrateTitle')) {
       document.getElementById('locationMigrateTitle').textContent = title || 'Updating history…';
@@ -380,6 +494,9 @@
     if (icon) icon.className = 'fas fa-sync-alt fa-spin';
     if (okBtn) {
       okBtn.style.display = 'none';
+    }
+    if (downloadBtn) {
+      downloadBtn.style.display = 'none';
     }
     setMigrateProgress(0, 0);
     if (overlay) {
@@ -397,7 +514,7 @@
     if (progress) progress.textContent = total > 0 ? `${pct}% (${current} of ${total})` : `${pct}%`;
   }
 
-  function finishMigrateOverlay(ok, title, detail, errors) {
+  function finishMigrateOverlay(ok, title, detail, errors, logMeta) {
     const card = document.getElementById('locationMigrateCard');
     const icon = document.getElementById('locationMigrateIcon');
     const okBtn = document.getElementById('locationMigrateOkBtn');
@@ -413,7 +530,7 @@
       card.classList.toggle('is-error', !ok);
     }
     if (icon) icon.className = ok ? 'fas fa-check-circle' : 'fas fa-exclamation-triangle';
-    showMigrateErrors(errors);
+    showMigrateErrors(errors, logMeta || lastMigrateLog);
     if (okBtn) {
       okBtn.style.display = 'inline-flex';
     }
@@ -443,26 +560,51 @@
     }
 
     const items = planData.data?.items || [];
-    const skipped = Array.isArray(planData.data?.skipped) ? planData.data.skipped : [];
+    const skipped = Array.isArray(planData.data?.skipped)
+      ? planData.data.skipped
+      : (Array.isArray(planData.data?.skippedPreview) ? planData.data.skippedPreview : []);
     const skippedCount = Number(planData.data?.skippedCount || skipped.length || 0);
     const total = items.length;
 
-    const errorMessages = skipped
+    const problems = skipped
       .filter((s) => s && s.reason && !/already matches/i.test(String(s.reason)))
-      .map((s) => `${s.from || '?'}${s.to ? ` → ${s.to}` : ''}: ${s.reason}`);
+      .map((s) => ({
+        stage: 'plan',
+        id: s.id != null ? s.id : null,
+        from: s.from || '',
+        to: s.to || '',
+        reason: s.reason
+      }));
 
     if (total === 0) {
       setMigrateProgress(1, 1);
-      const hasProblemSkips = errorMessages.length > 0;
+      const hasProblemSkips = problems.length > 0;
+      const summary = hasProblemSkips
+        ? `Settings saved. ${skippedCount} location(s) could not be migrated.`
+        : (skippedCount
+          ? `Settings saved. ${skippedCount} location(s) skipped (already matching).`
+          : 'Settings saved. No location codes required renaming.');
+      let logMeta = null;
+      if (hasProblemSkips) {
+        logMeta = await persistAndDownloadErrorLog({
+          fromScheme,
+          toScheme,
+          settings,
+          summary,
+          plannedCount: 0,
+          updatedCount: 0,
+          failedCount: 0,
+          skippedCount,
+          problemCount: problems.length,
+          problems
+        });
+      }
       finishMigrateOverlay(
         !hasProblemSkips,
         hasProblemSkips ? 'Migration finished with issues' : 'No renames needed',
-        hasProblemSkips
-          ? `Settings saved. ${skippedCount} location(s) could not be migrated.`
-          : (skippedCount
-            ? `Settings saved. ${skippedCount} location(s) skipped (already matching).`
-            : 'Settings saved. No location codes required renaming.'),
-        errorMessages
+        summary,
+        buildProblemMessages(problems),
+        logMeta
       );
       return;
     }
@@ -486,31 +628,57 @@
         const applyData = await applyRes.json().catch(() => ({}));
         if (!applyRes.ok || !applyData.success) {
           failed += 1;
-          errorMessages.push(
-            `${item.from} → ${item.to}: ${applyData.error || applyData.message || 'Update failed'}`
-          );
+          problems.push({
+            stage: 'apply',
+            id: item.id != null ? item.id : null,
+            from: item.from || '',
+            to: item.to || '',
+            reason: applyData.error || applyData.message || 'Update failed'
+          });
         }
       } catch (err) {
         failed += 1;
-        errorMessages.push(`${item.from} → ${item.to}: ${err.message || 'Network error'}`);
+        problems.push({
+          stage: 'apply',
+          id: item.id != null ? item.id : null,
+          from: item.from || '',
+          to: item.to || '',
+          reason: err.message || 'Network error'
+        });
       }
       done += 1;
       setMigrateProgress(done, total);
     }
 
-    if (failed > 0 || errorMessages.length > 0) {
+    const errorMessages = buildProblemMessages(problems);
+    if (failed > 0 || problems.length > 0) {
+      const summary = `Updated ${total - failed} of ${total}. Failed: ${failed}. Skipped: ${skippedCount}.`;
+      const logMeta = await persistAndDownloadErrorLog({
+        fromScheme,
+        toScheme,
+        settings,
+        summary,
+        plannedCount: total,
+        updatedCount: total - failed,
+        failedCount: failed,
+        skippedCount,
+        problemCount: problems.length,
+        problems
+      });
       finishMigrateOverlay(
-        failed === 0 && errorMessages.every((m) => /already matching/i.test(m)),
+        failed === 0 && problems.every((p) => /already matching/i.test(String(p.reason || ''))),
         failed > 0 ? 'Migration finished with errors' : 'Migration finished with warnings',
-        `Updated ${total - failed} of ${total}. Failed: ${failed}. Skipped: ${skippedCount}.`,
-        errorMessages
+        summary,
+        errorMessages,
+        logMeta
       );
     } else {
       finishMigrateOverlay(
         true,
         'History updated',
         `Updated ${total} location(s) (product locations + logs). Skipped: ${skippedCount}.`,
-        []
+        [],
+        null
       );
     }
   }
@@ -551,12 +719,32 @@
           try {
             await runHistoryMigration(previousScheme, nextSettings.activeScheme, nextSettings);
           } catch (error) {
-            showMigrateOverlay('Migration failed', error.message || 'Unable to update history.');
+            const message = error.message || 'Unable to update history.';
+            showMigrateOverlay('Migration failed', message);
+            const logMeta = await persistAndDownloadErrorLog({
+              fromScheme: previousScheme,
+              toScheme: nextSettings.activeScheme,
+              settings: nextSettings,
+              summary: message,
+              plannedCount: 0,
+              updatedCount: 0,
+              failedCount: 1,
+              skippedCount: 0,
+              problemCount: 1,
+              problems: [{
+                stage: 'fatal',
+                id: null,
+                from: '',
+                to: '',
+                reason: message
+              }]
+            });
             finishMigrateOverlay(
               false,
               'Migration failed',
-              error.message || 'Unable to update history.',
-              [error.message || 'Unable to update history.']
+              message,
+              [message],
+              logMeta
             );
           }
           resolve();

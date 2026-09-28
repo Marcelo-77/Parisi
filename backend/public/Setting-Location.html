@@ -336,9 +336,13 @@
             <div class="setting-location-migrate-progress" id="locationMigrateProgress">0%</div>
             <div id="locationMigrateErrors" class="setting-location-migrate-errors" hidden>
                 <strong>Errors</strong>
+                <p id="locationMigrateLogInfo" class="setting-location-migrate-log-info" hidden></p>
                 <ul id="locationMigrateErrorsList"></ul>
             </div>
             <div class="setting-location-migrate-actions">
+                <button type="button" class="btn btn-secondary" id="locationMigrateDownloadLogBtn" style="display:none;">
+                    <i class="fas fa-download"></i> Download error log
+                </button>
                 <button type="button" class="btn btn-primary" id="locationMigrateOkBtn" style="display:none;">OK</button>
             </div>
         </div>

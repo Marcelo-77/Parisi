@@ -633,15 +633,23 @@ body.setting-location-migrating {
   margin-bottom: 4px;
 }
 
+.setting-location-migrate-log-info {
+  margin: 0 0 8px;
+  color: #9a3412;
+  font-size: 0.82rem;
+  line-height: 1.4;
+}
+
 .setting-location-migrate-actions {
   margin-top: 18px;
   display: flex;
   justify-content: center;
   align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
   width: 100%;
 }
 
 .setting-location-migrate-actions .btn {
   min-width: 120px;
-  margin: 0 auto;
 }
