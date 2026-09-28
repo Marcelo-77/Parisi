@@ -32,42 +32,19 @@ function functionalityLabel(request) {
   return label ? label.replace(/_/g, ' ') : '';
 }
 
+/** IC approval emails always link to the Approval environment (even when sent from Live). */
+const IC_APPROVAL_PUBLIC_BASE_URL = 'https://approval.double-y.online';
+
 function getPublicBaseUrl() {
-  const configured = String(
-    process.env.APP_PUBLIC_URL
-    || process.env.PUBLIC_BASE_URL
-    || process.env.APP_BASE_URL
+  const override = String(
+    process.env.IC_APPROVAL_PUBLIC_URL
+    || process.env.APPROVAL_PUBLIC_URL
     || ''
   ).trim().replace(/\/+$/, '');
-  if (configured && !/localhost|127\.0\.0\.1/i.test(configured)) {
-    return configured;
+  if (override && !/localhost|127\.0\.0\.1/i.test(override)) {
+    return override;
   }
-
-  // Render provides the public service URL — never fall back to localhost on hosted envs.
-  const renderUrl = String(process.env.RENDER_EXTERNAL_URL || '').trim().replace(/\/+$/, '');
-  if (renderUrl) return renderUrl;
-
-  const appEnv = String(process.env.APP_ENV || '').trim().toLowerCase();
-  if (appEnv === 'approval') return 'https://approval.double-y.online';
-  if (appEnv === 'production' || appEnv === 'prod' || appEnv === 'live') {
-    return 'https://www.double-y.online';
-  }
-  if (appEnv === 'staging' || appEnv === 'homolog') return 'https://homolog.double-y.online';
-
-  const service = String(process.env.RENDER_SERVICE_NAME || '').trim().toLowerCase();
-  if (service.includes('approval')) return 'https://approval.double-y.online';
-  if (service.includes('homolog') || service.includes('staging')) {
-    return 'https://homolog.double-y.online';
-  }
-  if (service && (service.includes('parisi') || service.includes('live') || service.includes('prod'))) {
-    return 'https://www.double-y.online';
-  }
-
-  // Only use localhost when clearly running on a developer machine.
-  if (configured) return configured;
-  const nodeEnv = String(process.env.NODE_ENV || '').trim().toLowerCase();
-  if (nodeEnv === 'production') return 'https://www.double-y.online';
-  return 'http://localhost:3000';
+  return IC_APPROVAL_PUBLIC_BASE_URL;
 }
 
 function buildApplicationUrl(request) {
