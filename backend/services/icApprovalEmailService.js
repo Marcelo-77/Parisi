@@ -39,12 +39,34 @@ function getPublicBaseUrl() {
     || process.env.APP_BASE_URL
     || ''
   ).trim().replace(/\/+$/, '');
-  if (configured) return configured;
+  if (configured && !/localhost|127\.0\.0\.1/i.test(configured)) {
+    return configured;
+  }
 
-  const env = String(process.env.APP_ENV || process.env.NODE_ENV || '').trim().toLowerCase();
-  if (env === 'approval') return 'https://approval.double-y.online';
-  if (env === 'production' || env === 'prod') return 'https://double-y.online';
-  if (env === 'staging' || env === 'homolog') return 'https://homolog.double-y.online';
+  // Render provides the public service URL — never fall back to localhost on hosted envs.
+  const renderUrl = String(process.env.RENDER_EXTERNAL_URL || '').trim().replace(/\/+$/, '');
+  if (renderUrl) return renderUrl;
+
+  const appEnv = String(process.env.APP_ENV || '').trim().toLowerCase();
+  if (appEnv === 'approval') return 'https://approval.double-y.online';
+  if (appEnv === 'production' || appEnv === 'prod' || appEnv === 'live') {
+    return 'https://www.double-y.online';
+  }
+  if (appEnv === 'staging' || appEnv === 'homolog') return 'https://homolog.double-y.online';
+
+  const service = String(process.env.RENDER_SERVICE_NAME || '').trim().toLowerCase();
+  if (service.includes('approval')) return 'https://approval.double-y.online';
+  if (service.includes('homolog') || service.includes('staging')) {
+    return 'https://homolog.double-y.online';
+  }
+  if (service && (service.includes('parisi') || service.includes('live') || service.includes('prod'))) {
+    return 'https://www.double-y.online';
+  }
+
+  // Only use localhost when clearly running on a developer machine.
+  if (configured) return configured;
+  const nodeEnv = String(process.env.NODE_ENV || '').trim().toLowerCase();
+  if (nodeEnv === 'production') return 'https://www.double-y.online';
   return 'http://localhost:3000';
 }
 
