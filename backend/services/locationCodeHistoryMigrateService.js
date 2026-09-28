@@ -308,7 +308,21 @@ function convertLocationCode(oldCode, fromScheme, toScheme, settings) {
     return { to: oldCode, reason: null, unchanged: true };
   }
   if (from === 'classic' && to === 'bay_level_position') {
+    // Already in Bay/Level/Position form (e.g. A1-1-1, A1-L0) — do not treat as parse error.
+    if (parseNewSchemeCode(oldCode, settings)) {
+      return { to: oldCode, reason: null, unchanged: true };
+    }
     return convertClassicToNew(oldCode, settings);
+  }
+  // bay_level_position → classic
+  const classicParts = parseClassicLocationCode(oldCode);
+  const looksClassic =
+    classicParts.street
+    && classicParts.building !== ''
+    && classicParts.level !== ''
+    && (classicParts.side || classicParts.sublevel !== '');
+  if (looksClassic && !parseNewSchemeCode(oldCode, settings)) {
+    return { to: oldCode, reason: null, unchanged: true };
   }
   return convertNewToClassic(oldCode, settings);
 }
