@@ -276,18 +276,12 @@ function setClassicFieldsRequired(required) {
 function applyLocationSchemeUi() {
     const classic = document.getElementById('locationClassicSchemeFields');
     const bay = document.getElementById('locationBaySchemeFields');
-    const hint = document.getElementById('locationSchemeHint');
     const codeEl = document.getElementById('locationCode');
     const useBay = isBayScheme();
     if (classic) classic.style.display = useBay ? 'none' : '';
     if (bay) bay.style.display = useBay ? '' : 'none';
     setClassicFieldsRequired(!useBay);
     if (useBay) clearClassicLocationFields();
-    if (hint) {
-        hint.textContent = useBay
-            ? `Active scheme: Street / Building / Level. Level 0 asks Location (letter ${locationCodeSettings.levelZeroLocationLetter || 'L'} + Sublevel) or Pallet (Position required). A21 + X → A21Xn-${locationCodeSettings.levelZeroLocationLetter || 'L'}0 (same A21X* prefix for photo search). Behind (B) only for Location when Street is A or H (not A21X).`
-            : 'Active scheme: Classic Street / Building / Level / Side (from Setting Location). Behind (B) only for Level 0 Sublevel when Street is A or H.';
-    }
     if (codeEl) codeEl.placeholder = useBay ? 'Ex: A1-2-1, A1-L0, A1-0-1' : 'Ex: B1-00, B15-1L';
     if (useBay) {
         syncBayLevelZeroUi();
