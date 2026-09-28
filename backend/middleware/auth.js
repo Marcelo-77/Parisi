@@ -7,6 +7,11 @@ const UNIVERSAL_APPLICATIONS = ['change-password.html', 'warehouse.html'];
 const SESSION_COOKIE = 'doubley_session';
 const SESSION_PAYLOAD_SEPARATOR = ':';
 
+/** Pages that reuse another application's access grant. */
+const PAGE_ACCESS_ALIASES = {
+  'location-migrate-status.html': 'Setting-Location.html'
+};
+
 function signToken(payload) {
   const signedPayload = payload ? String(payload) : 'authenticated';
   const sig = crypto.createHmac('sha256', AUTH_SECRET).update(signedPayload).digest('hex');
@@ -186,7 +191,8 @@ function isPublicAsset(path) {
 function getPageApplicationName(path) {
   if (path === '/') return 'warehouse.html';
   const fileName = path.replace(/^\//, '').split('?')[0].split('#')[0];
-  return fileName.endsWith('.html') ? fileName : null;
+  if (!fileName.endsWith('.html')) return null;
+  return PAGE_ACCESS_ALIASES[fileName] || fileName;
 }
 
 async function touchSessionFromRequest(req, currentApp) {
