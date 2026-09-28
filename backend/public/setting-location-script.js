@@ -3,6 +3,37 @@
   let saved = null;
   let dirty = false;
   let lastMigrateLog = null;
+  let migrateHeartbeatTimer = null;
+
+  async function reportMigrateFinish(payload) {
+    try {
+      await fetch(`${API}/migrate-finish`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(payload || {})
+      });
+    } catch (_) {
+      // Status page may still show last apply progress.
+    }
+  }
+
+  function startMigrateHeartbeat() {
+    stopMigrateHeartbeat();
+    migrateHeartbeatTimer = setInterval(() => {
+      fetch(`${API}/migrate-heartbeat`, {
+        method: 'POST',
+        credentials: 'include'
+      }).catch(() => {});
+    }, 15000);
+  }
+
+  function stopMigrateHeartbeat() {
+    if (migrateHeartbeatTimer) {
+      clearInterval(migrateHeartbeatTimer);
+      migrateHeartbeatTimer = null;
+    }
+  }
 
   const els = {
     status: document.getElementById('locationSettingsStatus'),
@@ -548,138 +579,168 @@
 
   async function runHistoryMigration(fromScheme, toScheme, settings) {
     showMigrateOverlay('Updating history…', 'Building migration plan…');
-    const planRes = await fetch(`${API}/migrate-plan`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      credentials: 'include',
-      body: JSON.stringify({ fromScheme, toScheme, settings })
-    });
-    const planData = await planRes.json();
-    if (!planRes.ok || !planData.success) {
-      throw new Error(planData.error || 'Unable to build migration plan');
-    }
-
-    const items = planData.data?.items || [];
-    const skipped = Array.isArray(planData.data?.skipped)
-      ? planData.data.skipped
-      : (Array.isArray(planData.data?.skippedPreview) ? planData.data.skippedPreview : []);
-    const skippedCount = Number(planData.data?.skippedCount || skipped.length || 0);
-    const total = items.length;
-
-    const problems = skipped
-      .filter((s) => s && s.reason && !/already matches/i.test(String(s.reason)))
-      .map((s) => ({
-        stage: 'plan',
-        id: s.id != null ? s.id : null,
-        from: s.from || '',
-        to: s.to || '',
-        reason: s.reason
-      }));
-
-    if (total === 0) {
-      setMigrateProgress(1, 1);
-      const hasProblemSkips = problems.length > 0;
-      const summary = hasProblemSkips
-        ? `Settings saved. ${skippedCount} location(s) could not be migrated.`
-        : (skippedCount
-          ? `Settings saved. ${skippedCount} location(s) skipped (already matching).`
-          : 'Settings saved. No location codes required renaming.');
-      let logMeta = null;
-      if (hasProblemSkips) {
-        logMeta = await persistAndDownloadErrorLog({
-          fromScheme,
-          toScheme,
-          settings,
-          summary,
-          plannedCount: 0,
-          updatedCount: 0,
-          failedCount: 0,
-          skippedCount,
-          problemCount: problems.length,
-          problems
-        });
+    startMigrateHeartbeat();
+    try {
+      const planRes = await fetch(`${API}/migrate-plan`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ fromScheme, toScheme, settings })
+      });
+      const planData = await planRes.json();
+      if (!planRes.ok || !planData.success) {
+        throw new Error(planData.error || 'Unable to build migration plan');
       }
-      finishMigrateOverlay(
-        !hasProblemSkips,
-        hasProblemSkips ? 'Migration finished with issues' : 'No renames needed',
-        summary,
-        buildProblemMessages(problems),
-        logMeta
-      );
-      return;
-    }
 
-    let done = 0;
-    let failed = 0;
-    setMigrateProgress(0, total);
-    if (document.getElementById('locationMigrateDetail')) {
-      document.getElementById('locationMigrateDetail').textContent =
-        'Updating locations, product locations and logs…';
-    }
+      const items = planData.data?.items || [];
+      const skipped = Array.isArray(planData.data?.skipped)
+        ? planData.data.skipped
+        : (Array.isArray(planData.data?.skippedPreview) ? planData.data.skippedPreview : []);
+      const skippedCount = Number(planData.data?.skippedCount || skipped.length || 0);
+      const total = items.length;
 
-    for (const item of items) {
-      try {
-        const applyRes = await fetch(`${API}/migrate-apply`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'include',
-          body: JSON.stringify({ item })
+      const problems = skipped
+        .filter((s) => s && s.reason && !/already matches/i.test(String(s.reason)))
+        .map((s) => ({
+          stage: 'plan',
+          id: s.id != null ? s.id : null,
+          from: s.from || '',
+          to: s.to || '',
+          reason: s.reason
+        }));
+
+      if (total === 0) {
+        setMigrateProgress(1, 1);
+        const hasProblemSkips = problems.length > 0;
+        const summary = hasProblemSkips
+          ? `Settings saved. ${skippedCount} location(s) could not be migrated.`
+          : (skippedCount
+            ? `Settings saved. ${skippedCount} location(s) skipped (already matching).`
+            : 'Settings saved. No location codes required renaming.');
+        let logMeta = null;
+        if (hasProblemSkips) {
+          logMeta = await persistAndDownloadErrorLog({
+            fromScheme,
+            toScheme,
+            settings,
+            summary,
+            plannedCount: 0,
+            updatedCount: 0,
+            failedCount: 0,
+            skippedCount,
+            problemCount: problems.length,
+            problems
+          });
+        }
+        await reportMigrateFinish({
+          status: hasProblemSkips ? 'completed_with_errors' : 'completed',
+          plannedTotal: 0,
+          done: 0,
+          failed: 0,
+          skippedCount,
+          summary
         });
-        const applyData = await applyRes.json().catch(() => ({}));
-        if (!applyRes.ok || !applyData.success) {
+        finishMigrateOverlay(
+          !hasProblemSkips,
+          hasProblemSkips ? 'Migration finished with issues' : 'No renames needed',
+          summary,
+          buildProblemMessages(problems),
+          logMeta
+        );
+        return;
+      }
+
+      let done = 0;
+      let failed = 0;
+      setMigrateProgress(0, total);
+      if (document.getElementById('locationMigrateDetail')) {
+        document.getElementById('locationMigrateDetail').textContent =
+          'Updating locations, product locations and logs…';
+      }
+
+      for (const item of items) {
+        try {
+          const applyRes = await fetch(`${API}/migrate-apply`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify({ item })
+          });
+          const applyData = await applyRes.json().catch(() => ({}));
+          if (!applyRes.ok || !applyData.success) {
+            failed += 1;
+            problems.push({
+              stage: 'apply',
+              id: item.id != null ? item.id : null,
+              from: item.from || '',
+              to: item.to || '',
+              reason: applyData.error || applyData.message || 'Update failed'
+            });
+          }
+        } catch (err) {
           failed += 1;
           problems.push({
             stage: 'apply',
             id: item.id != null ? item.id : null,
             from: item.from || '',
             to: item.to || '',
-            reason: applyData.error || applyData.message || 'Update failed'
+            reason: err.message || 'Network error'
           });
         }
-      } catch (err) {
-        failed += 1;
-        problems.push({
-          stage: 'apply',
-          id: item.id != null ? item.id : null,
-          from: item.from || '',
-          to: item.to || '',
-          reason: err.message || 'Network error'
-        });
+        done += 1;
+        setMigrateProgress(done, total);
       }
-      done += 1;
-      setMigrateProgress(done, total);
-    }
 
-    const errorMessages = buildProblemMessages(problems);
-    if (failed > 0 || problems.length > 0) {
-      const summary = `Updated ${total - failed} of ${total}. Failed: ${failed}. Skipped: ${skippedCount}.`;
-      const logMeta = await persistAndDownloadErrorLog({
-        fromScheme,
-        toScheme,
-        settings,
-        summary,
-        plannedCount: total,
-        updatedCount: total - failed,
-        failedCount: failed,
-        skippedCount,
-        problemCount: problems.length,
-        problems
-      });
-      finishMigrateOverlay(
-        failed === 0 && problems.every((p) => /already matching/i.test(String(p.reason || ''))),
-        failed > 0 ? 'Migration finished with errors' : 'Migration finished with warnings',
-        summary,
-        errorMessages,
-        logMeta
-      );
-    } else {
-      finishMigrateOverlay(
-        true,
-        'History updated',
-        `Updated ${total} location(s) (product locations + logs). Skipped: ${skippedCount}.`,
-        [],
-        null
-      );
+      const errorMessages = buildProblemMessages(problems);
+      if (failed > 0 || problems.length > 0) {
+        const summary = `Updated ${total - failed} of ${total}. Failed: ${failed}. Skipped: ${skippedCount}.`;
+        const logMeta = await persistAndDownloadErrorLog({
+          fromScheme,
+          toScheme,
+          settings,
+          summary,
+          plannedCount: total,
+          updatedCount: total - failed,
+          failedCount: failed,
+          skippedCount,
+          problemCount: problems.length,
+          problems
+        });
+        await reportMigrateFinish({
+          status: failed > 0 ? 'completed_with_errors' : 'completed',
+          plannedTotal: total,
+          done: total - failed,
+          failed,
+          skippedCount,
+          summary
+        });
+        finishMigrateOverlay(
+          failed === 0 && problems.every((p) => /already matching/i.test(String(p.reason || ''))),
+          failed > 0 ? 'Migration finished with errors' : 'Migration finished with warnings',
+          summary,
+          errorMessages,
+          logMeta
+        );
+      } else {
+        const summary = `Updated ${total} location(s) (product locations + logs). Skipped: ${skippedCount}.`;
+        await reportMigrateFinish({
+          status: 'completed',
+          plannedTotal: total,
+          done: total,
+          failed: 0,
+          skippedCount,
+          summary
+        });
+        finishMigrateOverlay(
+          true,
+          'History updated',
+          summary,
+          [],
+          null
+        );
+      }
+    } finally {
+      stopMigrateHeartbeat();
     }
   }
 
@@ -721,6 +782,13 @@
           } catch (error) {
             const message = error.message || 'Unable to update history.';
             showMigrateOverlay('Migration failed', message);
+            stopMigrateHeartbeat();
+            await reportMigrateFinish({
+              status: 'failed',
+              summary: message,
+              lastError: message,
+              failed: 1
+            });
             const logMeta = await persistAndDownloadErrorLog({
               fromScheme: previousScheme,
               toScheme: nextSettings.activeScheme,

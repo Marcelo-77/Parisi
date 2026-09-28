@@ -63,6 +63,9 @@
                             <p>Choose how New Location builds codes: Classic (current) or Bay / Level / Position.</p>
                         </div>
                         <div class="app-users-page-intro-actions">
+                            <a href="location-migrate-status.html" class="btn btn-secondary" title="Remote migrate status" style="margin-right:8px;">
+                                <i class="fas fa-signal"></i> Migrate status
+                            </a>
                             <span id="locationDirtyBadge" class="app-users-dirty-badge" hidden>
                                 <i class="fas fa-circle" aria-hidden="true"></i> Unsaved changes
                             </span>
@@ -334,6 +337,10 @@
                 <div class="setting-location-migrate-bar-fill" id="locationMigrateBarFill" style="width:0%"></div>
             </div>
             <div class="setting-location-migrate-progress" id="locationMigrateProgress">0%</div>
+            <p class="setting-location-migrate-remote-hint">
+                Remote monitor:
+                <a href="location-migrate-status.html" target="_blank" rel="noopener">location-migrate-status.html</a>
+            </p>
             <div id="locationMigrateErrors" class="setting-location-migrate-errors" hidden>
                 <strong>Errors</strong>
                 <p id="locationMigrateLogInfo" class="setting-location-migrate-log-info" hidden></p>

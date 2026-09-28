@@ -603,6 +603,17 @@ body.setting-location-migrating {
   color: #4338ca;
 }
 
+.setting-location-migrate-remote-hint {
+  margin: 8px 0 0;
+  font-size: 0.82rem;
+  color: #64748b;
+}
+
+.setting-location-migrate-remote-hint a {
+  color: #4338ca;
+  font-weight: 600;
+}
+
 .setting-location-migrate-errors {
   margin-top: 14px;
   max-height: 180px;
