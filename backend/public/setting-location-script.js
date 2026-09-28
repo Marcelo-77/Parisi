@@ -349,8 +349,11 @@
     return data;
   }
 
-  function showMigrateConfirmModal() {
+  function showMigrateConfirmModal(message) {
+    hideMigrateOverlay();
     const modal = document.getElementById('locationMigrateConfirmModal');
+    const msg = document.getElementById('locationMigrateConfirmMessage');
+    if (msg && message) msg.textContent = message;
     if (!modal) return;
     modal.classList.add('show');
     modal.setAttribute('aria-hidden', 'false');
@@ -361,6 +364,85 @@
     if (!modal) return;
     modal.classList.remove('show');
     modal.setAttribute('aria-hidden', 'true');
+  }
+
+  function askMigrateConfirm(message) {
+    return new Promise((resolve) => {
+      const yesBtn = document.getElementById('locationMigrateYesBtn');
+      const noBtn = document.getElementById('locationMigrateNoBtn');
+      if (!yesBtn || !noBtn) {
+        resolve(false);
+        return;
+      }
+      showMigrateConfirmModal(message);
+      const onNo = () => {
+        cleanup();
+        hideMigrateConfirmModal();
+        resolve(false);
+      };
+      const onYes = () => {
+        cleanup();
+        hideMigrateConfirmModal();
+        // Show overlay immediately so the click never feels like a no-op.
+        showMigrateOverlay('Updating history…', 'Starting migration…');
+        resolve(true);
+      };
+      function cleanup() {
+        yesBtn.removeEventListener('click', onYes);
+        noBtn.removeEventListener('click', onNo);
+      }
+      yesBtn.addEventListener('click', onYes);
+      noBtn.addEventListener('click', onNo);
+    });
+  }
+
+  function oppositeScheme(scheme) {
+    return String(scheme || '') === 'bay_level_position' ? 'classic' : 'bay_level_position';
+  }
+
+  async function runMigrateWithConfirm(fromScheme, toScheme, settings, confirmMessage) {
+    const confirmed = await askMigrateConfirm(
+      confirmMessage
+      || `Update existing history from ${fromScheme} to ${toScheme}? This renames locations, product locations and logs.`
+    );
+    if (!confirmed) {
+      hideMigrateOverlay();
+      return { ran: false };
+    }
+    try {
+      await runHistoryMigration(fromScheme, toScheme, settings);
+      return { ran: true };
+    } catch (error) {
+      const message = error.message || 'Unable to update history.';
+      showMigrateOverlay('Migration failed', message);
+      stopMigrateHeartbeat();
+      await reportMigrateFinish({
+        status: 'failed',
+        summary: message,
+        lastError: message,
+        failed: 1
+      });
+      const logMeta = await persistAndDownloadErrorLog({
+        fromScheme,
+        toScheme,
+        settings,
+        summary: message,
+        plannedCount: 0,
+        updatedCount: 0,
+        failedCount: 1,
+        skippedCount: 0,
+        problemCount: 1,
+        problems: [{
+          stage: 'fatal',
+          id: null,
+          from: '',
+          to: '',
+          reason: message
+        }]
+      });
+      finishMigrateOverlay(false, 'Migration failed', message, [message], logMeta);
+      return { ran: true, error: message };
+    }
   }
 
   function clearMigrateErrors() {
@@ -763,69 +845,42 @@
       // Save settings first, then ask about history migration
       const data = await persistSettings();
       showStatus(data.message || 'Location settings saved.', 'success');
-      showMigrateConfirmModal();
-      const yesBtn = document.getElementById('locationMigrateYesBtn');
-      const noBtn = document.getElementById('locationMigrateNoBtn');
-
-      await new Promise((resolve) => {
-        const onNo = async () => {
-          cleanup();
-          hideMigrateConfirmModal();
-          showSavedModal('Settings saved. Location history was not changed.');
-          resolve();
-        };
-        const onYes = async () => {
-          cleanup();
-          hideMigrateConfirmModal();
-          try {
-            await runHistoryMigration(previousScheme, nextSettings.activeScheme, nextSettings);
-          } catch (error) {
-            const message = error.message || 'Unable to update history.';
-            showMigrateOverlay('Migration failed', message);
-            stopMigrateHeartbeat();
-            await reportMigrateFinish({
-              status: 'failed',
-              summary: message,
-              lastError: message,
-              failed: 1
-            });
-            const logMeta = await persistAndDownloadErrorLog({
-              fromScheme: previousScheme,
-              toScheme: nextSettings.activeScheme,
-              settings: nextSettings,
-              summary: message,
-              plannedCount: 0,
-              updatedCount: 0,
-              failedCount: 1,
-              skippedCount: 0,
-              problemCount: 1,
-              problems: [{
-                stage: 'fatal',
-                id: null,
-                from: '',
-                to: '',
-                reason: message
-              }]
-            });
-            finishMigrateOverlay(
-              false,
-              'Migration failed',
-              message,
-              [message],
-              logMeta
-            );
-          }
-          resolve();
-        };
-        function cleanup() {
-          yesBtn?.removeEventListener('click', onYes);
-          noBtn?.removeEventListener('click', onNo);
-        }
-        yesBtn?.addEventListener('click', onYes);
-        noBtn?.addEventListener('click', onNo);
-      });
+      const result = await runMigrateWithConfirm(
+        previousScheme,
+        nextSettings.activeScheme,
+        nextSettings,
+        'You changed the New Location scheme. Do you want to update existing history (locations, product locations and logs) to the new parameterization?'
+      );
+      if (!result.ran) {
+        showSavedModal('Settings saved. Location history was not changed.');
+      }
     } catch (error) {
       showStatus(error.message || 'Error saving settings.', 'error');
+    } finally {
+      if (btn) btn.disabled = false;
+    }
+  }
+
+  async function migrateHistoryNow() {
+    const btn = document.getElementById('migrateHistoryBtn');
+    if (btn) btn.disabled = true;
+    try {
+      // Persist current form settings first so compose uses what is on screen.
+      const nextSettings = getFormSettings();
+      await persistSettings();
+      const toScheme = String(nextSettings.activeScheme || saved?.activeScheme || 'classic');
+      const fromScheme = oppositeScheme(toScheme);
+      showStatus('Starting history update…');
+      await runMigrateWithConfirm(
+        fromScheme,
+        toScheme,
+        nextSettings,
+        `Update existing location history to the active scheme (${toScheme})? Codes still in ${fromScheme} format will be converted.`
+      );
+      showStatus('');
+    } catch (error) {
+      showStatus(error.message || 'Unable to start history update.', 'error');
+      hideMigrateOverlay();
     } finally {
       if (btn) btn.disabled = false;
     }
@@ -865,6 +920,7 @@
   }
 
   document.getElementById('saveLocationSettingsBtn')?.addEventListener('click', saveSettings);
+  document.getElementById('migrateHistoryBtn')?.addEventListener('click', migrateHistoryNow);
   document.getElementById('cancelLocationSettingsBtn')?.addEventListener('click', () => {
     if (saved) applyData(saved);
     showStatus('Changes discarded.', 'success');
