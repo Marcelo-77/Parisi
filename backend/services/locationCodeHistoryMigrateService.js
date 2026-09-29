@@ -5,8 +5,8 @@ const {
   DEFAULTS
 } = require('./locationCodeSettingsService');
 
-const SIDE_TO_POS = { R: 1, L: 2, M: 3 };
-const POS_TO_SIDE = { 1: 'R', 2: 'L', 3: 'M' };
+const SIDE_TO_POS = { L: 1, M: 2, R: 3 };
+const POS_TO_SIDE = { 1: 'L', 2: 'M', 3: 'R' };
 
 function normalizeNumberValue(raw) {
   if (raw === '' || raw == null) return '';
