@@ -643,8 +643,23 @@ function sidePosRemapUserLabel(usuarioAlterou) {
 /**
  * Build plan to fix Side→Position after old R=1/L=2/M=3 mapping.
  * Safe to re-run: skips codes already marked as remapped.
+ * Also blocked globally after a successful/partial v1 remap run.
  */
 async function buildSidePositionRemapPlan() {
+  const locationCodeSettingsService = require('./locationCodeSettingsService');
+  if (await locationCodeSettingsService.isSidePosRemapV1Completed()) {
+    return {
+      scope: 'blocked_already_completed',
+      total: 0,
+      scanned: 0,
+      alreadyRemappedCount: 0,
+      alreadyCorrected: true,
+      items: [],
+      preview: [],
+      message: 'L/M/R position remap v1 was already executed. Blocked to avoid applying 1→3/2→1/3→2 twice.'
+    };
+  }
+
   const result = await query(
     `SELECT id, location, status, access_type, section, usuario_alterou
      FROM warehouse_locations
@@ -751,6 +766,17 @@ async function applySidePositionRemap(usuarioAlterou, options = {}) {
   results.failed = phase1.failed + phase2.failed;
   results.successes = phase2.successes;
   results.failures.push(...phase2.failures.map((f) => ({ ...f, stage: 'final' })));
+
+  // Lock further mass remaps after any successful progress (prevents double 1→3 cycles).
+  if (results.done > 0) {
+    try {
+      const locationCodeSettingsService = require('./locationCodeSettingsService');
+      await locationCodeSettingsService.markSidePosRemapV1Completed();
+    } catch (error) {
+      console.error('Unable to mark side-pos remap v1 completed:', error.message || error);
+    }
+  }
+
   return results;
 }
 

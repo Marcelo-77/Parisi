@@ -110,6 +110,10 @@ async function ensureTable() {
     ALTER TABLE ${SETTINGS_TABLE}
       ADD COLUMN IF NOT EXISTS max_sublevel INTEGER NOT NULL DEFAULT 99
   `);
+  await query(`
+    ALTER TABLE ${SETTINGS_TABLE}
+      ADD COLUMN IF NOT EXISTS side_pos_remap_v1_at TIMESTAMP WITH TIME ZONE
+  `);
 
   await query(`
     INSERT INTO ${SETTINGS_TABLE} (id)
@@ -280,5 +284,21 @@ module.exports = {
   composeBayLevelPositionCode,
   mapSettings,
   normalizeLetter,
-  normalizeZeroType
+  normalizeZeroType,
+  async isSidePosRemapV1Completed() {
+    await ensureTable();
+    const result = await query(
+      `SELECT side_pos_remap_v1_at FROM ${SETTINGS_TABLE} WHERE id = 1`
+    );
+    return Boolean(result.rows[0] && result.rows[0].side_pos_remap_v1_at);
+  },
+  async markSidePosRemapV1Completed() {
+    await ensureTable();
+    await query(
+      `UPDATE ${SETTINGS_TABLE}
+       SET side_pos_remap_v1_at = COALESCE(side_pos_remap_v1_at, CURRENT_TIMESTAMP),
+           updated_at = CURRENT_TIMESTAMP
+       WHERE id = 1`
+    );
+  }
 };

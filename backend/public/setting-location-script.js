@@ -927,9 +927,12 @@
       const total = Number(plan.total || 0);
       const already = Number(plan.alreadyRemappedCount || 0);
       if (total <= 0) {
-        const msg = already > 0
-          ? `Already corrected. No pending L/M/R remap (${already} already marked as remapped). Safe to check again anytime.`
-          : 'Nothing pending for L/M/R remap. If you already ran Fix once successfully, you are done — do not force another full remap.';
+        const blockedMsg = plan.message || '';
+        const msg = plan.scope === 'blocked_already_completed'
+          ? blockedMsg
+          : (already > 0
+            ? `Already corrected. No pending L/M/R remap (${already} already marked as remapped). Safe to check again anytime.`
+            : 'Nothing pending for L/M/R remap. If you already ran Fix once successfully, you are done — do not force another full remap.');
         showSavedModal(msg);
         showStatus(msg, 'success');
         return;
