@@ -606,6 +606,7 @@ async function applyMigrationBatch(items, usuarioAlterou, options = {}) {
 
 /** Old migrate mapping was R=1,L=2,M=3. Correct mapping is L=1,M=2,R=3 → remap positions 1→3, 2→1, 3→2. */
 const OLD_POS_TO_NEW_POS = { 1: 3, 2: 1, 3: 2 };
+const SIDE_POS_REMAP_MARKER = 'side-pos remap v1';
 
 function parseBayLevelPositionCode(code) {
   const normalized = String(code || '').trim().toUpperCase();
@@ -623,9 +624,25 @@ function composeBayLevelPositionSimple({ bay, level, position, behind }) {
   return `${bay}-${level}-${position}${behind === 'B' ? 'B' : ''}`;
 }
 
+function hasSidePosRemapMarker(usuarioAlterou) {
+  return /side-pos\s*remap/i.test(String(usuarioAlterou || ''));
+}
+
+function wasHistoryMigrateTouched(usuarioAlterou) {
+  const value = String(usuarioAlterou || '');
+  if (hasSidePosRemapMarker(value)) return false;
+  return /migrate|setting location/i.test(value);
+}
+
+function sidePosRemapUserLabel(usuarioAlterou) {
+  const base = String(usuarioAlterou || 'Setting Location').trim() || 'Setting Location';
+  if (hasSidePosRemapMarker(base)) return base;
+  return `${base} | ${SIDE_POS_REMAP_MARKER}`;
+}
+
 /**
  * Build plan to fix Side→Position after old R=1/L=2/M=3 mapping.
- * Prefer rows touched by history migrate; if none, all matching bay codes.
+ * Safe to re-run: skips codes already marked as remapped.
  */
 async function buildSidePositionRemapPlan() {
   const result = await query(
@@ -634,11 +651,25 @@ async function buildSidePositionRemapPlan() {
      ORDER BY location ASC`
   );
 
-  const parsedRows = [];
+  const pending = [];
+  let alreadyRemappedCount = 0;
+  let bayPositionCount = 0;
+
   for (const row of result.rows) {
     const from = String(row.location || '').trim().toUpperCase();
     const parsed = parseBayLevelPositionCode(from);
     if (!parsed) continue;
+    bayPositionCount += 1;
+
+    const usuarioAlterou = row.usuario_alterou || '';
+    if (hasSidePosRemapMarker(usuarioAlterou)) {
+      alreadyRemappedCount += 1;
+      continue;
+    }
+
+    // Only touch history-migrate rows that were not remapped yet.
+    if (!wasHistoryMigrateTouched(usuarioAlterou)) continue;
+
     const newPos = OLD_POS_TO_NEW_POS[parsed.position];
     if (!newPos || newPos === parsed.position) continue;
     const to = composeBayLevelPositionSimple({
@@ -648,49 +679,43 @@ async function buildSidePositionRemapPlan() {
       behind: parsed.behind
     });
     if (to === from) continue;
-    parsedRows.push({
+
+    pending.push({
       id: row.id,
       from,
       to,
       status: row.status,
       accessType: row.access_type,
-      section: row.section,
-      usuarioAlterou: row.usuario_alterou || '',
-      migratedHint: /migrate|setting location/i.test(String(row.usuario_alterou || ''))
+      section: row.section
     });
   }
 
-  const migratedOnly = parsedRows.filter((r) => r.migratedHint);
-  const chosen = migratedOnly.length > 0 ? migratedOnly : parsedRows;
-  const scope = migratedOnly.length > 0 ? 'migrate_touched' : 'all_bay_positions';
-
   return {
-    scope,
-    total: chosen.length,
-    scanned: parsedRows.length,
-    items: chosen.map(({ id, from, to, status, accessType, section }) => ({
-      id,
-      from,
-      to,
-      status,
-      accessType,
-      section
-    })),
-    preview: chosen.slice(0, 30).map((r) => `${r.from} → ${r.to}`)
+    scope: 'migrate_touched_pending',
+    total: pending.length,
+    scanned: bayPositionCount,
+    alreadyRemappedCount,
+    alreadyCorrected: pending.length === 0,
+    items: pending,
+    preview: pending.slice(0, 30).map((r) => `${r.from} → ${r.to}`)
   };
 }
 
 /**
  * Apply Side/Position remap safely (temp codes avoid unique collisions in cycles 1↔2↔3).
+ * Marks updated rows with side-pos remap v1 so a later run skips them.
  */
 async function applySidePositionRemap(usuarioAlterou, options = {}) {
   const plan = options.plan || await buildSidePositionRemapPlan();
   const items = Array.isArray(plan.items) ? plan.items : [];
+  const userLabel = sidePosRemapUserLabel(usuarioAlterou);
   const results = {
     scope: plan.scope,
     total: items.length,
     done: 0,
     failed: 0,
+    alreadyRemappedCount: plan.alreadyRemappedCount || 0,
+    alreadyCorrected: items.length === 0,
     successes: [],
     failures: []
   };
@@ -707,7 +732,7 @@ async function applySidePositionRemap(usuarioAlterou, options = {}) {
     id: item.id
   }));
 
-  const phase1 = await applyMigrationBatch(tempItems, usuarioAlterou || 'Setting Location side-pos remap', {
+  const phase1 = await applyMigrationBatch(tempItems, userLabel, {
     onItemStart: options.onItemStart,
     onItemDone: options.onItemDone,
     onItemFail: options.onItemFail
@@ -716,7 +741,7 @@ async function applySidePositionRemap(usuarioAlterou, options = {}) {
 
   const okIds = new Set(phase1.successes.map((s) => String(s.id)));
   const phase2Input = finalItems.filter((item) => okIds.has(String(item.id)));
-  const phase2 = await applyMigrationBatch(phase2Input, usuarioAlterou || 'Setting Location side-pos remap', {
+  const phase2 = await applyMigrationBatch(phase2Input, userLabel, {
     onItemStart: options.onItemStart,
     onItemDone: options.onItemDone,
     onItemFail: options.onItemFail

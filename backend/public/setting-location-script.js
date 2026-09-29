@@ -925,21 +925,25 @@
       }
       const plan = planData.data || {};
       const total = Number(plan.total || 0);
+      const already = Number(plan.alreadyRemappedCount || 0);
       if (total <= 0) {
-        showSavedModal('No Side/Position codes need remapping.');
-        showStatus('');
+        const msg = already > 0
+          ? `Already corrected. No pending L/M/R remap (${already} already marked as remapped). Safe to check again anytime.`
+          : 'Nothing pending for L/M/R remap. If you already ran Fix once successfully, you are done — do not force another full remap.';
+        showSavedModal(msg);
+        showStatus(msg, 'success');
         return;
       }
       const preview = Array.isArray(plan.preview) ? plan.preview.slice(0, 8).join(', ') : '';
       const confirmed = await askMigrateConfirm(
-        `Fix L/M/R positions on ${total} location(s)? Mapping: 1→3, 2→1, 3→2 (old R=1/L=2/M=3 → new L=1/M=2/R=3). Scope: ${plan.scope || 'n/a'}.${preview ? ` Examples: ${preview}` : ''}`
+        `Fix L/M/R positions on ${total} pending location(s)? Already remapped (skipped): ${already}. Mapping: 1→3, 2→1, 3→2. Safe to re-run — only pending rows are changed.${preview ? ` Examples: ${preview}` : ''}`
       );
       if (!confirmed) {
         hideMigrateOverlay();
         showStatus('');
         return;
       }
-      showMigrateOverlay('Fixing L/M/R positions…', `Remapping ${total} location(s)…`);
+      showMigrateOverlay('Fixing L/M/R positions…', `Remapping ${total} pending location(s)…`);
       startMigrateHeartbeat();
       const applyRes = await fetch(`${API}/migrate-remap-side-apply`, {
         method: 'POST',
@@ -951,7 +955,7 @@
         throw new Error(applyData.error || 'Unable to remap Side/Position codes');
       }
       const result = applyData.data || {};
-      const summary = `Remapped ${result.done || 0} of ${result.total || total}. Failed: ${result.failed || 0}. Scope: ${result.scope || '-'}.`;
+      const summary = `Remapped ${result.done || 0} of ${result.total || total}. Failed: ${result.failed || 0}. Already remapped before: ${result.alreadyRemappedCount || already}.`;
       const failures = Array.isArray(result.failures) ? result.failures : [];
       const errorMessages = failures.map((f) => `${f.from || '?'} → ${f.to || '?'}: ${f.reason || 'failed'}`);
       finishMigrateOverlay(
