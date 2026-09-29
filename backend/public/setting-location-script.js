@@ -910,6 +910,69 @@
     }
   }
 
+  async function remapSidePositionsNow() {
+    const btn = document.getElementById('remapSidePosBtn');
+    if (btn) btn.disabled = true;
+    try {
+      showStatus('Checking Side/Position remap…');
+      const planRes = await fetch(`${API}/migrate-remap-side-plan`, {
+        method: 'POST',
+        credentials: 'include'
+      });
+      const planData = await planRes.json().catch(() => ({}));
+      if (!planRes.ok || !planData.success) {
+        throw new Error(planData.error || 'Unable to build Side/Position remap plan');
+      }
+      const plan = planData.data || {};
+      const total = Number(plan.total || 0);
+      if (total <= 0) {
+        showSavedModal('No Side/Position codes need remapping.');
+        showStatus('');
+        return;
+      }
+      const preview = Array.isArray(plan.preview) ? plan.preview.slice(0, 8).join(', ') : '';
+      const confirmed = await askMigrateConfirm(
+        `Fix L/M/R positions on ${total} location(s)? Mapping: 1→3, 2→1, 3→2 (old R=1/L=2/M=3 → new L=1/M=2/R=3). Scope: ${plan.scope || 'n/a'}.${preview ? ` Examples: ${preview}` : ''}`
+      );
+      if (!confirmed) {
+        hideMigrateOverlay();
+        showStatus('');
+        return;
+      }
+      showMigrateOverlay('Fixing L/M/R positions…', `Remapping ${total} location(s)…`);
+      startMigrateHeartbeat();
+      const applyRes = await fetch(`${API}/migrate-remap-side-apply`, {
+        method: 'POST',
+        credentials: 'include'
+      });
+      const applyData = await applyRes.json().catch(() => ({}));
+      stopMigrateHeartbeat();
+      if (!applyRes.ok || !applyData.success) {
+        throw new Error(applyData.error || 'Unable to remap Side/Position codes');
+      }
+      const result = applyData.data || {};
+      const summary = `Remapped ${result.done || 0} of ${result.total || total}. Failed: ${result.failed || 0}. Scope: ${result.scope || '-'}.`;
+      const failures = Array.isArray(result.failures) ? result.failures : [];
+      const errorMessages = failures.map((f) => `${f.from || '?'} → ${f.to || '?'}: ${f.reason || 'failed'}`);
+      finishMigrateOverlay(
+        Number(result.failed || 0) === 0,
+        Number(result.failed || 0) > 0 ? 'L/M/R remap finished with errors' : 'L/M/R positions fixed',
+        summary,
+        errorMessages,
+        null
+      );
+      showStatus(summary, Number(result.failed || 0) > 0 ? 'error' : 'success');
+    } catch (error) {
+      stopMigrateHeartbeat();
+      const message = error.message || 'Unable to remap Side/Position codes.';
+      showMigrateOverlay('Remap failed', message);
+      finishMigrateOverlay(false, 'Remap failed', message, [message], null);
+      showStatus(message, 'error');
+    } finally {
+      if (btn) btn.disabled = false;
+    }
+  }
+
   function setupMigrateUi() {
     document.getElementById('locationMigrateOkBtn')?.addEventListener('click', hideMigrateOverlay);
     document.getElementById('locationMigrateConfirmModal')?.addEventListener('click', (event) => {
@@ -945,6 +1008,7 @@
 
   document.getElementById('saveLocationSettingsBtn')?.addEventListener('click', saveSettings);
   document.getElementById('migrateHistoryBtn')?.addEventListener('click', migrateHistoryNow);
+  document.getElementById('remapSidePosBtn')?.addEventListener('click', remapSidePositionsNow);
   document.getElementById('cancelLocationSettingsBtn')?.addEventListener('click', () => {
     if (saved) applyData(saved);
     showStatus('Changes discarded.', 'success');

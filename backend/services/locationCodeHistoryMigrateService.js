@@ -604,10 +604,137 @@ async function applyMigrationBatch(items, usuarioAlterou, options = {}) {
   return results;
 }
 
+/** Old migrate mapping was R=1,L=2,M=3. Correct mapping is L=1,M=2,R=3 → remap positions 1→3, 2→1, 3→2. */
+const OLD_POS_TO_NEW_POS = { 1: 3, 2: 1, 3: 2 };
+
+function parseBayLevelPositionCode(code) {
+  const normalized = String(code || '').trim().toUpperCase();
+  const match = normalized.match(/^([A-Z][A-Z0-9]{0,9})-(\d+)-([123])(B)?$/);
+  if (!match) return null;
+  return {
+    bay: match[1],
+    level: Number(match[2]),
+    position: Number(match[3]),
+    behind: match[4] === 'B' ? 'B' : ''
+  };
+}
+
+function composeBayLevelPositionSimple({ bay, level, position, behind }) {
+  return `${bay}-${level}-${position}${behind === 'B' ? 'B' : ''}`;
+}
+
+/**
+ * Build plan to fix Side→Position after old R=1/L=2/M=3 mapping.
+ * Prefer rows touched by history migrate; if none, all matching bay codes.
+ */
+async function buildSidePositionRemapPlan() {
+  const result = await query(
+    `SELECT id, location, status, access_type, section, usuario_alterou
+     FROM warehouse_locations
+     ORDER BY location ASC`
+  );
+
+  const parsedRows = [];
+  for (const row of result.rows) {
+    const from = String(row.location || '').trim().toUpperCase();
+    const parsed = parseBayLevelPositionCode(from);
+    if (!parsed) continue;
+    const newPos = OLD_POS_TO_NEW_POS[parsed.position];
+    if (!newPos || newPos === parsed.position) continue;
+    const to = composeBayLevelPositionSimple({
+      bay: parsed.bay,
+      level: parsed.level,
+      position: newPos,
+      behind: parsed.behind
+    });
+    if (to === from) continue;
+    parsedRows.push({
+      id: row.id,
+      from,
+      to,
+      status: row.status,
+      accessType: row.access_type,
+      section: row.section,
+      usuarioAlterou: row.usuario_alterou || '',
+      migratedHint: /migrate|setting location/i.test(String(row.usuario_alterou || ''))
+    });
+  }
+
+  const migratedOnly = parsedRows.filter((r) => r.migratedHint);
+  const chosen = migratedOnly.length > 0 ? migratedOnly : parsedRows;
+  const scope = migratedOnly.length > 0 ? 'migrate_touched' : 'all_bay_positions';
+
+  return {
+    scope,
+    total: chosen.length,
+    scanned: parsedRows.length,
+    items: chosen.map(({ id, from, to, status, accessType, section }) => ({
+      id,
+      from,
+      to,
+      status,
+      accessType,
+      section
+    })),
+    preview: chosen.slice(0, 30).map((r) => `${r.from} → ${r.to}`)
+  };
+}
+
+/**
+ * Apply Side/Position remap safely (temp codes avoid unique collisions in cycles 1↔2↔3).
+ */
+async function applySidePositionRemap(usuarioAlterou, options = {}) {
+  const plan = options.plan || await buildSidePositionRemapPlan();
+  const items = Array.isArray(plan.items) ? plan.items : [];
+  const results = {
+    scope: plan.scope,
+    total: items.length,
+    done: 0,
+    failed: 0,
+    successes: [],
+    failures: []
+  };
+  if (!items.length) return results;
+
+  const tempItems = items.map((item, index) => ({
+    ...item,
+    to: `__RMAP${index}_${String(item.id).replace(/-/g, '').slice(0, 12)}`
+  }));
+  const finalItems = items.map((item, index) => ({
+    ...item,
+    from: tempItems[index].to,
+    to: item.to,
+    id: item.id
+  }));
+
+  const phase1 = await applyMigrationBatch(tempItems, usuarioAlterou || 'Setting Location side-pos remap', {
+    onItemStart: options.onItemStart,
+    onItemDone: options.onItemDone,
+    onItemFail: options.onItemFail
+  });
+  results.failures.push(...phase1.failures.map((f) => ({ ...f, stage: 'temp' })));
+
+  const okIds = new Set(phase1.successes.map((s) => String(s.id)));
+  const phase2Input = finalItems.filter((item) => okIds.has(String(item.id)));
+  const phase2 = await applyMigrationBatch(phase2Input, usuarioAlterou || 'Setting Location side-pos remap', {
+    onItemStart: options.onItemStart,
+    onItemDone: options.onItemDone,
+    onItemFail: options.onItemFail
+  });
+
+  results.done = phase2.done;
+  results.failed = phase1.failed + phase2.failed;
+  results.successes = phase2.successes;
+  results.failures.push(...phase2.failures.map((f) => ({ ...f, stage: 'final' })));
+  return results;
+}
+
 module.exports = {
   buildMigrationPlan,
   applyMigrationItem,
   applyMigrationBatch,
+  buildSidePositionRemapPlan,
+  applySidePositionRemap,
   writeMigrationErrorLog,
   convertLocationCode,
   parseClassicLocationCode,

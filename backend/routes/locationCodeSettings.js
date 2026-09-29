@@ -161,6 +161,66 @@ router.post('/migrate-apply-batch', async (req, res) => {
   }
 });
 
+/** Preview Side L/M/R → Position remap (old R=1/L=2/M=3 → new L=1/M=2/R=3). */
+router.post('/migrate-remap-side-plan', async (req, res) => {
+  try {
+    const plan = await locationCodeHistoryMigrateService.buildSidePositionRemapPlan();
+    res.json({ success: true, data: plan });
+  } catch (error) {
+    console.error('Location side-pos remap plan error:', error);
+    res.status(400).json({
+      success: false,
+      error: error.message || 'Unable to build side/position remap plan'
+    });
+  }
+});
+
+/** Apply Side/Position remap corrective. */
+router.post('/migrate-remap-side-apply', async (req, res) => {
+  try {
+    const userKey = userKeyFromReq(req);
+    const plan = await locationCodeHistoryMigrateService.buildSidePositionRemapPlan();
+    locationCodeMigrateStatusService.startPlanning({
+      fromScheme: 'bay_pos_old',
+      toScheme: 'bay_pos_new',
+      startedBy: userKey
+    });
+    locationCodeMigrateStatusService.startRunning(
+      { fromScheme: 'bay_pos_old', toScheme: 'bay_pos_new', total: plan.total * 2, skippedCount: 0 },
+      userKey
+    );
+
+    const result = await locationCodeHistoryMigrateService.applySidePositionRemap(userKey, {
+      plan,
+      onItemStart: (item) => locationCodeMigrateStatusService.markApplyStart(item),
+      onItemDone: (item) => locationCodeMigrateStatusService.markApplySuccess(item),
+      onItemFail: (item, reason) => locationCodeMigrateStatusService.markApplyFailure(item, reason)
+    });
+
+    locationCodeMigrateStatusService.finish({
+      status: result.failed > 0 ? 'completed_with_errors' : 'completed',
+      plannedTotal: plan.total * 2,
+      done: result.done,
+      failed: result.failed,
+      skippedCount: 0,
+      summary: `Side/Position remap finished. Updated ${result.done} of ${plan.total}. Failed: ${result.failed}. Scope: ${result.scope}.`
+    });
+
+    res.json({
+      success: true,
+      data: result,
+      status: locationCodeMigrateStatusService.getStatus()
+    });
+  } catch (error) {
+    console.error('Location side-pos remap apply error:', error);
+    locationCodeMigrateStatusService.fail(error.message || 'Unable to remap side/position');
+    res.status(500).json({
+      success: false,
+      error: error.message || 'Unable to remap side/position'
+    });
+  }
+});
+
 /** Persist a detailed migration error log under backend/logs and return file info. */
 router.post('/migrate-log', async (req, res) => {
   try {
