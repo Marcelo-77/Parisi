@@ -152,136 +152,141 @@
                         <div id="userFieldPhotoInitials" class="user-field-photo user-field-photo-initials" hidden></div>
                     </div>
 
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="nome">
-                                <i class="fas fa-user"></i> Full Name *
-                            </label>
-                            <input type="text" id="nome" name="nome" required 
-                                   placeholder="Enter full name" 
-                                   minlength="2" maxlength="100">
-                            <span class="error-message" id="nome-error"></span>
+                    <div class="users-form-layout">
+                        <div class="users-form-main">
+                            <section class="users-form-section" aria-labelledby="usersSectionIdentity">
+                                <h3 class="users-form-section-title" id="usersSectionIdentity"><i class="fas fa-id-card"></i> Identity</h3>
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="nome">
+                                            <i class="fas fa-user"></i> Full Name *
+                                        </label>
+                                        <input type="text" id="nome" name="nome" required
+                                               placeholder="Enter full name"
+                                               minlength="2" maxlength="100">
+                                        <span class="error-message" id="nome-error"></span>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="email">
+                                            <i class="fas fa-envelope"></i> Email *
+                                        </label>
+                                        <input type="email" id="email" name="email" required
+                                               placeholder="exemplo@empresa.com">
+                                        <span class="error-message" id="email-error"></span>
+                                    </div>
+                                </div>
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="telefone">
+                                            <i class="fas fa-phone"></i> Phone *
+                                        </label>
+                                        <input type="tel" id="telefone" name="telefone" required
+                                               placeholder="04 1234 5678"
+                                               minlength="10" maxlength="20">
+                                        <span class="error-message" id="telefone-error"></span>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="cargo">
+                                            <i class="fas fa-briefcase"></i> Position *
+                                        </label>
+                                        <input type="text" id="cargo" name="cargo" required
+                                               placeholder="Ex: Developer, Analyst"
+                                               minlength="2" maxlength="50">
+                                        <span class="error-message" id="cargo-error"></span>
+                                    </div>
+                                </div>
+                            </section>
+
+                            <section class="users-form-section" aria-labelledby="usersSectionOrg">
+                                <h3 class="users-form-section-title" id="usersSectionOrg"><i class="fas fa-building"></i> Organization</h3>
+                                <div class="form-row form-row-3">
+                                    <div class="form-group">
+                                        <label for="departamento">
+                                            <i class="fas fa-building"></i> Department *
+                                        </label>
+                                        <select id="departamento" name="departamento" required>
+                                            <option value="">Select department</option>
+                                            <option value="TI">Information Technology</option>
+                                            <option value="RH">Human Resources</option>
+                                            <option value="Vendas">Sales</option>
+                                            <option value="Marketing">Marketing</option>
+                                            <option value="Financeiro">Finance</option>
+                                            <option value="Operações">Operations</option>
+                                            <option value="Jurídico">Legal</option>
+                                            <option value="Comercial">Commercial</option>
+                                            <option value="Produção">Production</option>
+                                            <option value="Qualidade">Quality</option>
+                                        </select>
+                                        <span class="error-message" id="departamento-error"></span>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="companyId">
+                                            <i class="fas fa-industry"></i> Company of the User *
+                                        </label>
+                                        <select id="companyId" name="companyId" required>
+                                            <option value="">Select company</option>
+                                        </select>
+                                        <span class="error-message" id="companyId-error"></span>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="sector">
+                                            <i class="fas fa-warehouse"></i> Warehouse Sector
+                                        </label>
+                                        <select id="sector" name="sector">
+                                            <option value="">No sector</option>
+                                        </select>
+                                        <span class="error-message" id="sector-error"></span>
+                                    </div>
+                                </div>
+                            </section>
+
+                            <section class="users-form-section" aria-labelledby="usersSectionAccount">
+                                <h3 class="users-form-section-title" id="usersSectionAccount"><i class="fas fa-shield-alt"></i> Account</h3>
+                                <div class="form-row form-row-3 users-account-row">
+                                    <div class="form-group" id="passwordFieldGroup">
+                                        <label for="password" id="passwordLabel">
+                                            <i class="fas fa-lock"></i> Password *
+                                        </label>
+                                        <input type="password" id="password" name="password" required
+                                               placeholder="Enter a secure password"
+                                               minlength="6" maxlength="100" autocomplete="new-password">
+                                        <span class="error-message" id="password-error"></span>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="dataAdmissao">
+                                            <i class="fas fa-calendar-alt"></i> Hire Date
+                                        </label>
+                                        <input type="date" id="dataAdmissao" name="dataAdmissao">
+                                        <span class="error-message" id="dataAdmissao-error"></span>
+                                    </div>
+                                    <div class="form-group users-form-status-group">
+                                        <label for="ativo">
+                                            <i class="fas fa-toggle-on"></i> Status
+                                        </label>
+                                        <div class="toggle-container users-form-toggle">
+                                            <input type="checkbox" id="ativo" name="ativo" checked>
+                                            <label for="ativo" class="toggle-label">
+                                                <span class="toggle-text">Active</span>
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </section>
                         </div>
 
-                        <div class="form-group">
-                            <label for="email">
-                                <i class="fas fa-envelope"></i> Email *
-                            </label>
-                            <input type="email" id="email" name="email" required 
-                                   placeholder="exemplo@empresa.com">
-                            <span class="error-message" id="email-error"></span>
-                        </div>
-                    </div>
-
-                    <div class="form-row">
-                        <div class="form-group" id="passwordFieldGroup">
-                            <label for="password" id="passwordLabel">
-                                <i class="fas fa-lock"></i> Password *
-                            </label>
-                            <input type="password" id="password" name="password" required 
-                                   placeholder="Enter a secure password"
-                                   minlength="6" maxlength="100" autocomplete="new-password">
-                            <span class="error-message" id="password-error"></span>
-                        </div>
-
-                        <div class="form-group">
-                            <label for="telefone">
-                            <i class="fas fa-phone"></i> Phone *
-                            </label>
-                            <input type="tel" id="telefone" name="telefone" required 
-                                   placeholder="04 1234 5678" 
-                                   minlength="10" maxlength="20">
-                            <span class="error-message" id="telefone-error"></span>
-                        </div>
-
-                        <div class="form-group">
-                            <label for="cargo">
-                                <i class="fas fa-briefcase"></i> Position *
-                            </label>
-                            <input type="text" id="cargo" name="cargo" required 
-                                   placeholder="Ex: Developer, Analyst" 
-                                   minlength="2" maxlength="50">
-                            <span class="error-message" id="cargo-error"></span>
-                        </div>
-                    </div>
-
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="departamento">
-                                <i class="fas fa-building"></i> Department *
-                            </label>
-                            <select id="departamento" name="departamento" required>
-                                <option value="">Select department</option>
-                                <option value="TI">Information Technology</option>
-                                <option value="RH">Human Resources</option>
-                                <option value="Vendas">Sales</option>
-                                <option value="Marketing">Marketing</option>
-                                <option value="Financeiro">Finance</option>
-                                <option value="Operações">Operations</option>
-                                <option value="Jurídico">Legal</option>
-                                <option value="Comercial">Commercial</option>
-                                <option value="Produção">Production</option>
-                                <option value="Qualidade">Quality</option>
-                            </select>
-                            <span class="error-message" id="departamento-error"></span>
-                        </div>
-
-                        <div class="form-group">
-                            <label for="companyId">
-                                <i class="fas fa-industry"></i> Company of the User *
-                            </label>
-                            <select id="companyId" name="companyId" required>
-                                <option value="">Select company</option>
-                            </select>
-                            <span class="error-message" id="companyId-error"></span>
-                        </div>
-
-                        <div class="form-group">
-                            <label for="sector">
-                                <i class="fas fa-warehouse"></i> Warehouse Sector
-                            </label>
-                            <select id="sector" name="sector">
-                                <option value="">No sector</option>
-                            </select>
-                            <span class="error-message" id="sector-error"></span>
-                        </div>
-                    </div>
-
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="dataAdmissao">
-                                <i class="fas fa-calendar-alt"></i> Hire Date
-                            </label>
-                            <input type="date" id="dataAdmissao" name="dataAdmissao">
-                            <span class="error-message" id="dataAdmissao-error"></span>
-                        </div>
-
-                        <div class="form-group">
-                            <label for="ativo">
-                                <i class="fas fa-toggle-on"></i> Status
-                            </label>
-                            <div class="toggle-container">
-                                <input type="checkbox" id="ativo" name="ativo" checked>
-                                <label for="ativo" class="toggle-label">
-                                    <span class="toggle-text">Active</span>
-                                </label>
+                        <aside class="users-form-aside" id="photoFieldGroup" aria-labelledby="usersSectionPhoto">
+                            <h3 class="users-form-section-title" id="usersSectionPhoto"><i class="fas fa-camera"></i> Photo</h3>
+                            <div class="form-group users-form-photo-group">
+                                <label for="photo" class="visually-hidden">User Photo</label>
+                                <input type="file" id="photo" name="photo" accept="image/*"
+                                       onchange="previewPhoto(event)">
+                                <div id="photoPreview" class="users-photo-preview" style="display: none;">
+                                    <img id="photoPreviewImg" src="" alt="Photo preview">
+                                </div>
+                                <p class="users-form-photo-hint">Optional. JPG or PNG.</p>
+                                <span class="error-message" id="photo-error"></span>
                             </div>
-                        </div>
-                    </div>
-
-                    <div class="form-row" id="photoFieldGroup">
-                        <div class="form-group full-width">
-                            <label for="photo">
-                                <i class="fas fa-camera"></i> User Photo
-                            </label>
-                            <input type="file" id="photo" name="photo" accept="image/*" 
-                                   onchange="previewPhoto(event)">
-                            <div id="photoPreview" style="margin-top: 10px; display: none;">
-                                <img id="photoPreviewImg" src="" alt="Photo preview" 
-                                     style="max-width: 200px; max-height: 200px; border-radius: 8px; border: 2px solid #e1e5e9;">
-                            </div>
-                            <span class="error-message" id="photo-error"></span>
-                        </div>
+                        </aside>
                     </div>
 
                     <div class="form-actions" id="formActionsEdit">

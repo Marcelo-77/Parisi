@@ -421,6 +421,156 @@ body.header-stats-hidden .header-stats-right .header-stat {
     padding: 44px 48px;
 }
 
+.users-form-layout {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+.users-page.users-edit-mode .users-form-layout,
+.users-page.users-view-mode .users-form-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(240px, 300px);
+    gap: 28px 36px;
+    align-items: start;
+}
+
+.users-form-main {
+    display: flex;
+    flex-direction: column;
+    gap: 28px;
+    min-width: 0;
+}
+
+.users-form-section {
+    margin: 0;
+    padding: 22px 24px;
+    background: #fafbfc;
+    border: 1px solid #e8ecf1;
+    border-radius: 14px;
+}
+
+.users-form-section-title {
+    margin: 0 0 18px;
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: #444;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.users-form-section-title i {
+    color: #667eea;
+}
+
+.users-page.users-edit-mode .form-row.form-row-3,
+.users-page.users-view-mode .form-row.form-row-3,
+.users-page:not(.users-edit-mode):not(.users-view-mode) .users-account-row {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+@media (max-width: 768px) {
+    .users-page:not(.users-edit-mode):not(.users-view-mode) .users-account-row {
+        grid-template-columns: 1fr;
+    }
+}
+
+.users-page.users-edit-mode .users-form-section .form-row:last-child,
+.users-page.users-view-mode .users-form-section .form-row:last-child {
+    margin-bottom: 0;
+}
+
+.users-form-aside {
+    padding: 22px 24px;
+    background: #f8f9ff;
+    border: 1px solid #e0e4f5;
+    border-radius: 14px;
+    position: sticky;
+    top: 16px;
+}
+
+.users-form-photo-group {
+    align-items: stretch;
+}
+
+.users-form-photo-group input[type="file"] {
+    width: 100%;
+    font-size: 0.9rem;
+}
+
+.users-form-photo-hint {
+    margin: 10px 0 0;
+    font-size: 0.85rem;
+    color: #777;
+    text-align: center;
+}
+
+.users-photo-preview {
+    margin-top: 14px;
+    text-align: center;
+}
+
+.users-photo-preview img {
+    max-width: 100%;
+    max-height: 220px;
+    border-radius: 12px;
+    border: 2px solid #e1e5e9;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.users-form-status-group .users-form-toggle {
+    min-height: 48px;
+    padding-top: 4px;
+}
+
+.users-page.users-edit-mode .form-actions,
+.users-page.users-view-mode .form-actions {
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 12px 16px;
+}
+
+.visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+@media (max-width: 960px) {
+    .users-page.users-edit-mode .users-form-layout,
+    .users-page.users-view-mode .users-form-layout {
+        grid-template-columns: 1fr;
+    }
+
+    .users-page.users-edit-mode .form-row.form-row-3,
+    .users-page.users-view-mode .form-row.form-row-3 {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .users-form-aside {
+        position: static;
+    }
+}
+
+@media (max-width: 600px) {
+    .users-page.users-edit-mode .form-row.form-row-3,
+    .users-page.users-view-mode .form-row.form-row-3 {
+        grid-template-columns: 1fr;
+    }
+
+    .users-page.users-edit-mode .form-container,
+    .users-page.users-view-mode .form-container {
+        padding: 24px 18px;
+    }
+}
+
 .form-header {
     text-align: center;
     margin-bottom: 30px;
