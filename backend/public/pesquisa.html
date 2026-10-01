@@ -148,6 +148,9 @@
                         <button id="pesquisar" class="btn btn-primary" type="button" title="Search employees">
                             <i class="fas fa-search"></i> Search
                         </button>
+                        <button type="button" class="btn btn-secondary location-page-close-btn" id="closeUserSearchBtn" title="Close">
+                            <i class="fas fa-door-open"></i> Close
+                        </button>
                         <button id="limparFiltros" class="btn-icon" title="Clear filters">
                             <i class="fas fa-times"></i>
                         </button>
@@ -173,8 +176,8 @@
                         </select>
                         <input type="email" id="searchEmail" class="filter-select" placeholder="Email">
                         <input type="text" id="searchCargo" class="filter-select" placeholder="Position">
-                        <input type="date" id="searchDataInicio" class="filter-select" title="Hire date from">
-                        <input type="date" id="searchDataFim" class="filter-select" title="Hire date to">
+                        <input type="date" id="searchDataInicio" class="filter-select filter-select-date" title="Hire date from">
+                        <input type="date" id="searchDataFim" class="filter-select filter-select-date" title="Hire date to">
                         <select id="ordenarPor" class="filter-select">
                             <option value="nome">Sort by Name</option>
                             <option value="cargo">Sort by Position</option>
@@ -277,5 +280,6 @@
     </div>
 
     <script src="pesquisa-script.js"></script>
+    <script src="location-page-close.js"></script>
 </body>
 </html>

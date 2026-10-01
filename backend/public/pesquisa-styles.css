@@ -781,8 +781,9 @@ body.search-user-page .user-search-section {
 }
 
 body.search-user-page .search-bar #searchNome {
-    flex: 1 1 220px;
-    min-width: 160px;
+    flex: 1 1 160px;
+    min-width: 140px;
+    max-width: 360px;
     width: auto;
     padding: 10px 40px 10px 36px;
     border: 2px solid #e1e5e9;
@@ -797,7 +798,8 @@ body.search-user-page .search-bar #searchNome:focus {
     box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
 }
 
-body.search-user-page .search-bar #pesquisar {
+body.search-user-page .search-bar #pesquisar,
+body.search-user-page .search-bar .location-page-close-btn {
     flex: 0 0 auto;
     white-space: nowrap;
 }
@@ -806,6 +808,16 @@ body.search-user-page .search-bar #limparFiltros {
     position: static;
     transform: none;
     flex: 0 0 auto;
+}
+
+body.search-user-page .filters-row .filter-select-date {
+    flex: 0 0 auto;
+    width: 132px;
+    max-width: 132px;
+    min-width: 0;
+    padding-left: 8px;
+    padding-right: 6px;
+    font-size: 0.85rem;
 }
 
 body.search-user-page .warehouse-search-results-meta {
@@ -849,17 +861,24 @@ body.search-user-page .warehouse-search-results-meta {
 
     body.search-user-page .search-bar #searchNome {
         width: 100%;
+        max-width: none;
         padding: 12px 14px;
         font-size: 16px;
     }
 
-    body.search-user-page .search-bar #pesquisar {
+    body.search-user-page .search-bar #pesquisar,
+    body.search-user-page .search-bar .location-page-close-btn {
         width: 100%;
         min-width: 0;
         min-height: 46px;
     }
 
     body.search-user-page .filters-row .filter-select {
+        width: 100%;
+        max-width: none;
+    }
+
+    body.search-user-page .filters-row .filter-select-date {
         width: 100%;
         max-width: none;
     }
