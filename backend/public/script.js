@@ -325,6 +325,16 @@ function setCreateMode() {
     updateSubmitButton(false);
 }
 
+function scrollUsersEditIntoView() {
+    requestAnimationFrame(() => {
+        window.scrollTo({ top: 0, left: 0, behavior: 'smooth' });
+        const formContainer = document.querySelector('.users-page .form-container');
+        if (formContainer) {
+            formContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+    });
+}
+
 function setEditMode(user) {
     editingUserId = user.id;
     viewingUserId = null;
