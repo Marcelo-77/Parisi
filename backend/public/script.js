@@ -223,6 +223,7 @@ function setFormActionsMode(mode) {
     if (editActions) editActions.style.display = mode === 'view' ? 'none' : '';
     if (viewActions) viewActions.style.display = mode === 'view' ? '' : 'none';
     document.body.classList.toggle('users-view-mode', mode === 'view');
+    document.body.classList.toggle('users-edit-mode', mode === 'edit');
 }
 
 function setFormReadonly(readonly) {
@@ -711,6 +712,13 @@ function showSuccess(funcionario, isEdit) {
     const modalHeader = successModal.querySelector('.modal-header h3');
     if (modalHeader) modalHeader.textContent = title;
 
+    const modalBodyIntro = successModal.querySelector('.modal-body > p');
+    if (modalBodyIntro) {
+        modalBodyIntro.textContent = isEdit
+            ? 'The user has been successfully updated.'
+            : 'The employee has been successfully registered in the system.';
+    }
+
     funcionarioInfo.innerHTML = `
         ${photoHtml}
         <h4><i class="fas fa-user"></i> ${isEdit ? 'Updated User Data' : 'Registered User Data'}</h4>
@@ -737,12 +745,16 @@ function showError(message) {
 
 // Abrir modal
 function openModal(modal) {
-    modal.style.display = 'block';
+    if (!modal) return;
+    modal.classList.add('show');
+    modal.style.display = 'flex';
     document.body.style.overflow = 'hidden';
 }
 
 // Fechar modal
 function closeModal(modal) {
+    if (!modal) return;
+    modal.classList.remove('show');
     modal.style.display = 'none';
     document.body.style.overflow = 'auto';
 }
