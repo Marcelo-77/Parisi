@@ -220,8 +220,10 @@ function hideUserFieldPhoto() {
 function setFormActionsMode(mode) {
     const editActions = document.getElementById('formActionsEdit');
     const viewActions = document.getElementById('formActionsView');
+    const closeBtn = document.getElementById('closeUserFormBtn');
     if (editActions) editActions.style.display = mode === 'view' ? 'none' : '';
     if (viewActions) viewActions.style.display = mode === 'view' ? '' : 'none';
+    if (closeBtn) closeBtn.style.display = mode === 'edit' ? '' : 'none';
     document.body.classList.toggle('users-view-mode', mode === 'view');
     document.body.classList.toggle('users-edit-mode', mode === 'edit');
 }
@@ -431,6 +433,13 @@ function setupEventListeners() {
     
     // Limpar formulário
     limparBtn.addEventListener('click', limparFormulario);
+
+    const closeUserFormBtn = document.getElementById('closeUserFormBtn');
+    if (closeUserFormBtn) {
+        closeUserFormBtn.addEventListener('click', () => {
+            window.location.href = 'pesquisa.html';
+        });
+    }
     
     // Fechar modais
     fecharModal.addEventListener('click', () => closeModal(successModal));
