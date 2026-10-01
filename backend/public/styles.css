@@ -415,7 +415,8 @@ body.header-stats-hidden .header-stats-right .header-stat {
     margin: 20px 0;
 }
 
-.users-page.users-view-mode .form-container {
+.users-page.users-view-mode .form-container,
+.users-page.users-edit-mode .form-container {
     max-width: min(96vw, 1240px);
     padding: 44px 48px;
 }
@@ -855,6 +856,54 @@ body.header-stats-hidden .header-stats-right .header-stat {
     padding: 20px 30px;
     text-align: center;
     border-top: 1px solid #eee;
+}
+
+/* Users save/error confirmation: centered viewport + OK always visible */
+.users-page #successModal.modal.show,
+.users-page #errorModal.modal.show {
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+    box-sizing: border-box;
+}
+
+.users-page #successModal .modal-content,
+.users-page #errorModal .modal-content {
+    margin: 0 auto !important;
+    width: min(520px, 100%);
+    max-width: 520px;
+    max-height: min(85vh, 640px);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.users-page #successModal .modal-header,
+.users-page #errorModal .modal-header,
+.users-page #successModal .modal-footer,
+.users-page #errorModal .modal-footer {
+    flex-shrink: 0;
+}
+
+.users-page #successModal .modal-body,
+.users-page #errorModal .modal-body {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+}
+
+.users-page #successModal .modal-footer,
+.users-page #errorModal .modal-footer {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 10px;
+}
+
+.users-page #successModal .modal-footer .btn,
+.users-page #errorModal .modal-footer .btn {
+    min-width: 120px;
 }
 
 /* Footer */
