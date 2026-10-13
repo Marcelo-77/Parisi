@@ -439,8 +439,8 @@
     padding: 1rem 1.1rem;
   }
 
-  .search-product-tablet-page .spt-input,
-  .search-product-tablet-page .spt-btn {
+  .search-product-tablet-page .spt-search-bar .spt-input,
+  .search-product-tablet-page .spt-search-bar .spt-btn {
     flex: 1 1 100%;
     width: 100%;
     min-width: 0;
@@ -502,15 +502,17 @@
 
 .search-product-tablet-page .spt-forklift-modal-content {
   width: min(860px, 100%);
+  max-width: min(860px, 100%);
   height: calc(100dvh - 16px);
   max-height: calc(100dvh - 16px);
-  margin: 0;
+  margin: 0 auto;
   overflow: hidden;
   display: flex;
   flex-direction: column;
   border-radius: 14px;
   background: #fff;
   box-shadow: 0 20px 50px rgba(15, 23, 42, 0.28);
+  align-self: center;
 }
 
 .search-product-tablet-page .spt-forklift-modal-content > form {
@@ -636,17 +638,22 @@
 .search-product-tablet-page .spt-forklift-footer {
   display: flex;
   flex-wrap: nowrap;
-  gap: 10px;
-  justify-content: flex-end;
+  gap: 12px;
+  justify-content: center;
+  align-items: center;
   flex: 0 0 auto;
-  padding: 10px 14px 12px;
+  margin-top: auto;
+  padding: 12px 14px 14px;
   border-top: 1px solid #eef1f5;
   background: #fafbfd;
+  z-index: 2;
 }
 
 .search-product-tablet-page .spt-forklift-footer .spt-btn {
-  min-width: 120px;
-  min-height: 44px;
+  flex: 0 0 auto;
+  width: auto;
+  min-width: 140px;
+  min-height: 46px;
 }
 
 .search-product-tablet-page .spt-forklift-confirm-text {
@@ -667,8 +674,9 @@
   }
 
   .search-product-tablet-page .spt-forklift-footer .spt-btn {
-    flex: 1 1 0;
-    min-width: 0;
+    flex: 0 1 auto;
+    min-width: 120px;
+    width: auto;
   }
 }
 
