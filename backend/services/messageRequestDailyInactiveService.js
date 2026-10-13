@@ -26,7 +26,7 @@ async function processDailyInactiveCutoff() {
     await messageRequestService.ensureTable();
 
     const settings = await forkliftDriverService.getSettings();
-    if (!settings.dailyInactiveEnabled) {
+    if (!settings.useForklift || !settings.dailyInactiveEnabled) {
       return { processed: 0, disabled: true };
     }
 

@@ -66,6 +66,23 @@
 
                     <div class="app-users-layout">
                         <div class="app-users-main-col">
+                            <div class="app-users-card" id="useForkliftCard">
+                                <div class="app-users-card-head">
+                                    <h3><i class="fas fa-truck-loading"></i> Use forklift</h3>
+                                    <span class="app-users-card-tag">Feature</span>
+                                </div>
+                                <div class="app-users-toggle-row">
+                                    <label class="app-users-switch" for="useForklift">
+                                        <input type="checkbox" id="useForklift" name="useForklift" checked>
+                                        <span class="app-users-switch-slider" aria-hidden="true"></span>
+                                    </label>
+                                    <div class="app-users-toggle-copy">
+                                        <label for="useForklift">Enable forklift driver requests</label>
+                                        <p class="app-users-help">When on, all settings below are available. When off, forklift settings and assignment are disabled.</p>
+                                    </div>
+                                </div>
+                            </div>
+
                             <div class="app-users-card" id="assignmentCard">
                                 <div class="app-users-card-head">
                                     <h3><i class="fas fa-users"></i> Forklift driver assignment</h3>
@@ -192,6 +209,10 @@
                                 </div>
                                 <ul class="app-users-summary-list">
                                     <li>
+                                        <span class="app-users-summary-label">Use forklift</span>
+                                        <span id="summaryUseForklift" class="app-users-summary-value">Yes</span>
+                                    </li>
+                                    <li>
                                         <span class="app-users-summary-label">Send by</span>
                                         <span id="summarySendBy" class="app-users-summary-value">SMS</span>
                                     </li>
@@ -227,6 +248,7 @@
                                 <div class="app-users-tips">
                                     <h4><i class="fas fa-lightbulb"></i> Tips</h4>
                                     <ul>
+                                        <li>Turn <strong>Use forklift</strong> off to disable all forklift settings and assignment controls.</li>
                                         <li>Choose <strong>SMS</strong> or <strong>Email</strong> as the default send method for Location Product requests.</li>
                                         <li>If <strong>Driver can reassign</strong> is Yes, any forklift driver can pass Waiting requests to another driver.</li>
                                         <li>If No, Waiting requests can only be taken by the logged-in driver.</li>

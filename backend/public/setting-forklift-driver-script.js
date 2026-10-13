@@ -4,6 +4,8 @@
   let availableUsers = [];
   let assignedUsers = [];
   let savedAssignedIds = [];
+  let useForklift = true;
+  let savedUseForklift = true;
   let preferredMessageType = 'SMS';
   let savedPreferredMessageType = 'SMS';
   let allowReassignToOtherDriver = false;
@@ -78,6 +80,37 @@
     return sortUsers(Array.from(byId.values()));
   }
 
+  function getSelectedUseForklift() {
+    const checkbox = document.getElementById('useForklift');
+    if (checkbox) return Boolean(checkbox.checked);
+    return normalizeBoolean(useForklift);
+  }
+
+  function setAssignmentFieldsEnabled(enabled) {
+    const card = document.getElementById('assignmentCard');
+    if (card) card.classList.toggle('is-disabled', !enabled);
+    const fieldIds = [
+      'forkliftPreferredMessageType',
+      'forkliftAllowReassign',
+      'forkliftWaitingTimeoutEnabled',
+      'forkliftWaitingTimeoutMinutes',
+      'forkliftWaitingTimeoutNotifyUsers',
+      'forkliftDailyInactiveEnabled',
+      'forkliftDailyInactiveTime',
+      'forkliftNotifyRequesterOnComplete',
+      'availableList',
+      'selectedList',
+      'addSelectedBtn',
+      'addAllBtn',
+      'removeSelectedBtn',
+      'removeAllBtn'
+    ];
+    fieldIds.forEach((id) => {
+      const el = document.getElementById(id);
+      if (el) el.disabled = !enabled;
+    });
+  }
+
   function getSelectedMessageType() {
     const select = document.getElementById('forkliftPreferredMessageType');
     return normalizeMessageType(select?.value || preferredMessageType);
@@ -128,6 +161,7 @@
 
   function hasUnsavedChanges() {
     const current = sortUsers(assignedUsers).map((u) => String(u.id));
+    if (getSelectedUseForklift() !== savedUseForklift) return true;
     if (getSelectedMessageType() !== savedPreferredMessageType) return true;
     if (getSelectedAllowReassign() !== savedAllowReassignToOtherDriver) return true;
     if (getSelectedWaitingTimeoutEnabled() !== savedWaitingTimeoutEnabled) return true;
@@ -170,6 +204,7 @@
   }
 
   function updateSummary() {
+    const summaryUseForklift = document.getElementById('summaryUseForklift');
     const summaryAvailable = document.getElementById('summaryAvailable');
     const summaryAssigned = document.getElementById('summaryAssigned');
     const summarySendBy = document.getElementById('summarySendBy');
@@ -179,7 +214,10 @@
     const summaryNotifyOnComplete = document.getElementById('summaryNotifyOnComplete');
     const summaryStatus = document.getElementById('summaryStatus');
     const dirtyBadge = document.getElementById('forkliftDirtyBadge');
+    const useEnabled = getSelectedUseForklift();
 
+    setAssignmentFieldsEnabled(useEnabled);
+    if (summaryUseForklift) summaryUseForklift.textContent = useEnabled ? 'Yes' : 'No';
     if (summaryAvailable) summaryAvailable.textContent = String(availableUsers.length);
     if (summaryAssigned) summaryAssigned.textContent = String(assignedUsers.length);
     if (summarySendBy) summarySendBy.textContent = getSelectedMessageType();
@@ -254,12 +292,14 @@
   }
 
   function moveSelected(fromList, toList, selectId) {
+    if (!getSelectedUseForklift()) return;
     const ids = getSelectedIds(document.getElementById(selectId));
     moveUsers(fromList, toList, ids);
     renderLists();
   }
 
   function moveAll(fromList, toList) {
+    if (!getSelectedUseForklift()) return;
     toList.push(...fromList);
     fromList.length = 0;
     renderLists();
@@ -268,6 +308,8 @@
   function applyData(data) {
     availableUsers = Array.isArray(data?.available) ? data.available.slice() : [];
     assignedUsers = Array.isArray(data?.assigned) ? data.assigned.slice() : [];
+    useForklift = data?.useForklift !== false;
+    savedUseForklift = useForklift;
     preferredMessageType = normalizeMessageType(data?.preferredMessageType || 'SMS');
     savedPreferredMessageType = preferredMessageType;
     allowReassignToOtherDriver = normalizeBoolean(data?.allowReassignToOtherDriver);
@@ -286,6 +328,8 @@
     savedNotifyRequesterOnComplete = notifyRequesterOnComplete;
     savedAssignedIds = sortUsers(assignedUsers).map((u) => String(u.id));
 
+    const useForkliftCheckbox = document.getElementById('useForklift');
+    if (useForkliftCheckbox) useForkliftCheckbox.checked = useForklift;
     const typeSelect = document.getElementById('forkliftPreferredMessageType');
     if (typeSelect) typeSelect.value = preferredMessageType;
     const reassignSelect = document.getElementById('forkliftAllowReassign');
@@ -305,6 +349,7 @@
     renderNotifyUsersSelect(waitingTimeoutNotifyUserIds);
     syncWaitingTimeoutOptionsVisibility();
     syncDailyInactiveOptionsVisibility();
+    setAssignmentFieldsEnabled(useForklift);
     updateSummary();
   }
 
@@ -323,6 +368,8 @@
       availableUsers = [];
       assignedUsers = [];
       savedAssignedIds = [];
+      useForklift = true;
+      savedUseForklift = true;
       preferredMessageType = 'SMS';
       savedPreferredMessageType = 'SMS';
       allowReassignToOtherDriver = false;
@@ -348,6 +395,7 @@
     const saveBtn = document.getElementById('saveForkliftDriversBtn');
     if (saveBtn) saveBtn.disabled = true;
     try {
+      const useForkliftValue = getSelectedUseForklift();
       const preferredMessageTypeValue = getSelectedMessageType();
       const allowReassignValue = getSelectedAllowReassign();
       const waitingTimeoutEnabledValue = getSelectedWaitingTimeoutEnabled();
@@ -357,7 +405,7 @@
       const dailyInactiveTimeValue = getSelectedDailyInactiveTime();
       const notifyRequesterOnCompleteValue = getSelectedNotifyRequesterOnComplete();
 
-      if (waitingTimeoutEnabledValue) {
+      if (useForkliftValue && waitingTimeoutEnabledValue) {
         if (!waitingTimeoutMinutesValue) {
           throw new Error('Enter waiting time in minutes');
         }
@@ -366,7 +414,7 @@
         }
       }
 
-      if (dailyInactiveEnabledValue && !dailyInactiveTimeValue) {
+      if (useForkliftValue && dailyInactiveEnabledValue && !dailyInactiveTimeValue) {
         throw new Error('Enter the daily inactive cutoff time');
       }
 
@@ -378,6 +426,7 @@
         credentials: 'include',
         body: JSON.stringify({
           assignedIds,
+          useForklift: useForkliftValue,
           preferredMessageType: preferredMessageTypeValue,
           allowReassignToOtherDriver: allowReassignValue,
           waitingTimeoutEnabled: waitingTimeoutEnabledValue,
@@ -450,6 +499,7 @@
       scheduleRevealForkliftDriverScreen();
     });
 
+    document.getElementById('useForklift')?.addEventListener('change', updateSummary);
     document.getElementById('forkliftPreferredMessageType')?.addEventListener('change', updateSummary);
     document.getElementById('forkliftAllowReassign')?.addEventListener('change', updateSummary);
     document.getElementById('forkliftWaitingTimeoutEnabled')?.addEventListener('change', () => {
