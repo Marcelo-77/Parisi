@@ -6,6 +6,7 @@
     panel: document.getElementById('sptPanel'),
     searchBar: document.getElementById('sptSearchBar'),
     searchByField: document.getElementById('searchByField'),
+    searchByRadios: Array.from(document.querySelectorAll('input[name="searchByFieldRadio"]')),
     searchInput: document.getElementById('searchInput'),
     searchBtn: document.getElementById('searchBtn'),
     status: document.getElementById('sptStatus'),
@@ -19,6 +20,25 @@
     totalEntradas: document.getElementById('totalEntradas'),
     totalSaidas: document.getElementById('totalSaidas')
   };
+
+  function getSearchBy() {
+    const checked = els.searchByRadios.find((radio) => radio.checked);
+    const value = checked?.value || els.searchByField?.value || 'codigo';
+    return value === 'nome' ? 'nome' : 'codigo';
+  }
+
+  function syncSearchByField(value) {
+    const next = value === 'nome' ? 'nome' : 'codigo';
+    if (els.searchByField) els.searchByField.value = next;
+    els.searchByRadios.forEach((radio) => {
+      radio.checked = radio.value === next;
+    });
+    if (els.searchInput) {
+      els.searchInput.placeholder = next === 'nome'
+        ? 'Enter name...'
+        : 'Enter code...';
+    }
+  }
 
   let products = [];
   let selectedCode = '';
@@ -177,10 +197,10 @@
 
   async function searchProducts() {
     const term = String(els.searchInput?.value || '').trim();
-    const searchBy = els.searchByField?.value === 'nome' ? 'nome' : 'codigo';
+    const searchBy = getSearchBy();
 
     if (!term) {
-      setStatus('Enter a code or name to search.', true);
+      setStatus(searchBy === 'nome' ? 'Enter a name to search.' : 'Enter a code to search.', true);
       els.searchInput?.focus();
       return;
     }
@@ -280,11 +300,19 @@
         searchProducts();
       }
     });
+    els.searchByRadios.forEach((radio) => {
+      radio.addEventListener('change', () => {
+        if (!radio.checked) return;
+        syncSearchByField(radio.value);
+        els.searchInput?.focus();
+      });
+    });
     els.productsBody?.addEventListener('click', onProductsClick);
     els.productsBody?.addEventListener('keydown', onProductsKeydown);
   }
 
   bindEvents();
+  syncSearchByField(getSearchBy());
   loadStatistics();
 
   if (isTabletOrPhone()) {

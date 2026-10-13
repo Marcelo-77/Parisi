@@ -55,11 +55,27 @@
         <main class="main-content">
             <section class="spt-panel" id="sptPanel" tabindex="-1" aria-label="Tablet product search">
                 <div class="spt-search-bar" id="sptSearchBar">
-                    <select id="searchByField" class="spt-select" aria-label="Search by">
-                        <option value="codigo">Code</option>
+                    <div class="spt-search-by" role="radiogroup" aria-label="Search by">
+                        <label class="spt-search-by-card">
+                            <input type="radio" name="searchByFieldRadio" value="codigo" id="searchByCodeRadio" checked>
+                            <span class="spt-search-by-card-body">
+                                <strong>Code</strong>
+                                <small>Product code</small>
+                            </span>
+                        </label>
+                        <label class="spt-search-by-card">
+                            <input type="radio" name="searchByFieldRadio" value="nome" id="searchByNameRadio">
+                            <span class="spt-search-by-card-body">
+                                <strong>Name</strong>
+                                <small>Product name</small>
+                            </span>
+                        </label>
+                    </div>
+                    <select id="searchByField" class="spt-select-hidden" aria-hidden="true" tabindex="-1">
+                        <option value="codigo" selected>Code</option>
                         <option value="nome">Name</option>
                     </select>
-                    <input type="text" id="searchInput" class="spt-input" placeholder="Enter code or name..." autocomplete="off" enterkeyhint="search" inputmode="search">
+                    <input type="text" id="searchInput" class="spt-input" placeholder="Enter code or name..." autocomplete="off" enterkeyhint="search" inputmode="search" aria-label="Enter code or name">
                     <button type="button" id="searchBtn" class="btn btn-primary spt-btn">
                         <i class="fas fa-search"></i> Search
                     </button>
