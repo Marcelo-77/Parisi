@@ -44,34 +44,87 @@
   margin-bottom: 14px;
 }
 
-.search-product-tablet-page .spt-select,
+.search-product-tablet-page .spt-search-by {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  flex: 0 1 280px;
+  min-width: 220px;
+}
+
+.search-product-tablet-page .spt-search-by-card {
+  display: flex;
+  margin: 0;
+  cursor: pointer;
+  min-width: 0;
+}
+
+.search-product-tablet-page .spt-search-by-card input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.search-product-tablet-page .spt-search-by-card-body {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 2px;
+  flex: 1 1 auto;
+  width: 100%;
+  min-height: 64px;
+  padding: 10px 14px;
+  border: 2px solid #e2e8f0;
+  border-radius: 12px;
+  background: #f8fafc;
+  box-sizing: border-box;
+  transition: border-color 0.15s, background 0.15s, box-shadow 0.15s;
+}
+
+.search-product-tablet-page .spt-search-by-card-body strong {
+  color: #0f172a;
+  font-size: 1.05rem;
+  line-height: 1.2;
+}
+
+.search-product-tablet-page .spt-search-by-card-body small {
+  color: #64748b;
+  font-size: 0.82rem;
+}
+
+.search-product-tablet-page .spt-search-by-card input:checked + .spt-search-by-card-body {
+  border-color: #0f766e;
+  background: #f0fdfa;
+  box-shadow: 0 0 0 1px #0f766e;
+}
+
+.search-product-tablet-page .spt-select-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
 .search-product-tablet-page .spt-input,
 .search-product-tablet-page .spt-btn {
-  min-height: 52px;
+  min-height: 64px;
   font-size: 1.05rem;
   border-radius: 12px;
 }
 
-.search-product-tablet-page .spt-select {
-  flex: 0 0 140px;
-  padding: 0 14px;
-  border: 2px solid #e1e5e9;
-  background: #fff;
-}
-
 .search-product-tablet-page .spt-input {
-  flex: 1 1 220px;
-  min-width: 180px;
+  flex: 1 1 240px;
+  min-width: 200px;
   padding: 0 16px;
   border: 2px solid #e1e5e9;
   background: #fff;
 }
 
-.search-product-tablet-page .spt-input:focus,
-.search-product-tablet-page .spt-select:focus {
+.search-product-tablet-page .spt-input:focus {
   outline: none;
-  border-color: #667eea;
-  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.15);
+  border-color: #0f766e;
+  box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.15);
 }
 
 .search-product-tablet-page .spt-btn {
@@ -232,11 +285,12 @@
 }
 
 @media (max-width: 700px) {
-  .search-product-tablet-page .spt-select,
+  .search-product-tablet-page .spt-search-by,
   .search-product-tablet-page .spt-input,
   .search-product-tablet-page .spt-btn {
     flex: 1 1 100%;
     width: 100%;
+    min-width: 0;
   }
 
   .search-product-tablet-page .spt-table th,
