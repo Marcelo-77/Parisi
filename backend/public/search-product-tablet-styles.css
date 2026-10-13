@@ -178,6 +178,11 @@
   font-size: 1rem;
 }
 
+.search-product-tablet-page .spt-table th.spt-col-qty,
+.search-product-tablet-page .spt-table td.spt-col-qty {
+  text-align: center;
+}
+
 .search-product-tablet-page .spt-table th {
   position: sticky;
   top: 0;
