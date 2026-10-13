@@ -54,20 +54,24 @@
 
         <main class="main-content">
             <section class="spt-panel" id="sptPanel" tabindex="-1" aria-label="Tablet product search">
-                <div class="spt-search-bar" id="sptSearchBar">
+                <div class="spt-search-card" id="sptSearchBar">
+                    <div class="spt-search-card-head">
+                        <h3><i class="fas fa-filter"></i> Search by</h3>
+                        <span class="spt-search-card-tag">Display</span>
+                    </div>
                     <div class="spt-search-by" role="radiogroup" aria-label="Search by">
-                        <label class="spt-search-by-card">
+                        <label class="spt-search-by-row" for="searchByCodeRadio">
                             <input type="radio" name="searchByFieldRadio" value="codigo" id="searchByCodeRadio" checked>
-                            <span class="spt-search-by-card-body">
+                            <span class="spt-search-by-copy">
                                 <strong>Code</strong>
-                                <small>Product code</small>
+                                <small>Search products by product code</small>
                             </span>
                         </label>
-                        <label class="spt-search-by-card">
+                        <label class="spt-search-by-row" for="searchByNameRadio">
                             <input type="radio" name="searchByFieldRadio" value="nome" id="searchByNameRadio">
-                            <span class="spt-search-by-card-body">
+                            <span class="spt-search-by-copy">
                                 <strong>Name</strong>
-                                <small>Product name</small>
+                                <small>Search products by product name</small>
                             </span>
                         </label>
                     </div>
@@ -75,13 +79,15 @@
                         <option value="codigo" selected>Code</option>
                         <option value="nome">Name</option>
                     </select>
-                    <input type="text" id="searchInput" class="spt-input" placeholder="Enter code or name..." autocomplete="off" enterkeyhint="search" inputmode="search" aria-label="Enter code or name">
-                    <button type="button" id="searchBtn" class="btn btn-primary spt-btn">
-                        <i class="fas fa-search"></i> Search
-                    </button>
-                    <button type="button" id="closeBtn" class="btn btn-secondary spt-btn location-page-close-btn" title="Close">
-                        <i class="fas fa-door-open"></i> Close
-                    </button>
+                    <div class="spt-search-bar">
+                        <input type="text" id="searchInput" class="spt-input" placeholder="Enter code or name..." autocomplete="off" enterkeyhint="search" inputmode="search" aria-label="Enter code or name">
+                        <button type="button" id="searchBtn" class="btn btn-primary spt-btn">
+                            <i class="fas fa-search"></i> Search
+                        </button>
+                        <button type="button" id="closeBtn" class="btn btn-secondary spt-btn location-page-close-btn" title="Close">
+                            <i class="fas fa-door-open"></i> Close
+                        </button>
+                    </div>
                 </div>
 
                 <p id="sptStatus" class="spt-status" aria-live="polite"></p>
