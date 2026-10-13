@@ -3,7 +3,7 @@ const crypto = require('crypto');
 const AUTH_SECRET = process.env.AUTH_SECRET || 'double-y-auth-secret';
 const APP_PASSWORD = process.env.APP_PASSWORD || 'yahusha';
 const ROOT_USER = 'root';
-const UNIVERSAL_APPLICATIONS = ['change-password.html', 'warehouse.html'];
+const UNIVERSAL_APPLICATIONS = ['warehouse.html'];
 const SESSION_COOKIE = 'doubley_session';
 const SESSION_PAYLOAD_SEPARATOR = ':';
 
