@@ -750,10 +750,9 @@ document.addEventListener('DOMContentLoaded', () => {
               <button type="button" class="btn btn-edit btn-edit-qty-current" data-location="${escapeHtml(r.locationCode)}" data-product="${escapeHtml(r.productCode)}" data-entry="${escapeHtml(entryDt)}" data-sipr="${r.siprSqNumber}" data-qty-informed="${r.quantityInformed ?? 0}" data-qty-current="${r.quantityCurrent ?? 0}" title="Edit Location / Quantity">
                 <i class="fas fa-edit"></i> <span>Edit</span>
               </button>
-              ${forkliftUseEnabled ? `
-              <button type="button" class="btn btn-forklift btn-request-forklift" data-location="${escapeHtml(r.locationCode)}" data-product="${escapeHtml(r.productCode)}" data-product-name="${escapeHtml(r.productName || '')}" title="Request Forklift Driver">
+              <button type="button" class="btn btn-forklift btn-request-forklift${forkliftUseEnabled ? '' : ' is-disabled'}" data-location="${escapeHtml(r.locationCode)}" data-product="${escapeHtml(r.productCode)}" data-product-name="${escapeHtml(r.productName || '')}" title="${forkliftUseEnabled ? 'Request Forklift Driver' : 'Forklift is disabled in Setting Forklift Driver'}" aria-disabled="${forkliftUseEnabled ? 'false' : 'true'}">
                 <i class="fas fa-truck"></i> <span>Forklift</span>
-              </button>` : ''}
+              </button>
               <button type="button" class="btn btn-delete btn-delete-record" data-location="${escapeHtml(r.locationCode)}" data-product="${escapeHtml(r.productCode)}" data-entry="${escapeHtml(entryDt)}" data-sipr="${r.siprSqNumber}" title="Delete">
                 <i class="fas fa-trash-alt"></i> <span>Del</span>
               </button>
@@ -774,6 +773,7 @@ document.addEventListener('DOMContentLoaded', () => {
     tbody.querySelectorAll('.btn-delete-record').forEach(btn => {
       btn.addEventListener('click', () => confirmDelete(btn.dataset));
     });
+    syncForkliftButtonsState();
   }
 
   const editQuantityCurrentModal = document.getElementById('editQuantityCurrentModal');
@@ -932,6 +932,16 @@ document.addEventListener('DOMContentLoaded', () => {
     return 'User';
   }
 
+  function syncForkliftButtonsState() {
+    document.querySelectorAll('.btn-request-forklift').forEach((btn) => {
+      btn.classList.toggle('is-disabled', !forkliftUseEnabled);
+      btn.setAttribute('aria-disabled', forkliftUseEnabled ? 'false' : 'true');
+      btn.title = forkliftUseEnabled
+        ? 'Request Forklift Driver'
+        : 'Forklift is disabled in Setting Forklift Driver';
+    });
+  }
+
   async function loadForkliftDrivers() {
     try {
       const res = await fetch(`${API_BASE}/api/forklift-drivers/assigned`, {
@@ -943,6 +953,7 @@ document.addEventListener('DOMContentLoaded', () => {
         forkliftPreferredMessageType = 'SMS';
         forkliftUseEnabled = true;
         forkliftDriversLoadedAt = 0;
+        syncForkliftButtonsState();
         return;
       }
       // Only drivers assigned in Settings → Setting Forklift Driver
@@ -952,12 +963,14 @@ document.addEventListener('DOMContentLoaded', () => {
         ? 'EMAIL'
         : 'SMS';
       forkliftDriversLoadedAt = Date.now();
+      syncForkliftButtonsState();
     } catch (err) {
       console.error('Error loading forklift drivers:', err);
       forkliftDrivers = [];
       forkliftPreferredMessageType = 'SMS';
       forkliftUseEnabled = true;
       forkliftDriversLoadedAt = 0;
+      syncForkliftButtonsState();
     }
   }
 
@@ -1063,7 +1076,7 @@ document.addEventListener('DOMContentLoaded', () => {
   async function openForkliftRequestModal(dataset) {
     if (!forkliftRequestModal) return;
     if (!forkliftUseEnabled) {
-      alert('Forklift requests are disabled in Setting Forklift Driver.');
+      alert('Forklift is disabled. Turn on Use forklift in Setting Forklift Driver to enable requests.');
       return;
     }
     pendingForkliftPayload = null;

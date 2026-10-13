@@ -121,6 +121,19 @@
             background: #0d9488;
         }
 
+        body.location-product-page .results-container .td-actions .btn-forklift.is-disabled,
+        body.location-product-page .results-container .td-actions .btn-forklift[aria-disabled="true"] {
+            background: #94a3b8;
+            color: #f8fafc;
+            opacity: 0.7;
+            cursor: not-allowed;
+        }
+
+        body.location-product-page .results-container .td-actions .btn-forklift.is-disabled:hover,
+        body.location-product-page .results-container .td-actions .btn-forklift[aria-disabled="true"]:hover {
+            background: #94a3b8;
+        }
+
         @media (max-width: 768px) {
             body.location-product-page .results-container .th-actions,
             body.location-product-page .results-container .td-actions {
