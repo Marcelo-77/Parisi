@@ -94,9 +94,28 @@
         } catch {
           // ignore storage errors
         }
+
+        const apps = Array.isArray(data.applications)
+          ? data.applications.map((app) => String(app || '').trim()).filter(Boolean)
+          : [];
+
+        if (data.isRoot || apps.includes('warehouse.html')) {
+          return '/warehouse.html';
+        }
+
+        const preferred = [
+          'Search-Product-Tablet.html',
+          'location-product.html',
+          'pesquisa.html',
+          'picking.html'
+        ];
+        const preferredHit = preferred.find((app) => apps.includes(app));
+        if (preferredHit) return `/${preferredHit}`;
+
+        if (apps.length > 0) return `/${apps[0]}`;
       }
     } catch {
-      // ignore menu-access errors; still land on warehouse
+      // ignore menu-access errors
     }
     return '/warehouse.html';
   }
