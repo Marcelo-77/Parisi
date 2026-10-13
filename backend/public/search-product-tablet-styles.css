@@ -133,16 +133,8 @@
   outline-offset: 2px;
 }
 
-.search-product-tablet-page .spt-exact-code:has(input:disabled) {
-  opacity: 0.55;
-  cursor: not-allowed;
-  background: #f1f5f9;
-  border-color: #e2e8f0;
-  box-shadow: none;
-}
-
-.search-product-tablet-page .spt-exact-code:has(input:disabled) input {
-  cursor: not-allowed;
+.search-product-tablet-page .spt-exact-code[hidden] {
+  display: none !important;
 }
 
 @media (max-width: 700px) {

@@ -8,6 +8,7 @@
     searchByField: document.getElementById('searchByField'),
     searchByRadios: Array.from(document.querySelectorAll('input[name="searchByFieldRadio"]')),
     exactCodeCheckbox: document.getElementById('exactCodeCheckbox'),
+    exactCodeLabel: document.querySelector('label.spt-exact-code'),
     searchInput: document.getElementById('searchInput'),
     searchBtn: document.getElementById('searchBtn'),
     status: document.getElementById('sptStatus'),
@@ -37,18 +38,22 @@
   function syncExactCodeCheckbox(searchBy) {
     if (!els.exactCodeCheckbox) return;
     if (searchBy === 'nome') {
-      if (!els.exactCodeCheckbox.disabled) {
+      if (!els.exactCodeCheckbox.disabled && els.exactCodeLabel?.style.display !== 'none') {
         exactCodePreference = els.exactCodeCheckbox.checked;
       }
       els.exactCodeCheckbox.checked = false;
       els.exactCodeCheckbox.disabled = true;
+      if (els.exactCodeLabel) els.exactCodeLabel.hidden = true;
       return;
     }
     els.exactCodeCheckbox.disabled = false;
     els.exactCodeCheckbox.checked = exactCodePreference !== false;
+    if (els.exactCodeLabel) els.exactCodeLabel.hidden = false;
   }
 
-  function syncSearchByField(value) {
+  function syncSearchByField(value, options = {}) {
+    const { clearInput = false } = options;
+    const previous = els.searchByField?.value === 'nome' ? 'nome' : 'codigo';
     const next = value === 'nome' ? 'nome' : 'codigo';
     if (els.searchByField) els.searchByField.value = next;
     els.searchByRadios.forEach((radio) => {
@@ -56,6 +61,9 @@
     });
     syncExactCodeCheckbox(next);
     if (els.searchInput) {
+      if (clearInput && previous !== next) {
+        els.searchInput.value = '';
+      }
       els.searchInput.placeholder = next === 'nome'
         ? 'Enter name...'
         : (isExactCodeEnabled() ? 'Enter exact code...' : 'Enter code...');
@@ -328,12 +336,12 @@
     els.searchByRadios.forEach((radio) => {
       radio.addEventListener('change', () => {
         if (!radio.checked) return;
-        syncSearchByField(radio.value);
+        syncSearchByField(radio.value, { clearInput: true });
         els.searchInput?.focus();
       });
     });
     els.exactCodeCheckbox?.addEventListener('change', () => {
-      if (els.exactCodeCheckbox.disabled) return;
+      if (els.exactCodeCheckbox.disabled || els.exactCodeLabel?.hidden) return;
       exactCodePreference = els.exactCodeCheckbox.checked;
       if (els.searchInput && getSearchBy() === 'codigo') {
         els.searchInput.placeholder = isExactCodeEnabled()
