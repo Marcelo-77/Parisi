@@ -41,6 +41,7 @@ router.get('/assigned', async (req, res) => {
       data: result.users,
       preferredMessageType: result.preferredMessageType,
       allowReassignToOtherDriver: !!result.allowReassignToOtherDriver,
+      useForklift: result.useForklift !== false,
       isForkliftDriver: isDriver,
       total: result.users.length
     });
@@ -54,6 +55,7 @@ router.put('/', async (req, res) => {
   try {
     const actor = await getActor(req);
     const assignedIds = req.body?.assignedIds || req.body?.assigned || [];
+    const useForklift = req.body?.useForklift;
     const preferredMessageType = req.body?.preferredMessageType;
     const allowReassignToOtherDriver = req.body?.allowReassignToOtherDriver;
     const waitingTimeoutEnabled = req.body?.waitingTimeoutEnabled;
@@ -66,6 +68,7 @@ router.put('/', async (req, res) => {
       assignedIds,
       actor,
       {
+        useForklift,
         preferredMessageType,
         allowReassignToOtherDriver,
         waitingTimeoutEnabled,

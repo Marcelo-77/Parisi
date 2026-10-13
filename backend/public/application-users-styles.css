@@ -117,6 +117,78 @@
   pointer-events: none;
 }
 
+.setting-forklift-driver-page .app-users-card.is-disabled #forkliftDriversActions {
+  pointer-events: auto;
+  opacity: 1;
+}
+
+.setting-forklift-driver-page .app-users-toggle-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+}
+
+.setting-forklift-driver-page .app-users-toggle-copy label {
+  display: block;
+  font-weight: 600;
+  color: #1f2937;
+  cursor: pointer;
+}
+
+.setting-forklift-driver-page .app-users-toggle-copy .app-users-help {
+  margin: 0.35rem 0 0;
+}
+
+.setting-forklift-driver-page .app-users-switch {
+  position: relative;
+  display: inline-flex;
+  flex-shrink: 0;
+  width: 52px;
+  height: 30px;
+  cursor: pointer;
+}
+
+.setting-forklift-driver-page .app-users-switch input {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.setting-forklift-driver-page .app-users-switch-slider {
+  position: absolute;
+  inset: 0;
+  border-radius: 999px;
+  background: #d1d5db;
+  transition: background 0.2s ease;
+}
+
+.setting-forklift-driver-page .app-users-switch-slider::before {
+  content: '';
+  position: absolute;
+  width: 24px;
+  height: 24px;
+  left: 3px;
+  top: 3px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.18);
+  transition: transform 0.2s ease;
+}
+
+.setting-forklift-driver-page .app-users-switch input:checked + .app-users-switch-slider {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.setting-forklift-driver-page .app-users-switch input:checked + .app-users-switch-slider::before {
+  transform: translateX(22px);
+}
+
+.setting-forklift-driver-page .app-users-switch input:focus-visible + .app-users-switch-slider {
+  outline: 2px solid #667eea;
+  outline-offset: 2px;
+}
+
 .app-users-card-head {
   display: flex;
   flex-wrap: wrap;

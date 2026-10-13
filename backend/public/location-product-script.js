@@ -750,9 +750,10 @@ document.addEventListener('DOMContentLoaded', () => {
               <button type="button" class="btn btn-edit btn-edit-qty-current" data-location="${escapeHtml(r.locationCode)}" data-product="${escapeHtml(r.productCode)}" data-entry="${escapeHtml(entryDt)}" data-sipr="${r.siprSqNumber}" data-qty-informed="${r.quantityInformed ?? 0}" data-qty-current="${r.quantityCurrent ?? 0}" title="Edit Location / Quantity">
                 <i class="fas fa-edit"></i> <span>Edit</span>
               </button>
+              ${forkliftUseEnabled ? `
               <button type="button" class="btn btn-forklift btn-request-forklift" data-location="${escapeHtml(r.locationCode)}" data-product="${escapeHtml(r.productCode)}" data-product-name="${escapeHtml(r.productName || '')}" title="Request Forklift Driver">
                 <i class="fas fa-truck"></i> <span>Forklift</span>
-              </button>
+              </button>` : ''}
               <button type="button" class="btn btn-delete btn-delete-record" data-location="${escapeHtml(r.locationCode)}" data-product="${escapeHtml(r.productCode)}" data-entry="${escapeHtml(entryDt)}" data-sipr="${r.siprSqNumber}" title="Delete">
                 <i class="fas fa-trash-alt"></i> <span>Del</span>
               </button>
@@ -873,6 +874,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const forkliftMessageType = document.getElementById('forkliftMessageType');
   let forkliftDrivers = [];
   let forkliftPreferredMessageType = 'SMS';
+  let forkliftUseEnabled = true;
   let pendingForkliftPayload = null;
   let cachedRequesterName = null;
   let forkliftDriversLoadedAt = 0;
@@ -939,11 +941,13 @@ document.addEventListener('DOMContentLoaded', () => {
       if (!res.ok || !data.success) {
         forkliftDrivers = [];
         forkliftPreferredMessageType = 'SMS';
+        forkliftUseEnabled = true;
         forkliftDriversLoadedAt = 0;
         return;
       }
       // Only drivers assigned in Settings → Setting Forklift Driver
-      forkliftDrivers = Array.isArray(data.data) ? data.data.slice() : [];
+      forkliftUseEnabled = data.useForklift !== false;
+      forkliftDrivers = forkliftUseEnabled && Array.isArray(data.data) ? data.data.slice() : [];
       forkliftPreferredMessageType = String(data.preferredMessageType || 'SMS').trim().toUpperCase() === 'EMAIL'
         ? 'EMAIL'
         : 'SMS';
@@ -952,6 +956,7 @@ document.addEventListener('DOMContentLoaded', () => {
       console.error('Error loading forklift drivers:', err);
       forkliftDrivers = [];
       forkliftPreferredMessageType = 'SMS';
+      forkliftUseEnabled = true;
       forkliftDriversLoadedAt = 0;
     }
   }
@@ -1057,6 +1062,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
   async function openForkliftRequestModal(dataset) {
     if (!forkliftRequestModal) return;
+    if (!forkliftUseEnabled) {
+      alert('Forklift requests are disabled in Setting Forklift Driver.');
+      return;
+    }
     pendingForkliftPayload = null;
 
     const locationCode = dataset.location || '';

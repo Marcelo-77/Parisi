@@ -109,7 +109,7 @@ async function processWaitingDriverTimeouts() {
     await messageRequestService.ensureTable();
 
     const settings = await forkliftDriverService.getSettings();
-    if (!settings.waitingTimeoutEnabled) {
+    if (!settings.useForklift || !settings.waitingTimeoutEnabled) {
       return { processed: 0, disabled: true };
     }
     const minutes = settings.waitingTimeoutMinutes;

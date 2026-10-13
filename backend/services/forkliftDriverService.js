@@ -3,6 +3,7 @@ const { query } = require('../config/database');
 const TABLE = 'forklift_drivers';
 const SETTINGS_TABLE = 'forklift_driver_settings';
 const DEFAULT_MESSAGE_TYPE = 'SMS';
+const DEFAULT_USE_FORKLIFT = true;
 const DEFAULT_ALLOW_REASSIGN = false;
 const DEFAULT_WAITING_TIMEOUT_ENABLED = false;
 const DEFAULT_WAITING_TIMEOUT_MINUTES = 15;
@@ -149,14 +150,18 @@ async function ensureTable() {
     ALTER TABLE ${SETTINGS_TABLE}
     ADD COLUMN IF NOT EXISTS notify_requester_on_complete BOOLEAN NOT NULL DEFAULT false
   `).catch(() => {});
+  await query(`
+    ALTER TABLE ${SETTINGS_TABLE}
+    ADD COLUMN IF NOT EXISTS use_forklift BOOLEAN NOT NULL DEFAULT true
+  `).catch(() => {});
   await query(
     `
     INSERT INTO ${SETTINGS_TABLE} (
       id, preferred_message_type, allow_reassign_to_other_driver,
       waiting_timeout_enabled, waiting_timeout_minutes, waiting_timeout_notify_user_ids,
-      daily_inactive_enabled, daily_inactive_time, notify_requester_on_complete
+      daily_inactive_enabled, daily_inactive_time, notify_requester_on_complete, use_forklift
     )
-    VALUES (1, $1, $2, $3, $4, $5, $6, $7, $8)
+    VALUES (1, $1, $2, $3, $4, $5, $6, $7, $8, $9)
     ON CONFLICT (id) DO NOTHING
   `,
     [
@@ -167,7 +172,8 @@ async function ensureTable() {
       '[]',
       DEFAULT_DAILY_INACTIVE_ENABLED,
       DEFAULT_DAILY_INACTIVE_TIME,
-      DEFAULT_NOTIFY_REQUESTER_ON_COMPLETE
+      DEFAULT_NOTIFY_REQUESTER_ON_COMPLETE,
+      DEFAULT_USE_FORKLIFT
     ]
   );
 }
@@ -189,12 +195,14 @@ async function getSettings() {
   const result = await query(
     `SELECT preferred_message_type, allow_reassign_to_other_driver,
             waiting_timeout_enabled, waiting_timeout_minutes, waiting_timeout_notify_user_ids,
-            daily_inactive_enabled, daily_inactive_time, notify_requester_on_complete
+            daily_inactive_enabled, daily_inactive_time, notify_requester_on_complete,
+            use_forklift
      FROM ${SETTINGS_TABLE}
      WHERE id = 1`
   );
   const row = result.rows[0] || {};
   return {
+    useForklift: normalizeBoolean(row.use_forklift, DEFAULT_USE_FORKLIFT),
     preferredMessageType: normalizeMessageType(row.preferred_message_type || DEFAULT_MESSAGE_TYPE),
     allowReassignToOtherDriver: normalizeBoolean(
       row.allow_reassign_to_other_driver,
@@ -230,6 +238,7 @@ async function getPreferredMessageType() {
 }
 
 async function setSettings({
+  useForklift,
   preferredMessageType,
   allowReassignToOtherDriver,
   waitingTimeoutEnabled,
@@ -241,6 +250,9 @@ async function setSettings({
 } = {}) {
   await ensureTable();
   const current = await getSettings();
+  const nextUseForklift = useForklift !== undefined
+    ? normalizeBoolean(useForklift, current.useForklift)
+    : current.useForklift;
   const nextType = preferredMessageType != null && String(preferredMessageType).trim() !== ''
     ? normalizeMessageType(preferredMessageType)
     : current.preferredMessageType;
@@ -266,7 +278,7 @@ async function setSettings({
     ? normalizeBoolean(notifyRequesterOnComplete, current.notifyRequesterOnComplete)
     : current.notifyRequesterOnComplete;
 
-  if (nextTimeoutEnabled && nextNotifyIds.length === 0) {
+  if (nextUseForklift && nextTimeoutEnabled && nextNotifyIds.length === 0) {
     throw new Error('Select at least one user to receive the Waiting for driver timeout message');
   }
 
@@ -282,10 +294,10 @@ async function setSettings({
     INSERT INTO ${SETTINGS_TABLE} (
       id, preferred_message_type, allow_reassign_to_other_driver,
       waiting_timeout_enabled, waiting_timeout_minutes, waiting_timeout_notify_user_ids,
-      daily_inactive_enabled, daily_inactive_time, notify_requester_on_complete,
+      daily_inactive_enabled, daily_inactive_time, notify_requester_on_complete, use_forklift,
       updated_at
     )
-    VALUES (1, $1, $2, $3, $4, $5, $6, $7, $8, CURRENT_TIMESTAMP)
+    VALUES (1, $1, $2, $3, $4, $5, $6, $7, $8, $9, CURRENT_TIMESTAMP)
     ON CONFLICT (id)
     DO UPDATE SET
       preferred_message_type = EXCLUDED.preferred_message_type,
@@ -296,6 +308,7 @@ async function setSettings({
       daily_inactive_enabled = EXCLUDED.daily_inactive_enabled,
       daily_inactive_time = EXCLUDED.daily_inactive_time,
       notify_requester_on_complete = EXCLUDED.notify_requester_on_complete,
+      use_forklift = EXCLUDED.use_forklift,
       updated_at = CURRENT_TIMESTAMP
   `,
     [
@@ -306,7 +319,8 @@ async function setSettings({
       JSON.stringify(nextNotifyIds),
       nextDailyInactiveEnabled,
       nextDailyInactiveTime,
-      nextNotifyOnComplete
+      nextNotifyOnComplete,
+      nextUseForklift
     ]
   );
   return getSettings();
@@ -319,6 +333,7 @@ async function setPreferredMessageType(messageType) {
 
 function withSettingsFields(settings) {
   return {
+    useForklift: settings.useForklift,
     preferredMessageType: settings.preferredMessageType,
     allowReassignToOtherDriver: settings.allowReassignToOtherDriver,
     waitingTimeoutEnabled: settings.waitingTimeoutEnabled,
@@ -399,6 +414,7 @@ async function saveAssignments(assignedIds, actor = {}, options = {}) {
   }
 
   const hasSettingsUpdate = [
+    'useForklift',
     'preferredMessageType',
     'allowReassignToOtherDriver',
     'waitingTimeoutEnabled',
@@ -411,6 +427,7 @@ async function saveAssignments(assignedIds, actor = {}, options = {}) {
 
   if (hasSettingsUpdate) {
     await setSettings({
+      useForklift: options.useForklift,
       preferredMessageType: options.preferredMessageType,
       allowReassignToOtherDriver: options.allowReassignToOtherDriver,
       waitingTimeoutEnabled: options.waitingTimeoutEnabled,
