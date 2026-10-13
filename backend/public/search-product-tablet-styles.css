@@ -350,15 +350,19 @@
 }
 
 .search-product-tablet-page #productsTable .spt-col-code {
-  width: 28%;
+  width: 22%;
 }
 
 .search-product-tablet-page #productsTable .spt-col-name {
-  width: 52%;
+  width: 38%;
+}
+
+.search-product-tablet-page #productsTable .spt-col-category {
+  width: 24%;
 }
 
 .search-product-tablet-page #productsTable .spt-col-qty {
-  width: 20%;
+  width: 16%;
 }
 
 .search-product-tablet-page #locationsTable .spt-col-loc {
@@ -369,7 +373,7 @@
   width: 22%;
 }
 
-.search-product-tablet-page #locationsTable .spt-col-category {
+.search-product-tablet-page #locationsTable .spt-col-section {
   width: 30%;
 }
 
