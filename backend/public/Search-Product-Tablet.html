@@ -132,7 +132,7 @@
                             <h2><i class="fas fa-map-marker-alt"></i> Product Locations</h2>
                             <span id="selectedProductLabel" class="spt-selected-label"></span>
                         </div>
-                        <p class="spt-locations-hint">Locations with situation Full and active status (A).</p>
+                        <p class="spt-locations-hint" id="sptLocationsHint">Locations with situation Full and active status (A).</p>
                         <div class="spt-table-wrap">
                             <table class="spt-table product-location-table" id="locationsTable">
                                 <thead>
@@ -158,6 +158,90 @@
         <footer class="footer">
             <p>&copy; 2026 Double-Y IT Systems. All rights reserved.</p>
         </footer>
+    </div>
+
+    <div id="sptForkliftRequestModal" class="modal spt-forklift-modal" hidden>
+        <div class="modal-content spt-forklift-modal-content">
+            <div class="modal-header success spt-forklift-modal-header">
+                <h3><i class="fas fa-truck"></i> Request Forklift Driver</h3>
+                <button type="button" class="modal-close" id="sptCloseForkliftRequestModal" aria-label="Close">&times;</button>
+            </div>
+            <form id="sptForkliftRequestForm" novalidate>
+                <div class="spt-forklift-scroll">
+                    <div class="spt-forklift-meta">
+                        <div class="form-group">
+                            <label for="sptForkliftRequestNumber">Request #</label>
+                            <input type="text" id="sptForkliftRequestNumber" class="input-readonly" readonly>
+                        </div>
+                        <div class="form-group">
+                            <label for="sptForkliftRequestDatetime">Date / Time</label>
+                            <input type="text" id="sptForkliftRequestDatetime" class="input-readonly" readonly>
+                        </div>
+                        <div class="form-group">
+                            <label for="sptForkliftMessageType">Request type *</label>
+                            <select id="sptForkliftMessageType" required disabled title="Configured in Settings → Setting Forklift Driver">
+                                <option value="SMS">SMS</option>
+                                <option value="EMAIL">Email</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="sptForkliftPriority">Priority *</label>
+                            <select id="sptForkliftPriority" required>
+                                <option value="LOW">Low</option>
+                                <option value="NORMAL" selected>Normal</option>
+                                <option value="HIGH">High</option>
+                                <option value="URGENT">Urgent</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="spt-forklift-fields">
+                        <div class="form-group">
+                            <label for="sptForkliftSubject">Subject *</label>
+                            <input type="text" id="sptForkliftSubject" maxlength="255" value="Lower the pallet" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="sptForkliftRequester">Requested by</label>
+                            <input type="text" id="sptForkliftRequester" class="input-readonly" readonly>
+                        </div>
+                        <div class="form-group">
+                            <label for="sptForkliftDriver">Forklift driver *</label>
+                            <select id="sptForkliftDriver" required>
+                                <option value="">Select forklift driver...</option>
+                            </select>
+                            <small id="sptForkliftDriverContact"></small>
+                        </div>
+                        <div class="form-group">
+                            <label for="sptForkliftMessageContent">Message content *</label>
+                            <textarea id="sptForkliftMessageContent" rows="5" required></textarea>
+                        </div>
+                    </div>
+                </div>
+                <div class="spt-forklift-footer">
+                    <button type="button" class="btn btn-secondary spt-btn" id="sptCancelForkliftRequestBtn">Cancel</button>
+                    <button type="submit" class="btn btn-primary spt-btn" data-write-action="true">
+                        <i class="fas fa-paper-plane"></i> Continue
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="sptForkliftConfirmModal" class="modal spt-forklift-modal" hidden>
+        <div class="modal-content spt-forklift-modal-content spt-forklift-confirm-content">
+            <div class="modal-header success spt-forklift-modal-header">
+                <h3><i class="fas fa-circle-question"></i> Confirm send</h3>
+                <button type="button" class="modal-close" id="sptCloseForkliftConfirmModal" aria-label="Close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p class="spt-forklift-confirm-text" id="sptForkliftConfirmText"></p>
+            </div>
+            <div class="spt-forklift-footer">
+                <button type="button" class="btn btn-secondary spt-btn" id="sptCancelForkliftConfirmBtn">Cancel</button>
+                <button type="button" class="btn btn-primary spt-btn" id="sptConfirmForkliftSendBtn" data-write-action="true">
+                    <i class="fas fa-check"></i> Confirm &amp; Send
+                </button>
+            </div>
+        </div>
     </div>
 
     <script src="location-page-close.js"></script>

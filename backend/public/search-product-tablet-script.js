@@ -1,6 +1,8 @@
 (function () {
   const API_WAREHOUSE = '/api/warehouse';
   const API_LOCATION_PRODUCT = '/api/location-product';
+  const API_FORKLIFT_DRIVERS = '/api/forklift-drivers';
+  const API_MESSAGE_REQUEST = '/api/message-request';
 
   const els = {
     panel: document.getElementById('sptPanel'),
@@ -18,11 +20,20 @@
     productsBody: document.getElementById('productsBody'),
     locationsCard: document.getElementById('locationsCard'),
     locationsBody: document.getElementById('locationsBody'),
+    locationsHint: document.getElementById('sptLocationsHint'),
     selectedProductLabel: document.getElementById('selectedProductLabel'),
     totalItems: document.getElementById('totalItems'),
     lowStockItems: document.getElementById('lowStockItems'),
     totalEntradas: document.getElementById('totalEntradas'),
-    totalSaidas: document.getElementById('totalSaidas')
+    totalSaidas: document.getElementById('totalSaidas'),
+    forkliftRequestModal: document.getElementById('sptForkliftRequestModal'),
+    forkliftConfirmModal: document.getElementById('sptForkliftConfirmModal'),
+    forkliftRequestForm: document.getElementById('sptForkliftRequestForm'),
+    forkliftDriverSelect: document.getElementById('sptForkliftDriver'),
+    forkliftMessageType: document.getElementById('sptForkliftMessageType'),
+    forkliftDriverContact: document.getElementById('sptForkliftDriverContact'),
+    forkliftConfirmText: document.getElementById('sptForkliftConfirmText'),
+    forkliftConfirmSendBtn: document.getElementById('sptConfirmForkliftSendBtn')
   };
 
   let exactCodePreference = true;
@@ -74,6 +85,14 @@
 
   let products = [];
   let selectedCode = '';
+  let selectedProduct = null;
+  let lastLocations = [];
+  let forkliftUseEnabled = false;
+  let forkliftDrivers = [];
+  let forkliftPreferredMessageType = 'SMS';
+  let pendingForkliftPayload = null;
+  let cachedRequesterName = null;
+  let forkliftContext = null;
 
   function isTabletOrPhone() {
     const coarse = window.matchMedia('(pointer: coarse)').matches;
@@ -174,7 +193,15 @@
     }).join('');
   }
 
+  function syncLocationsHint() {
+    if (!els.locationsHint) return;
+    els.locationsHint.textContent = forkliftUseEnabled
+      ? 'Locations with situation Full and active status (A). Tap a Location Code to request a forklift driver.'
+      : 'Locations with situation Full and active status (A).';
+  }
+
   function renderLocations(list, product) {
+    selectedProduct = product || selectedProduct;
     const code = product?.codigo || selectedCode || '';
     const name = product?.nome || '';
     if (els.selectedProductLabel) {
@@ -182,20 +209,26 @@
         ? `${code}${name ? ` — ${name}` : ''}`
         : '';
     }
+    syncLocationsHint();
 
     if (!Array.isArray(list) || !list.length) {
+      lastLocations = [];
       setLocationsEmpty('No locations (situation Full, status A) for this product.');
       return;
     }
 
+    lastLocations = list.slice();
     els.locationsBody.innerHTML = list.map((row) => {
-      const locationCode = row.locationCode != null ? row.locationCode : row.location_code;
+      const locationCode = String(row.locationCode != null ? row.locationCode : row.location_code || '').trim();
       const accessType = row.accessType != null ? row.accessType : (row.access_type ?? '');
       const section = row.section != null ? row.section : '';
       const quantityCurrent = row.quantityCurrent != null ? row.quantityCurrent : (row.quantity_current ?? 0);
+      const locCell = forkliftUseEnabled && locationCode
+        ? `<button type="button" class="spt-location-link" data-location="${escapeHtml(locationCode)}" data-section="${escapeHtml(section || '')}" title="Request forklift for ${escapeHtml(locationCode)}"><i class="fas fa-truck" aria-hidden="true"></i><span>${escapeHtml(locationCode)}</span></button>`
+        : escapeHtml(locationCode || '-');
       return `
         <tr>
-          <td class="spt-col-loc">${escapeHtml(locationCode || '-')}</td>
+          <td class="spt-col-loc">${locCell}</td>
           <td class="spt-col-access">${escapeHtml(accessType || '-')}</td>
           <td class="spt-col-section">${escapeHtml(section || '-')}</td>
           <td class="spt-col-qty">${escapeHtml(quantityCurrent)}</td>
@@ -209,9 +242,256 @@
     els.searchInput.value = '';
   }
 
+  async function loadForkliftSettings() {
+    try {
+      const res = await fetch(`${API_FORKLIFT_DRIVERS}/assigned`, { credentials: 'include' });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.success) {
+        forkliftUseEnabled = false;
+        forkliftDrivers = [];
+        forkliftPreferredMessageType = 'SMS';
+        syncLocationsHint();
+        return;
+      }
+      forkliftUseEnabled = data.useForklift !== false;
+      forkliftDrivers = forkliftUseEnabled && Array.isArray(data.data) ? data.data.slice() : [];
+      forkliftPreferredMessageType = String(data.preferredMessageType || 'SMS').trim().toUpperCase() === 'EMAIL'
+        ? 'EMAIL'
+        : 'SMS';
+      syncLocationsHint();
+      if (lastLocations.length && selectedProduct) {
+        renderLocations(lastLocations, selectedProduct);
+      }
+    } catch (error) {
+      console.error('Error loading forklift settings:', error);
+      forkliftUseEnabled = false;
+      forkliftDrivers = [];
+      forkliftPreferredMessageType = 'SMS';
+      syncLocationsHint();
+    }
+  }
+
+  function buildForkliftMessageContent({ locationCode, productCode, productName, requester, locationSection }) {
+    const location = String(locationCode || '').trim();
+    const code = String(productCode || '').trim();
+    const name = String(productName || '').trim();
+    const productLine = name ? `${code} - ${name}` : code;
+    const section = String(locationSection || '').trim();
+    const requestedBy = String(requester || '').trim();
+    const lines = [];
+    if (requestedBy) lines.push(`Requested by: ${requestedBy}`);
+    if (section) lines.push(`Location section: ${section}`);
+    lines.push(`Location Code: ${location}`);
+    lines.push(`Product Code and name: ${productLine}`);
+    return lines.join('\n');
+  }
+
+  async function getLoggedRequesterName() {
+    if (cachedRequesterName) return cachedRequesterName;
+    try {
+      const res = await fetch('/api/auth/check', { credentials: 'include' });
+      const data = await res.json();
+      if (data.authenticated && data.user) {
+        cachedRequesterName = data.user.isRoot
+          ? 'Root'
+          : (data.user.nome || data.user.email || 'User');
+        return cachedRequesterName;
+      }
+    } catch (_) { /* ignore */ }
+    return 'User';
+  }
+
+  async function fetchNextForkliftRequestNumber() {
+    try {
+      const metaRes = await fetch(`${API_MESSAGE_REQUEST}/meta`, { credentials: 'include' });
+      const metaData = await metaRes.json();
+      if (metaRes.ok && metaData.success && metaData.data?.nextRequestNumber != null) {
+        return String(metaData.data.nextRequestNumber);
+      }
+    } catch (_) { /* ignore */ }
+    return 'Next available';
+  }
+
+  function fillForkliftDriverOptions(messageType) {
+    if (!els.forkliftDriverSelect) return;
+    const type = String(messageType || 'SMS').toUpperCase();
+    const filtered = forkliftDrivers.filter((user) => {
+      if (type === 'EMAIL') return !!String(user.email || '').trim();
+      return !!String(user.telefone || '').trim();
+    });
+    const previous = els.forkliftDriverSelect.value;
+    let placeholder = 'Select forklift driver...';
+    if (forkliftDrivers.length && !filtered.length) {
+      placeholder = type === 'EMAIL'
+        ? 'Select driver (none with email)...'
+        : 'Select driver (none with phone)...';
+    }
+    els.forkliftDriverSelect.innerHTML = `<option value="">${escapeHtml(placeholder)}</option>`
+      + '<option value="__NOT_DEFINED__">~Driver not defined</option>'
+      + filtered.map((user) => {
+        const id = user.id || '';
+        const name = user.nome || user.email || id;
+        const contact = type === 'EMAIL'
+          ? String(user.email || '').trim()
+          : String(user.telefone || '').trim();
+        const label = contact ? `${name} (${contact})` : name;
+        return `<option value="${escapeHtml(id)}">${escapeHtml(label)}</option>`;
+      }).join('');
+    if (previous === '__NOT_DEFINED__'
+      || (previous && filtered.some((user) => String(user.id) === String(previous)))) {
+      els.forkliftDriverSelect.value = previous;
+    }
+    updateForkliftDriverContactHint();
+  }
+
+  function getSelectedForkliftDriver() {
+    const id = els.forkliftDriverSelect?.value || '';
+    if (!id || id === '__NOT_DEFINED__') return null;
+    return forkliftDrivers.find((user) => String(user.id) === String(id)) || null;
+  }
+
+  function updateForkliftDriverContactHint() {
+    if (!els.forkliftDriverContact) return;
+    if (String(els.forkliftDriverSelect?.value || '') === '__NOT_DEFINED__') {
+      els.forkliftDriverContact.textContent = 'No driver selected — request will wait for a forklift driver to assign.';
+      return;
+    }
+    const driver = getSelectedForkliftDriver();
+    if (!driver) {
+      els.forkliftDriverContact.textContent = '';
+      return;
+    }
+    const phone = String(driver.telefone || '').trim();
+    const email = String(driver.email || '').trim();
+    const parts = [];
+    if (phone) parts.push(`Phone: ${phone}`);
+    if (email) parts.push(`Email: ${email}`);
+    els.forkliftDriverContact.textContent = parts.join(' · ');
+  }
+
+  function refreshForkliftMessageContent(context, requester) {
+    const el = document.getElementById('sptForkliftMessageContent');
+    if (!el || !context) return;
+    el.value = buildForkliftMessageContent({
+      locationCode: context.locationCode || '',
+      productCode: context.productCode || '',
+      productName: context.productName || '',
+      requester: requester || document.getElementById('sptForkliftRequester')?.value || '',
+      locationSection: context.locationSection || ''
+    });
+  }
+
+  function showForkliftModal(modal) {
+    if (!modal) return;
+    modal.hidden = false;
+    modal.classList.add('show');
+  }
+
+  function hideForkliftModal(modal) {
+    if (!modal) return;
+    modal.hidden = true;
+    modal.classList.remove('show');
+  }
+
+  function closeForkliftRequestModal() {
+    hideForkliftModal(els.forkliftRequestModal);
+    pendingForkliftPayload = null;
+    forkliftContext = null;
+  }
+
+  function closeForkliftConfirmModal() {
+    hideForkliftModal(els.forkliftConfirmModal);
+  }
+
+  function openForkliftConfirmModal(payload) {
+    pendingForkliftPayload = payload;
+    if (els.forkliftConfirmText) {
+      const priorityLabel = payload.priority || 'NORMAL';
+      if (payload.driverNotDefined) {
+        els.forkliftConfirmText.textContent =
+          `Create forklift request without a driver?\n\n`
+          + `Status will be: Waiting for driver for request\n`
+          + `Priority: ${priorityLabel}\n\n`
+          + `Subject: ${payload.subject}\n\n`
+          + `${payload.messageContent}`;
+      } else {
+        els.forkliftConfirmText.textContent =
+          `Send ${payload.messageType} to ${payload.assignedToName}?\n\n`
+          + `Priority: ${priorityLabel}\n\n`
+          + `Subject: ${payload.subject}\n\n`
+          + `${payload.messageContent}`;
+      }
+    }
+    showForkliftModal(els.forkliftConfirmModal);
+  }
+
+  async function openTabletForkliftRequest(locationCode, locationSection) {
+    if (!forkliftUseEnabled) {
+      alert('Forklift is disabled. Turn on Use forklift in Setting Forklift Driver to enable requests.');
+      return;
+    }
+    const code = String(locationCode || '').trim();
+    if (!code) return;
+
+    const productCode = String(selectedProduct?.codigo || selectedCode || '').trim();
+    const productName = String(selectedProduct?.nome || '').trim();
+    forkliftContext = {
+      locationCode: code,
+      locationSection: String(locationSection || '').trim(),
+      productCode,
+      productName
+    };
+    pendingForkliftPayload = null;
+
+    document.getElementById('sptForkliftRequestNumber').value = 'Loading...';
+    document.getElementById('sptForkliftRequestDatetime').value = new Date().toLocaleString();
+    document.getElementById('sptForkliftSubject').value = 'Lower the pallet';
+    document.getElementById('sptForkliftRequester').value = cachedRequesterName || 'Loading...';
+    const prioritySelect = document.getElementById('sptForkliftPriority');
+    if (prioritySelect) prioritySelect.value = 'NORMAL';
+    if (els.forkliftDriverSelect && !els.forkliftDriverSelect.options.length) {
+      els.forkliftDriverSelect.innerHTML = '<option value="">Loading drivers...</option>'
+        + '<option value="__NOT_DEFINED__">~Driver not defined</option>';
+    }
+    refreshForkliftMessageContent(forkliftContext, cachedRequesterName || '');
+    showForkliftModal(els.forkliftRequestModal);
+
+    try {
+      const [requester, , nextRequestNumber] = await Promise.all([
+        getLoggedRequesterName(),
+        loadForkliftSettings(),
+        fetchNextForkliftRequestNumber()
+      ]);
+      if (!forkliftUseEnabled) {
+        closeForkliftRequestModal();
+        alert('Forklift is disabled. Turn on Use forklift in Setting Forklift Driver to enable requests.');
+        return;
+      }
+      document.getElementById('sptForkliftRequester').value = requester;
+      document.getElementById('sptForkliftRequestNumber').value = nextRequestNumber;
+      if (els.forkliftMessageType) {
+        els.forkliftMessageType.value = forkliftPreferredMessageType;
+        els.forkliftMessageType.disabled = true;
+      }
+      fillForkliftDriverOptions(forkliftPreferredMessageType);
+      refreshForkliftMessageContent(forkliftContext, requester);
+      els.forkliftDriverSelect?.focus();
+    } catch (error) {
+      console.error('Error preparing tablet forklift request:', error);
+      document.getElementById('sptForkliftRequestNumber').value = 'Next available';
+      const requesterEl = document.getElementById('sptForkliftRequester');
+      if (!requesterEl.value || requesterEl.value === 'Loading...') {
+        requesterEl.value = cachedRequesterName || 'User';
+      }
+      fillForkliftDriverOptions(forkliftPreferredMessageType);
+      refreshForkliftMessageContent(forkliftContext, requesterEl.value);
+    }
+  }
+
   async function loadLocationsForProduct(product) {
     const code = String(product?.codigo || '').trim();
     selectedCode = code;
+    selectedProduct = product || null;
     renderProducts(products);
 
     if (!code) {
@@ -337,6 +617,16 @@
     row.click();
   }
 
+  function onLocationsClick(event) {
+    const link = event.target.closest('.spt-location-link');
+    if (!link || !els.locationsBody?.contains(link)) return;
+    event.preventDefault();
+    openTabletForkliftRequest(
+      link.getAttribute('data-location') || '',
+      link.getAttribute('data-section') || ''
+    );
+  }
+
   function bindEvents() {
     els.searchBtn?.addEventListener('click', searchProducts);
     els.searchInput?.addEventListener('keydown', (event) => {
@@ -373,11 +663,129 @@
     });
     els.productsBody?.addEventListener('click', onProductsClick);
     els.productsBody?.addEventListener('keydown', onProductsKeydown);
+    els.locationsBody?.addEventListener('click', onLocationsClick);
+
+    els.forkliftDriverSelect?.addEventListener('change', updateForkliftDriverContactHint);
+    els.forkliftRequestForm?.addEventListener('submit', (event) => {
+      event.preventDefault();
+      const messageType = forkliftPreferredMessageType || String(els.forkliftMessageType?.value || 'SMS').toUpperCase();
+      const priorityRaw = String(document.getElementById('sptForkliftPriority')?.value || 'NORMAL').trim().toUpperCase();
+      const allowedPriorities = ['LOW', 'NORMAL', 'HIGH', 'URGENT'];
+      const priority = allowedPriorities.includes(priorityRaw) ? priorityRaw : 'NORMAL';
+      const subject = String(document.getElementById('sptForkliftSubject')?.value || '').trim() || 'Lower the pallet';
+      const messageContent = String(document.getElementById('sptForkliftMessageContent')?.value || '').trim();
+      const selectedValue = String(els.forkliftDriverSelect?.value || '');
+      const driverNotDefined = selectedValue === '__NOT_DEFINED__';
+      const driver = getSelectedForkliftDriver();
+
+      if (!selectedValue) {
+        alert('Select a forklift driver or ~Driver not defined.');
+        els.forkliftDriverSelect?.focus();
+        return;
+      }
+      if (!messageContent) {
+        alert('Message content is required.');
+        document.getElementById('sptForkliftMessageContent')?.focus();
+        return;
+      }
+
+      if (driverNotDefined) {
+        openForkliftConfirmModal({
+          messageType,
+          priority,
+          subject,
+          messageContent,
+          driverNotDefined: true,
+          assignedTo: '__NOT_DEFINED__',
+          assignedToName: 'Driver not defined'
+        });
+        return;
+      }
+
+      const phone = String(driver?.telefone || '').trim();
+      const email = String(driver?.email || '').trim();
+      if (messageType === 'SMS' && !phone) {
+        alert('Selected driver has no phone registered.');
+        return;
+      }
+      if (messageType === 'EMAIL' && !email) {
+        alert('Selected driver has no email registered.');
+        return;
+      }
+
+      openForkliftConfirmModal({
+        messageType,
+        priority,
+        subject,
+        messageContent,
+        driverNotDefined: false,
+        assignedTo: driver.id,
+        assignedToName: driver.nome || driver.email || 'Forklift driver',
+        recipientName: driver.nome || driver.email || 'Forklift driver',
+        recipientEmail: email || null,
+        recipientPhone: phone || null
+      });
+    });
+
+    els.forkliftConfirmSendBtn?.addEventListener('click', async () => {
+      if (!pendingForkliftPayload) return;
+      const btn = els.forkliftConfirmSendBtn;
+      if (btn) btn.disabled = true;
+      const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
+      const timeoutId = controller ? setTimeout(() => controller.abort(), 45000) : null;
+      try {
+        const res = await fetch(`${API_MESSAGE_REQUEST}/forklift`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify(pendingForkliftPayload),
+          signal: controller?.signal
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok || !data.success) {
+          throw new Error(data.error || 'Failed to send forklift request');
+        }
+        const reqNo = data.data?.requestNumber != null ? data.data.requestNumber : '';
+        const waiting = !!pendingForkliftPayload.driverNotDefined || !!data.waitingForDriver;
+        const driverName = pendingForkliftPayload.assignedToName || 'Driver not defined';
+        pendingForkliftPayload = null;
+        closeForkliftConfirmModal();
+        closeForkliftRequestModal();
+        if (waiting) {
+          alert(`Request #${reqNo} created.\nStatus: Waiting for driver for request.`);
+        } else if (data.sendPending) {
+          alert(`Request #${reqNo} created.\nStatus: Forklift driver request selected.\nNotification is being sent to ${driverName}.`);
+        } else {
+          alert(`Request #${reqNo} created.\nStatus: Forklift driver request selected.\nMessage sent to ${driverName}.`);
+        }
+      } catch (error) {
+        if (error && error.name === 'AbortError') {
+          alert('Request timed out waiting for the server. Check Search Message Request — the request may still have been created.');
+        } else {
+          alert(error.message || 'Error sending forklift request');
+        }
+      } finally {
+        if (timeoutId) clearTimeout(timeoutId);
+        if (btn) btn.disabled = false;
+      }
+    });
+
+    document.getElementById('sptCloseForkliftRequestModal')?.addEventListener('click', closeForkliftRequestModal);
+    document.getElementById('sptCancelForkliftRequestBtn')?.addEventListener('click', closeForkliftRequestModal);
+    document.getElementById('sptCloseForkliftConfirmModal')?.addEventListener('click', closeForkliftConfirmModal);
+    document.getElementById('sptCancelForkliftConfirmBtn')?.addEventListener('click', closeForkliftConfirmModal);
+    els.forkliftRequestModal?.addEventListener('click', (event) => {
+      if (event.target === els.forkliftRequestModal) closeForkliftRequestModal();
+    });
+    els.forkliftConfirmModal?.addEventListener('click', (event) => {
+      if (event.target === els.forkliftConfirmModal) closeForkliftConfirmModal();
+    });
   }
 
   bindEvents();
   syncSearchByField(getSearchBy());
   loadStatistics();
+  loadForkliftSettings();
 
   if (isTabletOrPhone()) {
     focusFullScreen({ focusInput: true, scrollTarget: els.panel });

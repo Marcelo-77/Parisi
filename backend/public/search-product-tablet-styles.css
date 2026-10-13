@@ -452,3 +452,185 @@
     font-size: 0.95rem;
   }
 }
+
+.search-product-tablet-page .spt-location-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  max-width: 100%;
+  margin: 0;
+  padding: 0.35rem 0.55rem;
+  border: 1px solid #99f6e4;
+  border-radius: 10px;
+  background: #ecfdf5;
+  color: #0f766e;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.search-product-tablet-page .spt-location-link i {
+  flex: 0 0 auto;
+  font-size: 0.95rem;
+}
+
+.search-product-tablet-page .spt-location-link:hover,
+.search-product-tablet-page .spt-location-link:focus-visible {
+  background: #ccfbf1;
+  border-color: #0f766e;
+  outline: none;
+}
+
+.search-product-tablet-page .spt-forklift-modal {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+  align-items: center;
+  justify-content: center;
+  padding: 12px;
+  box-sizing: border-box;
+  background: rgba(15, 23, 42, 0.45);
+}
+
+.search-product-tablet-page .spt-forklift-modal.show {
+  display: flex !important;
+}
+
+.search-product-tablet-page .spt-forklift-modal-content {
+  width: min(720px, 100%);
+  max-height: min(92dvh, 900px);
+  margin: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: 0 20px 50px rgba(15, 23, 42, 0.28);
+}
+
+.search-product-tablet-page .spt-forklift-confirm-content {
+  width: min(560px, 100%);
+}
+
+.search-product-tablet-page .spt-forklift-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  flex: 0 0 auto;
+  padding: 14px 48px;
+  text-align: center;
+}
+
+.search-product-tablet-page .spt-forklift-modal-header h3 {
+  margin: 0;
+  font-size: 1.2rem;
+}
+
+.search-product-tablet-page .spt-forklift-modal .modal-close {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 40px;
+  height: 40px;
+  font-size: 1.6rem;
+  line-height: 1;
+}
+
+.search-product-tablet-page .spt-forklift-scroll {
+  flex: 1 1 auto;
+  overflow: auto;
+  padding: 16px 18px 8px;
+  -webkit-overflow-scrolling: touch;
+}
+
+.search-product-tablet-page .spt-forklift-meta,
+.search-product-tablet-page .spt-forklift-fields {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.search-product-tablet-page .spt-forklift-fields {
+  margin-top: 14px;
+  grid-template-columns: 1fr;
+}
+
+.search-product-tablet-page .spt-forklift-modal .form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+}
+
+.search-product-tablet-page .spt-forklift-modal .form-group label {
+  font-weight: 700;
+  color: #334155;
+  font-size: 0.98rem;
+}
+
+.search-product-tablet-page .spt-forklift-modal .form-group input,
+.search-product-tablet-page .spt-forklift-modal .form-group select,
+.search-product-tablet-page .spt-forklift-modal .form-group textarea {
+  min-height: 52px;
+  padding: 12px 14px;
+  border: 2px solid #e1e5e9;
+  border-radius: 12px;
+  font-size: 1.05rem;
+  background: #fff;
+}
+
+.search-product-tablet-page .spt-forklift-modal .form-group textarea {
+  min-height: 120px;
+  resize: vertical;
+}
+
+.search-product-tablet-page .spt-forklift-modal .input-readonly,
+.search-product-tablet-page .spt-forklift-modal select:disabled {
+  background: #f8fafc;
+  color: #475569;
+}
+
+.search-product-tablet-page .spt-forklift-modal small {
+  color: #64748b;
+  font-size: 0.9rem;
+}
+
+.search-product-tablet-page .spt-forklift-footer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  justify-content: flex-end;
+  flex: 0 0 auto;
+  padding: 14px 18px 18px;
+  border-top: 1px solid #eef1f5;
+  background: #fafbfd;
+}
+
+.search-product-tablet-page .spt-forklift-footer .spt-btn {
+  min-width: 140px;
+}
+
+.search-product-tablet-page .spt-forklift-confirm-text {
+  margin: 0;
+  padding: 18px;
+  white-space: pre-wrap;
+  line-height: 1.5;
+  font-size: 1.05rem;
+  color: #334155;
+}
+
+@media (max-width: 700px) {
+  .search-product-tablet-page .spt-forklift-meta {
+    grid-template-columns: 1fr;
+  }
+
+  .search-product-tablet-page .spt-forklift-footer .spt-btn {
+    flex: 1 1 100%;
+  }
+}
