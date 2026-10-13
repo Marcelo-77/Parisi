@@ -333,15 +333,48 @@
 
 .search-product-tablet-page .spt-table {
   width: 100%;
+  table-layout: fixed;
   border-collapse: collapse;
 }
 
 .search-product-tablet-page .spt-table th,
 .search-product-tablet-page .spt-table td {
-  padding: 14px 16px;
+  padding: 14px 12px;
   text-align: left;
   border-bottom: 1px solid #eef1f5;
   font-size: 1rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  vertical-align: middle;
+}
+
+.search-product-tablet-page #productsTable .spt-col-code {
+  width: 28%;
+}
+
+.search-product-tablet-page #productsTable .spt-col-name {
+  width: 52%;
+}
+
+.search-product-tablet-page #productsTable .spt-col-qty {
+  width: 20%;
+}
+
+.search-product-tablet-page #locationsTable .spt-col-loc {
+  width: 28%;
+}
+
+.search-product-tablet-page #locationsTable .spt-col-access {
+  width: 22%;
+}
+
+.search-product-tablet-page #locationsTable .spt-col-category {
+  width: 30%;
+}
+
+.search-product-tablet-page #locationsTable .spt-col-qty {
+  width: 20%;
 }
 
 .search-product-tablet-page .spt-table th.spt-col-qty,
