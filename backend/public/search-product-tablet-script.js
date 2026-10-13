@@ -9,6 +9,8 @@
     searchByRadios: Array.from(document.querySelectorAll('input[name="searchByFieldRadio"]')),
     exactCodeCheckbox: document.getElementById('exactCodeCheckbox'),
     exactCodeLabel: document.querySelector('label.spt-exact-code'),
+    searchHelpBtn: document.getElementById('sptSearchHelpBtn'),
+    searchHelpPanel: document.getElementById('sptSearchHelpPanel'),
     searchInput: document.getElementById('searchInput'),
     searchBtn: document.getElementById('searchBtn'),
     status: document.getElementById('sptStatus'),
@@ -348,6 +350,16 @@
           ? 'Enter exact code...'
           : 'Enter code...';
       }
+    });
+    els.searchHelpBtn?.addEventListener('click', () => {
+      if (!els.searchHelpPanel) return;
+      const open = els.searchHelpPanel.hasAttribute('hidden');
+      if (open) {
+        els.searchHelpPanel.removeAttribute('hidden');
+      } else {
+        els.searchHelpPanel.setAttribute('hidden', '');
+      }
+      els.searchHelpBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
     });
     els.productsBody?.addEventListener('click', onProductsClick);
     els.productsBody?.addEventListener('keydown', onProductsKeydown);
