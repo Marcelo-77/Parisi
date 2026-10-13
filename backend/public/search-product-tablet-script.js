@@ -7,6 +7,7 @@
     searchBar: document.getElementById('sptSearchBar'),
     searchByField: document.getElementById('searchByField'),
     searchByRadios: Array.from(document.querySelectorAll('input[name="searchByFieldRadio"]')),
+    exactCodeCheckbox: document.getElementById('exactCodeCheckbox'),
     searchInput: document.getElementById('searchInput'),
     searchBtn: document.getElementById('searchBtn'),
     status: document.getElementById('sptStatus'),
@@ -21,10 +22,30 @@
     totalSaidas: document.getElementById('totalSaidas')
   };
 
+  let exactCodePreference = true;
+
   function getSearchBy() {
     const checked = els.searchByRadios.find((radio) => radio.checked);
     const value = checked?.value || els.searchByField?.value || 'codigo';
     return value === 'nome' ? 'nome' : 'codigo';
+  }
+
+  function isExactCodeEnabled() {
+    return getSearchBy() === 'codigo' && !!els.exactCodeCheckbox?.checked;
+  }
+
+  function syncExactCodeCheckbox(searchBy) {
+    if (!els.exactCodeCheckbox) return;
+    if (searchBy === 'nome') {
+      if (!els.exactCodeCheckbox.disabled) {
+        exactCodePreference = els.exactCodeCheckbox.checked;
+      }
+      els.exactCodeCheckbox.checked = false;
+      els.exactCodeCheckbox.disabled = true;
+      return;
+    }
+    els.exactCodeCheckbox.disabled = false;
+    els.exactCodeCheckbox.checked = exactCodePreference !== false;
   }
 
   function syncSearchByField(value) {
@@ -33,10 +54,11 @@
     els.searchByRadios.forEach((radio) => {
       radio.checked = radio.value === next;
     });
+    syncExactCodeCheckbox(next);
     if (els.searchInput) {
       els.searchInput.placeholder = next === 'nome'
         ? 'Enter name...'
-        : 'Enter code...';
+        : (isExactCodeEnabled() ? 'Enter exact code...' : 'Enter code...');
     }
   }
 
@@ -214,6 +236,9 @@
     try {
       const params = new URLSearchParams();
       params.set(searchBy, term);
+      if (searchBy === 'codigo' && isExactCodeEnabled()) {
+        params.set('codigoExact', 'true');
+      }
       params.set('ordenarPor', searchBy === 'nome' ? 'nome' : 'codigo');
       params.set('direcao', 'asc');
 
@@ -306,6 +331,15 @@
         syncSearchByField(radio.value);
         els.searchInput?.focus();
       });
+    });
+    els.exactCodeCheckbox?.addEventListener('change', () => {
+      if (els.exactCodeCheckbox.disabled) return;
+      exactCodePreference = els.exactCodeCheckbox.checked;
+      if (els.searchInput && getSearchBy() === 'codigo') {
+        els.searchInput.placeholder = isExactCodeEnabled()
+          ? 'Enter exact code...'
+          : 'Enter code...';
+      }
     });
     els.productsBody?.addEventListener('click', onProductsClick);
     els.productsBody?.addEventListener('keydown', onProductsKeydown);

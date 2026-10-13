@@ -76,8 +76,13 @@ class WarehouseService {
     }
 
     if (filtros.codigo) {
-      whereClauses.push(`codigo ILIKE $${paramIndex++}`);
-      queryParams.push(`%${filtros.codigo}%`);
+      if (filtros.codigoExact) {
+        whereClauses.push(`LOWER(TRIM(codigo)) = LOWER(TRIM($${paramIndex++}))`);
+        queryParams.push(String(filtros.codigo));
+      } else {
+        whereClauses.push(`codigo ILIKE $${paramIndex++}`);
+        queryParams.push(`%${filtros.codigo}%`);
+      }
     }
 
     if (filtros.nome) {
