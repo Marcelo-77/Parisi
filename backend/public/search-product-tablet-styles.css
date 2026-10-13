@@ -137,6 +137,67 @@
   display: none !important;
 }
 
+.search-product-tablet-page .spt-help-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  flex: 0 0 auto;
+  margin: 0;
+  padding: 0.65rem 0.9rem;
+  border: 1px solid #c7d2fe;
+  border-radius: 12px;
+  background: #eef2ff;
+  color: #4338ca;
+  font-size: 0.95rem;
+  font-weight: 700;
+  cursor: pointer;
+  user-select: none;
+}
+
+.search-product-tablet-page .spt-help-btn i {
+  font-size: 1.05rem;
+}
+
+.search-product-tablet-page .spt-help-btn[aria-expanded="true"] {
+  border-color: #667eea;
+  background: #e0e7ff;
+  box-shadow: 0 0 0 1px #c7d2fe;
+}
+
+.search-product-tablet-page .spt-help-panel {
+  margin: 0 0 1rem;
+  padding: 0.9rem 1rem;
+  border: 1px solid #c7d2fe;
+  border-radius: 12px;
+  background: #f8fafc;
+  color: #374151;
+}
+
+.search-product-tablet-page .spt-help-panel[hidden] {
+  display: none !important;
+}
+
+.search-product-tablet-page .spt-help-panel h4 {
+  margin: 0 0 0.55rem;
+  font-size: 0.98rem;
+  color: #1f2937;
+}
+
+.search-product-tablet-page .spt-help-panel ul {
+  margin: 0;
+  padding-left: 1.15rem;
+}
+
+.search-product-tablet-page .spt-help-panel li {
+  margin: 0 0 0.45rem;
+  line-height: 1.45;
+  font-size: 0.92rem;
+}
+
+.search-product-tablet-page .spt-help-panel li:last-child {
+  margin-bottom: 0;
+}
+
 @media (max-width: 700px) {
   .search-product-tablet-page .spt-search-by {
     flex-wrap: wrap;

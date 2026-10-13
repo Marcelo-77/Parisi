@@ -72,6 +72,18 @@
                             <input type="checkbox" id="exactCodeCheckbox" checked>
                             <span>Code equals</span>
                         </label>
+                        <button type="button" id="sptSearchHelpBtn" class="spt-help-btn" aria-expanded="false" aria-controls="sptSearchHelpPanel" title="Search help">
+                            <i class="fas fa-circle-question" aria-hidden="true"></i>
+                            <span>Help</span>
+                        </button>
+                    </div>
+                    <div id="sptSearchHelpPanel" class="spt-help-panel" hidden>
+                        <h4>How search works</h4>
+                        <ul>
+                            <li><strong>Code</strong> + <strong>Code equals</strong> checked: finds the product with that exact code.</li>
+                            <li><strong>Code</strong> + <strong>Code equals</strong> unchecked: finds codes that contain the text you typed (partial match).</li>
+                            <li><strong>Name</strong>: Code equals is hidden. Finds product names that contain the text you typed (partial match).</li>
+                        </ul>
                     </div>
                     <select id="searchByField" class="spt-select-hidden" aria-hidden="true" tabindex="-1">
                         <option value="codigo" selected>Code</option>
