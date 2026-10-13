@@ -7,7 +7,7 @@
                         <div class="users-dropdown-menu" id="usersDropdownMenu" aria-hidden="true">
                             <a href="users.html" class="dropdown-item" data-app="users.html" data-write-menu="true"><i class="fas fa-user-plus"></i> New User</a>
                             <a href="pesquisa.html" class="dropdown-item" data-app="pesquisa.html"><i class="fas fa-search"></i> Search User</a>
-                            <a href="change-password.html" class="dropdown-item" data-app="change-password.html" data-always-accessible="true"><i class="fas fa-key"></i> Change Password</a>
+                            <a href="change-password.html" class="dropdown-item" data-app="change-password.html"><i class="fas fa-key"></i> Change Password</a>
                         </div>
                     </div>
                     <div class="master-data-dropdown">
