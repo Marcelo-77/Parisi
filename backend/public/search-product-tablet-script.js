@@ -203,14 +203,6 @@
   function prepareSearchInputForNextEntry() {
     if (!els.searchInput) return;
     els.searchInput.value = '';
-    requestAnimationFrame(() => {
-      try {
-        els.searchInput.focus({ preventScroll: false });
-      } catch (_) {
-        els.searchInput.focus();
-      }
-      els.searchInput.select?.();
-    });
   }
 
   async function loadLocationsForProduct(product) {
@@ -286,7 +278,7 @@
         setStatus('1 product found. Showing locations.');
         await loadLocationsForProduct(list[0]);
         if (isTabletOrPhone()) {
-          focusFullScreen({ focusInput: true, scrollTarget: els.searchBar || els.panel });
+          focusFullScreen({ scrollTarget: els.locationsCard || els.panel });
         }
         return;
       }
@@ -328,7 +320,7 @@
     if (!product) return;
     loadLocationsForProduct(product).then(() => {
       if (isTabletOrPhone()) {
-        focusFullScreen({ focusInput: true, scrollTarget: els.searchBar || els.panel });
+        focusFullScreen({ scrollTarget: els.locationsCard || els.panel });
       }
     });
   }
