@@ -1,3 +1,7 @@
+.search-product-tablet-page {
+  scroll-behavior: smooth;
+}
+
 .search-product-tablet-page .main-content {
   justify-content: stretch;
   width: 100%;
@@ -9,6 +13,27 @@
   margin: 0 auto 24px;
   padding: 18px 16px 28px;
   box-sizing: border-box;
+  outline: none;
+}
+
+.search-product-tablet-page .spt-panel:focus,
+.search-product-tablet-page .spt-panel:focus-visible {
+  outline: none;
+}
+
+@media (max-width: 1024px) {
+  .search-product-tablet-page .container {
+    min-height: 100dvh;
+  }
+
+  .search-product-tablet-page .spt-panel {
+    min-height: calc(100dvh - 220px);
+    scroll-margin-top: 8px;
+  }
+
+  .search-product-tablet-page #locationsCard {
+    scroll-margin-top: 12px;
+  }
 }
 
 .search-product-tablet-page .spt-search-bar {
