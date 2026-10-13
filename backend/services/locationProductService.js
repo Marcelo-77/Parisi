@@ -702,12 +702,12 @@ async function listarProductCodesComQuantidadeAtiva() {
   }
 }
 
-/** location_code, quantity_current e access_type por product_code onde situation = Full e stat_cd_id = 'A' */
+/** location_code, quantity_current, access_type e section por product_code onde situation = Full e stat_cd_id = 'A' */
 async function buscarPorProdutoFullStatus(productCode) {
   if (!productCode || String(productCode).trim() === '') return [];
   const code = String(productCode).trim();
   const sql = `
-    SELECT lp.location_code, lp.quantity_current, wl.access_type
+    SELECT lp.location_code, lp.quantity_current, wl.access_type, wl.section
     FROM ${TABLE} lp
     INNER JOIN situation_product sp ON sp.sipr_sq_number = lp.sipr_sq_number
     LEFT JOIN warehouse_locations wl ON TRIM(LOWER(wl.location)) = TRIM(LOWER(lp.location_code))
@@ -723,7 +723,8 @@ async function buscarPorProdutoFullStatus(productCode) {
     return (result.rows || []).map(row => ({
       locationCode: row.location_code,
       quantityCurrent: parseInt(row.quantity_current, 10) || 0,
-      accessType: row.access_type != null ? String(row.access_type).trim() : ''
+      accessType: row.access_type != null ? String(row.access_type).trim() : '',
+      section: row.section != null ? String(row.section).trim() : ''
     }));
   } catch (error) {
     console.error('❌ Error fetching location_product by product (Full):', error);
