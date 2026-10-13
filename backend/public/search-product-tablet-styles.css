@@ -649,11 +649,17 @@
   z-index: 2;
 }
 
-.search-product-tablet-page .spt-forklift-footer .spt-btn {
+.search-product-tablet-page .spt-forklift-footer .spt-btn,
+.search-product-tablet-page .spt-forklift-footer .btn {
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
   flex: 0 0 auto;
   width: auto;
   min-width: 140px;
   min-height: 46px;
+  visibility: visible !important;
+  opacity: 1 !important;
 }
 
 .search-product-tablet-page .spt-forklift-confirm-text {
