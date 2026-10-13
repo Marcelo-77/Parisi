@@ -96,7 +96,18 @@ function normalizeUserIdList(value) {
   );
 }
 
+let ensureTablePromise = null;
+
 async function ensureTable() {
+  if (ensureTablePromise) return ensureTablePromise;
+  ensureTablePromise = ensureTableInternal().catch((error) => {
+    ensureTablePromise = null;
+    throw error;
+  });
+  return ensureTablePromise;
+}
+
+async function ensureTableInternal() {
   await query(`
     CREATE TABLE IF NOT EXISTS ${TABLE} (
       funcionario_id UUID PRIMARY KEY REFERENCES funcionarios(id) ON DELETE CASCADE,
