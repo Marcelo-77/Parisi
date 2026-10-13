@@ -3,7 +3,8 @@ const crypto = require('crypto');
 const AUTH_SECRET = process.env.AUTH_SECRET || 'double-y-auth-secret';
 const APP_PASSWORD = process.env.APP_PASSWORD || 'yahusha';
 const ROOT_USER = 'root';
-const UNIVERSAL_APPLICATIONS = ['warehouse.html'];
+/** Apps granted to every logged-in user without Application Users. Keep empty. */
+const UNIVERSAL_APPLICATIONS = [];
 const SESSION_COOKIE = 'doubley_session';
 const SESSION_PAYLOAD_SEPARATOR = ':';
 
