@@ -90,9 +90,13 @@
   let forkliftUseEnabled = false;
   let forkliftDrivers = [];
   let forkliftPreferredMessageType = 'SMS';
+  let forkliftDriversLoadedAt = 0;
+  let forkliftDriversLoading = null;
+  let requesterLoading = null;
   let pendingForkliftPayload = null;
   let cachedRequesterName = null;
   let forkliftContext = null;
+  const FORKLIFT_CACHE_TTL_MS = 90 * 1000;
 
   function isTabletOrPhone() {
     const coarse = window.matchMedia('(pointer: coarse)').matches;
@@ -242,33 +246,50 @@
     els.searchInput.value = '';
   }
 
-  async function loadForkliftSettings() {
-    try {
-      const res = await fetch(`${API_FORKLIFT_DRIVERS}/assigned`, { credentials: 'include' });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok || !data.success) {
+  async function loadForkliftSettings(options = {}) {
+    const { force = false, refreshLocations = true } = options;
+    const fresh = !force
+      && forkliftDriversLoadedAt
+      && (Date.now() - forkliftDriversLoadedAt) < FORKLIFT_CACHE_TTL_MS;
+    if (fresh) return;
+    if (forkliftDriversLoading) return forkliftDriversLoading;
+
+    forkliftDriversLoading = (async () => {
+      try {
+        const res = await fetch(`${API_FORKLIFT_DRIVERS}/assigned`, { credentials: 'include' });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok || !data.success) {
+          forkliftUseEnabled = false;
+          forkliftDrivers = [];
+          forkliftPreferredMessageType = 'SMS';
+          forkliftDriversLoadedAt = 0;
+          syncLocationsHint();
+          return;
+        }
+        const previousEnabled = forkliftUseEnabled;
+        forkliftUseEnabled = data.useForklift !== false;
+        forkliftDrivers = forkliftUseEnabled && Array.isArray(data.data) ? data.data.slice() : [];
+        forkliftPreferredMessageType = String(data.preferredMessageType || 'SMS').trim().toUpperCase() === 'EMAIL'
+          ? 'EMAIL'
+          : 'SMS';
+        forkliftDriversLoadedAt = Date.now();
+        syncLocationsHint();
+        if (refreshLocations && previousEnabled !== forkliftUseEnabled && lastLocations.length && selectedProduct) {
+          renderLocations(lastLocations, selectedProduct);
+        }
+      } catch (error) {
+        console.error('Error loading forklift settings:', error);
         forkliftUseEnabled = false;
         forkliftDrivers = [];
         forkliftPreferredMessageType = 'SMS';
+        forkliftDriversLoadedAt = 0;
         syncLocationsHint();
-        return;
+      } finally {
+        forkliftDriversLoading = null;
       }
-      forkliftUseEnabled = data.useForklift !== false;
-      forkliftDrivers = forkliftUseEnabled && Array.isArray(data.data) ? data.data.slice() : [];
-      forkliftPreferredMessageType = String(data.preferredMessageType || 'SMS').trim().toUpperCase() === 'EMAIL'
-        ? 'EMAIL'
-        : 'SMS';
-      syncLocationsHint();
-      if (lastLocations.length && selectedProduct) {
-        renderLocations(lastLocations, selectedProduct);
-      }
-    } catch (error) {
-      console.error('Error loading forklift settings:', error);
-      forkliftUseEnabled = false;
-      forkliftDrivers = [];
-      forkliftPreferredMessageType = 'SMS';
-      syncLocationsHint();
-    }
+    })();
+
+    return forkliftDriversLoading;
   }
 
   function buildForkliftMessageContent({ locationCode, productCode, productName, requester, locationSection }) {
@@ -288,17 +309,25 @@
 
   async function getLoggedRequesterName() {
     if (cachedRequesterName) return cachedRequesterName;
-    try {
-      const res = await fetch('/api/auth/check', { credentials: 'include' });
-      const data = await res.json();
-      if (data.authenticated && data.user) {
-        cachedRequesterName = data.user.isRoot
-          ? 'Root'
-          : (data.user.nome || data.user.email || 'User');
-        return cachedRequesterName;
-      }
-    } catch (_) { /* ignore */ }
-    return 'User';
+    if (requesterLoading) return requesterLoading;
+
+    requesterLoading = (async () => {
+      try {
+        const res = await fetch('/api/auth/check', { credentials: 'include' });
+        const data = await res.json();
+        if (data.authenticated && data.user) {
+          cachedRequesterName = data.user.isRoot
+            ? 'Root'
+            : (data.user.nome || data.user.email || 'User');
+          return cachedRequesterName;
+        }
+      } catch (_) { /* ignore */ }
+      return 'User';
+    })().finally(() => {
+      requesterLoading = null;
+    });
+
+    return requesterLoading;
   }
 
   async function fetchNextForkliftRequestNumber() {
@@ -426,6 +455,9 @@
   }
 
   async function openTabletForkliftRequest(locationCode, locationSection) {
+    if (!forkliftUseEnabled && !forkliftDriversLoadedAt) {
+      await loadForkliftSettings({ refreshLocations: false });
+    }
     if (!forkliftUseEnabled) {
       alert('Forklift is disabled. Turn on Use forklift in Setting Forklift Driver to enable requests.');
       return;
@@ -443,39 +475,44 @@
     };
     pendingForkliftPayload = null;
 
+    // Paint cached values immediately so the tablet dialog feels instant.
     document.getElementById('sptForkliftRequestNumber').value = 'Loading...';
     document.getElementById('sptForkliftRequestDatetime').value = new Date().toLocaleString();
     document.getElementById('sptForkliftSubject').value = 'Lower the pallet';
     document.getElementById('sptForkliftRequester').value = cachedRequesterName || 'Loading...';
     const prioritySelect = document.getElementById('sptForkliftPriority');
     if (prioritySelect) prioritySelect.value = 'NORMAL';
-    if (els.forkliftDriverSelect && !els.forkliftDriverSelect.options.length) {
-      els.forkliftDriverSelect.innerHTML = '<option value="">Loading drivers...</option>'
-        + '<option value="__NOT_DEFINED__">~Driver not defined</option>';
+    if (els.forkliftMessageType) {
+      els.forkliftMessageType.value = forkliftPreferredMessageType;
+      els.forkliftMessageType.disabled = true;
     }
+    fillForkliftDriverOptions(forkliftPreferredMessageType);
     refreshForkliftMessageContent(forkliftContext, cachedRequesterName || '');
     showForkliftModal(els.forkliftRequestModal);
+    els.forkliftDriverSelect?.focus();
 
     try {
-      const [requester, , nextRequestNumber] = await Promise.all([
-        getLoggedRequesterName(),
-        loadForkliftSettings(),
-        fetchNextForkliftRequestNumber()
-      ]);
+      const requesterPromise = getLoggedRequesterName();
+      const driversPromise = loadForkliftSettings({ refreshLocations: false });
+      const requestNumberPromise = fetchNextForkliftRequestNumber();
+
+      const requester = await requesterPromise;
+      document.getElementById('sptForkliftRequester').value = requester;
+      refreshForkliftMessageContent(forkliftContext, requester);
+
+      await driversPromise;
       if (!forkliftUseEnabled) {
         closeForkliftRequestModal();
         alert('Forklift is disabled. Turn on Use forklift in Setting Forklift Driver to enable requests.');
         return;
       }
-      document.getElementById('sptForkliftRequester').value = requester;
-      document.getElementById('sptForkliftRequestNumber').value = nextRequestNumber;
       if (els.forkliftMessageType) {
         els.forkliftMessageType.value = forkliftPreferredMessageType;
-        els.forkliftMessageType.disabled = true;
       }
       fillForkliftDriverOptions(forkliftPreferredMessageType);
-      refreshForkliftMessageContent(forkliftContext, requester);
-      els.forkliftDriverSelect?.focus();
+
+      const nextRequestNumber = await requestNumberPromise;
+      document.getElementById('sptForkliftRequestNumber').value = nextRequestNumber;
     } catch (error) {
       console.error('Error preparing tablet forklift request:', error);
       document.getElementById('sptForkliftRequestNumber').value = 'Next available';
@@ -785,7 +822,9 @@
   bindEvents();
   syncSearchByField(getSearchBy());
   loadStatistics();
-  loadForkliftSettings();
+  // Prefetch requester + drivers so opening the dialog is fast.
+  getLoggedRequesterName().catch(() => {});
+  loadForkliftSettings({ refreshLocations: true }).catch(() => {});
 
   if (isTabletOrPhone()) {
     focusFullScreen({ focusInput: true, scrollTarget: els.panel });
