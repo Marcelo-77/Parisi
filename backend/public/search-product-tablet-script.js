@@ -114,7 +114,7 @@
         <tr data-code="${escapeHtml(code)}" class="${selected.trim()}" tabindex="0" role="button" aria-label="Select product ${escapeHtml(code)}">
           <td>${escapeHtml(code || '-')}</td>
           <td>${escapeHtml(name || '-')}</td>
-          <td>${escapeHtml(qty)}</td>
+          <td class="spt-col-qty">${escapeHtml(qty)}</td>
         </tr>
       `;
     }).join('');
@@ -142,7 +142,7 @@
         <tr>
           <td>${escapeHtml(locationCode || '-')}</td>
           <td>${escapeHtml(accessType || '-')}</td>
-          <td>${escapeHtml(quantityCurrent)}</td>
+          <td class="spt-col-qty">${escapeHtml(quantityCurrent)}</td>
         </tr>
       `;
     }).join('');
