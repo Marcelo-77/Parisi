@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Double-Y Warehouse System - Search Product Tablet</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="warehouse-styles.css">
+    <link rel="stylesheet" href="pesquisa-styles.css">
+    <link rel="stylesheet" href="search-product-tablet-styles.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body class="search-product-tablet-page">
+    <script src="auth-check.js"></script>
+    <script src="header-menu.js"></script>
+    <script src="menu-access.js"></script>
+    <script src="double-y-logo-effect.js"></script>
+    <script src="dev-environment-badge.js"></script>
+    <div class="container">
+        <header class="header">
+            <div class="header-stats-row">
+                <div class="header-stats-left">
+                    <div class="header-stat header-stat-total">
+                        <span class="header-stat-value" id="totalItems">0</span>
+                        <span class="header-stat-label">Total Items</span>
+                    </div>
+                    <div class="header-stat header-stat-low">
+                        <span class="header-stat-value" id="lowStockItems">0</span>
+                        <span class="header-stat-label">Low Stock</span>
+                    </div>
+                </div>
+                <div class="double-y-wordmark" aria-label="Double Y">
+                    <img src="doubley-glyph.png" alt="" class="double-y-glyph" aria-hidden="true">
+                    <span class="double-y-name">Double Y</span>
+                    <img src="doubley-glyph-bottom.png" alt="" class="double-y-glyph double-y-glyph-bottom" aria-hidden="true">
+                </div>
+                <div class="header-stats-right">
+                    <div class="header-stat header-stat-entries">
+                        <span class="header-stat-value" id="totalEntradas">0</span>
+                        <span class="header-stat-label">Entries Today</span>
+                    </div>
+                    <div class="header-stat header-stat-exits">
+                        <span class="header-stat-value" id="totalSaidas">0</span>
+                        <span class="header-stat-label">Exits Today</span>
+                    </div>
+                </div>
+            </div>
+            <div class="header-content">
+                <h1><i class="fas fa-warehouse"></i> Double-Y Warehouse System</h1>
+                <p class="header-search-users-label">Search Product Tablet</p>
+                <div class="header-actions" id="headerActionsHost"></div>
+            </div>
+        </header>
+
+        <main class="main-content">
+            <section class="spt-panel" aria-label="Tablet product search">
+                <div class="spt-search-bar">
+                    <select id="searchByField" class="spt-select" aria-label="Search by">
+                        <option value="codigo">Code</option>
+                        <option value="nome">Name</option>
+                    </select>
+                    <input type="text" id="searchInput" class="spt-input" placeholder="Enter code or name..." autocomplete="off" enterkeyhint="search">
+                    <button type="button" id="searchBtn" class="btn btn-primary spt-btn">
+                        <i class="fas fa-search"></i> Search
+                    </button>
+                    <button type="button" id="closeBtn" class="btn btn-secondary spt-btn location-page-close-btn" title="Close">
+                        <i class="fas fa-door-open"></i> Close
+                    </button>
+                </div>
+
+                <p id="sptStatus" class="spt-status" aria-live="polite"></p>
+
+                <div class="spt-layout">
+                    <div class="spt-card">
+                        <div class="spt-card-head">
+                            <h2><i class="fas fa-box"></i> Products</h2>
+                            <span id="resultsCount" class="spt-count">0</span>
+                        </div>
+                        <div class="spt-table-wrap">
+                            <table class="spt-table" id="productsTable">
+                                <thead>
+                                    <tr>
+                                        <th>Code</th>
+                                        <th>Name</th>
+                                        <th>Quantity</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="productsBody">
+                                    <tr class="spt-empty-row">
+                                        <td colspan="3">Search by code or name to find products.</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="spt-card" id="locationsCard">
+                        <div class="spt-card-head">
+                            <h2><i class="fas fa-map-marker-alt"></i> Product Locations</h2>
+                            <span id="selectedProductLabel" class="spt-selected-label"></span>
+                        </div>
+                        <p class="spt-locations-hint">Locations with situation Full and active status (A).</p>
+                        <div class="spt-table-wrap">
+                            <table class="spt-table product-location-table" id="locationsTable">
+                                <thead>
+                                    <tr>
+                                        <th>Location Code</th>
+                                        <th>Access Type</th>
+                                        <th>Quantity Current</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="locationsBody">
+                                    <tr class="spt-empty-row">
+                                        <td colspan="3">Select a product to view locations.</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <footer class="footer">
+            <p>&copy; 2026 Double-Y IT Systems. All rights reserved.</p>
+        </footer>
+    </div>
+
+    <script src="location-page-close.js"></script>
+    <script src="search-product-tablet-script.js"></script>
+</body>
+</html>
