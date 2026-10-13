@@ -33,6 +33,10 @@
   scroll-margin-top: 16px;
 }
 
+.setting-forklift-driver-page #forkliftDriversActions {
+  scroll-margin-bottom: 24px;
+}
+
 .app-users-page-intro {
   display: flex;
   flex-wrap: wrap;

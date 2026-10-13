@@ -1,4 +1,5 @@
 const mailService = require('./mailService');
+const smsService = require('./smsService');
 const emailSendLogService = require('./emailSendLogService');
 const funcionarioServiceDB = require('./funcionarioServiceDB');
 const messageRequestService = require('./messageRequestService');
@@ -137,6 +138,77 @@ async function sendOutboundMessage(request, {
       `Internal message recorded by ${actorName} (no outbound email)`
     );
     return { sent: false, skipped: true, reason: 'internal' };
+  }
+
+  if (messageType === 'WHATSAPP') {
+    const phone = String(request.recipientPhone || '').trim() || 'n/a';
+    await emailSendLogService.registrar({
+      ...payload,
+      toEmail: phone,
+      sendStatus: 'SKIPPED',
+      errorMessage: 'WHATSAPP recorded for manual send (integration not configured)'
+    });
+    await messageRequestService.appendHistoryLine(
+      request.id,
+      `WHATSAPP marked complete by ${actorName} for phone ${phone} (manual send; no gateway yet)`
+    );
+    return { sent: false, skipped: true, reason: 'whatsapp', phone };
+  }
+
+  if (messageType === 'SMS') {
+    const phone = String(request.recipientPhone || '').trim();
+    const smsBody = [finalSubject, finalContent].filter(Boolean).join('\n\n').trim() || finalContent;
+
+    payload.messageCode = 'MSG-REQUEST-SMS';
+    payload.toEmail = phone || null;
+    payload.bodyPreview = String(smsBody || '').slice(0, 500);
+
+    if (!phone) {
+      await emailSendLogService.registrar({
+        ...payload,
+        sendStatus: 'FAILED',
+        errorMessage: 'Recipient phone is required'
+      });
+      throw new Error('Recipient phone is required to send SMS');
+    }
+
+    if (!smsService.isConfigured()) {
+      await emailSendLogService.registrar({
+        ...payload,
+        sendStatus: 'SKIPPED',
+        errorMessage: 'SMS gateway not configured'
+      });
+      throw new Error('SMS is not configured. Set SMS_PROVIDER, SMS_API_USER, SMS_API_PASS and SMS_SENDER.');
+    }
+
+    try {
+      const result = await smsService.sendSms({
+        to: phone,
+        message: smsBody,
+        customRef: `message-request-${request.requestNumber || request.id}`
+      });
+      await emailSendLogService.registrar({
+        ...payload,
+        toEmail: result.to,
+        sendStatus: 'SENT'
+      });
+      await messageRequestService.appendHistoryLine(
+        request.id,
+        `Outbound SMS sent to ${result.to} by ${actorName} (sender ${result.sender})`
+      );
+      return { sent: true, to: result.to, provider: result.provider, messageId: result.messageId };
+    } catch (error) {
+      await emailSendLogService.registrar({
+        ...payload,
+        sendStatus: 'FAILED',
+        errorMessage: error.message || 'SMS send failed'
+      });
+      await messageRequestService.appendHistoryLine(
+        request.id,
+        `Outbound SMS failed by ${actorName}: ${error.message || 'Send failed'}`
+      );
+      throw error;
+    }
   }
 
   if (messageType !== 'EMAIL') {

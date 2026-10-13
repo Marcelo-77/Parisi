@@ -72,7 +72,8 @@
                             <select id="messageType" required>
                                 <option value="EMAIL" selected>Email</option>
                                 <option value="INTERNAL">Internal</option>
-                                <option value="SMS">SMS (future)</option>
+                                <option value="SMS">SMS</option>
+                                <option value="WHATSAPP">WhatsApp</option>
                             </select>
                         </div>
                         <div class="form-group">
@@ -101,9 +102,13 @@
                             <label for="recipientName"><i class="fas fa-user"></i> Recipient name</label>
                             <input type="text" id="recipientName" maxlength="150" placeholder="Recipient name" autocomplete="off">
                         </div>
-                        <div class="form-group">
+                        <div class="form-group" id="recipientEmailGroup">
                             <label for="recipientEmail"><i class="fas fa-at"></i> Recipient email</label>
                             <input type="email" id="recipientEmail" maxlength="255" placeholder="name@example.com">
+                        </div>
+                        <div class="form-group" id="recipientPhoneGroup" style="display:none;">
+                            <label for="recipientPhone"><i class="fas fa-mobile-alt"></i> Recipient phone</label>
+                            <input type="tel" id="recipientPhone" maxlength="40" placeholder="+61 ..." autocomplete="tel">
                         </div>
                     </div>
 

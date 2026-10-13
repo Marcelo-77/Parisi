@@ -11,6 +11,7 @@ const systemApplicationMenus = [
   { application: 'System-Documentation.html', menuName: 'Applications_System_Documentation' },
   { application: 'System-Documentation-Search.html', menuName: 'Applications_System_Documentation_Search' },
   { application: 'System-settings.html', menuName: 'Applications_System_Settings' },
+  { application: 'Setting-Forklift-Driver.html', menuName: 'Applications_Settings_Forklift_Driver' },
   { application: 'Improvements-and-Corrections-Control.html', menuName: 'Applications_Improvements_Corrections' },
   { application: 'Improvements-and-Corrections-Control-Search.html', menuName: 'Applications_Improvements_Corrections' },
   { application: 'Test-Case.html', menuName: 'Applications_Test_Control' },

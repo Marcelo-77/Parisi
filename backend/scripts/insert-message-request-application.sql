@@ -27,6 +27,7 @@ CREATE TABLE IF NOT EXISTS message_requests (
   message_type VARCHAR(20) NOT NULL DEFAULT 'EMAIL',
   recipient_name VARCHAR(150),
   recipient_email VARCHAR(255),
+  recipient_phone VARCHAR(40),
   subject VARCHAR(255) NOT NULL,
   message_content TEXT NOT NULL,
   priority VARCHAR(20) NOT NULL DEFAULT 'NORMAL',
@@ -44,12 +45,19 @@ CREATE TABLE IF NOT EXISTS message_requests (
   criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   atualizado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   CONSTRAINT message_requests_type_chk
-    CHECK (message_type IN ('EMAIL', 'INTERNAL', 'SMS')),
+    CHECK (message_type IN ('EMAIL', 'INTERNAL', 'SMS', 'WHATSAPP')),
   CONSTRAINT message_requests_priority_chk
     CHECK (priority IN ('LOW', 'NORMAL', 'HIGH', 'URGENT')),
   CONSTRAINT message_requests_status_chk
     CHECK (status IN ('PENDING', 'UNDER_REVIEW', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED', 'ON_HOLD'))
 );
+
+ALTER TABLE message_requests ADD COLUMN IF NOT EXISTS recipient_phone VARCHAR(40);
+
+ALTER TABLE message_requests DROP CONSTRAINT IF EXISTS message_requests_type_chk;
+ALTER TABLE message_requests
+  ADD CONSTRAINT message_requests_type_chk
+  CHECK (message_type IN ('EMAIL', 'INTERNAL', 'SMS', 'WHATSAPP'));
 
 CREATE INDEX IF NOT EXISTS idx_message_requests_criado ON message_requests(criado_em DESC);
 CREATE INDEX IF NOT EXISTS idx_message_requests_status ON message_requests(status);

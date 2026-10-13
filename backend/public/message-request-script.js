@@ -8,9 +8,22 @@ function clearForm() {
   document.getElementById('assignedTo').value = '';
   document.getElementById('recipientName').value = '';
   document.getElementById('recipientEmail').value = '';
+  document.getElementById('recipientPhone').value = '';
   document.getElementById('subject').value = '';
   document.getElementById('messageContent').value = '';
   document.getElementById('attachmentNote').value = '';
+  syncRecipientFields();
+}
+
+function syncRecipientFields() {
+  const type = document.getElementById('messageType')?.value || 'EMAIL';
+  const emailGroup = document.getElementById('recipientEmailGroup');
+  const phoneGroup = document.getElementById('recipientPhoneGroup');
+  const needsPhone = type === 'SMS' || type === 'WHATSAPP';
+  const needsEmail = type === 'EMAIL';
+
+  if (emailGroup) emailGroup.style.display = needsPhone && !needsEmail ? 'none' : '';
+  if (phoneGroup) phoneGroup.style.display = needsPhone ? '' : 'none';
 }
 
 async function loadResponsibleUsers() {
@@ -35,8 +48,11 @@ async function loadResponsibleUsers() {
 document.addEventListener('DOMContentLoaded', () => {
   const form = document.getElementById('messageRequestForm');
   const clearBtn = document.getElementById('clearMessageRequestBtn');
+  const messageType = document.getElementById('messageType');
 
   loadResponsibleUsers();
+  syncRecipientFields();
+  messageType?.addEventListener('change', syncRecipientFields);
   clearBtn?.addEventListener('click', clearForm);
 
   form?.addEventListener('submit', async (e) => {
@@ -53,6 +69,7 @@ document.addEventListener('DOMContentLoaded', () => {
       assignedToName: assignedTo ? assignedToName : null,
       recipientName: document.getElementById('recipientName').value.trim(),
       recipientEmail: document.getElementById('recipientEmail').value.trim(),
+      recipientPhone: document.getElementById('recipientPhone').value.trim(),
       subject: document.getElementById('subject').value.trim(),
       messageContent: document.getElementById('messageContent').value.trim(),
       attachmentNote: document.getElementById('attachmentNote').value.trim()
@@ -68,6 +85,10 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     if (payload.messageType === 'EMAIL' && !payload.recipientEmail) {
       alert('Recipient email is required for Email type.');
+      return;
+    }
+    if ((payload.messageType === 'SMS' || payload.messageType === 'WHATSAPP') && !payload.recipientPhone) {
+      alert('Recipient phone is required for SMS and WhatsApp.');
       return;
     }
 
