@@ -139,7 +139,7 @@
     if (!els.productsBody) return;
     els.productsBody.innerHTML = `
       <tr class="spt-empty-row">
-        <td colspan="3">${escapeHtml(message)}</td>
+        <td colspan="4">${escapeHtml(message)}</td>
       </tr>
     `;
     if (els.resultsCount) els.resultsCount.textContent = '0';
@@ -160,12 +160,14 @@
     els.productsBody.innerHTML = products.map((item) => {
       const code = String(item.codigo || '').trim();
       const name = String(item.nome || '').trim();
+      const category = String(item.categoria || '').trim();
       const qty = item.quantidade != null ? item.quantidade : 0;
       const selected = code && code === selectedCode ? ' is-selected' : '';
       return `
         <tr data-code="${escapeHtml(code)}" class="${selected.trim()}" tabindex="0" role="button" aria-label="Select product ${escapeHtml(code)}">
           <td>${escapeHtml(code || '-')}</td>
           <td>${escapeHtml(name || '-')}</td>
+          <td>${escapeHtml(category || '-')}</td>
           <td class="spt-col-qty">${escapeHtml(qty)}</td>
         </tr>
       `;
@@ -175,10 +177,10 @@
   function renderLocations(list, product) {
     const code = product?.codigo || selectedCode || '';
     const name = product?.nome || '';
+    const category = product?.categoria || '';
     if (els.selectedProductLabel) {
-      els.selectedProductLabel.textContent = code
-        ? `${code}${name ? ` — ${name}` : ''}`
-        : '';
+      const parts = [code, name, category].filter((part) => String(part || '').trim());
+      els.selectedProductLabel.textContent = parts.length ? parts.join(' — ') : '';
     }
 
     if (!Array.isArray(list) || !list.length) {
