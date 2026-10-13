@@ -3,12 +3,15 @@
   const API_LOCATION_PRODUCT = '/api/location-product';
 
   const els = {
+    panel: document.getElementById('sptPanel'),
+    searchBar: document.getElementById('sptSearchBar'),
     searchByField: document.getElementById('searchByField'),
     searchInput: document.getElementById('searchInput'),
     searchBtn: document.getElementById('searchBtn'),
     status: document.getElementById('sptStatus'),
     resultsCount: document.getElementById('resultsCount'),
     productsBody: document.getElementById('productsBody'),
+    locationsCard: document.getElementById('locationsCard'),
     locationsBody: document.getElementById('locationsBody'),
     selectedProductLabel: document.getElementById('selectedProductLabel'),
     totalItems: document.getElementById('totalItems'),
@@ -19,6 +22,42 @@
 
   let products = [];
   let selectedCode = '';
+
+  function isTabletOrPhone() {
+    const coarse = window.matchMedia('(pointer: coarse)').matches;
+    const narrow = window.matchMedia('(max-width: 1024px)').matches;
+    const touch = (navigator.maxTouchPoints || 0) > 0;
+    return coarse || touch || narrow;
+  }
+
+  function focusFullScreen(options = {}) {
+    const { focusInput = false, scrollTarget = null } = options;
+    const run = () => {
+      window.scrollTo({ top: 0, left: 0, behavior: 'smooth' });
+      const target = scrollTarget || els.panel || document.body;
+      if (target && typeof target.scrollIntoView === 'function') {
+        target.scrollIntoView({ behavior: 'smooth', block: 'start', inline: 'nearest' });
+      }
+      if (focusInput && els.searchInput) {
+        try {
+          els.searchInput.focus({ preventScroll: true });
+        } catch (_) {
+          els.searchInput.focus();
+        }
+      } else if (els.panel) {
+        try {
+          els.panel.focus({ preventScroll: true });
+        } catch (_) {
+          els.panel.focus();
+        }
+      }
+    };
+    requestAnimationFrame(() => {
+      run();
+      // Second pass helps iOS/Android after layout + keyboard chrome settle.
+      setTimeout(run, 120);
+    });
+  }
 
   function escapeHtml(value) {
     return String(value == null ? '' : value)
@@ -177,10 +216,16 @@
       if (list.length === 1) {
         setStatus('1 product found. Showing locations.');
         await loadLocationsForProduct(list[0]);
+        if (isTabletOrPhone()) {
+          focusFullScreen({ scrollTarget: els.locationsCard || els.panel });
+        }
         return;
       }
 
       setStatus(`${list.length} products found. Select one to view locations.`);
+      if (isTabletOrPhone()) {
+        focusFullScreen({ scrollTarget: els.panel });
+      }
     } catch (error) {
       console.error(error);
       products = [];
@@ -212,7 +257,11 @@
     const code = row.getAttribute('data-code') || '';
     const product = products.find((item) => String(item.codigo || '').trim() === code);
     if (!product) return;
-    loadLocationsForProduct(product);
+    loadLocationsForProduct(product).then(() => {
+      if (isTabletOrPhone()) {
+        focusFullScreen({ scrollTarget: els.locationsCard || els.panel });
+      }
+    });
   }
 
   function onProductsKeydown(event) {
@@ -237,5 +286,20 @@
 
   bindEvents();
   loadStatistics();
-  els.searchInput?.focus();
+
+  if (isTabletOrPhone()) {
+    focusFullScreen({ focusInput: true, scrollTarget: els.panel });
+    window.addEventListener('pageshow', () => {
+      focusFullScreen({ focusInput: true, scrollTarget: els.panel });
+    });
+    window.addEventListener('orientationchange', () => {
+      setTimeout(() => focusFullScreen({ scrollTarget: els.panel }), 200);
+    });
+  } else {
+    try {
+      els.searchInput?.focus({ preventScroll: true });
+    } catch (_) {
+      els.searchInput?.focus();
+    }
+  }
 })();

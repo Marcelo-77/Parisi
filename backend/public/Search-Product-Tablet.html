@@ -53,13 +53,13 @@
         </header>
 
         <main class="main-content">
-            <section class="spt-panel" aria-label="Tablet product search">
-                <div class="spt-search-bar">
+            <section class="spt-panel" id="sptPanel" tabindex="-1" aria-label="Tablet product search">
+                <div class="spt-search-bar" id="sptSearchBar">
                     <select id="searchByField" class="spt-select" aria-label="Search by">
                         <option value="codigo">Code</option>
                         <option value="nome">Name</option>
                     </select>
-                    <input type="text" id="searchInput" class="spt-input" placeholder="Enter code or name..." autocomplete="off" enterkeyhint="search">
+                    <input type="text" id="searchInput" class="spt-input" placeholder="Enter code or name..." autocomplete="off" enterkeyhint="search" inputmode="search">
                     <button type="button" id="searchBtn" class="btn btn-primary spt-btn">
                         <i class="fas fa-search"></i> Search
                     </button>
