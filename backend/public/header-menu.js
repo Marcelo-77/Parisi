@@ -33,6 +33,7 @@
                                 <div class="dropdown-submenu" aria-hidden="true">
                                     <button type="button" id="newProductBtn" class="dropdown-item" data-app="warehouse.html" data-write-menu="true"><i class="fas fa-plus"></i> New Product</button>
                                     <button type="button" id="searchProductBtn" class="dropdown-item" data-app="warehouse.html"><i class="fas fa-search"></i> Search Product</button>
+                                    <a href="Search-Product-Tablet.html" class="dropdown-item" data-app="Search-Product-Tablet.html"><i class="fas fa-tablet-screen-button"></i> Search Product Tablet</a>
                                     <a href="special-search-product.html" class="dropdown-item" data-app="special-search-product.html"><i class="fas fa-map"></i> Special Search Product</a>
                                     <a href="search-special-location-a21x.html" class="dropdown-item" data-app="search-special-location-a21x.html"><i class="fas fa-camera"></i> Search Special Location A21X</a>
                                 </div>
