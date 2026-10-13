@@ -79,7 +79,8 @@
 
 .search-product-tablet-page .spt-search-by {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
+  flex-wrap: wrap;
   gap: 0.75rem;
   margin-bottom: 1rem;
 }
@@ -88,6 +89,7 @@
   display: flex;
   align-items: flex-start;
   gap: 1rem;
+  flex: 1 1 220px;
   margin: 0;
   padding: 0.85rem 1rem;
   border: 1px solid #e5e7eb;
