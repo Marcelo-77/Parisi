@@ -292,12 +292,12 @@ function convertNewToClassic(oldCode, settings) {
 
   if (parsed.level === 0 && parsed.zeroType === 'pallet') {
     const side = POS_TO_SIDE[parsed.position];
-    if (!side) return { to: null, reason: 'Position must be 1/2/3 to map Side R/L/M' };
+    if (!side) return { to: null, reason: 'Position must be 1/2/3 to map Side L/M/R (1→L, 2→M, 3→R)' };
     return { to: `${sb.street}${sb.building}-0${side}`, reason: null };
   }
 
   const side = POS_TO_SIDE[parsed.position];
-  if (!side) return { to: null, reason: 'Position must be 1/2/3 to map Side R/L/M' };
+  if (!side) return { to: null, reason: 'Position must be 1/2/3 to map Side L/M/R (1→L, 2→M, 3→R)' };
   return { to: `${sb.street}${sb.building}-${parsed.level}${side}`, reason: null };
 }
 

@@ -349,11 +349,24 @@
     return data;
   }
 
-  function showMigrateConfirmModal(message) {
+  function mappingHintForSchemes(fromScheme, toScheme) {
+    const to = String(toScheme || '');
+    if (to === 'classic') {
+      return 'Bay → Classic: Pos 1→L, 2→M, 3→R. Level 0 Location (letter+sublevel) → Sublevel. Level 0 Pallet → Side.';
+    }
+    if (to === 'bay_level_position') {
+      return 'Classic → Bay: Side L→1, M→2, R→3. Level 0 Sublevel → Location letter + Sublevel. Level 0 Side → Pallet.';
+    }
+    return 'Classic ↔ Bay: L↔1, M↔2, R↔3. Level 0 Sublevel ↔ Location letter + Sublevel. Level 0 Side ↔ Pallet.';
+  }
+
+  function showMigrateConfirmModal(message, fromScheme, toScheme) {
     hideMigrateOverlay();
     const modal = document.getElementById('locationMigrateConfirmModal');
     const msg = document.getElementById('locationMigrateConfirmMessage');
+    const mapping = document.getElementById('locationMigrateConfirmMapping');
     if (msg && message) msg.textContent = message;
+    if (mapping) mapping.textContent = mappingHintForSchemes(fromScheme, toScheme);
     if (!modal) return;
     modal.classList.add('show');
     modal.setAttribute('aria-hidden', 'false');
@@ -366,7 +379,7 @@
     modal.setAttribute('aria-hidden', 'true');
   }
 
-  function askMigrateConfirm(message) {
+  function askMigrateConfirm(message, fromScheme, toScheme) {
     return new Promise((resolve) => {
       const yesBtn = document.getElementById('locationMigrateYesBtn');
       const noBtn = document.getElementById('locationMigrateNoBtn');
@@ -374,7 +387,7 @@
         resolve(false);
         return;
       }
-      showMigrateConfirmModal(message);
+      showMigrateConfirmModal(message, fromScheme, toScheme);
       const onNo = () => {
         cleanup();
         hideMigrateConfirmModal();
@@ -403,7 +416,9 @@
   async function runMigrateWithConfirm(fromScheme, toScheme, settings, confirmMessage) {
     const confirmed = await askMigrateConfirm(
       confirmMessage
-      || `Update existing history from ${fromScheme} to ${toScheme}? This renames locations, product locations and logs.`
+      || `Update existing history from ${fromScheme} to ${toScheme}? This renames locations, product locations and logs.`,
+      fromScheme,
+      toScheme
     );
     if (!confirmed) {
       hideMigrateOverlay();
