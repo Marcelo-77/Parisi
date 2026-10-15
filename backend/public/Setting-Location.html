@@ -141,11 +141,11 @@
                             <div class="setting-location-rule-boxes setting-location-rule-boxes-4">
                                 <div class="setting-location-rule-box">
                                     <span class="setting-location-rule-label">Level &gt; 0</span>
-                                    <code>A1-2-1</code>
+                                    <code id="ruleExLevelPos">A1-2-1</code>
                                 </div>
                                 <div class="setting-location-rule-box">
                                     <span class="setting-location-rule-label">Level &gt; 0 + Pos</span>
-                                    <code>A2-2-1</code>
+                                    <code id="ruleExLevelPos2">A2-2-1</code>
                                 </div>
                                 <div class="setting-location-rule-box">
                                     <span class="setting-location-rule-label">Level 0 Location</span>
@@ -161,8 +161,37 @@
                                 </div>
                                 <div class="setting-location-rule-box">
                                     <span class="setting-location-rule-label">Level 0 Pallet</span>
-                                    <code>A1-0-1</code>
+                                    <code id="ruleExPallet">A1-0-1</code>
                                 </div>
+                            </div>
+
+                            <div class="setting-location-encoding-block">
+                                <p class="setting-location-encoding-title">Position format</p>
+                                <p class="app-users-help" style="margin-top:0;">
+                                    Classic Side L/M/R maps to position 1/2/3. Choose how that position is written in Bay codes.
+                                </p>
+                                <div class="setting-location-scheme-cards setting-location-encoding-cards">
+                                    <label class="setting-location-scheme-card">
+                                        <input type="radio" name="positionEncodingRadio" value="numeric" id="encodingNumericRadio" checked>
+                                        <span class="setting-location-scheme-card-body">
+                                            <strong>Numeric</strong>
+                                            <small>1, 2, 3…</small>
+                                            <code>A2-0-1</code> · <code>A1-2-1</code>
+                                        </span>
+                                    </label>
+                                    <label class="setting-location-scheme-card">
+                                        <input type="radio" name="positionEncodingRadio" value="alpha" id="encodingAlphaRadio">
+                                        <span class="setting-location-scheme-card-body">
+                                            <strong>Letter (A–Z)</strong>
+                                            <small>1→A, 2→B, 3→C…</small>
+                                            <code>A2-0-A</code> · <code>A1-2-A</code>
+                                        </span>
+                                    </label>
+                                </div>
+                                <select id="positionEncoding" class="app-users-select setting-location-scheme-select" aria-hidden="true" tabindex="-1">
+                                    <option value="numeric">Numeric</option>
+                                    <option value="alpha">Letter</option>
+                                </select>
                             </div>
 
                             <div class="form-row setting-location-params setting-location-params-compact">
@@ -321,7 +350,7 @@
                     (locations, product locations and logs) to the new parameterization?
                 </p>
                 <p id="locationMigrateConfirmMapping" style="margin:0;font-size:0.88rem;color:#64748b;">
-                    Classic → Bay: Side L→1, M→2, R→3. Bay → Classic: Pos 1→L, 2→M, 3→R.
+                    Classic Side L/M/R ↔ Pos 1/2/3. Bay position may be numeric (1) or letter (A) per setting.
                     Level 0 Sublevel → Location letter + Sublevel. Level 0 Side → Pallet.
                 </p>
             </div>

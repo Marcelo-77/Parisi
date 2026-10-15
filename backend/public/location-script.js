@@ -28,6 +28,7 @@ let locationCodeSettings = {
     allowPosition: true,
     bayPatternHint: 'A1, A2, B1...',
     levelZeroLocationLetter: 'L',
+    positionEncoding: 'numeric',
     minSublevel: 0,
     maxSublevel: 99,
     minLevel: 0,
@@ -35,6 +36,25 @@ let locationCodeSettings = {
     minPosition: 1,
     maxPosition: 99
 };
+
+function isAlphaPositionEncoding() {
+    return String(locationCodeSettings.positionEncoding || '').toLowerCase() === 'alpha';
+}
+
+function formatBayPositionToken(position) {
+    const n = Number(position);
+    if (!Number.isInteger(n) || n < 1) return '';
+    if (isAlphaPositionEncoding()) {
+        if (n > 26) return '';
+        return String.fromCharCode(64 + n);
+    }
+    return String(n);
+}
+
+function effectiveBayMaxPosition() {
+    const max = Number(locationCodeSettings.maxPosition) || 99;
+    return isAlphaPositionEncoding() ? Math.min(max, 26) : max;
+}
 
 function isBayScheme() {
     return String(locationCodeSettings.activeScheme || '') === 'bay_level_position';
@@ -90,16 +110,19 @@ function composeBayLocationCode() {
 
     const hasPosition = positionRaw !== '';
     const position = hasPosition ? Number(positionRaw) : NaN;
+    const maxPos = effectiveBayMaxPosition();
     if (hasPosition) {
-        if (!Number.isInteger(position) || position < locationCodeSettings.minPosition || position > locationCodeSettings.maxPosition) {
+        if (!Number.isInteger(position) || position < locationCodeSettings.minPosition || position > maxPos) {
             return '';
         }
     }
+    const positionToken = hasPosition ? formatBayPositionToken(position) : '';
+    if (hasPosition && !positionToken) return '';
 
     if (level === 0) {
         if (zeroType === 'pallet') {
             if (!hasPosition) return '';
-            return `${bay}${sep}0${sep}${position}`;
+            return `${bay}${sep}0${sep}${positionToken}`;
         }
         if (zeroType !== 'location') return '';
         const sublevel = Number(sublevelRaw);
@@ -108,7 +131,7 @@ function composeBayLocationCode() {
         }
         const behindOk = behind && canUseBayBehind(street);
         const base = `${bay}${sep}${letter}${sublevel}`;
-        const withPos = hasPosition ? `${base}${sep}${position}` : base;
+        const withPos = hasPosition ? `${base}${sep}${positionToken}` : base;
         return `${withPos}${behindOk ? behind : ''}`;
     }
 
@@ -117,7 +140,7 @@ function composeBayLocationCode() {
         return '';
     }
     if (!locationCodeSettings.allowPosition) return '';
-    return `${bay}${sep}${level}${sep}${position}`;
+    return `${bay}${sep}${level}${sep}${positionToken}`;
 }
 
 function updateBayComposedLocation() {
@@ -206,7 +229,9 @@ function syncBayLevelZeroUi() {
             positionInput.required = true;
         }
         if (positionHint) {
-            positionHint.textContent = 'Position is required when Level > 0.';
+            positionHint.textContent = isAlphaPositionEncoding()
+                ? 'Required. Code uses letter: 1→A, 2→B, 3→C…'
+                : 'Position is required when Level > 0.';
         }
         if (subEl) {
             subEl.value = '';
@@ -222,9 +247,10 @@ function syncBayLevelZeroUi() {
             positionInput.required = false;
         }
         if (positionHint) {
+            const encodingHint = isAlphaPositionEncoding() ? ' Written as letter (1→A).' : '';
             positionHint.textContent = a21WithX
-                ? 'Optional. Code stays under A21X* for photo search.'
-                : 'Optional for Location type.';
+                ? `Optional. Code stays under A21X* for photo search.${encodingHint}`
+                : `Optional for Location type.${encodingHint}`;
         }
         if (sublevelHint) {
             const sampleBay = a21WithX ? `A21X${buildingX}` : 'A1';
@@ -243,7 +269,11 @@ function syncBayLevelZeroUi() {
             positionInput.placeholder = 'Required';
             positionInput.required = true;
         }
-        if (positionHint) positionHint.textContent = 'Required for Pallet at Level 0 (no letter).';
+        if (positionHint) {
+            positionHint.textContent = isAlphaPositionEncoding()
+                ? 'Required for Pallet at Level 0. Code uses letter: 1→A, 2→B…'
+                : 'Required for Pallet at Level 0 (numeric position).';
+        }
         if (subEl) {
             subEl.value = '';
             subEl.required = false;
@@ -600,8 +630,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                     if (positionRaw) {
                         const position = Number(positionRaw);
-                        if (!Number.isInteger(position) || position < locationCodeSettings.minPosition || position > locationCodeSettings.maxPosition) {
-                            showError('locationBayPosition', `Position must be between ${locationCodeSettings.minPosition} and ${locationCodeSettings.maxPosition}`);
+                        const maxPos = effectiveBayMaxPosition();
+                        if (!Number.isInteger(position) || position < locationCodeSettings.minPosition || position > maxPos) {
+                            showError('locationBayPosition', `Position must be between ${locationCodeSettings.minPosition} and ${maxPos}`);
                             valid = false;
                         }
                     }
@@ -611,8 +642,9 @@ document.addEventListener('DOMContentLoaded', () => {
                         valid = false;
                     } else {
                         const position = Number(positionRaw);
-                        if (!Number.isInteger(position) || position < locationCodeSettings.minPosition || position > locationCodeSettings.maxPosition) {
-                            showError('locationBayPosition', `Position must be between ${locationCodeSettings.minPosition} and ${locationCodeSettings.maxPosition}`);
+                        const maxPos = effectiveBayMaxPosition();
+                        if (!Number.isInteger(position) || position < locationCodeSettings.minPosition || position > maxPos) {
+                            showError('locationBayPosition', `Position must be between ${locationCodeSettings.minPosition} and ${maxPos}`);
                             valid = false;
                         }
                     }
@@ -623,8 +655,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     valid = false;
                 } else {
                     const position = Number(positionRaw);
-                    if (!Number.isInteger(position) || position < locationCodeSettings.minPosition || position > locationCodeSettings.maxPosition) {
-                        showError('locationBayPosition', `Position must be between ${locationCodeSettings.minPosition} and ${locationCodeSettings.maxPosition}`);
+                    const maxPos = effectiveBayMaxPosition();
+                    if (!Number.isInteger(position) || position < locationCodeSettings.minPosition || position > maxPos) {
+                        showError('locationBayPosition', `Position must be between ${locationCodeSettings.minPosition} and ${maxPos}`);
                         valid = false;
                     }
                 }

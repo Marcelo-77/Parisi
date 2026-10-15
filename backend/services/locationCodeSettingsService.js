@@ -2,6 +2,8 @@ const { query } = require('../config/database');
 
 const SETTINGS_TABLE = 'location_code_settings';
 const SCHEMES = ['classic', 'bay_level_position'];
+const POSITION_ENCODINGS = ['numeric', 'alpha'];
+const ALPHA_POSITION_MAX = 26;
 
 const DEFAULTS = {
   activeScheme: 'classic',
@@ -12,6 +14,7 @@ const DEFAULTS = {
   allowPosition: true,
   bayPatternHint: 'A1, A2, B1...',
   levelZeroLocationLetter: 'L',
+  positionEncoding: 'numeric',
   minSublevel: 0,
   maxSublevel: 99,
   minLevel: 0,
@@ -49,9 +52,49 @@ function normalizeLetter(value, fallback = DEFAULTS.levelZeroLocationLetter) {
   return fallback;
 }
 
+function normalizePositionEncoding(value) {
+  const encoding = String(value || '').trim().toLowerCase();
+  return POSITION_ENCODINGS.includes(encoding) ? encoding : DEFAULTS.positionEncoding;
+}
+
 function normalizeZeroType(value) {
   const type = String(value || '').trim().toLowerCase();
   return type === 'pallet' ? 'pallet' : type === 'location' ? 'location' : '';
+}
+
+/** Ordinal position → code token: 1→"1" or 1→"A". */
+function formatPositionToken(position, encodingInput = DEFAULTS.positionEncoding) {
+  const encoding = normalizePositionEncoding(encodingInput);
+  const n = Number(position);
+  if (!Number.isInteger(n) || n < 1) return '';
+  if (encoding === 'alpha') {
+    if (n > ALPHA_POSITION_MAX) return '';
+    return String.fromCharCode(64 + n);
+  }
+  return String(n);
+}
+
+/** Code token → ordinal: "1"→1 or "A"→1. Accepts either form. */
+function parsePositionToken(raw) {
+  const token = String(raw == null ? '' : raw).trim().toUpperCase();
+  if (!token) return NaN;
+  if (/^\d+$/.test(token)) {
+    const n = Number(token);
+    return Number.isInteger(n) && n >= 1 ? n : NaN;
+  }
+  if (/^[A-Z]$/.test(token)) {
+    return token.charCodeAt(0) - 64;
+  }
+  return NaN;
+}
+
+function effectiveMaxPosition(settingsInput = DEFAULTS) {
+  const settings = { ...DEFAULTS, ...settingsInput };
+  const max = normalizeInt(settings.maxPosition, DEFAULTS.maxPosition, 1, 999);
+  if (normalizePositionEncoding(settings.positionEncoding) === 'alpha') {
+    return Math.min(max, ALPHA_POSITION_MAX);
+  }
+  return max;
 }
 
 function mapSettings(row) {
@@ -65,6 +108,7 @@ function mapSettings(row) {
     allowPosition: normalizeBoolean(row.allow_position, DEFAULTS.allowPosition),
     bayPatternHint: String(row.bay_pattern_hint || DEFAULTS.bayPatternHint).trim() || DEFAULTS.bayPatternHint,
     levelZeroLocationLetter: normalizeLetter(row.level_zero_location_letter, DEFAULTS.levelZeroLocationLetter),
+    positionEncoding: normalizePositionEncoding(row.position_encoding),
     minSublevel: normalizeInt(row.min_sublevel, DEFAULTS.minSublevel, 0, 999),
     maxSublevel: normalizeInt(row.max_sublevel, DEFAULTS.maxSublevel, 0, 999),
     minLevel: normalizeInt(row.min_level, DEFAULTS.minLevel, 0, 999),
@@ -114,6 +158,22 @@ async function ensureTable() {
     ALTER TABLE ${SETTINGS_TABLE}
       ADD COLUMN IF NOT EXISTS side_pos_remap_v1_at TIMESTAMP WITH TIME ZONE
   `);
+  await query(`
+    ALTER TABLE ${SETTINGS_TABLE}
+      ADD COLUMN IF NOT EXISTS position_encoding VARCHAR(20) NOT NULL DEFAULT 'numeric'
+  `);
+  await query(`
+    DO $$
+    BEGIN
+      IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint WHERE conname = 'location_code_settings_pos_enc_chk'
+      ) THEN
+        ALTER TABLE ${SETTINGS_TABLE}
+          ADD CONSTRAINT location_code_settings_pos_enc_chk
+          CHECK (position_encoding IN ('numeric', 'alpha'));
+      END IF;
+    END $$;
+  `);
 
   await query(`
     INSERT INTO ${SETTINGS_TABLE} (id)
@@ -150,6 +210,9 @@ async function saveSettings(payload = {}) {
       payload.levelZeroLocationLetter ?? current.levelZeroLocationLetter,
       DEFAULTS.levelZeroLocationLetter
     ),
+    positionEncoding: normalizePositionEncoding(
+      payload.positionEncoding ?? current.positionEncoding
+    ),
     minSublevel: normalizeInt(payload.minSublevel ?? current.minSublevel, DEFAULTS.minSublevel, 0, 999),
     maxSublevel: normalizeInt(payload.maxSublevel ?? current.maxSublevel, DEFAULTS.maxSublevel, 0, 999),
     minLevel: normalizeInt(payload.minLevel ?? current.minLevel, DEFAULTS.minLevel, 0, 999),
@@ -170,16 +233,19 @@ async function saveSettings(payload = {}) {
   if (!next.allowLevelOnly && !next.allowPosition) {
     throw new Error('Enable at least Level-only or Level + Position');
   }
+  if (next.positionEncoding === 'alpha' && next.maxPosition > ALPHA_POSITION_MAX) {
+    next.maxPosition = ALPHA_POSITION_MAX;
+  }
 
   await query(
     `
     INSERT INTO ${SETTINGS_TABLE} (
       id, active_scheme, level_only_uses_l_prefix, with_position_omits_l, separator,
       allow_level_only, allow_position, bay_pattern_hint,
-      level_zero_location_letter, min_sublevel, max_sublevel,
+      level_zero_location_letter, position_encoding, min_sublevel, max_sublevel,
       min_level, max_level, min_position, max_position, updated_at
     ) VALUES (
-      1, $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, CURRENT_TIMESTAMP
+      1, $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, CURRENT_TIMESTAMP
     )
     ON CONFLICT (id) DO UPDATE SET
       active_scheme = EXCLUDED.active_scheme,
@@ -190,6 +256,7 @@ async function saveSettings(payload = {}) {
       allow_position = EXCLUDED.allow_position,
       bay_pattern_hint = EXCLUDED.bay_pattern_hint,
       level_zero_location_letter = EXCLUDED.level_zero_location_letter,
+      position_encoding = EXCLUDED.position_encoding,
       min_sublevel = EXCLUDED.min_sublevel,
       max_sublevel = EXCLUDED.max_sublevel,
       min_level = EXCLUDED.min_level,
@@ -207,6 +274,7 @@ async function saveSettings(payload = {}) {
       next.allowPosition,
       next.bayPatternHint,
       next.levelZeroLocationLetter,
+      next.positionEncoding,
       next.minSublevel,
       next.maxSublevel,
       next.minLevel,
@@ -240,12 +308,17 @@ function composeBayLevelPositionCode(parts = {}, settingsInput = DEFAULTS) {
   }
 
   const hasPosition = positionRaw !== '' && positionRaw != null;
-  const position = hasPosition ? Number(positionRaw) : NaN;
+  const position = hasPosition ? parsePositionToken(positionRaw) : NaN;
+  const maxPos = effectiveMaxPosition(settings);
   if (hasPosition) {
-    if (!Number.isInteger(position) || position < settings.minPosition || position > settings.maxPosition) {
+    if (!Number.isInteger(position) || position < settings.minPosition || position > maxPos) {
       return '';
     }
   }
+  const positionToken = hasPosition
+    ? formatPositionToken(position, settings.positionEncoding)
+    : '';
+  if (hasPosition && !positionToken) return '';
 
   if (level === 0) {
     const zeroType = normalizeZeroType(parts.zeroType);
@@ -253,7 +326,7 @@ function composeBayLevelPositionCode(parts = {}, settingsInput = DEFAULTS) {
 
     if (zeroType === 'pallet') {
       if (!hasPosition) return '';
-      return `${bay}${sep}0${sep}${position}`;
+      return `${bay}${sep}0${sep}${positionToken}`;
     }
 
     // Location: letter + sublevel (from 0), position optional, optional Behind (A/H only)
@@ -266,24 +339,30 @@ function composeBayLevelPositionCode(parts = {}, settingsInput = DEFAULTS) {
     const behind = behindRaw === 'B' && (streetHint === 'A' || streetHint === 'H') ? 'B' : '';
     const base = `${bay}${sep}${letter}${sublevel}`;
     if (!hasPosition) return `${base}${behind}`;
-    return `${base}${sep}${position}${behind}`;
+    return `${base}${sep}${positionToken}${behind}`;
   }
 
   // Level > 0 — Position required; never use “L” (L only for Level 0 Location)
   if (!hasPosition) return '';
   if (!settings.allowPosition) return '';
-  return `${bay}${sep}${level}${sep}${position}`;
+  return `${bay}${sep}${level}${sep}${positionToken}`;
 }
 
 module.exports = {
   SCHEMES,
+  POSITION_ENCODINGS,
+  ALPHA_POSITION_MAX,
   DEFAULTS,
   ensureTable,
   getSettings,
   saveSettings,
   composeBayLevelPositionCode,
+  formatPositionToken,
+  parsePositionToken,
+  effectiveMaxPosition,
   mapSettings,
   normalizeLetter,
+  normalizePositionEncoding,
   normalizeZeroType,
   async isSidePosRemapV1Completed() {
     await ensureTable();

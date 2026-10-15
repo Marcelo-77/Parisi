@@ -2,6 +2,7 @@ const { query } = require('../config/database');
 const locationService = require('./locationService');
 const {
   composeBayLevelPositionCode,
+  parsePositionToken,
   DEFAULTS
 } = require('./locationCodeSettingsService');
 
@@ -198,6 +199,8 @@ function convertClassicToNew(oldCode, settings) {
     : { to: null, reason: 'Could not compose Level > 0 code' };
 }
 
+const POS_TOKEN = '([A-Z]|\\d+)';
+
 function parseNewSchemeCode(code, settings) {
   const normalized = String(code || '').trim().toUpperCase();
   const sep = String(settings.separator || '-');
@@ -209,29 +212,35 @@ function parseNewSchemeCode(code, settings) {
   if (working.endsWith('B') && working.length > 2) {
     // Trailing B may be Behind (Street A/H) — strip for parse, restore later
     const withoutB = working.slice(0, -1);
-    if (/[0-9L]$/.test(withoutB) || withoutB.includes(sep)) {
+    if (/[0-9A-Z]$/.test(withoutB) || withoutB.includes(sep)) {
       behind = 'B';
       working = withoutB;
     }
   }
 
-  // Pallet: BAY-0-POS
-  const pallet = working.match(new RegExp(`^([A-Z0-9]{1,10})${escapeReg(sep)}0${escapeReg(sep)}(\\d+)$`));
+  // Pallet: BAY-0-POS (numeric or letter)
+  const pallet = working.match(
+    new RegExp(`^([A-Z0-9]{1,10})${escapeReg(sep)}0${escapeReg(sep)}${POS_TOKEN}$`)
+  );
   if (pallet) {
-    return { bay: pallet[1], level: 0, zeroType: 'pallet', position: Number(pallet[2]), behind };
+    const position = parsePositionToken(pallet[2]);
+    if (!Number.isInteger(position)) return null;
+    return { bay: pallet[1], level: 0, zeroType: 'pallet', position, behind };
   }
 
   // Location: BAY-L{sub} or BAY-L{sub}-POS
   const locWithPos = working.match(
-    new RegExp(`^([A-Z0-9]{1,10})${escapeReg(sep)}${letter}(\\d+)${escapeReg(sep)}(\\d+)$`)
+    new RegExp(`^([A-Z0-9]{1,10})${escapeReg(sep)}${letter}(\\d+)${escapeReg(sep)}${POS_TOKEN}$`)
   );
   if (locWithPos) {
+    const position = parsePositionToken(locWithPos[3]);
+    if (!Number.isInteger(position)) return null;
     return {
       bay: locWithPos[1],
       level: 0,
       zeroType: 'location',
       sublevel: Number(locWithPos[2]),
-      position: Number(locWithPos[3]),
+      position,
       behind
     };
   }
@@ -250,13 +259,31 @@ function parseNewSchemeCode(code, settings) {
 
   // Level > 0: BAY-LEVEL-POS
   const withPos = working.match(
-    new RegExp(`^([A-Z0-9]{1,10})${escapeReg(sep)}(\\d+)${escapeReg(sep)}(\\d+)$`)
+    new RegExp(`^([A-Z0-9]{1,10})${escapeReg(sep)}(\\d+)${escapeReg(sep)}${POS_TOKEN}$`)
   );
   if (withPos) {
-    return { bay: withPos[1], level: Number(withPos[2]), position: Number(withPos[3]), behind: '' };
+    const position = parsePositionToken(withPos[3]);
+    if (!Number.isInteger(position)) return null;
+    return { bay: withPos[1], level: Number(withPos[2]), position, behind: '' };
   }
 
   return null;
+}
+
+function composeFromParsedBay(parsed, settings) {
+  if (!parsed) return '';
+  return composeBayLevelPositionCode(
+    {
+      bay: parsed.bay,
+      street: String(parsed.bay || '').charAt(0),
+      level: parsed.level,
+      zeroType: parsed.zeroType,
+      sublevel: parsed.sublevel,
+      position: parsed.position,
+      behind: parsed.behind
+    },
+    settings
+  );
 }
 
 function escapeReg(s) {
@@ -304,27 +331,41 @@ function convertNewToClassic(oldCode, settings) {
 function convertLocationCode(oldCode, fromScheme, toScheme, settings) {
   const from = fromScheme === 'bay_level_position' ? 'bay_level_position' : 'classic';
   const to = toScheme === 'bay_level_position' ? 'bay_level_position' : 'classic';
-  if (from === to) {
-    return { to: oldCode, reason: null, unchanged: true };
-  }
-  if (from === 'classic' && to === 'bay_level_position') {
-    // Already in Bay/Level/Position form (e.g. A1-1-1, A1-L0) — do not treat as parse error.
-    if (parseNewSchemeCode(oldCode, settings)) {
-      return { to: oldCode, reason: null, unchanged: true };
+  const normalized = String(oldCode || '').trim().toUpperCase();
+
+  if (to === 'bay_level_position') {
+    const parsedBay = parseNewSchemeCode(normalized, settings);
+    if (parsedBay) {
+      const recomposed = composeFromParsedBay(parsedBay, settings);
+      if (!recomposed) {
+        return { to: null, reason: 'Could not recompose bay code with current position encoding' };
+      }
+      if (recomposed === normalized) {
+        return { to: recomposed, reason: null, unchanged: true };
+      }
+      return { to: recomposed, reason: null };
     }
-    return convertClassicToNew(oldCode, settings);
+    if (from === 'classic') {
+      return convertClassicToNew(normalized, settings);
+    }
+    return { to: null, reason: 'Unable to parse bay/level/position code' };
   }
-  // bay_level_position → classic
-  const classicParts = parseClassicLocationCode(oldCode);
+
+  // Target classic
+  if (from === to) {
+    return { to: normalized, reason: null, unchanged: true };
+  }
+
+  const classicParts = parseClassicLocationCode(normalized);
   const looksClassic =
     classicParts.street
     && classicParts.building !== ''
     && classicParts.level !== ''
     && (classicParts.side || classicParts.sublevel !== '');
-  if (looksClassic && !parseNewSchemeCode(oldCode, settings)) {
-    return { to: oldCode, reason: null, unchanged: true };
+  if (looksClassic && !parseNewSchemeCode(normalized, settings)) {
+    return { to: normalized, reason: null, unchanged: true };
   }
-  return convertNewToClassic(oldCode, settings);
+  return convertNewToClassic(normalized, settings);
 }
 
 async function buildMigrationPlan(fromScheme, toScheme, settingsInput = {}) {

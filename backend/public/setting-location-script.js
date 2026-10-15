@@ -46,6 +46,7 @@
     allowPosition: document.getElementById('allowPosition'),
     bayPatternHint: document.getElementById('bayPatternHint'),
     levelZeroLocationLetter: document.getElementById('levelZeroLocationLetter'),
+    positionEncoding: document.getElementById('positionEncoding'),
     minSublevel: document.getElementById('minSublevel'),
     maxSublevel: document.getElementById('maxSublevel'),
     minLevel: document.getElementById('minLevel'),
@@ -57,6 +58,9 @@
     previewA1L0: document.getElementById('previewA1L0'),
     previewA21X1: document.getElementById('previewA21X1'),
     previewA101: document.getElementById('previewA101'),
+    ruleExLevelPos: document.getElementById('ruleExLevelPos'),
+    ruleExLevelPos2: document.getElementById('ruleExLevelPos2'),
+    ruleExPallet: document.getElementById('ruleExPallet'),
     tryStreet: document.getElementById('tryStreet'),
     tryBuilding: document.getElementById('tryBuilding'),
     tryBuildingX: document.getElementById('tryBuildingX'),
@@ -124,6 +128,25 @@
     return /^[A-Z]$/.test(letter) ? letter : fallback || 'L';
   }
 
+  function normalizePositionEncoding(value) {
+    return String(value || '').trim().toLowerCase() === 'alpha' ? 'alpha' : 'numeric';
+  }
+
+  function formatPositionToken(position, encoding) {
+    const n = Number(position);
+    if (!Number.isInteger(n) || n < 1) return '';
+    if (normalizePositionEncoding(encoding) === 'alpha') {
+      if (n > 26) return '';
+      return String.fromCharCode(64 + n);
+    }
+    return String(n);
+  }
+
+  function effectiveMaxPosition(settings) {
+    const max = Number(settings.maxPosition) || 99;
+    return normalizePositionEncoding(settings.positionEncoding) === 'alpha' ? Math.min(max, 26) : max;
+  }
+
   function getFormSettings() {
     return {
       activeScheme: String(els.activeScheme?.value || 'classic'),
@@ -134,6 +157,7 @@
       allowPosition: readBool(els.allowPosition, true),
       bayPatternHint: String(els.bayPatternHint?.value || '').trim() || 'A1, A2, B1...',
       levelZeroLocationLetter: readLetter(els.levelZeroLocationLetter, 'L'),
+      positionEncoding: normalizePositionEncoding(els.positionEncoding?.value),
       minSublevel: readInt(els.minSublevel, 0),
       maxSublevel: readInt(els.maxSublevel, 99),
       minLevel: readInt(els.minLevel, 0),
@@ -156,9 +180,14 @@
 
     const hasPosition = parts.position !== '' && parts.position != null;
     const position = hasPosition ? Number(parts.position) : NaN;
+    const maxPos = effectiveMaxPosition(settings);
     if (hasPosition) {
-      if (!Number.isInteger(position) || position < settings.minPosition || position > settings.maxPosition) return '';
+      if (!Number.isInteger(position) || position < settings.minPosition || position > maxPos) return '';
     }
+    const positionToken = hasPosition
+      ? formatPositionToken(position, settings.positionEncoding)
+      : '';
+    if (hasPosition && !positionToken) return '';
 
     if (level === 0) {
       const zeroType = String(parts.zeroType || '').toLowerCase();
@@ -167,13 +196,13 @@
       const behind = behindRaw === 'B' && (streetHint === 'A' || streetHint === 'H') ? 'B' : '';
       if (zeroType === 'pallet') {
         if (!hasPosition) return '';
-        return `${bay}${sep}0${sep}${position}`;
+        return `${bay}${sep}0${sep}${positionToken}`;
       }
       if (zeroType !== 'location') return '';
       const sublevel = Number(parts.sublevel);
       if (!Number.isInteger(sublevel) || sublevel < settings.minSublevel || sublevel > settings.maxSublevel) return '';
       const base = `${bay}${sep}${letter}${sublevel}`;
-      const withPos = hasPosition ? `${base}${sep}${position}` : base;
+      const withPos = hasPosition ? `${base}${sep}${positionToken}` : base;
       return `${withPos}${behind}`;
     }
 
@@ -182,7 +211,20 @@
       return '';
     }
     if (!settings.allowPosition) return '';
-    return `${bay}${sep}${level}${sep}${position}`;
+    return `${bay}${sep}${level}${sep}${positionToken}`;
+  }
+
+  function syncEncodingRadios(encoding) {
+    const value = normalizePositionEncoding(encoding);
+    if (els.positionEncoding) els.positionEncoding.value = value;
+    const numericRadio = document.getElementById('encodingNumericRadio');
+    const alphaRadio = document.getElementById('encodingAlphaRadio');
+    if (numericRadio) numericRadio.checked = value === 'numeric';
+    if (alphaRadio) alphaRadio.checked = value === 'alpha';
+    if (value === 'alpha' && els.maxPosition) {
+      const current = Number(els.maxPosition.value);
+      if (Number.isInteger(current) && current > 26) els.maxPosition.value = '26';
+    }
   }
 
   function syncSchemeRadios(scheme) {
@@ -254,6 +296,7 @@
   function applyData(data) {
     saved = { ...data };
     syncSchemeRadios(data.activeScheme || 'classic');
+    syncEncodingRadios(data.positionEncoding || 'numeric');
     if (els.separator) els.separator.value = data.separator || '-';
     boolSelect(els.allowLevelOnly, data.allowLevelOnly !== false);
     boolSelect(els.allowPosition, data.allowPosition !== false);
@@ -278,8 +321,16 @@
   function refreshPreviews() {
     const settings = getFormSettings();
     syncTryZeroUi();
-    if (els.previewA1L2) els.previewA1L2.textContent = composeBayLevelPositionCode({ street: 'A', building: '1', level: 2, position: 1 }, settings) || '—';
-    if (els.previewA221) els.previewA221.textContent = composeBayLevelPositionCode({ street: 'A', building: '2', level: 2, position: 1 }, settings) || '—';
+    const exLevel = composeBayLevelPositionCode({ street: 'A', building: '1', level: 2, position: 1 }, settings) || '—';
+    const exLevel2 = composeBayLevelPositionCode({ street: 'A', building: '2', level: 2, position: 1 }, settings) || '—';
+    const exPallet = composeBayLevelPositionCode({
+      street: 'A', building: '1', level: 0, zeroType: 'pallet', position: 1
+    }, settings) || '—';
+    if (els.previewA1L2) els.previewA1L2.textContent = exLevel;
+    if (els.previewA221) els.previewA221.textContent = exLevel2;
+    if (els.ruleExLevelPos) els.ruleExLevelPos.textContent = exLevel;
+    if (els.ruleExLevelPos2) els.ruleExLevelPos2.textContent = exLevel2;
+    if (els.ruleExPallet) els.ruleExPallet.textContent = exPallet;
     if (els.previewA1L0) {
       els.previewA1L0.textContent = composeBayLevelPositionCode({
         street: 'A', building: '1', level: 0, zeroType: 'location', sublevel: 0
@@ -290,11 +341,7 @@
         bay: 'A21X1', street: 'A', building: '21', level: 0, zeroType: 'location', sublevel: 0
       }, settings) || '—';
     }
-    if (els.previewA101) {
-      els.previewA101.textContent = composeBayLevelPositionCode({
-        street: 'A', building: '1', level: 0, zeroType: 'pallet', position: 1
-      }, settings) || '—';
-    }
+    if (els.previewA101) els.previewA101.textContent = exPallet;
     if (els.tryResult) {
       const street = String(els.tryStreet?.value || '').trim().toUpperCase();
       const building = String(els.tryBuilding?.value ?? '').trim();
@@ -349,24 +396,28 @@
     return data;
   }
 
-  function mappingHintForSchemes(fromScheme, toScheme) {
+  function mappingHintForSchemes(fromScheme, toScheme, settings) {
     const to = String(toScheme || '');
+    const encoding = normalizePositionEncoding(settings?.positionEncoding);
+    const posHint = encoding === 'alpha'
+      ? 'Pos written as letter (1→A, 2→B, 3→C). Classic L→A, M→B, R→C.'
+      : 'Pos written as number (1, 2, 3). Classic L→1, M→2, R→3.';
     if (to === 'classic') {
-      return 'Bay → Classic: Pos 1→L, 2→M, 3→R. Level 0 Location (letter+sublevel) → Sublevel. Level 0 Pallet → Side.';
+      return `Bay → Classic: Pos 1/A→L, 2/B→M, 3/C→R. Level 0 Location → Sublevel. Level 0 Pallet → Side.`;
     }
     if (to === 'bay_level_position') {
-      return 'Classic → Bay: Side L→1, M→2, R→3. Level 0 Sublevel → Location letter + Sublevel. Level 0 Side → Pallet.';
+      return `Classic → Bay: ${posHint} Level 0 Sublevel → Location letter + Sublevel. Level 0 Side → Pallet.`;
     }
-    return 'Classic ↔ Bay: L↔1, M↔2, R↔3. Level 0 Sublevel ↔ Location letter + Sublevel. Level 0 Side ↔ Pallet.';
+    return `${posHint} Level 0 Sublevel ↔ Location. Level 0 Side ↔ Pallet.`;
   }
 
-  function showMigrateConfirmModal(message, fromScheme, toScheme) {
+  function showMigrateConfirmModal(message, fromScheme, toScheme, settings) {
     hideMigrateOverlay();
     const modal = document.getElementById('locationMigrateConfirmModal');
     const msg = document.getElementById('locationMigrateConfirmMessage');
     const mapping = document.getElementById('locationMigrateConfirmMapping');
     if (msg && message) msg.textContent = message;
-    if (mapping) mapping.textContent = mappingHintForSchemes(fromScheme, toScheme);
+    if (mapping) mapping.textContent = mappingHintForSchemes(fromScheme, toScheme, settings);
     if (!modal) return;
     modal.classList.add('show');
     modal.setAttribute('aria-hidden', 'false');
@@ -379,7 +430,7 @@
     modal.setAttribute('aria-hidden', 'true');
   }
 
-  function askMigrateConfirm(message, fromScheme, toScheme) {
+  function askMigrateConfirm(message, fromScheme, toScheme, settings) {
     return new Promise((resolve) => {
       const yesBtn = document.getElementById('locationMigrateYesBtn');
       const noBtn = document.getElementById('locationMigrateNoBtn');
@@ -387,7 +438,7 @@
         resolve(false);
         return;
       }
-      showMigrateConfirmModal(message, fromScheme, toScheme);
+      showMigrateConfirmModal(message, fromScheme, toScheme, settings);
       const onNo = () => {
         cleanup();
         hideMigrateConfirmModal();
@@ -418,7 +469,8 @@
       confirmMessage
       || `Update existing history from ${fromScheme} to ${toScheme}? This renames locations, product locations and logs.`,
       fromScheme,
-      toScheme
+      toScheme,
+      settings
     );
     if (!confirmed) {
       hideMigrateOverlay();
@@ -870,11 +922,16 @@
     if (btn) btn.disabled = true;
     showStatus('Saving…');
     const previousScheme = String(saved?.activeScheme || 'classic');
+    const previousEncoding = normalizePositionEncoding(saved?.positionEncoding);
     const nextSettings = getFormSettings();
-    const schemeChanged = previousScheme !== String(nextSettings.activeScheme || 'classic');
+    const nextScheme = String(nextSettings.activeScheme || 'classic');
+    const schemeChanged = previousScheme !== nextScheme;
+    const encodingChanged = previousEncoding !== normalizePositionEncoding(nextSettings.positionEncoding);
+    const needsHistoryPrompt = schemeChanged
+      || (encodingChanged && (previousScheme === 'bay_level_position' || nextScheme === 'bay_level_position'));
 
     try {
-      if (!schemeChanged) {
+      if (!needsHistoryPrompt) {
         const data = await persistSettings();
         showStatus(data.message || 'Location settings saved.', 'success');
         showSavedModal(data.message || 'Location settings saved successfully.');
@@ -884,11 +941,17 @@
       // Save settings first, then ask about history migration
       const data = await persistSettings();
       showStatus(data.message || 'Location settings saved.', 'success');
+      let confirmMessage = 'You changed the New Location scheme. Do you want to update existing history (locations, product locations and logs) to the new parameterization?';
+      if (!schemeChanged && encodingChanged) {
+        confirmMessage = `You changed Bay position format to ${nextSettings.positionEncoding === 'alpha' ? 'Letter (A–Z)' : 'Numeric'}. Do you want to update existing history accordingly? Example: A1-2-1 ↔ A1-2-A.`;
+      }
+      const migrateFrom = schemeChanged ? previousScheme : 'bay_level_position';
+      const migrateTo = schemeChanged ? nextScheme : 'bay_level_position';
       const result = await runMigrateWithConfirm(
-        previousScheme,
-        nextSettings.activeScheme,
+        migrateFrom,
+        migrateTo,
         nextSettings,
-        'You changed the New Location scheme. Do you want to update existing history (locations, product locations and logs) to the new parameterization?'
+        confirmMessage
       );
       if (!result.ran) {
         showSavedModal('Settings saved. Location history was not changed.');
@@ -908,13 +971,16 @@
       const nextSettings = getFormSettings();
       await persistSettings();
       const toScheme = String(nextSettings.activeScheme || saved?.activeScheme || 'classic');
-      const fromScheme = oppositeScheme(toScheme);
+      const fromScheme = toScheme === 'bay_level_position' ? 'bay_level_position' : oppositeScheme(toScheme);
+      const encodingLabel = nextSettings.positionEncoding === 'alpha' ? 'Letter (A–Z)' : 'Numeric';
       showStatus('Starting history update…');
       await runMigrateWithConfirm(
         fromScheme,
         toScheme,
         nextSettings,
-        `Update existing location history to the active scheme (${toScheme})? Codes still in ${fromScheme} format will be converted.`
+        toScheme === 'bay_level_position'
+          ? `Update existing location history to Bay with ${encodingLabel} positions? Classic codes and other position formats will be converted.`
+          : `Update existing location history to Classic? Bay codes will be converted (Pos 1/A→L, 2/B→M, 3/C→R).`
       );
       showStatus('');
     } catch (error) {
@@ -936,7 +1002,7 @@
 
   function bindDirtyWatchers() {
     [
-      els.activeScheme, els.separator,
+      els.activeScheme, els.separator, els.positionEncoding,
       els.allowLevelOnly, els.allowPosition, els.bayPatternHint, els.levelZeroLocationLetter,
       els.minSublevel, els.maxSublevel,
       els.minLevel, els.maxLevel, els.minPosition, els.maxPosition
@@ -948,6 +1014,14 @@
       radio.addEventListener('change', () => {
         if (!radio.checked) return;
         syncSchemeRadios(radio.value);
+        updateDirty();
+        refreshPreviews();
+      });
+    });
+    document.querySelectorAll('input[name="positionEncodingRadio"]').forEach((radio) => {
+      radio.addEventListener('change', () => {
+        if (!radio.checked) return;
+        syncEncodingRadios(radio.value);
         updateDirty();
         refreshPreviews();
       });
