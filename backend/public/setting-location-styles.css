@@ -556,6 +556,8 @@ body.setting-location-migrating {
 
 .setting-location-migrate-card {
   width: min(440px, calc(100vw - 32px));
+  max-height: calc(100dvh - 32px);
+  overflow: auto;
   background: #fff;
   border-radius: 16px;
   box-shadow: 0 24px 60px rgba(15, 23, 42, 0.28);

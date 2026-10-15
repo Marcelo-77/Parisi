@@ -993,6 +993,13 @@
 
   function setupMigrateUi() {
     document.getElementById('locationMigrateOkBtn')?.addEventListener('click', hideMigrateOverlay);
+    document.getElementById('locationMigrateOverlay')?.addEventListener('click', (event) => {
+      const card = document.getElementById('locationMigrateCard');
+      // Allow closing when finished (not spinning) by clicking outside the card.
+      if (event.target?.id !== 'locationMigrateOverlay') return;
+      if (card?.classList.contains('is-processing')) return;
+      hideMigrateOverlay();
+    });
     document.getElementById('locationMigrateConfirmModal')?.addEventListener('click', (event) => {
       if (event.target?.id === 'locationMigrateConfirmModal') {
         // ignore backdrop dismiss while waiting for Yes/No — user must choose

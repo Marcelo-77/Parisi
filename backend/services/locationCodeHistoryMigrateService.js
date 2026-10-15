@@ -201,31 +201,24 @@ function convertClassicToNew(oldCode, settings) {
 
 const POS_TOKEN = '([A-Z]|\\d+)';
 
-function parseNewSchemeCode(code, settings) {
-  const normalized = String(code || '').trim().toUpperCase();
+/**
+ * Parse bay code body (no Behind suffix handling).
+ * behind is attached by the caller when a trailing B was stripped.
+ */
+function parseNewSchemeCodeBody(working, settings, behind) {
   const sep = String(settings.separator || '-');
   const letter = String(settings.levelZeroLocationLetter || 'L').toUpperCase();
-  if (!normalized) return null;
+  if (!working) return null;
 
-  let working = normalized;
-  let behind = '';
-  if (working.endsWith('B') && working.length > 2) {
-    // Trailing B may be Behind (Street A/H) — strip for parse, restore later
-    const withoutB = working.slice(0, -1);
-    if (/[0-9A-Z]$/.test(withoutB) || withoutB.includes(sep)) {
-      behind = 'B';
-      working = withoutB;
-    }
-  }
-
-  // Pallet: BAY-0-POS (numeric or letter)
+  // Pallet: BAY-0-POS (numeric or letter) — position may be B (ordinal 2)
   const pallet = working.match(
     new RegExp(`^([A-Z0-9]{1,10})${escapeReg(sep)}0${escapeReg(sep)}${POS_TOKEN}$`)
   );
   if (pallet) {
     const position = parsePositionToken(pallet[2]);
     if (!Number.isInteger(position)) return null;
-    return { bay: pallet[1], level: 0, zeroType: 'pallet', position, behind };
+    // Behind is not used on Pallet codes
+    return { bay: pallet[1], level: 0, zeroType: 'pallet', position, behind: '' };
   }
 
   // Location: BAY-L{sub} or BAY-L{sub}-POS
@@ -241,7 +234,7 @@ function parseNewSchemeCode(code, settings) {
       zeroType: 'location',
       sublevel: Number(locWithPos[2]),
       position,
-      behind
+      behind: behind === 'B' ? 'B' : ''
     };
   }
   const locOnly = working.match(
@@ -253,11 +246,11 @@ function parseNewSchemeCode(code, settings) {
       level: 0,
       zeroType: 'location',
       sublevel: Number(locOnly[2]),
-      behind
+      behind: behind === 'B' ? 'B' : ''
     };
   }
 
-  // Level > 0: BAY-LEVEL-POS
+  // Level > 0: BAY-LEVEL-POS (position letter B must not be mistaken for Behind)
   const withPos = working.match(
     new RegExp(`^([A-Z0-9]{1,10})${escapeReg(sep)}(\\d+)${escapeReg(sep)}${POS_TOKEN}$`)
   );
@@ -265,6 +258,27 @@ function parseNewSchemeCode(code, settings) {
     const position = parsePositionToken(withPos[3]);
     if (!Number.isInteger(position)) return null;
     return { bay: withPos[1], level: Number(withPos[2]), position, behind: '' };
+  }
+
+  return null;
+}
+
+function parseNewSchemeCode(code, settings) {
+  const normalized = String(code || '').trim().toUpperCase();
+  if (!normalized) return null;
+
+  // Prefer parsing with trailing B as Position (e.g. A1-1-B → position B).
+  const asPosition = parseNewSchemeCodeBody(normalized, settings, '');
+  if (asPosition) return asPosition;
+
+  // Only if that fails: trailing B may be Behind on Level 0 Location (A1-L0B, A1-L0-AB).
+  if (normalized.endsWith('B') && normalized.length > 2) {
+    const withoutB = normalized.slice(0, -1);
+    const asBehind = parseNewSchemeCodeBody(withoutB, settings, 'B');
+    if (asBehind && asBehind.zeroType === 'location') {
+      const street = String(asBehind.bay || '').charAt(0);
+      if (street === 'A' || street === 'H') return asBehind;
+    }
   }
 
   return null;
