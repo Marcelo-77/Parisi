@@ -51,9 +51,69 @@ function formatBayPositionToken(position) {
     return String(n);
 }
 
+/** Accept ordinal (1) or letter (A) → ordinal position number. */
+function parseBayPositionInput(raw) {
+    const token = String(raw == null ? '' : raw).trim().toUpperCase();
+    if (!token) return NaN;
+    if (/^\d+$/.test(token)) {
+        const n = Number(token);
+        return Number.isInteger(n) && n >= 1 ? n : NaN;
+    }
+    if (isAlphaPositionEncoding() && /^[A-Z]$/.test(token)) {
+        return token.charCodeAt(0) - 64;
+    }
+    return NaN;
+}
+
 function effectiveBayMaxPosition() {
     const max = Number(locationCodeSettings.maxPosition) || 99;
     return isAlphaPositionEncoding() ? Math.min(max, 26) : max;
+}
+
+function bayPositionRangeHint() {
+    const min = Number(locationCodeSettings.minPosition) || 1;
+    const max = effectiveBayMaxPosition();
+    if (isAlphaPositionEncoding()) {
+        const minLetter = formatBayPositionToken(min) || 'A';
+        const maxLetter = formatBayPositionToken(max) || 'Z';
+        return `${minLetter}–${maxLetter}`;
+    }
+    return `${min}–${max}`;
+}
+
+function syncBayPositionInputMode() {
+    const positionInput = document.getElementById('locationBayPosition');
+    if (!positionInput) return;
+    const alpha = isAlphaPositionEncoding() && isBayScheme();
+    const currentRaw = String(positionInput.value || '').trim();
+    const currentOrdinal = parseBayPositionInput(currentRaw);
+
+    if (alpha) {
+        positionInput.type = 'text';
+        positionInput.removeAttribute('min');
+        positionInput.removeAttribute('max');
+        positionInput.removeAttribute('step');
+        positionInput.setAttribute('maxlength', '1');
+        positionInput.setAttribute('inputmode', 'text');
+        positionInput.setAttribute('autocomplete', 'off');
+        positionInput.style.textTransform = 'uppercase';
+        if (currentRaw !== '' && Number.isInteger(currentOrdinal)) {
+            const letter = formatBayPositionToken(currentOrdinal);
+            if (letter && positionInput.value !== letter) positionInput.value = letter;
+        } else if (currentRaw !== '' && !/^[A-Za-z]$/.test(currentRaw)) {
+            positionInput.value = '';
+        }
+    } else {
+        positionInput.type = 'number';
+        positionInput.setAttribute('min', String(locationCodeSettings.minPosition || 1));
+        positionInput.setAttribute('step', '1');
+        positionInput.removeAttribute('maxlength');
+        positionInput.setAttribute('inputmode', 'numeric');
+        positionInput.style.textTransform = '';
+        if (currentRaw !== '' && Number.isInteger(currentOrdinal)) {
+            if (positionInput.value !== String(currentOrdinal)) positionInput.value = String(currentOrdinal);
+        }
+    }
 }
 
 function isBayScheme() {
@@ -109,7 +169,7 @@ function composeBayLocationCode() {
     if (!Number.isInteger(level) || level < locationCodeSettings.minLevel || level > locationCodeSettings.maxLevel) return '';
 
     const hasPosition = positionRaw !== '';
-    const position = hasPosition ? Number(positionRaw) : NaN;
+    const position = hasPosition ? parseBayPositionInput(positionRaw) : NaN;
     const maxPos = effectiveBayMaxPosition();
     if (hasPosition) {
         if (!Number.isInteger(position) || position < locationCodeSettings.minPosition || position > maxPos) {
@@ -160,6 +220,7 @@ function clearClassicLocationFields() {
 }
 
 function syncBayLevelZeroUi() {
+    syncBayPositionInputMode();
     const { street, building, buildingX, a21Special, a21WithX } = getBayA21XParts();
     const levelEl = document.getElementById('locationBayLevel');
     const zeroTypeEl = document.getElementById('locationBayZeroType');
@@ -230,8 +291,11 @@ function syncBayLevelZeroUi() {
         }
         if (positionHint) {
             positionHint.textContent = isAlphaPositionEncoding()
-                ? 'Required. Code uses letter: 1→A, 2→B, 3→C…'
+                ? `Required. Type letter ${bayPositionRangeHint()} (A=1, B=2…).`
                 : 'Position is required when Level > 0.';
+        }
+        if (positionInput && isAlphaPositionEncoding()) {
+            positionInput.placeholder = 'A';
         }
         if (subEl) {
             subEl.value = '';
@@ -247,10 +311,15 @@ function syncBayLevelZeroUi() {
             positionInput.required = false;
         }
         if (positionHint) {
-            const encodingHint = isAlphaPositionEncoding() ? ' Written as letter (1→A).' : '';
+            const encodingHint = isAlphaPositionEncoding()
+                ? ` Type letter ${bayPositionRangeHint()} if used.`
+                : '';
             positionHint.textContent = a21WithX
                 ? `Optional. Code stays under A21X* for photo search.${encodingHint}`
                 : `Optional for Location type.${encodingHint}`;
+        }
+        if (positionInput && isAlphaPositionEncoding()) {
+            positionInput.placeholder = 'A (opt.)';
         }
         if (sublevelHint) {
             const sampleBay = a21WithX ? `A21X${buildingX}` : 'A1';
@@ -271,8 +340,11 @@ function syncBayLevelZeroUi() {
         }
         if (positionHint) {
             positionHint.textContent = isAlphaPositionEncoding()
-                ? 'Required for Pallet at Level 0. Code uses letter: 1→A, 2→B…'
+                ? `Required for Pallet at Level 0. Type letter ${bayPositionRangeHint()}.`
                 : 'Required for Pallet at Level 0 (numeric position).';
+        }
+        if (positionInput && isAlphaPositionEncoding()) {
+            positionInput.placeholder = 'A';
         }
         if (subEl) {
             subEl.value = '';
@@ -312,7 +384,11 @@ function applyLocationSchemeUi() {
     if (bay) bay.style.display = useBay ? '' : 'none';
     setClassicFieldsRequired(!useBay);
     if (useBay) clearClassicLocationFields();
-    if (codeEl) codeEl.placeholder = useBay ? 'Ex: A1-2-1, A1-L0, A1-0-1' : 'Ex: B1-00, B15-1L';
+    if (codeEl) {
+        codeEl.placeholder = useBay
+            ? (isAlphaPositionEncoding() ? 'Ex: A1-2-A, A1-L0, A1-0-A' : 'Ex: A1-2-1, A1-L0, A1-0-1')
+            : 'Ex: B1-00, B15-1L';
+    }
     if (useBay) {
         syncBayLevelZeroUi();
         updateBayComposedLocation();
@@ -477,6 +553,10 @@ document.addEventListener('DOMContentLoaded', () => {
             if (id === 'locationNewBuildingX') {
                 el.value = String(el.value || '').replace(/[^\d]/g, '');
             }
+            if (id === 'locationBayPosition' && isAlphaPositionEncoding()) {
+                const letter = String(el.value || '').replace(/[^A-Za-z]/g, '').slice(0, 1).toUpperCase();
+                if (el.value !== letter) el.value = letter;
+            }
             syncBayLevelZeroUi();
             updateBayComposedLocation();
         });
@@ -629,10 +709,10 @@ document.addEventListener('DOMContentLoaded', () => {
                         valid = false;
                     }
                     if (positionRaw) {
-                        const position = Number(positionRaw);
+                        const position = parseBayPositionInput(positionRaw);
                         const maxPos = effectiveBayMaxPosition();
                         if (!Number.isInteger(position) || position < locationCodeSettings.minPosition || position > maxPos) {
-                            showError('locationBayPosition', `Position must be between ${locationCodeSettings.minPosition} and ${maxPos}`);
+                            showError('locationBayPosition', `Position must be ${bayPositionRangeHint()}`);
                             valid = false;
                         }
                     }
@@ -641,10 +721,10 @@ document.addEventListener('DOMContentLoaded', () => {
                         showError('locationBayPosition', 'Position is required for Pallet at Level 0');
                         valid = false;
                     } else {
-                        const position = Number(positionRaw);
+                        const position = parseBayPositionInput(positionRaw);
                         const maxPos = effectiveBayMaxPosition();
                         if (!Number.isInteger(position) || position < locationCodeSettings.minPosition || position > maxPos) {
-                            showError('locationBayPosition', `Position must be between ${locationCodeSettings.minPosition} and ${maxPos}`);
+                            showError('locationBayPosition', `Position must be ${bayPositionRangeHint()}`);
                             valid = false;
                         }
                     }
@@ -654,10 +734,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     showError('locationBayPosition', 'Position is required when Level > 0');
                     valid = false;
                 } else {
-                    const position = Number(positionRaw);
+                    const position = parseBayPositionInput(positionRaw);
                     const maxPos = effectiveBayMaxPosition();
                     if (!Number.isInteger(position) || position < locationCodeSettings.minPosition || position > maxPos) {
-                        showError('locationBayPosition', `Position must be between ${locationCodeSettings.minPosition} and ${maxPos}`);
+                        showError('locationBayPosition', `Position must be ${bayPositionRangeHint()}`);
                         valid = false;
                     }
                 }
