@@ -359,10 +359,13 @@ function convertLocationCode(oldCode, fromScheme, toScheme, settings) {
       }
       return { to: recomposed, reason: null };
     }
-    if (from === 'classic') {
-      return convertClassicToNew(normalized, settings);
-    }
-    return { to: null, reason: 'Unable to parse bay/level/position code' };
+    // Mixed history: codes may still be Classic (E1-2R) even if fromScheme says bay.
+    const classicToBay = convertClassicToNew(normalized, settings);
+    if (classicToBay.to) return classicToBay;
+    return {
+      to: null,
+      reason: classicToBay.reason || 'Unable to parse classic or bay/level/position code'
+    };
   }
 
   // Target classic

@@ -971,7 +971,8 @@
       const nextSettings = getFormSettings();
       await persistSettings();
       const toScheme = String(nextSettings.activeScheme || saved?.activeScheme || 'classic');
-      const fromScheme = toScheme === 'bay_level_position' ? 'bay_level_position' : oppositeScheme(toScheme);
+      // Always migrate from the opposite scheme so leftover Classic/Bay codes are converted.
+      const fromScheme = oppositeScheme(toScheme);
       const encodingLabel = nextSettings.positionEncoding === 'alpha' ? 'Letter (A–Z)' : 'Numeric';
       showStatus('Starting history update…');
       await runMigrateWithConfirm(
@@ -979,7 +980,7 @@
         toScheme,
         nextSettings,
         toScheme === 'bay_level_position'
-          ? `Update existing location history to Bay with ${encodingLabel} positions? Classic codes and other position formats will be converted.`
+          ? `Update existing location history to Bay with ${encodingLabel} positions? Classic codes (e.g. E1-2R) will be converted.`
           : `Update existing location history to Classic? Bay codes will be converted (Pos 1/A→L, 2/B→M, 3/C→R).`
       );
       showStatus('');
