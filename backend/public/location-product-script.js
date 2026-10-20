@@ -1462,6 +1462,16 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('closeEditQuantityCurrentModal').addEventListener('click', closeEditQuantityCurrentModal);
   document.getElementById('cancelEditQuantityCurrentBtn').addEventListener('click', closeEditQuantityCurrentModal);
   document.getElementById('applyFiltersBtn').addEventListener('click', loadRecords);
+
+  (function applyLocationProductDeepLink() {
+    const params = new URLSearchParams(window.location.search);
+    const locationParam = String(params.get('location') || params.get('locationCode') || '').trim();
+    const productParam = String(params.get('product') || params.get('productCode') || '').trim();
+    if (!locationParam && !productParam) return;
+    if (filterLocationCode && locationParam) filterLocationCode.value = locationParam.toUpperCase();
+    if (filterProductCode && productParam) filterProductCode.value = productParam.toUpperCase();
+    loadRecords();
+  })();
   const downloadExcelBtn = document.getElementById('downloadLocationProductExcel');
   if (downloadExcelBtn) {
     downloadExcelBtn.addEventListener('click', async () => {
