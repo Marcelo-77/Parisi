@@ -84,6 +84,21 @@
     return passwordInput;
   }
 
+  function getSafeNextUrl(apps, isRoot) {
+    const raw = new URLSearchParams(window.location.search).get('next');
+    if (!raw) return null;
+    const next = String(raw).trim();
+    if (!next.startsWith('/') || next.startsWith('//') || next.includes('\\')) return null;
+    if (/^[a-zA-Z][a-zA-Z0-9+.-]*:/.test(next)) return null;
+    const pathPart = next.split('?')[0].split('#')[0];
+    const fileName = pathPart.replace(/^\//, '');
+    if (!/^[A-Za-z0-9._-]+\.html$/.test(fileName)) return null;
+    if (!isRoot && Array.isArray(apps) && apps.length && !apps.includes(fileName)) {
+      return null;
+    }
+    return next;
+  }
+
   async function resolveLandingPage() {
     try {
       const res = await fetch('/api/auth/menu-access');
@@ -99,15 +114,20 @@
           ? data.applications.map((app) => String(app || '').trim()).filter(Boolean)
           : [];
 
+        const nextUrl = getSafeNextUrl(apps, !!data.isRoot);
+        if (nextUrl) return nextUrl;
+
+        // Always prefer Product (warehouse) when available.
         if (data.isRoot || apps.includes('warehouse.html')) {
           return '/warehouse.html';
         }
 
+        // Staff without Product: prefer general apps; tablet search is last.
         const preferred = [
-          'Search-Product-Tablet.html',
           'location-product.html',
           'pesquisa.html',
-          'picking.html'
+          'picking.html',
+          'Search-Product-Tablet.html'
         ];
         const preferredHit = preferred.find((app) => apps.includes(app));
         if (preferredHit) return `/${preferredHit}`;
@@ -117,7 +137,7 @@
     } catch {
       // ignore menu-access errors
     }
-    return '/warehouse.html';
+    return getSafeNextUrl([], true) || '/warehouse.html';
   }
 
   async function checkExistingSession() {

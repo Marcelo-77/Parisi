@@ -292,18 +292,58 @@
     return forkliftDriversLoading;
   }
 
-  function buildForkliftMessageContent({ locationCode, productCode, productName, requester, locationSection }) {
+  function locationProductLink(locationCode, productCode) {
+    const loc = String(locationCode || '').trim();
+    const prod = String(productCode || '').trim();
+    const url = new URL('location-product.html', window.location.origin);
+    if (loc) url.searchParams.set('location', loc);
+    if (prod) url.searchParams.set('product', prod);
+    return url.toString();
+  }
+
+  function getForkliftRequestedLines() {
+    const rows = Array.from(document.querySelectorAll('#sptForkliftQtyList .spt-forklift-qty-row'));
+    return rows.map((row) => {
+      const productCode = String(row.getAttribute('data-product') || '').trim();
+      const productName = String(row.getAttribute('data-name') || '').trim();
+      const qtyRaw = String(row.querySelector('input')?.value || '').trim();
+      const qty = qtyRaw === '' ? NaN : Number(qtyRaw);
+      return {
+        productCode,
+        productName,
+        qty: Number.isFinite(qty) && qty > 0 ? qty : 0
+      };
+    }).filter((item) => item.productCode);
+  }
+
+  function buildForkliftMessageContent({ locationCode, productCode, productName, requester, locationSection, requestedItems }) {
     const location = String(locationCode || '').trim();
-    const code = String(productCode || '').trim();
-    const name = String(productName || '').trim();
-    const productLine = name ? `${code} - ${name}` : code;
     const section = String(locationSection || '').trim();
     const requestedBy = String(requester || '').trim();
+    const items = Array.isArray(requestedItems) && requestedItems.length
+      ? requestedItems
+      : [{
+          productCode: String(productCode || '').trim(),
+          productName: String(productName || '').trim(),
+          qty: 0
+        }];
     const lines = [];
     if (requestedBy) lines.push(`Requested by: ${requestedBy}`);
     if (section) lines.push(`Location section: ${section}`);
     lines.push(`Location Code: ${location}`);
-    lines.push(`Product Code and name: ${productLine}`);
+    items.forEach((item) => {
+      const code = String(item.productCode || '').trim();
+      const name = String(item.productName || '').trim();
+      const productLine = name ? `${code} - ${name}` : code;
+      const qty = Number(item.qty);
+      lines.push(`Product Code and name: ${productLine}`);
+      if (Number.isFinite(qty) && qty > 0) {
+        lines.push(`Qty requested: ${qty}`);
+      }
+      if (location && code) {
+        lines.push(`Location Product: ${locationProductLink(location, code)}`);
+      }
+    });
     return lines.join('\n');
   }
 
@@ -401,13 +441,112 @@
   function refreshForkliftMessageContent(context, requester) {
     const el = document.getElementById('sptForkliftMessageContent');
     if (!el || !context) return;
+    const requestedItems = getForkliftRequestedLines().filter((item) => item.qty > 0);
     el.value = buildForkliftMessageContent({
       locationCode: context.locationCode || '',
       productCode: context.productCode || '',
       productName: context.productName || '',
       requester: requester || document.getElementById('sptForkliftRequester')?.value || '',
-      locationSection: context.locationSection || ''
+      locationSection: context.locationSection || '',
+      requestedItems: requestedItems.length ? requestedItems : [{
+        productCode: context.productCode || '',
+        productName: context.productName || '',
+        qty: 0
+      }]
     });
+  }
+
+  function renderForkliftQtyRows(productsAtLocation, selectedProductCode) {
+    const list = document.getElementById('sptForkliftQtyList');
+    if (!list) return;
+    const selected = String(selectedProductCode || '').trim().toUpperCase();
+    const rows = Array.isArray(productsAtLocation) && productsAtLocation.length
+      ? productsAtLocation
+      : [];
+    if (!rows.length) {
+      list.innerHTML = '<p class="spt-forklift-qty-empty">No products at this location.</p>';
+      return;
+    }
+    list.innerHTML = rows.map((item) => {
+      const code = String(item.productCode || '').trim();
+      const name = String(item.productName || '').trim();
+      const current = item.quantityCurrent != null ? item.quantityCurrent : 0;
+      const isSelected = code.toUpperCase() === selected;
+      const label = name ? `${code} — ${name}` : code;
+      return `
+        <div class="spt-forklift-qty-row${isSelected ? ' is-selected' : ''}" data-product="${escapeHtml(code)}" data-name="${escapeHtml(name)}">
+          <div class="spt-forklift-qty-meta">
+            <strong>${escapeHtml(label)}</strong>
+            <span>Qty current: ${escapeHtml(current)}</span>
+          </div>
+          <input type="number" min="1" step="1" inputmode="numeric" class="spt-forklift-qty-input" aria-label="Qty requested for ${escapeHtml(code)}" placeholder="Qty">
+        </div>
+      `;
+    }).join('');
+    list.querySelectorAll('.spt-forklift-qty-input').forEach((input) => {
+      input.addEventListener('input', () => {
+        refreshForkliftMessageContent(
+          forkliftContext,
+          document.getElementById('sptForkliftRequester')?.value || ''
+        );
+      });
+    });
+    const focusRow = list.querySelector('.spt-forklift-qty-row.is-selected .spt-forklift-qty-input')
+      || list.querySelector('.spt-forklift-qty-input');
+    if (focusRow && rows.length === 1) {
+      try { focusRow.focus({ preventScroll: true }); } catch (_) { focusRow.focus(); }
+    }
+  }
+
+  async function loadProductsAtLocation(locationCode, selectedProduct) {
+    const selectedCode = String(selectedProduct?.codigo || '').trim();
+    const selectedName = String(selectedProduct?.nome || '').trim();
+    const fallback = selectedCode
+      ? [{ productCode: selectedCode, productName: selectedName, quantityCurrent: 0 }]
+      : [];
+    try {
+      const res = await fetch(
+        `${API_LOCATION_PRODUCT}?locationCode=${encodeURIComponent(locationCode)}`,
+        { credentials: 'include' }
+      );
+      const data = await res.json().catch(() => ({}));
+      const list = Array.isArray(data.data) ? data.data : [];
+      const byCode = new Map();
+      list.forEach((row) => {
+        const code = String(row.productCode != null ? row.productCode : row.product_code || '').trim();
+        if (!code) return;
+        const key = code.toUpperCase();
+        const current = Number(row.quantityCurrent != null ? row.quantityCurrent : row.quantity_current ?? 0) || 0;
+        const existing = byCode.get(key);
+        if (existing) {
+          existing.quantityCurrent += current;
+          return;
+        }
+        byCode.set(key, {
+          productCode: code,
+          productName: String(row.productName != null ? row.productName : row.product_name || '').trim(),
+          quantityCurrent: current
+        });
+      });
+      if (selectedCode && !byCode.has(selectedCode.toUpperCase())) {
+        byCode.set(selectedCode.toUpperCase(), {
+          productCode: selectedCode,
+          productName: selectedName,
+          quantityCurrent: 0
+        });
+      }
+      const items = Array.from(byCode.values());
+      items.sort((a, b) => {
+        const aSel = a.productCode.toUpperCase() === selectedCode.toUpperCase() ? 0 : 1;
+        const bSel = b.productCode.toUpperCase() === selectedCode.toUpperCase() ? 0 : 1;
+        if (aSel !== bSel) return aSel - bSel;
+        return String(a.productCode).localeCompare(String(b.productCode));
+      });
+      return items.length ? items : fallback;
+    } catch (error) {
+      console.error('Error loading products at location:', error);
+      return fallback;
+    }
   }
 
   function showForkliftModal(modal) {
@@ -487,6 +626,11 @@
       els.forkliftMessageType.disabled = true;
     }
     fillForkliftDriverOptions(forkliftPreferredMessageType);
+    renderForkliftQtyRows([{
+      productCode,
+      productName,
+      quantityCurrent: 0
+    }], productCode);
     refreshForkliftMessageContent(forkliftContext, cachedRequesterName || '');
     showForkliftModal(els.forkliftRequestModal);
     els.forkliftDriverSelect?.focus();
@@ -495,9 +639,12 @@
       const requesterPromise = getLoggedRequesterName();
       const driversPromise = loadForkliftSettings({ refreshLocations: false });
       const requestNumberPromise = fetchNextForkliftRequestNumber();
+      const productsPromise = loadProductsAtLocation(code, selectedProduct);
 
       const requester = await requesterPromise;
       document.getElementById('sptForkliftRequester').value = requester;
+      const productsAtLocation = await productsPromise;
+      renderForkliftQtyRows(productsAtLocation, productCode);
       refreshForkliftMessageContent(forkliftContext, requester);
 
       await driversPromise;
@@ -710,6 +857,13 @@
       const allowedPriorities = ['LOW', 'NORMAL', 'HIGH', 'URGENT'];
       const priority = allowedPriorities.includes(priorityRaw) ? priorityRaw : 'NORMAL';
       const subject = String(document.getElementById('sptForkliftSubject')?.value || '').trim() || 'Lower the pallet';
+      const requestedItems = getForkliftRequestedLines().filter((item) => item.qty > 0);
+      if (!requestedItems.length) {
+        alert('Enter Qty requested for at least one product.');
+        document.querySelector('#sptForkliftQtyList .spt-forklift-qty-input')?.focus();
+        return;
+      }
+      refreshForkliftMessageContent(forkliftContext, document.getElementById('sptForkliftRequester')?.value || '');
       const messageContent = String(document.getElementById('sptForkliftMessageContent')?.value || '').trim();
       const selectedValue = String(els.forkliftDriverSelect?.value || '');
       const driverNotDefined = selectedValue === '__NOT_DEFINED__';

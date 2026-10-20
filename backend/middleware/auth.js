@@ -223,7 +223,11 @@ async function protectPages(req, res, next) {
 
   if (path === '/' || path.endsWith('.html')) {
     if (!isAuthenticated(req)) {
-      return res.redirect('/login.html');
+      const nextPath = String(req.originalUrl || path || '/').trim();
+      const safeNext = nextPath.startsWith('/') && !nextPath.startsWith('//')
+        ? nextPath
+        : path;
+      return res.redirect(`/login.html?next=${encodeURIComponent(safeNext)}`);
     }
 
     const pageApp = getPageApplicationName(path);
@@ -260,7 +264,14 @@ async function protectPages(req, res, next) {
       if (appNames.includes('warehouse.html')) {
         return res.redirect('/warehouse.html');
       }
-      const firstApp = appNames[0];
+      // Prefer general apps over tablet search when bouncing unauthorized pages.
+      const preferred = [
+        'location-product.html',
+        'pesquisa.html',
+        'picking.html',
+        'Search-Product-Tablet.html'
+      ];
+      const firstApp = preferred.find((app) => appNames.includes(app)) || appNames[0];
       if (firstApp) {
         return res.redirect(`/${firstApp}`);
       }
