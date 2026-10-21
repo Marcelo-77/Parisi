@@ -301,6 +301,15 @@
     return url.toString();
   }
 
+  function searchMessageRequestLink(requestNumber) {
+    const url = new URL('Search-Message-Request.html', window.location.origin);
+    const num = String(requestNumber || '').trim();
+    if (num && num !== 'Loading...' && num !== 'Next available') {
+      url.searchParams.set('requestNumber', num);
+    }
+    return url.toString();
+  }
+
   function getLocationQtyCurrent(locationCode, productCode) {
     const loc = String(locationCode || '').trim().toUpperCase();
     const prod = String(productCode || '').trim().toUpperCase();
@@ -369,6 +378,10 @@
         lines.push(`Location Product: ${locationProductLink(location, code)}`);
       }
     });
+    const requestNumber = String(document.getElementById('sptForkliftRequestNumber')?.value || '').trim();
+    if (requestNumber && requestNumber !== 'Loading...' && requestNumber !== 'Next available') {
+      lines.push(`Update request #${requestNumber}: ${searchMessageRequestLink(requestNumber)}`);
+    }
     return lines.join('\n');
   }
 
@@ -699,6 +712,7 @@
 
       const nextRequestNumber = await requestNumberPromise;
       document.getElementById('sptForkliftRequestNumber').value = nextRequestNumber;
+      refreshForkliftMessageContent(forkliftContext, requester);
     } catch (error) {
       console.error('Error preparing tablet forklift request:', error);
       document.getElementById('sptForkliftRequestNumber').value = 'Next available';

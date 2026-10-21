@@ -261,11 +261,11 @@
         els.resultsTime.textContent = '(' + ((Date.now() - startedAt) / 1000).toFixed(2) + 's)';
       }
 
-      if (!els.tableBody) return;
+      if (!els.tableBody) return list;
       if (!list.length) {
         els.tableBody.innerHTML = '';
         if (els.noResults) els.noResults.style.display = 'block';
-        return;
+        return list;
       }
 
       if (els.noResults) els.noResults.style.display = 'none';
@@ -299,8 +299,10 @@
           + '<i class="fas fa-edit"></i> <span>Edit</span></button>'
           + '</div></td></tr>';
       }).join('');
+      return list;
     } catch (err) {
       alert(err.message || 'Search failed');
+      return [];
     } finally {
       if (els.loading) els.loading.style.display = 'none';
     }
@@ -396,7 +398,7 @@
     openAsForkliftEdit = false;
   }
 
-  async function openRequest(id, asEdit) {
+  async function openRequest(id, asEdit, options = {}) {
     openAsForkliftEdit = !!asEdit;
     try {
       const res = await fetch(API + '/' + encodeURIComponent(id), { credentials: 'include' });
@@ -404,8 +406,10 @@
       if (!res.ok || !data.success) throw new Error(data.error || 'Unable to load request');
       if (openAsForkliftEdit && !canEditForkliftRequest(data.data)) {
         openAsForkliftEdit = false;
-        alert('Edit is available for Pending requests, registered forklift drivers (Waiting for driver), or the assigned driver (Forklift driver request selected).');
-        return;
+        if (!options.fallbackView) {
+          alert('Edit is available for Pending requests, registered forklift drivers (Waiting for driver), or the assigned driver (Forklift driver request selected).');
+          return;
+        }
       }
       fillModal(data.data);
       openModal();
@@ -668,5 +672,15 @@
     await loadSessionUser();
     await loadForkliftDrivers();
     loadOperators();
+    const params = new URLSearchParams(window.location.search);
+    const requestNumber = String(params.get('requestNumber') || params.get('request') || '').trim();
+    if (!requestNumber || !els.requestNumber) return;
+    els.requestNumber.value = requestNumber;
+    const list = await runSearch();
+    const match = (list || []).find((row) => String(row.requestNumber) === String(requestNumber))
+      || ((list || []).length === 1 ? list[0] : null);
+    if (match?.id) {
+      openRequest(match.id, true, { fallbackView: true });
+    }
   });
 })();

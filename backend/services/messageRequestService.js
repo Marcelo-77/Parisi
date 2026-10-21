@@ -266,6 +266,46 @@ async function criar(dados) {
   return mapRow(result.rows[0]);
 }
 
+function buildSearchMessageRequestUrl(origin, requestNumber) {
+  const base = String(origin || '').trim().replace(/\/$/, '');
+  const num = String(requestNumber == null ? '' : requestNumber).trim();
+  if (!base || !num) return '';
+  return `${base}/Search-Message-Request.html?requestNumber=${encodeURIComponent(num)}`;
+}
+
+function withSearchMessageRequestLink(content, requestNumber, origin) {
+  const url = buildSearchMessageRequestUrl(origin, requestNumber);
+  if (!url) return String(content || '');
+  const line = `Update request #${requestNumber}: ${url}`;
+  const text = String(content || '').trim();
+  if (!text) return line;
+  const lineRe = /(?:^|\n)Update request #\d+:\s+\S*Search-Message-Request\.html\?[^\n]*/i;
+  if (lineRe.test(text)) {
+    return text.replace(lineRe, `\n${line}`).replace(/^\n/, '');
+  }
+  if (/Search-Message-Request\.html/i.test(text)) {
+    return `${text.replace(/https?:\/\/[^\s]*Search-Message-Request\.html\?[^\s]*/gi, url)}\n${line}`;
+  }
+  return `${text}\n${line}`;
+}
+
+async function atualizarMensagem(id, content) {
+  await ensureTable();
+  const messageContent = String(content || '').trim();
+  if (!messageContent) throw new Error('Message content is required');
+  const result = await query(
+    `UPDATE ${TABLE}
+     SET message_content = $2,
+         final_content = $2,
+         atualizado_em = CURRENT_TIMESTAMP
+     WHERE id = $1
+     RETURNING *`,
+    [id, messageContent]
+  );
+  if (!result.rows.length) throw new Error('Message request not found');
+  return mapRow(result.rows[0]);
+}
+
 async function peekNextRequestNumber() {
   await ensureTable();
   const result = await query(
@@ -671,6 +711,8 @@ module.exports = {
   formatMessageTypeLabel,
   criar,
   peekNextRequestNumber,
+  withSearchMessageRequestLink,
+  atualizarMensagem,
   listar,
   buscarPorId,
   atualizar,

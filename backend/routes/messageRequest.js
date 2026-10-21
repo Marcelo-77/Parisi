@@ -18,6 +18,27 @@ async function getActorName(req) {
   return profile?.nome || profile?.email || 'User';
 }
 
+function publicAppOrigin(req) {
+  const env = String(process.env.APP_PUBLIC_URL || process.env.PUBLIC_BASE_URL || '').trim().replace(/\/$/, '');
+  if (env) return env;
+  const proto = String(req.headers['x-forwarded-proto'] || req.protocol || 'https').split(',')[0].trim() || 'https';
+  const host = String(req.headers['x-forwarded-host'] || req.get?.('host') || req.headers.host || '').split(',')[0].trim();
+  return host ? `${proto}://${host}` : '';
+}
+
+async function persistForkliftMessageWithUpdateLink(req, created) {
+  if (!created?.id || created.requestNumber == null) return created;
+  const nextContent = messageRequestService.withSearchMessageRequestLink(
+    created.finalContent || created.messageContent,
+    created.requestNumber,
+    publicAppOrigin(req)
+  );
+  if (!nextContent || nextContent === String(created.messageContent || '').trim()) {
+    return created;
+  }
+  return messageRequestService.atualizarMensagem(created.id, nextContent);
+}
+
 async function getCreatorInfo(req, body = {}) {
   if (isRootSession(req)) {
     const createdBy = body.createdBy != null ? String(body.createdBy).trim() : '';
@@ -111,7 +132,7 @@ router.post('/forklift', async (req, res) => {
     const priority = allowedPriorities.includes(priorityRaw) ? priorityRaw : 'NORMAL';
 
     if (driverNotDefined) {
-      const created = await messageRequestService.criar({
+      const created = await persistForkliftMessageWithUpdateLink(req, await messageRequestService.criar({
         messageType,
         priority,
         subject,
@@ -125,7 +146,7 @@ router.post('/forklift', async (req, res) => {
         initialStatus: 'WAITING_FOR_DRIVER',
         createdBy: creator.createdBy,
         createdByName: creator.createdByName
-      });
+      }));
 
       return res.status(201).json({
         success: true,
@@ -169,7 +190,7 @@ router.post('/forklift', async (req, res) => {
       });
     }
 
-    const created = await messageRequestService.criar({
+    const created = await persistForkliftMessageWithUpdateLink(req, await messageRequestService.criar({
       messageType,
       priority,
       subject,
@@ -183,9 +204,10 @@ router.post('/forklift', async (req, res) => {
       initialStatus: 'FORKLIFT_DRIVER_SELECTED',
       createdBy: creator.createdBy,
       createdByName: creator.createdByName
-    });
+    }));
 
     const actorName = creator.createdByName || 'User';
+    const outboundContent = created.finalContent || created.messageContent || messageContent;
 
     // Respond immediately so Approval/Render does not time out while SMS/Email is sending.
     res.status(201).json({
@@ -200,7 +222,7 @@ router.post('/forklift', async (req, res) => {
       messageRequestNotifyService.sendOutboundMessage(created, {
         actorName,
         subject,
-        content: messageContent
+        content: outboundContent
       }).then(async () => {
         await messageRequestService.appendHistoryLine(
           created.id,
