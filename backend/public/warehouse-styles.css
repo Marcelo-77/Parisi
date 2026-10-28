@@ -1432,9 +1432,24 @@ body.has-environment-banner-fixed {
     margin-top: 14px;
 }
 
+.print-location-search-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex: 1;
+    min-width: 0;
+}
+
 .print-location-search {
     position: relative;
     flex: 1;
+    min-width: 0;
+}
+
+.print-location-search-btn {
+    flex: 0 0 auto;
+    white-space: nowrap;
+    min-height: 44px;
 }
 
 .print-location-search > i {
@@ -1650,6 +1665,15 @@ body.has-environment-banner-fixed {
         flex-direction: column;
         gap: 10px;
         flex: 0 0 auto;
+    }
+
+    .print-location-search-row {
+        align-items: stretch;
+    }
+
+    .print-location-search-btn {
+        min-height: 48px;
+        padding: 12px 14px;
     }
 
     .print-location-search input {
