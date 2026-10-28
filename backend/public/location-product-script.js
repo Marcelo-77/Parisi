@@ -1498,7 +1498,15 @@ document.addEventListener('DOMContentLoaded', () => {
   const closePrintModalBtn2 = document.getElementById('closePrintModalBtn');
   const doPrintBtn = document.getElementById('doPrintBtn');
   const printLocationCodesList = document.getElementById('printLocationCodesList');
+  const printLocationSearch = document.getElementById('printLocationSearch');
+  const printLocationSearchBtn = document.getElementById('printLocationSearchBtn');
+  const printLocationPickerSummary = document.getElementById('printLocationPickerSummary');
+  const showEmptyPrintLocations = document.getElementById('showEmptyPrintLocations');
   let printLocationOptions = [];
+  let printLocationsReady = false;
+  let printSearchApplied = false;
+  let printLastSearchTerm = '';
+  let printSearchInProgress = false;
 
   function getRecordProductCode(record) {
     return record.productCode != null ? record.productCode : record.product_code || '';
@@ -1568,28 +1576,50 @@ document.addEventListener('DOMContentLoaded', () => {
     return false;
   }
 
+  function setPrintLocationSummary(html) {
+    if (printLocationPickerSummary) printLocationPickerSummary.innerHTML = html;
+  }
+
+  function bindPrintLocationCardSelection() {
+    printLocationCodesList?.querySelectorAll('input[name="printLocationCode"]').forEach((radio) => {
+      radio.addEventListener('change', () => {
+        printLocationCodesList.querySelectorAll('.print-location-card').forEach((card) => {
+          card.classList.toggle('is-selected', card.querySelector('input')?.checked);
+        });
+      });
+    });
+  }
+
+  function renderPrintLocationIdle(message) {
+    if (!printLocationCodesList) return;
+    printLocationCodesList.innerHTML = `
+      <div class="print-location-empty">
+        <i class="fas fa-keyboard"></i>
+        <p>${escapeHtml(message || 'Type a Location Code and click Search.')}</p>
+      </div>
+    `;
+    setPrintLocationSummary('<span>Type a location and click Search</span>');
+  }
+
   function renderPrintLocationOptions(searchTerm = '', showEmpty = false) {
     if (!printLocationCodesList) return;
     const search = normalizeLocationCode(searchTerm);
-    const filtered = search
-      ? printLocationOptions.filter((option) => {
-          if (!showEmpty && !option.hasStock) return false;
-          return option.code.includes(search) ||
-            option.section.toUpperCase().includes(search) ||
-            option.accessType.toUpperCase().includes(search);
-        })
-      : [];
+    if (!search) {
+      printSearchApplied = false;
+      renderPrintLocationIdle();
+      return;
+    }
+
+    const filtered = printLocationOptions.filter((option) => {
+      if (!showEmpty && !option.hasStock) return false;
+      return option.code.includes(search) ||
+        option.section.toUpperCase().includes(search) ||
+        option.accessType.toUpperCase().includes(search);
+    });
 
     const selected = getSelectedLocationCode();
-    const optionsHtml = !search
-      ? `
-          <div class="print-location-empty">
-            <i class="fas fa-keyboard"></i>
-            <p>Type a Location Code to see matching results.</p>
-          </div>
-        `
-      : filtered.length
-        ? filtered.map((option) => `
+    printLocationCodesList.innerHTML = filtered.length
+      ? filtered.map((option) => `
           <label class="print-location-card${option.code === selected ? ' is-selected' : ''}">
             <input type="radio" name="printLocationCode" value="${escapeHtml(option.code)}"${option.code === selected ? ' checked' : ''}>
             <span class="print-location-card-icon"><i class="fas fa-map-marker-alt"></i></span>
@@ -1601,92 +1631,97 @@ document.addEventListener('DOMContentLoaded', () => {
               ${option.hasStock ? '<i class="fas fa-box"></i> In stock' : 'No stock'}
             </span>
           </label>
-          `).join('')
-        : '<div class="print-location-empty"><i class="fas fa-search"></i><p>No matching locations found.</p></div>';
+        `).join('')
+      : '<div class="print-location-empty"><i class="fas fa-search"></i><p>No matching locations found.</p></div>';
 
-    const stockCount = printLocationOptions.filter((option) => option.hasStock).length;
-    printLocationCodesList.innerHTML = `
-      <div class="print-location-picker-toolbar">
-        <div class="print-location-search">
-          <i class="fas fa-search"></i>
-          <input id="printLocationSearch" type="search" placeholder="Search location code, section or access type" value="${escapeHtml(searchTerm)}" autocomplete="off">
-        </div>
-        <label class="print-location-empty-toggle">
-          <input id="showEmptyPrintLocations" type="checkbox"${showEmpty ? ' checked' : ''}>
-          Show locations without stock
-        </label>
-      </div>
-      <div class="print-location-picker-summary">
-        <span><strong>${stockCount}</strong> locations with stock</span>
-        <span>${search ? `${filtered.length} shown` : 'Enter a search to begin'}</span>
-      </div>
-      <div class="print-location-cards" role="radiogroup" aria-label="Select Location Code">
-        ${optionsHtml}
-      </div>
-    `;
-
-    const searchInput = document.getElementById('printLocationSearch');
-    const showEmptyInput = document.getElementById('showEmptyPrintLocations');
-    searchInput?.focus();
-    searchInput?.setSelectionRange(searchInput.value.length, searchInput.value.length);
-    searchInput?.addEventListener('input', () => {
-      renderPrintLocationOptions(searchInput.value, Boolean(showEmptyInput?.checked));
-    });
-    showEmptyInput?.addEventListener('change', () => {
-      renderPrintLocationOptions(searchInput?.value || '', showEmptyInput.checked);
-    });
-    printLocationCodesList.querySelectorAll('input[name="printLocationCode"]').forEach((radio) => {
-      radio.addEventListener('change', () => {
-        printLocationCodesList.querySelectorAll('.print-location-card').forEach((card) => {
-          card.classList.toggle('is-selected', card.querySelector('input')?.checked);
-        });
-      });
-    });
+    setPrintLocationSummary(`<span><strong>${filtered.length}</strong> shown</span>`);
+    bindPrintLocationCardSelection();
   }
 
-  async function openPrintModal() {
+  async function ensurePrintLocationOptions() {
+    if (printLocationsReady && printLocationOptions.length) return;
+    if (locations.length === 0) {
+      await loadLocations();
+    }
+    const qtyRes = await fetch(API_LOCATION_PRODUCT + '/location-codes-with-quantity');
+    if (!qtyRes.ok) throw new Error('Failed to load locations with stock');
+    const qtyData = await qtyRes.json();
+    const withQty = new Set(
+      (qtyData.success && Array.isArray(qtyData.data) ? qtyData.data : [])
+        .map((code) => normalizeLocationCode(code))
+        .filter(Boolean)
+    );
+
+    printLocationOptions = locations
+      .map((location) => ({
+        code: getLocationCode(location),
+        section: String(location.section || ''),
+        accessType: String(location.accessType || location.access_type || ''),
+        hasStock: withQty.has(getLocationCode(location))
+      }))
+      .filter((option) => option.code)
+      .sort((a, b) => {
+        const aHasQty = a.hasStock ? 0 : 1;
+        const bHasQty = b.hasStock ? 0 : 1;
+        if (aHasQty !== bHasQty) return aHasQty - bHasQty;
+        return a.code.localeCompare(b.code, undefined, { sensitivity: 'base' });
+      });
+    printLocationsReady = true;
+  }
+
+  async function searchPrintLocations() {
+    if (printSearchInProgress) return;
+    const searchTerm = printLocationSearch?.value || '';
+    const showEmpty = Boolean(showEmptyPrintLocations?.checked);
+    if (!String(searchTerm).trim()) {
+      printSearchApplied = false;
+      printLastSearchTerm = '';
+      renderPrintLocationIdle('Type a Location Code and click Search.');
+      printLocationSearch?.focus();
+      return;
+    }
+
+    printSearchInProgress = true;
+    if (printLocationSearchBtn) printLocationSearchBtn.disabled = true;
+    printLocationCodesList.innerHTML = `
+      <div class="print-location-empty">
+        <i class="fas fa-spinner fa-spin"></i>
+        <p>Searching...</p>
+      </div>
+    `;
+    setPrintLocationSummary('<span>Searching...</span>');
+    try {
+      await ensurePrintLocationOptions();
+      if (printLocationOptions.length === 0) {
+        printLocationCodesList.innerHTML = '<div class="print-location-empty"><i class="fas fa-map-marker-alt"></i><p>No location codes found. Register locations first.</p></div>';
+        setPrintLocationSummary('<span>No locations available</span>');
+        return;
+      }
+      printSearchApplied = true;
+      printLastSearchTerm = searchTerm;
+      renderPrintLocationOptions(searchTerm, showEmpty);
+    } catch (e) {
+      console.error('Print location search error:', e);
+      printLocationCodesList.innerHTML = '<div class="print-location-empty"><i class="fas fa-exclamation-triangle"></i><p>Error loading locations. Check console and ensure the server is running.</p></div>';
+      setPrintLocationSummary('<span>Search failed</span>');
+    } finally {
+      printSearchInProgress = false;
+      if (printLocationSearchBtn) printLocationSearchBtn.disabled = false;
+    }
+  }
+
+  function openPrintModal() {
     if (!printModal || !printLocationCodesList) return;
     const printBarcodesCheckbox = document.getElementById('printBarcodesCheckbox');
     if (printBarcodesCheckbox) printBarcodesCheckbox.checked = true;
     resetPrintFontSize();
+    printSearchApplied = false;
+    printLastSearchTerm = '';
+    if (printLocationSearch) printLocationSearch.value = '';
+    if (showEmptyPrintLocations) showEmptyPrintLocations.checked = false;
+    renderPrintLocationIdle();
     printModal.classList.add('show');
-    printLocationCodesList.innerHTML = '<p>Loading...</p>';
-    try {
-      await Promise.all([loadLocations(), loadProducts()]);
-      const qtyRes = await fetch(API_LOCATION_PRODUCT + '/location-codes-with-quantity');
-      if (!qtyRes.ok) throw new Error('Failed to load locations with stock');
-      const qtyData = await qtyRes.json();
-      const withQty = new Set(
-        (qtyData.success && Array.isArray(qtyData.data) ? qtyData.data : [])
-          .map((code) => normalizeLocationCode(code))
-          .filter(Boolean)
-      );
-
-      printLocationOptions = locations
-        .map((location) => ({
-          code: getLocationCode(location),
-          section: String(location.section || ''),
-          accessType: String(location.accessType || location.access_type || ''),
-          hasStock: withQty.has(getLocationCode(location))
-        }))
-        .filter((option) => option.code)
-        .sort((a, b) => {
-          const aHasQty = a.hasStock ? 0 : 1;
-          const bHasQty = b.hasStock ? 0 : 1;
-          if (aHasQty !== bHasQty) return aHasQty - bHasQty;
-          return a.code.localeCompare(b.code, undefined, { sensitivity: 'base' });
-        });
-
-      if (printLocationOptions.length === 0) {
-        printLocationCodesList.innerHTML = '<p class="empty-state">No location codes found. Register locations first.</p>';
-        return;
-      }
-
-      renderPrintLocationOptions();
-    } catch (e) {
-      console.error('Print modal error:', e);
-      printLocationCodesList.innerHTML = '<p class="error-message">Error loading locations. Check console and ensure the server is running.</p>';
-    }
+    printLocationSearch?.focus();
   }
 
   function closePrintModal() {
@@ -1713,6 +1748,22 @@ document.addEventListener('DOMContentLoaded', () => {
   if (printBtn) printBtn.addEventListener('click', openPrintModal);
   if (closePrintModalBtn) closePrintModalBtn.addEventListener('click', closePrintModal);
   if (closePrintModalBtn2) closePrintModalBtn2.addEventListener('click', closePrintModal);
+  if (printLocationSearchBtn) printLocationSearchBtn.addEventListener('click', searchPrintLocations);
+  if (printLocationSearch) {
+    printLocationSearch.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        searchPrintLocations();
+      }
+    });
+  }
+  if (showEmptyPrintLocations) {
+    showEmptyPrintLocations.addEventListener('change', () => {
+      if (printSearchApplied) {
+        renderPrintLocationOptions(printLastSearchTerm, Boolean(showEmptyPrintLocations.checked));
+      }
+    });
+  }
   if (doPrintBtn) {
     doPrintBtn.addEventListener('click', async () => {
       const selected = getSelectedLocationCode();

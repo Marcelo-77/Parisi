@@ -944,7 +944,32 @@
                         <small>Include the Location Code barcode and each Product barcode.</small>
                     </span>
                 </label>
-                <div id="printLocationCodesList" class="print-location-codes-list"></div>
+                <div class="print-location-codes-list">
+                    <div class="print-location-picker-toolbar">
+                        <div class="print-location-search-row">
+                            <div class="print-location-search">
+                                <i class="fas fa-search"></i>
+                                <input id="printLocationSearch" type="search" placeholder="Type a location code, section or access type" autocomplete="off">
+                            </div>
+                            <button type="button" class="btn btn-primary print-location-search-btn" id="printLocationSearchBtn">
+                                <i class="fas fa-search"></i> Search
+                            </button>
+                        </div>
+                        <label class="print-location-empty-toggle">
+                            <input id="showEmptyPrintLocations" type="checkbox">
+                            Show locations without stock
+                        </label>
+                    </div>
+                    <div id="printLocationPickerSummary" class="print-location-picker-summary">
+                        <span>Type a location and click Search</span>
+                    </div>
+                    <div id="printLocationCodesList" class="print-location-cards" role="radiogroup" aria-label="Select Location Code">
+                        <div class="print-location-empty">
+                            <i class="fas fa-keyboard"></i>
+                            <p>Type a Location Code and click Search.</p>
+                        </div>
+                    </div>
+                </div>
                 <fieldset class="print-font-size-option">
                     <legend><i class="fas fa-text-height"></i> Print font size (Location, Product &amp; Quantity)</legend>
                     <div class="print-font-size-radios" role="radiogroup" aria-label="Print font size">
@@ -1135,7 +1160,7 @@
 
                 <h4>Print</h4>
                 <ul>
-                    <li>Click <strong>Print</strong>, search and select a location, choose font size and barcode option.</li>
+                    <li>Click <strong>Print</strong>, type a location, click <strong>Search</strong>, then select a location, choose font size and barcode option.</li>
                     <li>On mobile, <strong>Close</strong> and <strong>Print</strong> stay fixed at the bottom of the dialog.</li>
                 </ul>
 
