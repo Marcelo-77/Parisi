@@ -808,6 +808,7 @@
           `Updating locations in batches of ${BATCH_SIZE}…`;
       }
 
+      let abortedUnauthorized = false;
       for (let offset = 0; offset < items.length; offset += BATCH_SIZE) {
         const batch = items.slice(offset, offset + BATCH_SIZE);
         try {
@@ -818,6 +819,20 @@
             body: JSON.stringify({ items: batch })
           });
           const applyData = await applyRes.json().catch(() => ({}));
+          if (applyRes.status === 401) {
+            abortedUnauthorized = true;
+            const remaining = items.length - offset;
+            failed += remaining;
+            problems.push({
+              stage: 'apply',
+              id: null,
+              from: batch[0]?.from || '',
+              to: batch[0]?.to || '',
+              reason: 'Unauthorized — session expired. Sign in again and click Update history to continue. Already converted locations will be skipped.'
+            });
+            setMigrateProgress(total, total);
+            break;
+          }
           if (!applyRes.ok || !applyData.success) {
             failed += batch.length;
             batch.forEach((item) => {
@@ -859,9 +874,11 @@
         }
         setMigrateProgress(Math.min(total, done + failed), total);
         if (document.getElementById('locationMigrateDetail')) {
-          document.getElementById('locationMigrateDetail').textContent =
-            `Updated ${done} of ${total} (failed: ${failed})…`;
+          document.getElementById('locationMigrateDetail').textContent = abortedUnauthorized
+            ? `Stopped: session expired after ${done} updates. Sign in and run Update history again.`
+            : `Updated ${done} of ${total} (failed: ${failed})…`;
         }
+        if (abortedUnauthorized) break;
       }
 
       const errorMessages = buildProblemMessages(problems);
