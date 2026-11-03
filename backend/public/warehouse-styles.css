@@ -6,11 +6,16 @@
     gap: 20px;
     margin-bottom: 16px;
     flex-wrap: wrap;
+    overflow: visible;
+    position: relative;
+    z-index: 5;
 }
 .header-stats-row .double-y-wordmark {
     margin: 0;
     order: 0;
     flex-shrink: 0;
+    overflow: visible;
+    z-index: 6;
 }
 
 .header-stats-row .double-y-logo {
