@@ -1,0 +1,852 @@
+const { query } = require('../config/database');
+const locationService = require('./locationService');
+const {
+  composeBayLevelPositionCode,
+  parsePositionToken,
+  DEFAULTS
+} = require('./locationCodeSettingsService');
+
+const SIDE_TO_POS = { L: 1, M: 2, R: 3 };
+const POS_TO_SIDE = { 1: 'L', 2: 'M', 3: 'R' };
+
+function normalizeNumberValue(raw) {
+  if (raw === '' || raw == null) return '';
+  const value = Number(raw);
+  return Number.isNaN(value) ? '' : String(value);
+}
+
+function emptyParts(extra = {}) {
+  return {
+    street: '',
+    building: '',
+    buildingX: '',
+    level: '',
+    side: '',
+    sublevel: '',
+    behind: '',
+    levelZeroMode: '',
+    ...extra
+  };
+}
+
+/** Server-side classic parser (mirrors public/location-code-utils.js). */
+function parseClassicLocationCode(code) {
+  const normalized = String(code || '').trim().toUpperCase();
+  if (!normalized || !/^[A-Z]/.test(normalized)) return emptyParts();
+
+  const street = normalized[0];
+  const rest = normalized.slice(1);
+  if (!rest) return emptyParts({ street });
+
+  const a21XMatch = rest.match(/^(\d+)X(\d+)-0(\d+)(B)?$/);
+  if (a21XMatch) {
+    return emptyParts({
+      street,
+      building: normalizeNumberValue(a21XMatch[1]),
+      buildingX: normalizeNumberValue(a21XMatch[2]),
+      level: '0',
+      sublevel: normalizeNumberValue(a21XMatch[3]),
+      behind: a21XMatch[4] === 'B' ? 'B' : '',
+      levelZeroMode: 'sublevel'
+    });
+  }
+
+  const dashedLevelSideMatch = rest.match(/^(\d+)-(\d+)([RLM])$/);
+  if (dashedLevelSideMatch) {
+    const level = dashedLevelSideMatch[2];
+    return emptyParts({
+      street,
+      building: dashedLevelSideMatch[1],
+      level,
+      side: dashedLevelSideMatch[3],
+      levelZeroMode: level === '0' ? 'side' : ''
+    });
+  }
+
+  const dashedSublevelMatch = rest.match(/^(\d+)-0(\d+)(B)?$/);
+  if (dashedSublevelMatch) {
+    return emptyParts({
+      street,
+      building: dashedSublevelMatch[1] === '' ? '0' : dashedSublevelMatch[1],
+      level: '0',
+      sublevel: normalizeNumberValue(dashedSublevelMatch[2]),
+      behind: dashedSublevelMatch[3] === 'B' ? 'B' : '',
+      levelZeroMode: 'sublevel'
+    });
+  }
+
+  const legacyDoubleDashSide = rest.match(/^(\d+)-(\d+)-([RLM])$/);
+  if (legacyDoubleDashSide) {
+    const level = legacyDoubleDashSide[2];
+    return emptyParts({
+      street,
+      building: legacyDoubleDashSide[1],
+      level,
+      side: legacyDoubleDashSide[3],
+      levelZeroMode: level === '0' ? 'side' : ''
+    });
+  }
+
+  const legacyDoubleDashSublevel = rest.match(/^(\d+)-0-(\d+)(B)?$/);
+  if (legacyDoubleDashSublevel) {
+    return emptyParts({
+      street,
+      building: legacyDoubleDashSublevel[1] === '' ? '0' : legacyDoubleDashSublevel[1],
+      level: '0',
+      sublevel: normalizeNumberValue(legacyDoubleDashSublevel[2]),
+      behind: legacyDoubleDashSublevel[3] === 'B' ? 'B' : '',
+      levelZeroMode: 'sublevel'
+    });
+  }
+
+  const legacySideMatch = rest.match(/^(.+)([RLM])$/);
+  if (legacySideMatch) {
+    const body = legacySideMatch[1];
+    const side = legacySideMatch[2];
+    const level = body.slice(-1);
+    const building = body.slice(0, -1);
+    const levelNumber = Number(level);
+    if (!Number.isNaN(levelNumber) && levelNumber >= 0) {
+      return emptyParts({
+        street,
+        building: building === '' ? '0' : building,
+        level,
+        side,
+        levelZeroMode: levelNumber === 0 ? 'side' : ''
+      });
+    }
+  }
+
+  // Legacy no-dash Level 0 Sublevel: 101 / 100B → building + 0 + sublevel [+B]
+  // Example: A101 → Street A, Building 1, Level 0, Sublevel 1
+  const legacySublevelMatch = rest.match(/^(.+)0(\d+)(B)?$/);
+  if (legacySublevelMatch) {
+    return emptyParts({
+      street,
+      building: legacySublevelMatch[1] === '' ? '0' : legacySublevelMatch[1],
+      level: '0',
+      sublevel: normalizeNumberValue(legacySublevelMatch[2]),
+      behind: legacySublevelMatch[3] === 'B' ? 'B' : '',
+      levelZeroMode: 'sublevel'
+    });
+  }
+
+  return emptyParts({ street });
+}
+
+function bayPrefixFromClassic(parts) {
+  const street = String(parts.street || '').toUpperCase();
+  const building = String(parts.building ?? '');
+  const x = String(parts.buildingX || '').trim();
+  if (!street || building === '') return '';
+  if (x) return `${street}${building}X${x}`;
+  return `${street}${building}`;
+}
+
+function convertClassicToNew(oldCode, settings) {
+  const parts = parseClassicLocationCode(oldCode);
+  const bay = bayPrefixFromClassic(parts);
+  if (!bay) return { to: null, reason: 'Unable to parse classic code' };
+
+  const level = Number(parts.level);
+  if (!Number.isInteger(level) || level < 0) {
+    return { to: null, reason: 'Invalid level in classic code' };
+  }
+
+  if (level === 0) {
+    const behind = parts.behind === 'B' ? 'B' : '';
+    if (parts.levelZeroMode === 'sublevel' || parts.sublevel !== '') {
+      const sublevel = Number(parts.sublevel);
+      if (!Number.isInteger(sublevel) || sublevel < 0) {
+        return { to: null, reason: 'Invalid sublevel' };
+      }
+      const code = composeBayLevelPositionCode(
+        { bay, street: parts.street, level: 0, zeroType: 'location', sublevel, behind },
+        settings
+      );
+      return code
+        ? { to: code, reason: null }
+        : { to: null, reason: 'Could not compose Level 0 Location code' };
+    }
+    if (parts.side && SIDE_TO_POS[parts.side]) {
+      const code = composeBayLevelPositionCode(
+        {
+          bay,
+          street: parts.street,
+          level: 0,
+          zeroType: 'pallet',
+          position: SIDE_TO_POS[parts.side]
+        },
+        settings
+      );
+      return code
+        ? { to: code, reason: null }
+        : { to: null, reason: 'Could not compose Level 0 Pallet code' };
+    }
+    return { to: null, reason: 'Level 0 classic code needs Side or Sublevel' };
+  }
+
+  if (!parts.side || !SIDE_TO_POS[parts.side]) {
+    return { to: null, reason: 'Level > 0 classic code needs Side (R/L/M) to map Position' };
+  }
+
+  const code = composeBayLevelPositionCode(
+    { bay, level, position: SIDE_TO_POS[parts.side] },
+    settings
+  );
+  return code
+    ? { to: code, reason: null }
+    : { to: null, reason: 'Could not compose Level > 0 code' };
+}
+
+const POS_TOKEN = '([A-Z]|\\d+)';
+
+/**
+ * Parse bay code body (no Behind suffix handling).
+ * behind is attached by the caller when a trailing B was stripped.
+ */
+function parseNewSchemeCodeBody(working, settings, behind) {
+  const sep = String(settings.separator || '-');
+  const letter = String(settings.levelZeroLocationLetter || 'L').toUpperCase();
+  if (!working) return null;
+
+  // Pallet: BAY-0-POS (numeric or letter) — position may be B (ordinal 2)
+  const pallet = working.match(
+    new RegExp(`^([A-Z0-9]{1,10})${escapeReg(sep)}0${escapeReg(sep)}${POS_TOKEN}$`)
+  );
+  if (pallet) {
+    const position = parsePositionToken(pallet[2]);
+    if (!Number.isInteger(position)) return null;
+    // Behind is not used on Pallet codes
+    return { bay: pallet[1], level: 0, zeroType: 'pallet', position, behind: '' };
+  }
+
+  // Location: BAY-L{sub} or BAY-L{sub}-POS
+  const locWithPos = working.match(
+    new RegExp(`^([A-Z0-9]{1,10})${escapeReg(sep)}${letter}(\\d+)${escapeReg(sep)}${POS_TOKEN}$`)
+  );
+  if (locWithPos) {
+    const position = parsePositionToken(locWithPos[3]);
+    if (!Number.isInteger(position)) return null;
+    return {
+      bay: locWithPos[1],
+      level: 0,
+      zeroType: 'location',
+      sublevel: Number(locWithPos[2]),
+      position,
+      behind: behind === 'B' ? 'B' : ''
+    };
+  }
+  const locOnly = working.match(
+    new RegExp(`^([A-Z0-9]{1,10})${escapeReg(sep)}${letter}(\\d+)$`)
+  );
+  if (locOnly) {
+    return {
+      bay: locOnly[1],
+      level: 0,
+      zeroType: 'location',
+      sublevel: Number(locOnly[2]),
+      behind: behind === 'B' ? 'B' : ''
+    };
+  }
+
+  // Level > 0: BAY-LEVEL-POS (position letter B must not be mistaken for Behind)
+  const withPos = working.match(
+    new RegExp(`^([A-Z0-9]{1,10})${escapeReg(sep)}(\\d+)${escapeReg(sep)}${POS_TOKEN}$`)
+  );
+  if (withPos) {
+    const position = parsePositionToken(withPos[3]);
+    if (!Number.isInteger(position)) return null;
+    return { bay: withPos[1], level: Number(withPos[2]), position, behind: '' };
+  }
+
+  return null;
+}
+
+function parseNewSchemeCode(code, settings) {
+  const normalized = String(code || '').trim().toUpperCase();
+  if (!normalized) return null;
+
+  // Prefer parsing with trailing B as Position (e.g. A1-1-B → position B).
+  const asPosition = parseNewSchemeCodeBody(normalized, settings, '');
+  if (asPosition) return asPosition;
+
+  // Only if that fails: trailing B may be Behind on Level 0 Location (A1-L0B, A1-L0-AB).
+  if (normalized.endsWith('B') && normalized.length > 2) {
+    const withoutB = normalized.slice(0, -1);
+    const asBehind = parseNewSchemeCodeBody(withoutB, settings, 'B');
+    if (asBehind && asBehind.zeroType === 'location') {
+      const street = String(asBehind.bay || '').charAt(0);
+      if (street === 'A' || street === 'H') return asBehind;
+    }
+  }
+
+  return null;
+}
+
+function composeFromParsedBay(parsed, settings) {
+  if (!parsed) return '';
+  return composeBayLevelPositionCode(
+    {
+      bay: parsed.bay,
+      street: String(parsed.bay || '').charAt(0),
+      level: parsed.level,
+      zeroType: parsed.zeroType,
+      sublevel: parsed.sublevel,
+      position: parsed.position,
+      behind: parsed.behind
+    },
+    settings
+  );
+}
+
+function escapeReg(s) {
+  return String(s).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function splitBayToStreetBuilding(bay) {
+  const s = String(bay || '').toUpperCase();
+  const a21 = s.match(/^([A-Z])(\d+)X(\d+)$/);
+  if (a21) {
+    return { street: a21[1], building: a21[2], buildingX: a21[3] };
+  }
+  const m = s.match(/^([A-Z])(\d+)$/);
+  if (m) return { street: m[1], building: m[2], buildingX: '' };
+  return null;
+}
+
+function convertNewToClassic(oldCode, settings) {
+  const parsed = parseNewSchemeCode(oldCode, settings);
+  if (!parsed) return { to: null, reason: 'Unable to parse new-scheme code' };
+  const sb = splitBayToStreetBuilding(parsed.bay);
+  if (!sb) return { to: null, reason: 'Unable to split Street/Building from code' };
+
+  if (parsed.level === 0 && parsed.zeroType === 'location') {
+    const sub = Number(parsed.sublevel);
+    if (!Number.isInteger(sub) || sub < 0) return { to: null, reason: 'Invalid sublevel' };
+    const b = parsed.behind === 'B' && (sb.street === 'A' || sb.street === 'H') ? 'B' : '';
+    if (sb.buildingX) {
+      return { to: `${sb.street}${sb.building}X${sb.buildingX}-0${sub}${b}`, reason: null };
+    }
+    return { to: `${sb.street}${sb.building}-0${sub}${b}`, reason: null };
+  }
+
+  if (parsed.level === 0 && parsed.zeroType === 'pallet') {
+    const side = POS_TO_SIDE[parsed.position];
+    if (!side) return { to: null, reason: 'Position must be 1/2/3 to map Side L/M/R (1→L, 2→M, 3→R)' };
+    return { to: `${sb.street}${sb.building}-0${side}`, reason: null };
+  }
+
+  const side = POS_TO_SIDE[parsed.position];
+  if (!side) return { to: null, reason: 'Position must be 1/2/3 to map Side L/M/R (1→L, 2→M, 3→R)' };
+  return { to: `${sb.street}${sb.building}-${parsed.level}${side}`, reason: null };
+}
+
+function convertLocationCode(oldCode, fromScheme, toScheme, settings) {
+  const from = fromScheme === 'bay_level_position' ? 'bay_level_position' : 'classic';
+  const to = toScheme === 'bay_level_position' ? 'bay_level_position' : 'classic';
+  const normalized = String(oldCode || '').trim().toUpperCase();
+
+  if (to === 'bay_level_position') {
+    const parsedBay = parseNewSchemeCode(normalized, settings);
+    if (parsedBay) {
+      const recomposed = composeFromParsedBay(parsedBay, settings);
+      if (!recomposed) {
+        return { to: null, reason: 'Could not recompose bay code with current position encoding' };
+      }
+      if (recomposed === normalized) {
+        return { to: recomposed, reason: null, unchanged: true };
+      }
+      return { to: recomposed, reason: null };
+    }
+    // Mixed history: codes may still be Classic (E1-2R) even if fromScheme says bay.
+    const classicToBay = convertClassicToNew(normalized, settings);
+    if (classicToBay.to) return classicToBay;
+    return {
+      to: null,
+      reason: classicToBay.reason || 'Unable to parse classic or bay/level/position code'
+    };
+  }
+
+  // Target classic
+  if (from === to) {
+    return { to: normalized, reason: null, unchanged: true };
+  }
+
+  const classicParts = parseClassicLocationCode(normalized);
+  const looksClassic =
+    classicParts.street
+    && classicParts.building !== ''
+    && classicParts.level !== ''
+    && (classicParts.side || classicParts.sublevel !== '');
+  if (looksClassic && !parseNewSchemeCode(normalized, settings)) {
+    return { to: normalized, reason: null, unchanged: true };
+  }
+  return convertNewToClassic(normalized, settings);
+}
+
+async function buildMigrationPlan(fromScheme, toScheme, settingsInput = {}) {
+  const settings = { ...DEFAULTS, ...settingsInput };
+  const result = await query(
+    `SELECT id, location, status, access_type, section
+     FROM warehouse_locations
+     ORDER BY location ASC`
+  );
+
+  const usedTargets = new Set();
+  const existing = new Set(result.rows.map((r) => String(r.location).toUpperCase()));
+  const items = [];
+  const skipped = [];
+
+  for (const row of result.rows) {
+    const from = String(row.location || '').trim().toUpperCase();
+    const converted = convertLocationCode(from, fromScheme, toScheme, settings);
+    if (!converted.to) {
+      skipped.push({ id: row.id, from, reason: converted.reason || 'Skipped' });
+      continue;
+    }
+    const to = String(converted.to).trim().toUpperCase();
+    if (to === from) {
+      skipped.push({ id: row.id, from, to, reason: 'Already matches target scheme' });
+      continue;
+    }
+    if (usedTargets.has(to)) {
+      skipped.push({ id: row.id, from, to, reason: 'Target code already used by another migration' });
+      continue;
+    }
+    if (existing.has(to) && to !== from) {
+      // target exists as a different current location
+      const conflict = result.rows.find((r) => String(r.location).toUpperCase() === to);
+      if (conflict && String(conflict.id) !== String(row.id)) {
+        skipped.push({ id: row.id, from, to, reason: 'Target location already exists' });
+        continue;
+      }
+    }
+    usedTargets.add(to);
+    items.push({
+      id: row.id,
+      from,
+      to,
+      status: row.status,
+      accessType: row.access_type,
+      section: row.section
+    });
+  }
+
+  return {
+    fromScheme,
+    toScheme,
+    total: items.length,
+    skippedCount: skipped.length,
+    items,
+    skippedPreview: skipped.slice(0, 200),
+    skipped
+  };
+}
+
+function pad2(n) {
+  return String(n).padStart(2, '0');
+}
+
+function formatLogTimestamp(date = new Date()) {
+  return (
+    date.getFullYear()
+    + '-' + pad2(date.getMonth() + 1)
+    + '-' + pad2(date.getDate())
+    + '_' + pad2(date.getHours())
+    + pad2(date.getMinutes())
+    + pad2(date.getSeconds())
+  );
+}
+
+/**
+ * Writes a detailed migration error log under backend/logs.
+ * Returns { fileName, relativePath, absolutePath, lineCount }.
+ */
+async function writeMigrationErrorLog(report = {}) {
+  const fs = require('fs');
+  const path = require('path');
+  const logsDir = path.join(__dirname, '..', 'logs');
+  await fs.promises.mkdir(logsDir, { recursive: true });
+
+  const stamp = formatLogTimestamp();
+  const fileName = `location-history-migrate-${stamp}.log`;
+  const absolutePath = path.join(logsDir, fileName);
+  const relativePath = path.join('logs', fileName).replace(/\\/g, '/');
+
+  const lines = [];
+  lines.push('================================================================================');
+  lines.push('Setting Location — History migration error log');
+  lines.push('================================================================================');
+  lines.push(`Generated at : ${new Date().toISOString()}`);
+  lines.push(`From scheme  : ${report.fromScheme || '-'}`);
+  lines.push(`To scheme    : ${report.toScheme || '-'}`);
+  lines.push(`User         : ${report.user || '-'}`);
+  lines.push(`Summary      : ${report.summary || '-'}`);
+  lines.push(`Planned      : ${report.plannedCount != null ? report.plannedCount : '-'}`);
+  lines.push(`Updated      : ${report.updatedCount != null ? report.updatedCount : '-'}`);
+  lines.push(`Failed apply : ${report.failedCount != null ? report.failedCount : '-'}`);
+  lines.push(`Skipped      : ${report.skippedCount != null ? report.skippedCount : '-'}`);
+  lines.push(`Problem rows : ${report.problemCount != null ? report.problemCount : '-'}`);
+  if (report.settings && typeof report.settings === 'object') {
+    lines.push('Settings     : ' + JSON.stringify(report.settings));
+  }
+  lines.push('--------------------------------------------------------------------------------');
+
+  const problems = Array.isArray(report.problems) ? report.problems : [];
+  if (!problems.length) {
+    lines.push('No detailed problem rows were provided.');
+  } else {
+    lines.push(`Detailed problems (${problems.length}):`);
+    lines.push('');
+    problems.forEach((p, index) => {
+      const n = String(index + 1).padStart(4, '0');
+      const stage = p.stage || 'unknown';
+      const id = p.id != null ? String(p.id) : '-';
+      const from = p.from || '-';
+      const to = p.to || '-';
+      const reason = p.reason || p.message || 'Unknown error';
+      lines.push(`[${n}] stage=${stage}`);
+      lines.push(`      id=${id}`);
+      lines.push(`      from=${from}`);
+      lines.push(`      to=${to}`);
+      lines.push(`      reason=${reason}`);
+      if (p.detail) lines.push(`      detail=${p.detail}`);
+      lines.push('');
+    });
+  }
+
+  lines.push('--------------------------------------------------------------------------------');
+  lines.push('End of log');
+  lines.push('');
+
+  const content = lines.join('\n');
+  await fs.promises.writeFile(absolutePath, content, 'utf8');
+
+  return {
+    fileName,
+    relativePath,
+    absolutePath,
+    lineCount: lines.length,
+    content
+  };
+}
+
+async function applyMigrationItem(item, usuarioAlterou) {
+  if (!item?.id || !item?.to) {
+    throw new Error('Invalid migration item');
+  }
+  const updated = await locationService.atualizar(item.id, {
+    location: item.to,
+    status: item.status,
+    accessType: item.accessType,
+    section: item.section,
+    usuarioAlterou: usuarioAlterou || 'Setting Location migrate'
+  });
+  return updated;
+}
+
+/**
+ * Apply many renames in one request.
+ * Ensures FK cascade once, then updates each location without repeating DDL.
+ */
+async function applyMigrationBatch(items, usuarioAlterou, options = {}) {
+  const list = Array.isArray(items) ? items.filter((item) => item && item.id && item.to) : [];
+  const onItemStart = typeof options.onItemStart === 'function' ? options.onItemStart : null;
+  const onItemDone = typeof options.onItemDone === 'function' ? options.onItemDone : null;
+  const onItemFail = typeof options.onItemFail === 'function' ? options.onItemFail : null;
+
+  const results = {
+    total: list.length,
+    done: 0,
+    failed: 0,
+    successes: [],
+    failures: []
+  };
+
+  if (!list.length) return results;
+
+  const { getClient } = require('../config/database');
+  const client = await getClient();
+  try {
+    await locationService.ensureLocationProductFkCascade(client);
+
+    for (const item of list) {
+      const from = String(item.from || '').trim();
+      const to = String(item.to || '').trim();
+      const idStr = String(item.id).trim();
+      if (onItemStart) onItemStart(item);
+
+      try {
+        await client.query('BEGIN');
+        const existingRes = await client.query(
+          `SELECT id, location, status, access_type, section
+           FROM warehouse_locations
+           WHERE id = $1::uuid
+           FOR UPDATE`,
+          [idStr]
+        );
+        if (!existingRes.rows.length) {
+          throw new Error('Location not found');
+        }
+        const row = existingRes.rows[0];
+        const oldLocation = String(row.location || '').trim();
+
+        if (to.toLowerCase() !== oldLocation.toLowerCase()) {
+          const conflict = await client.query(
+            `SELECT id FROM warehouse_locations
+             WHERE TRIM(LOWER(location)) = TRIM(LOWER($1))
+               AND id <> $2::uuid
+             LIMIT 1`,
+            [to, idStr]
+          );
+          if (conflict.rows.length) {
+            throw new Error('Location already registered');
+          }
+        }
+
+        const updatedRes = await client.query(
+          `UPDATE warehouse_locations
+           SET location = $2,
+               status = COALESCE($3, status),
+               access_type = COALESCE($4, access_type),
+               section = COALESCE($5, section),
+               usuario_alterou = COALESCE($6, usuario_alterou),
+               atualizado_em = CURRENT_TIMESTAMP
+           WHERE id = $1::uuid
+           RETURNING *`,
+          [
+            idStr,
+            to,
+            item.status || row.status,
+            item.accessType || row.access_type,
+            item.section || row.section,
+            usuarioAlterou || 'Setting Location migrate'
+          ]
+        );
+
+        if (to !== oldLocation) {
+          await client.query(
+            `UPDATE location_product_log
+             SET location_code_log = $1
+             WHERE TRIM(LOWER(location_code_log)) = TRIM(LOWER($2))`,
+            [to, oldLocation]
+          );
+        }
+
+        await client.query('COMMIT');
+        results.done += 1;
+        results.successes.push({ id: idStr, from: from || oldLocation, to });
+        if (onItemDone) onItemDone(item, updatedRes.rows[0]);
+      } catch (error) {
+        try {
+          await client.query('ROLLBACK');
+        } catch (_) {
+          // ignore
+        }
+        results.failed += 1;
+        const failure = {
+          id: idStr,
+          from,
+          to,
+          reason: error.message || 'Update failed'
+        };
+        results.failures.push(failure);
+        if (onItemFail) onItemFail(item, failure.reason);
+      }
+    }
+  } finally {
+    client.release();
+  }
+
+  return results;
+}
+
+/** Old migrate mapping was R=1,L=2,M=3. Correct mapping is L=1,M=2,R=3 → remap positions 1→3, 2→1, 3→2. */
+const OLD_POS_TO_NEW_POS = { 1: 3, 2: 1, 3: 2 };
+const SIDE_POS_REMAP_MARKER = 'side-pos remap v1';
+
+function parseBayLevelPositionCode(code) {
+  const normalized = String(code || '').trim().toUpperCase();
+  const match = normalized.match(/^([A-Z][A-Z0-9]{0,9})-(\d+)-([123])(B)?$/);
+  if (!match) return null;
+  return {
+    bay: match[1],
+    level: Number(match[2]),
+    position: Number(match[3]),
+    behind: match[4] === 'B' ? 'B' : ''
+  };
+}
+
+function composeBayLevelPositionSimple({ bay, level, position, behind }) {
+  return `${bay}-${level}-${position}${behind === 'B' ? 'B' : ''}`;
+}
+
+function hasSidePosRemapMarker(usuarioAlterou) {
+  return /side-pos\s*remap/i.test(String(usuarioAlterou || ''));
+}
+
+function wasHistoryMigrateTouched(usuarioAlterou) {
+  const value = String(usuarioAlterou || '');
+  if (hasSidePosRemapMarker(value)) return false;
+  return /migrate|setting location/i.test(value);
+}
+
+function sidePosRemapUserLabel(usuarioAlterou) {
+  const base = String(usuarioAlterou || 'Setting Location').trim() || 'Setting Location';
+  if (hasSidePosRemapMarker(base)) return base;
+  return `${base} | ${SIDE_POS_REMAP_MARKER}`;
+}
+
+/**
+ * Build plan to fix Side→Position after old R=1/L=2/M=3 mapping.
+ * Safe to re-run: skips codes already marked as remapped.
+ * Also blocked globally after a successful/partial v1 remap run.
+ */
+async function buildSidePositionRemapPlan() {
+  const locationCodeSettingsService = require('./locationCodeSettingsService');
+  if (await locationCodeSettingsService.isSidePosRemapV1Completed()) {
+    return {
+      scope: 'blocked_already_completed',
+      total: 0,
+      scanned: 0,
+      alreadyRemappedCount: 0,
+      alreadyCorrected: true,
+      items: [],
+      preview: [],
+      message: 'L/M/R position remap v1 was already executed. Blocked to avoid applying 1→3/2→1/3→2 twice.'
+    };
+  }
+
+  const result = await query(
+    `SELECT id, location, status, access_type, section, usuario_alterou
+     FROM warehouse_locations
+     ORDER BY location ASC`
+  );
+
+  const pending = [];
+  let alreadyRemappedCount = 0;
+  let bayPositionCount = 0;
+
+  for (const row of result.rows) {
+    const from = String(row.location || '').trim().toUpperCase();
+    const parsed = parseBayLevelPositionCode(from);
+    if (!parsed) continue;
+    bayPositionCount += 1;
+
+    const usuarioAlterou = row.usuario_alterou || '';
+    if (hasSidePosRemapMarker(usuarioAlterou)) {
+      alreadyRemappedCount += 1;
+      continue;
+    }
+
+    // Only touch history-migrate rows that were not remapped yet.
+    if (!wasHistoryMigrateTouched(usuarioAlterou)) continue;
+
+    const newPos = OLD_POS_TO_NEW_POS[parsed.position];
+    if (!newPos || newPos === parsed.position) continue;
+    const to = composeBayLevelPositionSimple({
+      bay: parsed.bay,
+      level: parsed.level,
+      position: newPos,
+      behind: parsed.behind
+    });
+    if (to === from) continue;
+
+    pending.push({
+      id: row.id,
+      from,
+      to,
+      status: row.status,
+      accessType: row.access_type,
+      section: row.section
+    });
+  }
+
+  return {
+    scope: 'migrate_touched_pending',
+    total: pending.length,
+    scanned: bayPositionCount,
+    alreadyRemappedCount,
+    alreadyCorrected: pending.length === 0,
+    items: pending,
+    preview: pending.slice(0, 30).map((r) => `${r.from} → ${r.to}`)
+  };
+}
+
+/**
+ * Apply Side/Position remap safely (temp codes avoid unique collisions in cycles 1↔2↔3).
+ * Marks updated rows with side-pos remap v1 so a later run skips them.
+ */
+async function applySidePositionRemap(usuarioAlterou, options = {}) {
+  const plan = options.plan || await buildSidePositionRemapPlan();
+  const items = Array.isArray(plan.items) ? plan.items : [];
+  const userLabel = sidePosRemapUserLabel(usuarioAlterou);
+  const results = {
+    scope: plan.scope,
+    total: items.length,
+    done: 0,
+    failed: 0,
+    alreadyRemappedCount: plan.alreadyRemappedCount || 0,
+    alreadyCorrected: items.length === 0,
+    successes: [],
+    failures: []
+  };
+  if (!items.length) return results;
+
+  const tempItems = items.map((item, index) => ({
+    ...item,
+    to: `__RMAP${index}_${String(item.id).replace(/-/g, '').slice(0, 12)}`
+  }));
+  const finalItems = items.map((item, index) => ({
+    ...item,
+    from: tempItems[index].to,
+    to: item.to,
+    id: item.id
+  }));
+
+  const phase1 = await applyMigrationBatch(tempItems, userLabel, {
+    onItemStart: options.onItemStart,
+    onItemDone: options.onItemDone,
+    onItemFail: options.onItemFail
+  });
+  results.failures.push(...phase1.failures.map((f) => ({ ...f, stage: 'temp' })));
+
+  const okIds = new Set(phase1.successes.map((s) => String(s.id)));
+  const phase2Input = finalItems.filter((item) => okIds.has(String(item.id)));
+  const phase2 = await applyMigrationBatch(phase2Input, userLabel, {
+    onItemStart: options.onItemStart,
+    onItemDone: options.onItemDone,
+    onItemFail: options.onItemFail
+  });
+
+  results.done = phase2.done;
+  results.failed = phase1.failed + phase2.failed;
+  results.successes = phase2.successes;
+  results.failures.push(...phase2.failures.map((f) => ({ ...f, stage: 'final' })));
+
+  // Lock further mass remaps after any successful progress (prevents double 1→3 cycles).
+  if (results.done > 0) {
+    try {
+      const locationCodeSettingsService = require('./locationCodeSettingsService');
+      await locationCodeSettingsService.markSidePosRemapV1Completed();
+    } catch (error) {
+      console.error('Unable to mark side-pos remap v1 completed:', error.message || error);
+    }
+  }
+
+  return results;
+}
+
+module.exports = {
+  buildMigrationPlan,
+  applyMigrationItem,
+  applyMigrationBatch,
+  buildSidePositionRemapPlan,
+  applySidePositionRemap,
+  writeMigrationErrorLog,
+  convertLocationCode,
+  parseClassicLocationCode,
+  SIDE_TO_POS,
+  POS_TO_SIDE
+};

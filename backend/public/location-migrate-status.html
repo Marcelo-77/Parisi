@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Double-Y Warehouse System - Location Migrate Status</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="warehouse-styles.css">
+    <link rel="stylesheet" href="pesquisa-styles.css">
+    <link rel="stylesheet" href="setting-location-styles.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .migrate-status-page .form-container { max-width: 720px; margin: 0 auto; }
+        .migrate-status-card {
+            background: #fff;
+            border: 1px solid #e2e8f0;
+            border-radius: 14px;
+            padding: 22px 22px 18px;
+        }
+        .migrate-status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 12px;
+            border-radius: 999px;
+            font-weight: 700;
+            font-size: 0.9rem;
+        }
+        .migrate-status-badge.is-idle { background: #f1f5f9; color: #475569; }
+        .migrate-status-badge.is-running,
+        .migrate-status-badge.is-planning { background: #eef2ff; color: #3730a3; }
+        .migrate-status-badge.is-completed { background: #ecfdf5; color: #047857; }
+        .migrate-status-badge.is-completed_with_errors,
+        .migrate-status-badge.is-failed { background: #fef2f2; color: #b91c1c; }
+        .migrate-status-meta { margin-top: 16px; color: #334155; line-height: 1.55; }
+        .migrate-status-meta p { margin: 0 0 8px; }
+        .migrate-status-bar {
+            margin-top: 16px;
+            height: 12px;
+            background: #e2e8f0;
+            border-radius: 999px;
+            overflow: hidden;
+        }
+        .migrate-status-bar > span {
+            display: block;
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, #4f46e5, #6366f1);
+            transition: width 0.3s ease;
+        }
+        .migrate-status-note {
+            margin-top: 14px;
+            color: #64748b;
+            font-size: 0.88rem;
+        }
+        .migrate-status-stale {
+            margin-top: 10px;
+            color: #b45309;
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+        .migrate-status-actions {
+            margin-top: 18px;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+    </style>
+</head>
+<body class="migrate-status-page">
+    <script src="auth-check.js"></script>
+    <script src="double-y-logo-effect.js"></script>
+    <script src="dev-environment-badge.js"></script>
+    <div class="container">
+        <header class="header" style="padding-bottom:10px;">
+            <div class="header-content" style="justify-content:center;">
+                <div class="double-y-wordmark" aria-label="Double Y">
+                    <img src="doubley-glyph.png" alt="" class="double-y-glyph" aria-hidden="true">
+                    <span class="double-y-name">Double Y</span>
+                    <img src="doubley-glyph-bottom.png" alt="" class="double-y-glyph double-y-glyph-bottom" aria-hidden="true">
+                </div>
+            </div>
+            <p class="header-search-users-label" style="text-align:center;">Location History Migrate Status</p>
+        </header>
+
+        <main class="main-content">
+            <div class="form-container">
+                <div class="migrate-status-card">
+                    <div id="migrateStatusBadge" class="migrate-status-badge is-idle">
+                        <i class="fas fa-clock"></i> Idle
+                    </div>
+                    <div class="migrate-status-bar" aria-hidden="true">
+                        <span id="migrateStatusBarFill"></span>
+                    </div>
+                    <div class="migrate-status-meta" id="migrateStatusMeta">
+                        <p>Loading status…</p>
+                    </div>
+                    <p id="migrateStatusStale" class="migrate-status-stale" hidden>
+                        No heartbeat recently — the browser that started migration may have stopped.
+                    </p>
+                    <p class="migrate-status-note">
+                        Auto-refreshes every 3 seconds. Open this page on another computer while Setting Location updates history.
+                    </p>
+                    <div class="migrate-status-actions">
+                        <button type="button" class="btn btn-secondary" id="migrateStatusRefreshBtn">
+                            <i class="fas fa-sync-alt"></i> Refresh now
+                        </button>
+                        <a class="btn btn-primary" href="Setting-Location.html">
+                            <i class="fas fa-map-marker-alt"></i> Open Setting Location
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </main>
+        <footer class="footer">
+            <p>&copy; 2026 Double-Y IT Systems. All rights reserved.</p>
+        </footer>
+    </div>
+    <script src="location-migrate-status-script.js"></script>
+</body>
+</html>
