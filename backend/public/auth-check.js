@@ -3,25 +3,55 @@
 
   if (window.location.pathname.endsWith('/login.html')) return;
 
-  if (!sessionStorage.getItem(TAB_SESSION_KEY)) {
-    fetch('/api/auth/logout', { method: 'POST' })
-      .catch(() => {})
-      .finally(() => {
-        window.location.replace('/login.html');
-      });
-    return;
+  function goLogin() {
+    sessionStorage.removeItem(TAB_SESSION_KEY);
+    window.location.replace('/login.html');
   }
 
-  fetch('/api/auth/check')
-    .then((res) => res.json())
-    .then((data) => {
-      if (!data.authenticated) {
-        sessionStorage.removeItem(TAB_SESSION_KEY);
-        window.location.replace('/login.html');
-      }
-    })
-    .catch(() => {
-      sessionStorage.removeItem(TAB_SESSION_KEY);
-      window.location.replace('/login.html');
-    });
+  function markTabAuthenticated() {
+    sessionStorage.setItem(TAB_SESSION_KEY, '1');
+  }
+
+  function checkCookieSession() {
+    const hadTabSession = Boolean(sessionStorage.getItem(TAB_SESSION_KEY));
+    return fetch('/api/auth/check', { credentials: 'include' })
+      .then(async (res) => {
+        const data = await res.json().catch(() => ({}));
+        if (data && data.authenticated) {
+          markTabAuthenticated();
+          return true;
+        }
+        // Confirmed unauthenticated response only.
+        goLogin();
+        return false;
+      })
+      .catch(() => {
+        // Network/server busy (common during history migrate): do not force logout.
+        if (hadTabSession) return false;
+        // New tab with no local marker: retry once shortly before giving up.
+        return new Promise((resolve) => {
+          window.setTimeout(() => {
+            fetch('/api/auth/check', { credentials: 'include' })
+              .then((res) => res.json().catch(() => ({})))
+              .then((data) => {
+                if (data && data.authenticated) {
+                  markTabAuthenticated();
+                  resolve(true);
+                  return;
+                }
+                goLogin();
+                resolve(false);
+              })
+              .catch(() => {
+                // Still unreachable: keep page if server already authorized the HTML.
+                resolve(false);
+              });
+          }, 1200);
+        });
+      });
+  }
+
+  // New tabs (target=_blank) do not share sessionStorage. Recover from cookie
+  // instead of logging the user out of every open tab.
+  checkCookieSession();
 })();

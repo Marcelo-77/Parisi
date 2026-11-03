@@ -83,9 +83,14 @@ router.get('/check', async (req, res) => {
       authenticated: true,
       user
     });
-  } catch {
-    clearSessionCookie(res);
-    return res.json({ authenticated: false });
+  } catch (error) {
+    // Keep the session on transient DB/profile errors (e.g. during heavy migrations).
+    // Clearing the cookie here caused false logouts while background work continued.
+    console.error('Auth check profile error:', error.message || error);
+    return res.json({
+      authenticated: true,
+      profileUnavailable: true
+    });
   }
 });
 
