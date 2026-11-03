@@ -273,6 +273,142 @@ body.header-stats-hidden .header-stats-right .header-stat {
     filter: drop-shadow(0 0 3px rgba(102, 126, 234, 0.25));
 }
 
+/* Center header brand (same placement as Schedule home): white card, black/white details, 7s then settle */
+.double-y-wordmark--header {
+    position: relative;
+    padding: 8px 12px;
+    flex-shrink: 0;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.double-y-wordmark--header .double-y-contact-tip {
+    position: absolute;
+    left: 50%;
+    top: calc(100% + 10px);
+    bottom: auto;
+    transform: translateX(-50%) translateY(-4px);
+    padding: 8px 12px;
+    border-radius: 8px;
+    background: #111;
+    color: #fff;
+    font-size: 0.78rem;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    white-space: nowrap;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.28);
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transition: opacity 0.18s ease, transform 0.18s ease, visibility 0.18s ease;
+    z-index: 40;
+}
+
+.double-y-wordmark--header .double-y-contact-tip::after {
+    content: '';
+    position: absolute;
+    top: auto;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    border: 6px solid transparent;
+    border-top-color: transparent;
+    border-bottom-color: #111;
+}
+
+.double-y-wordmark--header:hover .double-y-contact-tip,
+.double-y-wordmark--header:focus-visible .double-y-contact-tip {
+    opacity: 1;
+    visibility: visible;
+    transform: translateX(-50%) translateY(0);
+}
+
+.double-y-wordmark--header .double-y-name {
+    font-size: 0.82rem;
+}
+
+.double-y-wordmark--header .double-y-glyph {
+    width: 0.82rem;
+}
+
+.header-content > .double-y-wordmark--header {
+    margin-bottom: 8px;
+}
+
+.header-stats-row .double-y-wordmark--login,
+.double-y-wordmark--login.double-y-wordmark--header {
+    color: #111;
+    background: #ffffff;
+    box-shadow:
+        0 2px 8px rgba(0, 0, 0, 0.12),
+        0 0 0 1px rgba(0, 0, 0, 0.16);
+}
+
+.header-stats-row .double-y-wordmark--login::before,
+.double-y-wordmark--login.double-y-wordmark--header::before {
+    background: radial-gradient(circle, rgba(0, 0, 0, 0.08) 0%, rgba(0, 0, 0, 0.03) 50%, transparent 72%);
+    opacity: 0.9;
+}
+
+.header-stats-row .double-y-wordmark--login::after,
+.double-y-wordmark--login.double-y-wordmark--header::after {
+    background: linear-gradient(
+        120deg,
+        transparent 28%,
+        rgba(0, 0, 0, 0.18) 50%,
+        transparent 72%
+    );
+}
+
+.header-stats-row .double-y-wordmark--login .double-y-name,
+.double-y-wordmark--login.double-y-wordmark--header .double-y-name {
+    background: linear-gradient(
+        90deg,
+        #111111 0%,
+        #4b5563 25%,
+        #111111 50%,
+        #6b7280 75%,
+        #111111 100%
+    );
+    background-size: 220% auto;
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.12));
+}
+
+.header-stats-row .double-y-wordmark--login .double-y-glyph,
+.double-y-wordmark--login.double-y-wordmark--header .double-y-glyph {
+    filter: brightness(0) drop-shadow(0 0 3px rgba(0, 0, 0, 0.2));
+    animation: doubleYGlyphPulseBw 2.8s ease-in-out infinite;
+}
+
+.header-stats-row .double-y-wordmark--login.double-y-wordmark--settled .double-y-name,
+.double-y-wordmark--login.double-y-wordmark--header.double-y-wordmark--settled .double-y-name {
+    background: none;
+    -webkit-text-fill-color: #111;
+    color: #111;
+    filter: none;
+}
+
+.header-stats-row .double-y-wordmark--login.double-y-wordmark--settled .double-y-glyph,
+.double-y-wordmark--login.double-y-wordmark--header.double-y-wordmark--settled .double-y-glyph {
+    filter: brightness(0);
+    animation: none !important;
+    transform: none;
+}
+
+@keyframes doubleYGlyphPulseBw {
+    0%, 100% {
+        transform: scale(1) rotate(0deg);
+        filter: brightness(0) drop-shadow(0 0 2px rgba(0, 0, 0, 0.18));
+    }
+    50% {
+        transform: scale(1.12) rotate(-3deg);
+        filter: brightness(0) drop-shadow(0 0 6px rgba(0, 0, 0, 0.35));
+    }
+}
+
 @media (prefers-reduced-motion: reduce) {
     .double-y-wordmark,
     .double-y-wordmark::before,
