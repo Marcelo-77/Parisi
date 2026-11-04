@@ -365,33 +365,47 @@ class WarehouseService {
       const outOfStockResult = await query(outOfStockQuery);
       const esgotado = parseInt(outOfStockResult.rows[0].total);
 
-      const today = new Date().toISOString().split('T')[0];
-      const entradasQuery = `
-        SELECT COUNT(*) as total 
-        FROM warehouse_movements
-        WHERE tipo = 'entrada' AND DATE(data_movimentacao) = $1
-      `;
-      const saidasQuery = `
-        SELECT COUNT(*) as total 
-        FROM warehouse_movements
-        WHERE tipo = 'saida' AND DATE(data_movimentacao) = $1
-      `;
-
+      // Entries/Exits Today = sum of location_product quantity deltas for the local day.
+      // Entries: INSERT qty + UPDATE that increases qty.
+      // Exits: DELETE prev qty + UPDATE that decreases qty.
+      const timezone = String(process.env.APP_TIMEZONE || 'Australia/Sydney').trim() || 'Australia/Sydney';
       let entradas = 0;
       let saidas = 0;
 
       try {
-        const entradasResult = await query(entradasQuery, [today]);
-        entradas = parseInt(entradasResult.rows[0].total);
+        const movementResult = await query(
+          `
+          SELECT
+            COALESCE(SUM(
+              CASE
+                WHEN UPPER(COALESCE(operation_log, '')) = 'INSERT'
+                  THEN GREATEST(COALESCE(quantity_current_log, 0), 0)
+                WHEN UPPER(COALESCE(operation_log, '')) = 'UPDATE'
+                  AND COALESCE(quantity_current_log, 0) > COALESCE(quantity_current_prev_log, 0)
+                  THEN COALESCE(quantity_current_log, 0) - COALESCE(quantity_current_prev_log, 0)
+                ELSE 0
+              END
+            ), 0) AS entradas,
+            COALESCE(SUM(
+              CASE
+                WHEN UPPER(COALESCE(operation_log, '')) = 'DELETE'
+                  THEN GREATEST(COALESCE(quantity_current_prev_log, 0), 0)
+                WHEN UPPER(COALESCE(operation_log, '')) = 'UPDATE'
+                  AND COALESCE(quantity_current_prev_log, 0) > COALESCE(quantity_current_log, 0)
+                  THEN COALESCE(quantity_current_prev_log, 0) - COALESCE(quantity_current_log, 0)
+                ELSE 0
+              END
+            ), 0) AS saidas
+          FROM location_product_log
+          WHERE ((entry_datetime_log AT TIME ZONE 'UTC') AT TIME ZONE $1)::date
+              = (CURRENT_TIMESTAMP AT TIME ZONE $1)::date
+          `,
+          [timezone]
+        );
+        entradas = parseInt(movementResult.rows[0]?.entradas, 10) || 0;
+        saidas = parseInt(movementResult.rows[0]?.saidas, 10) || 0;
       } catch (error) {
-        // Movements table may not exist
-      }
-
-      try {
-        const saidasResult = await query(saidasQuery, [today]);
-        saidas = parseInt(saidasResult.rows[0].total);
-      } catch (error) {
-        // Movements table may not exist
+        console.warn('⚠️ Entries/Exits Today from location_product_log unavailable:', error.message);
       }
 
       return {

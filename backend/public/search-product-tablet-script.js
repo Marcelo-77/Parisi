@@ -818,7 +818,16 @@
     }
   }
 
+  function headerStatsEnabled() {
+    if (window.DoubleYSystemSettings && typeof window.DoubleYSystemSettings.areHeaderStatsEnabled === 'function') {
+      return window.DoubleYSystemSettings.areHeaderStatsEnabled();
+    }
+    return !document.documentElement.classList.contains('header-stats-hidden')
+      && !document.body?.classList?.contains('header-stats-hidden');
+  }
+
   async function loadStatistics() {
+    if (!headerStatsEnabled()) return;
     try {
       const res = await fetch(`${API_WAREHOUSE}/estatisticas`, { credentials: 'include' });
       const data = await res.json().catch(() => ({}));
@@ -1037,6 +1046,11 @@
   bindEvents();
   syncSearchByField(getSearchBy());
   loadStatistics();
+  window.addEventListener('doubley:system-settings-applied', (event) => {
+    if (event?.detail?.showHeaderStats !== false) {
+      loadStatistics();
+    }
+  });
   // Prefetch requester + drivers so opening the dialog is fast.
   getLoggedRequesterName().catch(() => {});
   loadForkliftSettings({ refreshLocations: true }).catch(() => {});

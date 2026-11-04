@@ -51,6 +51,11 @@
     return `linear-gradient(135deg, ${normalized.backgroundColor} 0%, ${normalized.backgroundColorEnd} 100%)`;
   }
 
+  function areHeaderStatsEnabled(settings) {
+    const normalized = normalizeSettings(settings || readCachedSettings() || DEFAULT_SETTINGS);
+    return normalized.showHeaderStats !== false;
+  }
+
   function applySystemSettings(settings) {
     const normalized = normalizeSettings(settings);
     cacheSettings(normalized);
@@ -58,9 +63,11 @@
     const root = document.documentElement;
     root.style.setProperty('--system-bg-start', normalized.backgroundColor);
     root.style.setProperty('--system-bg-end', normalized.backgroundColorEnd);
-    document.body.style.background = buildBackgroundStyle(normalized);
-
-    document.body.classList.toggle('header-stats-hidden', !normalized.showHeaderStats);
+    if (document.body) {
+      document.body.style.background = buildBackgroundStyle(normalized);
+      document.body.classList.toggle('header-stats-hidden', !normalized.showHeaderStats);
+    }
+    root.classList.toggle('header-stats-hidden', !normalized.showHeaderStats);
     window.dispatchEvent(new CustomEvent('doubley:system-settings-applied', { detail: normalized }));
   }
 
@@ -98,6 +105,16 @@
     fetchSystemSettings,
     cacheSettings,
     readCachedSettings,
-    buildBackgroundStyle
+    buildBackgroundStyle,
+    areHeaderStatsEnabled
   };
+
+  // Apply cached visibility as soon as this script loads (before late async boot).
+  const earlyCached = readCachedSettings();
+  if (earlyCached) {
+    document.documentElement.classList.toggle('header-stats-hidden', !earlyCached.showHeaderStats);
+    if (document.body) {
+      document.body.classList.toggle('header-stats-hidden', !earlyCached.showHeaderStats);
+    }
+  }
 })(window);

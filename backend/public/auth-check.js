@@ -1,6 +1,20 @@
 (function () {
   const TAB_SESSION_KEY = 'doubley_tab_auth';
 
+  // Hide header stats before they paint when System Settings has them disabled.
+  try {
+    const raw = localStorage.getItem('doubley_system_settings');
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (parsed && parsed.showHeaderStats === false) {
+        document.documentElement.classList.add('header-stats-hidden');
+        if (document.body) document.body.classList.add('header-stats-hidden');
+      }
+    }
+  } catch {
+    // ignore storage/parse errors
+  }
+
   if (window.location.pathname.endsWith('/login.html')) return;
 
   function goLogin() {
