@@ -771,7 +771,7 @@ window.printReport = function(itemId) {
         alert('Item not found: ' + itemId);
         return;
     }
-
+    
     if (isBathCategory(item.categoria)) {
         window.openBathPrintModal(item);
         return;
@@ -929,6 +929,11 @@ document.addEventListener('DOMContentLoaded', () => {
     loadStatistics();
     loadRootAccess().then(() => updateArButtonVisibility());
     // N?o carrega todos os itens na abertura; usu?rio deve usar Search
+    window.addEventListener('doubley:system-settings-applied', (event) => {
+        if (event?.detail?.showHeaderStats !== false) {
+            loadStatistics();
+        }
+    });
 });
 
 async function loadRootAccess() {
@@ -1029,7 +1034,7 @@ function setupEventListeners() {
         if (window.WarehouseBarcodeScanner
           && typeof window.WarehouseBarcodeScanner.updateButtonVisibility === 'function') {
             window.WarehouseBarcodeScanner.updateButtonVisibility();
-        }
+    }
     }
     function openNewProductModal() {
         closeProductDropdown();
@@ -1374,7 +1379,7 @@ function setupEventListeners() {
     if (printBtn) {
         printBtn.addEventListener('click', () => window.print());
     }
-
+    
     const closeBathPrintModalBtn = document.getElementById('closeBathPrintModal');
     const closeBathPrintBtn = document.getElementById('closeBathPrintBtn');
     const doBathPrintBtn = document.getElementById('doBathPrintBtn');
@@ -1542,8 +1547,19 @@ function handleSearchClick() {
 }
 window.handleSearchClick = handleSearchClick;
 
-// Carregar estat?sticas do servidor (sem carregar a lista de itens)
+function headerStatsEnabled() {
+    if (window.DoubleYSystemSettings && typeof window.DoubleYSystemSettings.areHeaderStatsEnabled === 'function') {
+        return window.DoubleYSystemSettings.areHeaderStatsEnabled();
+    }
+    return !document.documentElement.classList.contains('header-stats-hidden')
+        && !document.body?.classList?.contains('header-stats-hidden');
+}
+
+// Carregar estatisticas do servidor (sem carregar a lista de itens)
 async function loadStatistics() {
+    if (!headerStatsEnabled()) {
+        return;
+    }
     try {
         const response = await fetch(API_BASE_URL + '/estatisticas');
         const result = await response.json();
@@ -1806,7 +1822,7 @@ function getFilteredSortedItems() {
         if (aVal > bVal) return 1;
         return 0;
     });
-
+    
     return filtered;
 }
 
@@ -1815,23 +1831,9 @@ function filterItems() {
     displayItems(getFilteredSortedItems());
 }
 
-// Atualizar estat?sticas
+// Refresh header stats from server (Entries/Exits = location_product qty deltas today)
 function updateStatistics() {
-    const total = items.length;
-    const lowStock = items.filter(item => {
-        const status = getItemStatus(item);
-        return status === 'Low Stock' || status === 'Out of Stock';
-    }).length;
-    
-    // Simular movimenta??es do dia (em produ??o, viria do backend)
-    const today = new Date().toISOString().split('T')[0];
-    const entradas = items.filter(item => item.ultimaEntrada === today).length || 0;
-    const saidas = items.filter(item => item.ultimaSaida === today).length || 0;
-    
-    totalItemsEl.textContent = total;
-    lowStockItemsEl.textContent = lowStock;
-    totalEntradasEl.textContent = entradas;
-    totalSaidasEl.textContent = saidas;
+    loadStatistics();
 }
 
 function updateDescricaoCount() {
@@ -2289,24 +2291,24 @@ function buildItemDetailsHtml(item, status, statusClass) {
             </div>
         </div>
         <div class="item-details-grid">
-            <div class="detail-section">
+        <div class="detail-section">
                 <h4><i class="fas fa-id-card"></i> Product Identity</h4>
                 <p><span class="detail-label">Code:</span> ${escapeHtml(item.codigo || '-')}</p>
                 <p><span class="detail-label">Name:</span> ${escapeHtml(item.nome || '-')}</p>
                 <p><span class="detail-label">Barcode:</span> ${barcodeText}</p>
                 <p><span class="detail-label">Supplier Product Code:</span> ${escapeHtml(item.supplierProductCode || '-')}</p>
-            </div>
-            <div class="detail-section">
+        </div>
+        <div class="detail-section">
                 <h4><i class="fas fa-folder-tree"></i> Classification</h4>
                 <p><span class="detail-label">Category:</span> ${escapeHtml(formatCategoryDisplay(item))}</p>
                 ${subcategoryBlock}
                 <p><span class="detail-label">Status:</span> <span class="status-badge ${statusClass}">${status}</span></p>
-            </div>
+        </div>
             <div class="detail-section product-location detail-section--full" id="productLocationSection">
-                <h4><i class="fas fa-map-marker-alt"></i> Product Location</h4>
-                <p class="product-location-desc">Locations with situation Full and stat_cd_id = A</p>
-                <div id="productLocationContent"><span class="loading-text">Loading...</span></div>
-            </div>
+            <h4><i class="fas fa-map-marker-alt"></i> Product Location</h4>
+            <p class="product-location-desc">Locations with situation Full and stat_cd_id = A</p>
+            <div id="productLocationContent"><span class="loading-text">Loading...</span></div>
+        </div>
             ${descriptionBlock}
         </div>
     `;
@@ -2352,7 +2354,7 @@ async function viewItem(itemId) {
 
     detailsEl.innerHTML = buildItemDetailsHtml(item, status, statusClass);
     updateArButtonVisibility();
-
+    
     detailsModal.style.display = 'block';
 
     const contentEl = document.getElementById('productLocationContent');

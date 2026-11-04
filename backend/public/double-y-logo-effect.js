@@ -3,10 +3,8 @@
   const CONTACT_EMAIL = 'office@doubleyitsystem.com';
   const CONTACT_LABEL = 'Contact: office@doubleyitsystem.com';
   const WORDMARK_HTML = `
-    <a class="double-y-wordmark double-y-wordmark--login double-y-wordmark--header" href="mailto:office@doubleyitsystem.com" aria-label="Double Y - Contact office@doubleyitsystem.com" data-doubley-contact="true">
-      <img src="doubley-glyph.png" alt="" class="double-y-glyph" aria-hidden="true">
-      <span class="double-y-name">Double Y</span>
-      <img src="doubley-glyph-bottom.png" alt="" class="double-y-glyph double-y-glyph-bottom" aria-hidden="true">
+    <a class="double-y-wordmark double-y-wordmark--login double-y-wordmark--header double-y-wordmark--mark" href="mailto:office@doubleyitsystem.com" aria-label="Double Y - Contact office@doubleyitsystem.com" data-doubley-contact="true">
+      <img src="DoubleYnew.png" alt="Double Y" class="double-y-logo-mark">
       <span class="double-y-contact-tip" role="tooltip">${CONTACT_LABEL}</span>
     </a>`;
 
@@ -42,9 +40,34 @@
     mark.appendChild(tip);
   }
 
+  function ensureCompositeMark(mark) {
+    if (!mark) return;
+    mark.classList.add('double-y-wordmark--mark');
+    const existingMark = mark.querySelector('.double-y-logo-mark');
+    if (existingMark) {
+      existingMark.setAttribute('src', 'DoubleYnew.png');
+      existingMark.setAttribute('alt', 'Double Y');
+      return;
+    }
+    mark.querySelectorAll('.double-y-glyph, .double-y-name').forEach(function (node) {
+      node.remove();
+    });
+    const img = document.createElement('img');
+    img.src = 'DoubleYnew.png';
+    img.alt = 'Double Y';
+    img.className = 'double-y-logo-mark';
+    const tip = mark.querySelector('.double-y-contact-tip');
+    if (tip) {
+      mark.insertBefore(img, tip);
+    } else {
+      mark.appendChild(img);
+    }
+  }
+
   function styleAsHeaderBrand(mark) {
     if (!mark) return;
-    mark.classList.add('double-y-wordmark--login', 'double-y-wordmark--header');
+    mark.classList.add('double-y-wordmark--login', 'double-y-wordmark--header', 'double-y-wordmark--mark');
+    ensureCompositeMark(mark);
     mark.setAttribute('title', CONTACT_LABEL);
     mark.setAttribute('aria-label', 'Double Y - ' + CONTACT_LABEL);
     mark.dataset.doubleyContact = 'true';

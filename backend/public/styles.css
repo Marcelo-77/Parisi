@@ -18,10 +18,11 @@ body {
     min-height: 100vh;
 }
 
+html.header-stats-hidden .header-stats-left .header-stat,
+html.header-stats-hidden .header-stats-right .header-stat,
 body.header-stats-hidden .header-stats-left .header-stat,
 body.header-stats-hidden .header-stats-right .header-stat {
-    visibility: hidden;
-    pointer-events: none;
+    display: none !important;
 }
 
 .container {
@@ -132,6 +133,52 @@ body.header-stats-hidden .header-stats-right .header-stat {
     box-shadow:
         0 2px 8px rgba(0, 0, 0, 0.08),
         0 0 0 1px rgba(102, 126, 234, 0.12);
+}
+
+/* Composite DoubleYnew mark (login + home): keep glow/float/sweep; image carries brand */
+.double-y-wordmark--mark {
+    gap: 0;
+    padding: 0;
+    background: transparent;
+    border-radius: 0;
+    box-shadow: none;
+}
+
+.double-y-wordmark--mark::before {
+    inset: -18px -18px;
+    border-radius: 28px;
+}
+
+.double-y-wordmark--mark::after {
+    inset: 0;
+    border-radius: 22%;
+}
+
+.double-y-wordmark .double-y-logo-mark {
+    position: relative;
+    z-index: 1;
+    display: block;
+    width: 148px;
+    max-width: 42vw;
+    height: auto;
+    border-radius: 22%;
+    filter: drop-shadow(0 6px 16px rgba(0, 0, 0, 0.18));
+}
+
+.double-y-wordmark--login.double-y-wordmark--mark .double-y-logo-mark {
+    width: 168px;
+}
+
+.double-y-wordmark--header.double-y-wordmark--mark .double-y-logo-mark {
+    width: 92px;
+}
+
+.double-y-wordmark--mark.double-y-wordmark--settled .double-y-logo-mark {
+    filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.16));
+}
+
+.double-y-wordmark--header.double-y-wordmark--mark.double-y-wordmark--settled .double-y-logo-mark {
+    filter: grayscale(1) drop-shadow(0 3px 8px rgba(0, 0, 0, 0.2));
 }
 
 .double-y-wordmark--login::before {
@@ -342,6 +389,13 @@ body.header-stats-hidden .header-stats-right .header-stat {
     box-shadow:
         0 2px 8px rgba(0, 0, 0, 0.12),
         0 0 0 1px rgba(0, 0, 0, 0.16);
+}
+
+.header-stats-row .double-y-wordmark--login.double-y-wordmark--mark,
+.double-y-wordmark--login.double-y-wordmark--header.double-y-wordmark--mark {
+    background: transparent;
+    box-shadow: none;
+    padding: 0;
 }
 
 .header-stats-row .double-y-wordmark--login::before,
