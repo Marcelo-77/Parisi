@@ -2,7 +2,8 @@
     const BATHWARE_SUBCATEGORY_OPTIONS = [
         { value: 'FLAMINIA', label: 'Flaminia' },
         { value: 'TECLA', label: 'Tecla' },
-        { value: 'VALDAMA', label: 'Valdama' }
+        { value: 'VALDAMA', label: 'Valdama' },
+        { value: 'OTHER', label: 'Other' }
     ];
 
     const BATH_SUBCATEGORY_OPTIONS = [
