@@ -140,19 +140,23 @@
     return getSafeNextUrl([], true) || '/warehouse.html';
   }
 
-  async function prefetchHeaderStats() {
+  async function prefetchHeaderStats(forceRefresh) {
     try {
-      if (sessionStorage.getItem('doubley_header_stats')) return;
+      if (!forceRefresh && (localStorage.getItem('doubley_header_stats') || sessionStorage.getItem('doubley_header_stats'))) {
+        return;
+      }
       const statsRes = await fetch('/api/warehouse/estatisticas', { credentials: 'include' });
       const statsData = await statsRes.json().catch(() => ({}));
       if (statsRes.ok && statsData.success && statsData.data) {
-        sessionStorage.setItem('doubley_header_stats', JSON.stringify({
+        const payload = JSON.stringify({
           total: statsData.data.total ?? 0,
           estoqueBaixo: statsData.data.estoqueBaixo ?? 0,
           esgotado: statsData.data.esgotado ?? 0,
           entradas: statsData.data.entradas ?? 0,
           saidas: statsData.data.saidas ?? 0
-        }));
+        });
+        localStorage.setItem('doubley_header_stats', payload);
+        sessionStorage.setItem('doubley_header_stats', payload);
       }
     } catch {
       // Keep login flow even if stats prefetch fails.
@@ -230,11 +234,12 @@
         hideCaptcha();
         sessionStorage.setItem(TAB_SESSION_KEY, '1');
         try {
+          localStorage.removeItem('doubley_header_stats');
           sessionStorage.removeItem('doubley_header_stats');
         } catch {
           // ignore
         }
-        await prefetchHeaderStats();
+        await prefetchHeaderStats(true);
         window.location.href = await resolveLandingPage();
         return;
       }

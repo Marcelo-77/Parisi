@@ -15,6 +15,16 @@
       }
     });
 
+    try {
+      localStorage.removeItem('doubley_header_stats');
+    } catch {
+      // ignore storage errors
+    }
+
+    if (window.DoubleYHeaderStats && typeof window.DoubleYHeaderStats.clearCache === 'function') {
+      window.DoubleYHeaderStats.clearCache();
+    }
+
     if (window.DoubleYMenuAccess && typeof window.DoubleYMenuAccess.clearCache === 'function') {
       window.DoubleYMenuAccess.clearCache();
     }

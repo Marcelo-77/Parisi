@@ -17,10 +17,44 @@
     // ignore storage/parse errors
   }
 
+  // Apply cached Total/Low/Entries/Exits early so screen changes do not wait on async scripts.
+  function applyCachedHeaderStatsEarly() {
+    try {
+      const raw = localStorage.getItem('doubley_header_stats') || sessionStorage.getItem('doubley_header_stats');
+      if (!raw) return;
+      const stats = JSON.parse(raw);
+      if (!stats || typeof stats !== 'object') return;
+      const paint = () => {
+        const totalEl = document.getElementById('totalItems');
+        const lowEl = document.getElementById('lowStockItems');
+        const entriesEl = document.getElementById('totalEntradas');
+        const exitsEl = document.getElementById('totalSaidas');
+        if (totalEl) totalEl.textContent = String(stats.total ?? 0);
+        if (lowEl) lowEl.textContent = String((stats.estoqueBaixo ?? 0) + (stats.esgotado ?? 0));
+        if (entriesEl) entriesEl.textContent = String(stats.entradas ?? 0);
+        if (exitsEl) exitsEl.textContent = String(stats.saidas ?? 0);
+      };
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', paint, { once: true });
+      } else {
+        paint();
+      }
+    } catch {
+      // ignore
+    }
+  }
+  applyCachedHeaderStatsEarly();
+
   if (window.location.pathname.endsWith('/login.html')) return;
 
   function goLogin() {
     sessionStorage.removeItem(TAB_SESSION_KEY);
+    try {
+      sessionStorage.removeItem('doubley_header_stats');
+      localStorage.removeItem('doubley_header_stats');
+    } catch {
+      // ignore
+    }
     window.location.replace('/login.html');
   }
 
