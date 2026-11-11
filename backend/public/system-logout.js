@@ -2,7 +2,8 @@
   const SESSION_KEYS = [
     'doubley_tab_auth',
     'doubley_menu_access',
-    'doubley_news_announcement_shown'
+    'doubley_news_announcement_shown',
+    'doubley_header_stats'
   ];
 
   function clearClientSessionData() {
