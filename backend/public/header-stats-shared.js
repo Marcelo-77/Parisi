@@ -29,7 +29,8 @@
 
   function readCache() {
     try {
-      const raw = sessionStorage.getItem(STORAGE_KEY);
+      // Prefer localStorage so Total/Low/Entries/Exits survive screen changes and new tabs after login.
+      const raw = localStorage.getItem(STORAGE_KEY) || sessionStorage.getItem(STORAGE_KEY);
       if (!raw) return null;
       const parsed = JSON.parse(raw);
       if (!parsed || typeof parsed !== 'object') return null;
@@ -46,20 +47,31 @@
   }
 
   function writeCache(data) {
+    const payload = JSON.stringify({
+      total: data.total ?? 0,
+      estoqueBaixo: data.estoqueBaixo ?? 0,
+      esgotado: data.esgotado ?? 0,
+      entradas: data.entradas ?? 0,
+      saidas: data.saidas ?? 0
+    });
     try {
-      sessionStorage.setItem(STORAGE_KEY, JSON.stringify({
-        total: data.total ?? 0,
-        estoqueBaixo: data.estoqueBaixo ?? 0,
-        esgotado: data.esgotado ?? 0,
-        entradas: data.entradas ?? 0,
-        saidas: data.saidas ?? 0
-      }));
+      localStorage.setItem(STORAGE_KEY, payload);
+    } catch {
+      // ignore
+    }
+    try {
+      sessionStorage.setItem(STORAGE_KEY, payload);
     } catch {
       // ignore
     }
   }
 
   function clearCache() {
+    try {
+      localStorage.removeItem(STORAGE_KEY);
+    } catch {
+      // ignore
+    }
     try {
       sessionStorage.removeItem(STORAGE_KEY);
     } catch {
@@ -96,6 +108,33 @@
     writeCache(result.data);
     applyToDom(result.data);
     return result.data;
+  }
+
+  // Entries/Exits click: refresh only movements. Keep Total Items / Low Stock from login cache.
+  async function refreshMovementsFromServer() {
+    if (!enabled()) return readCache();
+    const cached = readCache() || {
+      total: 0,
+      estoqueBaixo: 0,
+      esgotado: 0,
+      entradas: 0,
+      saidas: 0
+    };
+    const response = await fetch(API_STATS, { credentials: 'include' });
+    const result = await response.json().catch(() => ({}));
+    if (!response.ok || !result.success || !result.data) {
+      throw new Error(result.message || 'Unable to load header statistics');
+    }
+    const next = {
+      total: cached.total ?? 0,
+      estoqueBaixo: cached.estoqueBaixo ?? 0,
+      esgotado: cached.esgotado ?? 0,
+      entradas: result.data.entradas ?? 0,
+      saidas: result.data.saidas ?? 0
+    };
+    writeCache(next);
+    applyToDom(next);
+    return next;
   }
 
   function loadScriptOnce(src) {
@@ -504,7 +543,7 @@ ${dataRows}
   async function onEntriesOrExitsClick(tipo) {
     if (!enabled()) return;
     try {
-      await refreshFromServer();
+      await refreshMovementsFromServer();
     } catch (error) {
       console.error('Header stats refresh failed:', error);
     }
@@ -615,6 +654,7 @@ ${dataRows}
     clearCache,
     applyToDom,
     refreshFromServer,
+    refreshMovementsFromServer,
     openChart,
     onEntriesOrExitsClick,
     init
