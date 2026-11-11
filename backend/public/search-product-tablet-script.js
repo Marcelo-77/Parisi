@@ -818,27 +818,9 @@
     }
   }
 
-  function headerStatsEnabled() {
-    if (window.DoubleYSystemSettings && typeof window.DoubleYSystemSettings.areHeaderStatsEnabled === 'function') {
-      return window.DoubleYSystemSettings.areHeaderStatsEnabled();
-    }
-    return !document.documentElement.classList.contains('header-stats-hidden')
-      && !document.body?.classList?.contains('header-stats-hidden');
-  }
-
-  async function loadStatistics() {
-    if (!headerStatsEnabled()) return;
-    try {
-      const res = await fetch(`${API_WAREHOUSE}/estatisticas`, { credentials: 'include' });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok || !data.success || !data.data) return;
-      const d = data.data;
-      if (els.totalItems) els.totalItems.textContent = d.total ?? 0;
-      if (els.lowStockItems) els.lowStockItems.textContent = (d.estoqueBaixo ?? 0) + (d.esgotado ?? 0);
-      if (els.totalEntradas) els.totalEntradas.textContent = d.entradas ?? 0;
-      if (els.totalSaidas) els.totalSaidas.textContent = d.saidas ?? 0;
-    } catch (error) {
-      console.error('Error loading statistics:', error);
+  function loadStatistics() {
+    if (window.DoubleYHeaderStats && typeof window.DoubleYHeaderStats.applyToDom === 'function') {
+      window.DoubleYHeaderStats.applyToDom();
     }
   }
 
@@ -1046,11 +1028,6 @@
   bindEvents();
   syncSearchByField(getSearchBy());
   loadStatistics();
-  window.addEventListener('doubley:system-settings-applied', (event) => {
-    if (event?.detail?.showHeaderStats !== false) {
-      loadStatistics();
-    }
-  });
   // Prefetch requester + drivers so opening the dialog is fast.
   getLoggedRequesterName().catch(() => {});
   loadForkliftSettings({ refreshLocations: true }).catch(() => {});

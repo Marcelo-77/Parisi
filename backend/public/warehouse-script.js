@@ -926,14 +926,11 @@ window.closePrintModal = function() {
 document.addEventListener('DOMContentLoaded', () => {
     setupEventListeners();
     attachActionButtonListeners();
-    loadStatistics();
+    // Header stats: cached at login; refresh only when Entries/Exits are clicked.
+    if (window.DoubleYHeaderStats && typeof window.DoubleYHeaderStats.applyToDom === 'function') {
+        window.DoubleYHeaderStats.applyToDom();
+    }
     loadRootAccess().then(() => updateArButtonVisibility());
-    // N?o carrega todos os itens na abertura; usu?rio deve usar Search
-    window.addEventListener('doubley:system-settings-applied', (event) => {
-        if (event?.detail?.showHeaderStats !== false) {
-            loadStatistics();
-        }
-    });
 });
 
 async function loadRootAccess() {
@@ -1266,8 +1263,6 @@ function setupEventListeners() {
         }
     });
 
-    setupTodayMovementsChartListeners();
-
     // Modal de Item
     document.getElementById('closeModal').addEventListener('click', () => closeItemModal());
     document.getElementById('cancelBtn').addEventListener('click', () => closeItemModal());
@@ -1482,11 +1477,6 @@ function setupEventListeners() {
             closeProductPhotoZoom();
             return;
         }
-        const todayChartModal = document.getElementById('todayMovementsChartModal');
-        if (todayChartModal && (todayChartModal.style.display === 'block' || todayChartModal.style.display === 'flex')) {
-            closeTodayMovementsChartModal();
-            return;
-        }
         const arModal = document.getElementById('productArModal');
         if (arModal && arModal.style.display === 'block') {
             closeProductArModal();
@@ -1555,6 +1545,9 @@ function handleSearchClick() {
 window.handleSearchClick = handleSearchClick;
 
 function headerStatsEnabled() {
+    if (window.DoubleYHeaderStats && typeof window.DoubleYHeaderStats.enabled === 'function') {
+        return window.DoubleYHeaderStats.enabled();
+    }
     if (window.DoubleYSystemSettings && typeof window.DoubleYSystemSettings.areHeaderStatsEnabled === 'function') {
         return window.DoubleYSystemSettings.areHeaderStatsEnabled();
     }
@@ -1562,418 +1555,15 @@ function headerStatsEnabled() {
         && !document.body?.classList?.contains('header-stats-hidden');
 }
 
-// Carregar estatisticas do servidor (sem carregar a lista de itens)
-async function loadStatistics() {
-    if (!headerStatsEnabled()) {
+// Apply cached header stats only (server refresh happens on login / Entries-Exits click).
+function loadStatistics() {
+    if (window.DoubleYHeaderStats && typeof window.DoubleYHeaderStats.applyToDom === 'function') {
+        window.DoubleYHeaderStats.applyToDom();
         return;
     }
-    try {
-        const response = await fetch(API_BASE_URL + '/estatisticas');
-        const result = await response.json();
-        if (result.success && result.data) {
-            const d = result.data;
-            totalItemsEl.textContent = d.total ?? 0;
-            lowStockItemsEl.textContent = (d.estoqueBaixo ?? 0) + (d.esgotado ?? 0);
-            totalEntradasEl.textContent = d.entradas ?? 0;
-            totalSaidasEl.textContent = d.saidas ?? 0;
-        }
-    } catch (error) {
-        console.error('Error loading statistics:', error);
-        totalItemsEl.textContent = '0';
-        lowStockItemsEl.textContent = '0';
-        totalEntradasEl.textContent = '0';
-        totalSaidasEl.textContent = '0';
-    }
-}
-
-const TODAY_MOVEMENTS_CHART_COLORS = [
-    '#4facfe', '#43e97b', '#f5576c', '#f093fb', '#667eea',
-    '#fbbf24', '#38bdf8', '#34d399', '#fb7185', '#a78bfa',
-    '#f97316', '#14b8a6', '#eab308', '#6366f1', '#ec4899'
-];
-
-let todayMovementsChart = null;
-let todayMovementsChartState = {
-    tipo: null,
-    categoria: null,
-    level: 'categoria',
-    items: [],
-    selectedSubcategoria: null
-};
-
-function formatExportDateTime(value) {
-    if (!value) return '';
-    const date = new Date(value);
-    if (Number.isNaN(date.getTime())) return String(value);
-    const pad = (n) => String(n).padStart(2, '0');
-    return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
-}
-
-function getLocationProductInsertedByName(record) {
-    if (!record) return '';
-    return record.usuarioInseriuNome || record.usuarioInseriu || record.usuario_inseriu_nome || record.usuario_inseriu || '';
-}
-
-function buildLocationProductExcelXml(list) {
-    const headers = [
-        'Location Code',
-        'Product Code',
-        'Qty Current',
-        'Inserted By',
-        'Date Time Last Update'
-    ];
-    const headerRow = headers.map((header) =>
-        `<Cell><Data ss:Type="String">${escapeXml(header)}</Data></Cell>`
-    ).join('');
-
-    const dataRows = list.map((record) => {
-        const qty = Number(record.quantityCurrent);
-        const qtyCell = Number.isFinite(qty)
-            ? `<Cell><Data ss:Type="Number">${qty}</Data></Cell>`
-            : `<Cell><Data ss:Type="String">${escapeXml(record.quantityCurrent ?? 0)}</Data></Cell>`;
-        const lastUpdate = record.lastUpdateDatetime || record.entryDatetime || '';
-        return `<Row>${[
-            `<Cell><Data ss:Type="String">${escapeXml(record.locationCode || '')}</Data></Cell>`,
-            `<Cell><Data ss:Type="String">${escapeXml(record.productCode || '')}</Data></Cell>`,
-            qtyCell,
-            `<Cell><Data ss:Type="String">${escapeXml(getLocationProductInsertedByName(record))}</Data></Cell>`,
-            `<Cell><Data ss:Type="String">${escapeXml(formatExportDateTime(lastUpdate))}</Data></Cell>`
-        ].join('')}</Row>`;
-    }).join('');
-
-    return `<?xml version="1.0" encoding="UTF-8"?>
-<?mso-application progid="Excel.Sheet"?>
-<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet"
- xmlns:o="urn:schemas-microsoft-com:office:office"
- xmlns:x="urn:schemas-microsoft-com:office:excel"
- xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet">
-<Worksheet ss:Name="Location Product">
-<Table ss:ExpandedColumnCount="${headers.length}" ss:ExpandedRowCount="${list.length + 1}">
-<Column ss:Width="120"/>
-<Column ss:Width="140"/>
-<Column ss:Width="90"/>
-<Column ss:Width="140"/>
-<Column ss:Width="160"/>
-<Row>${headerRow}</Row>
-${dataRows}
-</Table>
-</Worksheet>
-</Workbook>`;
-}
-
-function getTodayMovementsChartEls() {
-    return {
-        modal: document.getElementById('todayMovementsChartModal'),
-        title: document.getElementById('todayMovementsChartTitle'),
-        hint: document.getElementById('todayMovementsChartHint'),
-        backBtn: document.getElementById('todayMovementsChartBackBtn'),
-        canvas: document.getElementById('todayMovementsChartCanvas'),
-        empty: document.getElementById('todayMovementsChartEmpty'),
-        total: document.getElementById('todayMovementsChartTotal'),
-        wrap: document.querySelector('.today-movements-chart-wrap'),
-        exportPanel: document.getElementById('todayMovementsExportPanel'),
-        exportText: document.getElementById('todayMovementsExportText'),
-        exportBtn: document.getElementById('todayMovementsExportExcelBtn'),
-        exportCancelBtn: document.getElementById('todayMovementsExportCancelBtn')
-    };
-}
-
-function hideTodayMovementsExportPanel() {
-    const els = getTodayMovementsChartEls();
-    todayMovementsChartState.selectedSubcategoria = null;
-    if (els.exportPanel) els.exportPanel.hidden = true;
-    if (els.exportText) els.exportText.textContent = '';
-}
-
-function showTodayMovementsExportOption(subcategoria) {
-    const els = getTodayMovementsChartEls();
-    const categoria = todayMovementsChartState.categoria || '';
-    const subLabel = formatSubcategory(subcategoria) || subcategoria || 'NONE';
-    const catLabel = formatCategory(categoria) || categoria || 'Category';
-    todayMovementsChartState.selectedSubcategoria = subcategoria;
-    if (els.exportText) {
-        els.exportText.textContent =
-            `Generate a Location Product Excel for ${catLabel} / ${subLabel}?`;
-    }
-    if (els.exportPanel) els.exportPanel.hidden = false;
-}
-
-async function downloadTodayMovementsSubcategoryExcel() {
-    const categoria = todayMovementsChartState.categoria;
-    const subcategoria = todayMovementsChartState.selectedSubcategoria;
-    if (!categoria || !subcategoria) return;
-
-    const els = getTodayMovementsChartEls();
-    const exportBtn = els.exportBtn;
-    if (exportBtn) {
-        exportBtn.disabled = true;
-        exportBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generating...';
-    }
-
-    try {
-        const query = new URLSearchParams({
-            categoria,
-            subcategoria
-        });
-        const response = await fetch(`/api/location-product?${query.toString()}`);
-        const result = await response.json();
-        if (!result.success) {
-            throw new Error(result.message || 'Failed to load location product records');
-        }
-        const list = Array.isArray(result.data) ? result.data : [];
-        if (!list.length) {
-            alert('No Location Product records found for this subcategory.');
-            return;
-        }
-
-        const userPrefix = await getLoggedUserExportPrefix();
-        const xml = buildLocationProductExcelXml(list);
-        const blob = new Blob(['\ufeff', xml], {
-            type: 'application/vnd.ms-excel;charset=utf-8;'
-        });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        const catPart = sanitizeFileNamePart(categoria);
-        const subPart = sanitizeFileNamePart(subcategoria);
-        link.href = url;
-        link.download = `${userPrefix}-location-product-${catPart}-${subPart}-${formatExportFileDate(new Date())}.xls`;
-        document.body.appendChild(link);
-        link.click();
-        link.remove();
-        URL.revokeObjectURL(url);
-    } catch (error) {
-        console.error('Error exporting subcategory location product Excel:', error);
-        alert('Could not generate Excel for this subcategory.');
-    } finally {
-        if (exportBtn) {
-            exportBtn.disabled = false;
-            exportBtn.innerHTML = '<i class="fas fa-file-excel"></i> Generate Excel';
-        }
-    }
-}
-
-function destroyTodayMovementsChart() {
-    if (todayMovementsChart) {
-        todayMovementsChart.destroy();
-        todayMovementsChart = null;
-    }
-}
-
-function closeTodayMovementsChartModal() {
-    const els = getTodayMovementsChartEls();
-    if (els.modal) {
-        els.modal.style.display = 'none';
-        els.modal.setAttribute('aria-hidden', 'true');
-    }
-    destroyTodayMovementsChart();
-    hideTodayMovementsExportPanel();
-    todayMovementsChartState = {
-        tipo: null,
-        categoria: null,
-        level: 'categoria',
-        items: [],
-        selectedSubcategoria: null
-    };
-}
-
-async function openTodayMovementsChart(tipo) {
     if (!headerStatsEnabled()) return;
-    const els = getTodayMovementsChartEls();
-    if (!els.modal) return;
-    todayMovementsChartState.tipo = tipo;
-    todayMovementsChartState.categoria = null;
-    hideTodayMovementsExportPanel();
-    els.modal.style.display = 'flex';
-    els.modal.setAttribute('aria-hidden', 'false');
-    await loadTodayMovementsChart();
 }
 
-async function loadTodayMovementsChart() {
-    const els = getTodayMovementsChartEls();
-    if (!els.canvas || typeof Chart === 'undefined') {
-        if (els.empty) {
-            els.empty.hidden = false;
-            els.empty.textContent = 'Chart library unavailable.';
-        }
-        return;
-    }
-
-    const tipo = todayMovementsChartState.tipo;
-    const categoria = todayMovementsChartState.categoria;
-    const kindLabel = tipo === 'saidas' ? 'Exits Today' : 'Entries Today';
-    const query = new URLSearchParams({ tipo });
-    if (categoria) query.set('categoria', categoria);
-
-    if (els.title) {
-        els.title.innerHTML = categoria
-            ? `<i class="fas fa-chart-pie"></i> ${kindLabel} — ${categoria}`
-            : `<i class="fas fa-chart-pie"></i> ${kindLabel} by Category`;
-    }
-    if (els.backBtn) els.backBtn.hidden = !categoria;
-    if (els.hint) {
-        els.hint.textContent = categoria
-            ? 'Click a subcategory to export Location Product Excel'
-            : 'Click a category to see subcategories';
-    }
-    if (!categoria) hideTodayMovementsExportPanel();
-    if (els.empty) {
-        els.empty.hidden = true;
-        els.empty.textContent = 'No movements today for this view.';
-    }
-    if (els.total) els.total.textContent = '';
-    if (els.wrap) els.wrap.hidden = false;
-
-    try {
-        const response = await fetch(`${API_BASE_URL}/estatisticas/movimentos-hoje?${query.toString()}`);
-        const result = await response.json();
-        if (!result.success || !result.data) {
-            throw new Error(result.message || 'Failed to load chart data');
-        }
-
-        const items = Array.isArray(result.data.items) ? result.data.items : [];
-        todayMovementsChartState.level = result.data.level || (categoria ? 'subcategoria' : 'categoria');
-        todayMovementsChartState.items = items;
-        const total = Number(result.data.total) || items.reduce((sum, item) => sum + (Number(item.quantity) || 0), 0);
-
-        destroyTodayMovementsChart();
-
-        if (!items.length) {
-            if (els.wrap) els.wrap.hidden = true;
-            if (els.empty) els.empty.hidden = false;
-            if (els.total) els.total.textContent = '';
-            return;
-        }
-
-        if (els.total) {
-            els.total.innerHTML = `Total: <strong>${total}</strong>`;
-        }
-
-        const labels = items.map((item) => item.label);
-        const values = items.map((item) => Number(item.quantity) || 0);
-        const colors = labels.map((_, index) => TODAY_MOVEMENTS_CHART_COLORS[index % TODAY_MOVEMENTS_CHART_COLORS.length]);
-        const canDrillDown = !categoria;
-        const canExportSubcategory = Boolean(categoria);
-
-        todayMovementsChart = new Chart(els.canvas, {
-            type: 'pie',
-            data: {
-                labels,
-                datasets: [{
-                    data: values,
-                    backgroundColor: colors,
-                    borderColor: '#ffffff',
-                    borderWidth: 2
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        position: 'bottom',
-                        labels: {
-                            boxWidth: 12,
-                            padding: 8,
-                            generateLabels(chart) {
-                                const data = chart.data;
-                                if (!data.labels?.length || !data.datasets?.length) return [];
-                                const dataset = data.datasets[0];
-                                return data.labels.map((label, index) => ({
-                                    text: `${label}: ${dataset.data[index] ?? 0}`,
-                                    fillStyle: Array.isArray(dataset.backgroundColor)
-                                        ? dataset.backgroundColor[index]
-                                        : dataset.backgroundColor,
-                                    strokeStyle: '#fff',
-                                    lineWidth: 1,
-                                    hidden: false,
-                                    index
-                                }));
-                            }
-                        }
-                    },
-                    tooltip: {
-                        callbacks: {
-                            label(context) {
-                                const value = Number(context.raw) || 0;
-                                const sum = (context.dataset.data || []).reduce((acc, n) => acc + (Number(n) || 0), 0);
-                                const pct = sum ? Math.round((value / sum) * 1000) / 10 : 0;
-                                return `${context.label}: ${value} (${pct}%)`;
-                            }
-                        }
-                    }
-                },
-                onClick: async (_event, elements) => {
-                    if (!elements?.length) return;
-                    const index = elements[0].index;
-                    const label = todayMovementsChartState.items[index]?.label;
-                    if (!label) return;
-                    if (canDrillDown) {
-                        todayMovementsChartState.categoria = label;
-                        await loadTodayMovementsChart();
-                        return;
-                    }
-                    if (canExportSubcategory) {
-                        showTodayMovementsExportOption(label);
-                    }
-                }
-            }
-        });
-    } catch (error) {
-        console.error('Error loading today movements chart:', error);
-        destroyTodayMovementsChart();
-        if (els.wrap) els.wrap.hidden = true;
-        if (els.empty) {
-            els.empty.hidden = false;
-            els.empty.textContent = 'Could not load chart data.';
-        }
-    }
-}
-
-function setupTodayMovementsChartListeners() {
-    const entriesBtn = document.getElementById('entriesTodayStatBtn');
-    const exitsBtn = document.getElementById('exitsTodayStatBtn');
-    const closeBtn = document.getElementById('closeTodayMovementsChartModal');
-    const backBtn = document.getElementById('todayMovementsChartBackBtn');
-    const modal = document.getElementById('todayMovementsChartModal');
-
-    if (entriesBtn) {
-        entriesBtn.addEventListener('click', () => {
-            void openTodayMovementsChart('entradas');
-        });
-    }
-    if (exitsBtn) {
-        exitsBtn.addEventListener('click', () => {
-            void openTodayMovementsChart('saidas');
-        });
-    }
-    if (closeBtn) {
-        closeBtn.addEventListener('click', () => closeTodayMovementsChartModal());
-    }
-    if (backBtn) {
-        backBtn.addEventListener('click', () => {
-            todayMovementsChartState.categoria = null;
-            hideTodayMovementsExportPanel();
-            void loadTodayMovementsChart();
-        });
-    }
-    const exportBtn = document.getElementById('todayMovementsExportExcelBtn');
-    const exportCancelBtn = document.getElementById('todayMovementsExportCancelBtn');
-    if (exportBtn) {
-        exportBtn.addEventListener('click', () => {
-            void downloadTodayMovementsSubcategoryExcel();
-        });
-    }
-    if (exportCancelBtn) {
-        exportCancelBtn.addEventListener('click', () => {
-            hideTodayMovementsExportPanel();
-        });
-    }
-    if (modal) {
-        modal.addEventListener('click', (event) => {
-            if (event.target === modal) closeTodayMovementsChartModal();
-        });
-    }
-}
 
 // Carregar itens do servidor (com filtros opcionais; sem filtros n?o carrega todos)
 async function loadItems(filtros) {
@@ -1984,7 +1574,6 @@ async function loadItems(filtros) {
 
     if (!hasFilters) {
         showEmptyStateInitial();
-        loadStatistics();
         return;
     }
 
@@ -2007,7 +1596,6 @@ async function loadItems(filtros) {
             hasSearched = true;
             items = data.data || [];
             displayItems(items);
-            loadStatistics();
         } else {
             showError('Error loading items: ' + (data.message || 'Unknown error'));
         }
@@ -2016,7 +1604,6 @@ async function loadItems(filtros) {
         showError('Error connecting to server. Please check if the server is running.');
         items = [];
         displayItems(items);
-        loadStatistics();
     } finally {
         hideLoading();
     }
@@ -2227,7 +1814,7 @@ function filterItems() {
     displayItems(getFilteredSortedItems());
 }
 
-// Refresh header stats from server (Entries/Exits = location_product qty deltas today)
+// Keep DOM in sync with cached header stats (no server fetch on screen changes).
 function updateStatistics() {
     loadStatistics();
 }

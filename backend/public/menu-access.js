@@ -209,6 +209,10 @@
     try {
       await loadScriptOnce('system-settings-shared.js');
       await loadScriptOnce('system-settings-apply.js');
+      await loadScriptOnce('header-stats-shared.js');
+      if (window.DoubleYHeaderStats && typeof window.DoubleYHeaderStats.init === 'function') {
+        window.DoubleYHeaderStats.init();
+      }
     } catch (error) {
       console.warn('System settings scripts:', error.message);
     }

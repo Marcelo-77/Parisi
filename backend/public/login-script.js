@@ -140,6 +140,25 @@
     return getSafeNextUrl([], true) || '/warehouse.html';
   }
 
+  async function prefetchHeaderStats() {
+    try {
+      if (sessionStorage.getItem('doubley_header_stats')) return;
+      const statsRes = await fetch('/api/warehouse/estatisticas', { credentials: 'include' });
+      const statsData = await statsRes.json().catch(() => ({}));
+      if (statsRes.ok && statsData.success && statsData.data) {
+        sessionStorage.setItem('doubley_header_stats', JSON.stringify({
+          total: statsData.data.total ?? 0,
+          estoqueBaixo: statsData.data.estoqueBaixo ?? 0,
+          esgotado: statsData.data.esgotado ?? 0,
+          entradas: statsData.data.entradas ?? 0,
+          saidas: statsData.data.saidas ?? 0
+        }));
+      }
+    } catch {
+      // Keep login flow even if stats prefetch fails.
+    }
+  }
+
   async function checkExistingSession() {
     if (!sessionStorage.getItem(TAB_SESSION_KEY)) return;
 
@@ -147,6 +166,7 @@
       const res = await fetch('/api/auth/check');
       const data = await res.json();
       if (data.authenticated) {
+        await prefetchHeaderStats();
         window.location.href = await resolveLandingPage();
         return;
       }
@@ -209,6 +229,12 @@
       if (res.ok) {
         hideCaptcha();
         sessionStorage.setItem(TAB_SESSION_KEY, '1');
+        try {
+          sessionStorage.removeItem('doubley_header_stats');
+        } catch {
+          // ignore
+        }
+        await prefetchHeaderStats();
         window.location.href = await resolveLandingPage();
         return;
       }

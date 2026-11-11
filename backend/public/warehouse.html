@@ -723,39 +723,6 @@
             </div>
         </div>
 
-        <div id="todayMovementsChartModal" class="modal today-movements-chart-modal" aria-hidden="true">
-            <div class="modal-content today-movements-chart-content">
-                <div class="modal-header">
-                    <h3 id="todayMovementsChartTitle"><i class="fas fa-chart-pie"></i> Today</h3>
-                    <button type="button" class="modal-close" id="closeTodayMovementsChartModal" aria-label="Close">&times;</button>
-                </div>
-                <div class="modal-body today-movements-chart-body">
-                    <div class="today-movements-chart-toolbar">
-                        <button type="button" class="btn btn-secondary btn-sm" id="todayMovementsChartBackBtn" hidden>
-                            <i class="fas fa-arrow-left"></i> Categories
-                        </button>
-                        <p class="today-movements-chart-hint" id="todayMovementsChartHint">Click a category to see subcategories</p>
-                    </div>
-                    <div class="today-movements-chart-wrap">
-                        <canvas id="todayMovementsChartCanvas" aria-label="Today movements pie chart"></canvas>
-                    </div>
-                    <p class="today-movements-chart-empty" id="todayMovementsChartEmpty" hidden>No movements today for this view.</p>
-                    <p class="today-movements-chart-total" id="todayMovementsChartTotal"></p>
-                    <div class="today-movements-export-panel" id="todayMovementsExportPanel" hidden>
-                        <p class="today-movements-export-text" id="todayMovementsExportText"></p>
-                        <div class="today-movements-export-actions">
-                            <button type="button" class="btn btn-primary btn-sm" id="todayMovementsExportExcelBtn">
-                                <i class="fas fa-file-excel"></i> Generate Excel
-                            </button>
-                            <button type="button" class="btn btn-secondary btn-sm" id="todayMovementsExportCancelBtn">
-                                Cancel
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
         <footer class="footer">
             <p>&copy; 2026 Double-Y IT Systems. All rights reserved.</p>
         </footer>
@@ -787,7 +754,6 @@
             }, 500);
         });
     </script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.8/dist/chart.umd.min.js"></script>
     <script src="section-options.js"></script>
     <script src="bathware-subcategory-options.js"></script>
     <script src="product-ar-glb.js"></script>

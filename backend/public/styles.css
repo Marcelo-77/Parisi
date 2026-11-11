@@ -18,14 +18,150 @@ body {
     min-height: 100vh;
 }
 
-/* Header stats (next to Double Y logo) only on warehouse.html when enabled */
-body:not(.warehouse-page) .header-stats-left .header-stat,
-body:not(.warehouse-page) .header-stats-right .header-stat,
+/* Header stats (next to Double Y logo) hidden when System Settings disables them */
 html.header-stats-hidden .header-stats-left .header-stat,
 html.header-stats-hidden .header-stats-right .header-stat,
 body.header-stats-hidden .header-stats-left .header-stat,
 body.header-stats-hidden .header-stats-right .header-stat {
     display: none !important;
+}
+
+.header-stat-clickable {
+    border: none;
+    cursor: pointer;
+    font: inherit;
+    color: inherit;
+    appearance: none;
+    -webkit-appearance: none;
+    transition: transform 0.15s ease, box-shadow 0.15s ease, filter 0.15s ease;
+}
+
+.header-stat-clickable:hover,
+.header-stat-clickable:focus-visible {
+    transform: translateY(-1px);
+    filter: brightness(1.06);
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.18);
+    outline: none;
+}
+
+.today-movements-chart-modal.modal {
+    align-items: center;
+    justify-content: center;
+    overflow: auto;
+    padding: 16px;
+    box-sizing: border-box;
+}
+
+.today-movements-chart-modal .today-movements-chart-content {
+    max-width: 640px;
+    width: min(94vw, 640px);
+    max-height: min(92vh, 780px);
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.today-movements-chart-modal .modal-header {
+    flex-shrink: 0;
+    padding: 14px 20px;
+}
+
+.today-movements-chart-modal .modal-header i {
+    font-size: 1.2rem;
+    margin-bottom: 0;
+    display: inline;
+    margin-right: 8px;
+}
+
+.today-movements-chart-body {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: auto;
+    padding: 16px 20px 18px;
+    text-align: left;
+}
+
+.today-movements-chart-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    min-height: 32px;
+    flex-shrink: 0;
+}
+
+.today-movements-chart-hint {
+    margin: 0;
+    font-size: 0.85rem;
+    color: #64748b;
+    text-align: right;
+    flex: 1;
+}
+
+.today-movements-chart-wrap {
+    position: relative;
+    width: 100%;
+    max-width: 360px;
+    margin: 0 auto;
+    height: min(42vh, 300px);
+    min-height: 180px;
+    flex: 0 0 auto;
+}
+
+.today-movements-chart-wrap canvas {
+    max-height: 100% !important;
+}
+
+.today-movements-chart-empty,
+.today-movements-chart-total {
+    margin: 0;
+    text-align: center;
+    color: #475569;
+    font-size: 0.95rem;
+    flex-shrink: 0;
+}
+
+.today-movements-chart-empty {
+    color: #94a3b8;
+    padding: 24px 12px;
+}
+
+.today-movements-chart-total strong {
+    color: #0f172a;
+}
+
+.today-movements-export-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    align-items: center;
+    padding: 12px 14px;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    background: #f8fafc;
+    flex-shrink: 0;
+}
+
+.today-movements-export-panel[hidden] {
+    display: none !important;
+}
+
+.today-movements-export-text {
+    margin: 0;
+    text-align: center;
+    color: #334155;
+    font-size: 0.92rem;
+}
+
+.today-movements-export-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: center;
 }
 
 .container {

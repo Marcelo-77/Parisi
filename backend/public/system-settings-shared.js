@@ -51,15 +51,10 @@
     return `linear-gradient(135deg, ${normalized.backgroundColor} 0%, ${normalized.backgroundColorEnd} 100%)`;
   }
 
-  function isWarehousePage() {
-    const path = String(window.location.pathname || '');
-    return /\/warehouse\.html$/i.test(path);
-  }
-
   function areHeaderStatsEnabled(settings) {
     const normalized = normalizeSettings(settings || readCachedSettings() || DEFAULT_SETTINGS);
-    // Setting on + warehouse.html only (Total/Low/Entries/Exits next to logo).
-    return normalized.showHeaderStats !== false && isWarehousePage();
+    // Setting on: Total/Low/Entries/Exits next to logo on all screens.
+    return normalized.showHeaderStats !== false;
   }
 
   function applySystemSettings(settings) {
@@ -69,7 +64,7 @@
     const root = document.documentElement;
     root.style.setProperty('--system-bg-start', normalized.backgroundColor);
     root.style.setProperty('--system-bg-end', normalized.backgroundColorEnd);
-    const hideStats = !(normalized.showHeaderStats !== false && isWarehousePage());
+    const hideStats = normalized.showHeaderStats === false;
     if (document.body) {
       document.body.style.background = buildBackgroundStyle(normalized);
       document.body.classList.toggle('header-stats-hidden', hideStats);
@@ -118,8 +113,7 @@
 
   // Apply cached visibility as soon as this script loads (before late async boot).
   const earlyCached = readCachedSettings();
-  const earlyHide = !(earlyCached ? earlyCached.showHeaderStats !== false : DEFAULT_SETTINGS.showHeaderStats)
-    || !isWarehousePage();
+  const earlyHide = !(earlyCached ? earlyCached.showHeaderStats !== false : DEFAULT_SETTINGS.showHeaderStats);
   document.documentElement.classList.toggle('header-stats-hidden', earlyHide);
   if (document.body) {
     document.body.classList.toggle('header-stats-hidden', earlyHide);
