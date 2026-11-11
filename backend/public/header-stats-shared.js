@@ -2,6 +2,7 @@
   const STORAGE_KEY = 'doubley_header_stats';
   const API_STATS = '/api/warehouse/estatisticas';
   const API_MOVEMENTS = '/api/warehouse/estatisticas/movimentos-hoje';
+  const API_MOVEMENT_LINES = '/api/warehouse/estatisticas/movimentos-hoje-linhas';
   const CHART_CDN = 'https://cdn.jsdelivr.net/npm/chart.js@4.4.8/dist/chart.umd.min.js';
   const CHART_COLORS = [
     '#4facfe', '#43e97b', '#f5576c', '#f093fb', '#667eea',
@@ -286,8 +287,14 @@
     const categoria = chartState.categoria || '';
     chartState.selectedSubcategoria = subcategoria;
     if (els.exportText) {
+      const kindLabel = chartState.tipo === 'saidas' ? 'Exits Today' : 'Entries Today';
+      const sliceQty = Number(
+        (chartState.items || []).find((item) => item.label === subcategoria)?.quantity
+      ) || 0;
       els.exportText.textContent =
-        `Generate a Location Product Excel for ${formatCategoryLabel(categoria)} / ${formatSubcategoryLabel(subcategoria) || subcategoria}?`;
+        `Generate Excel for ${kindLabel} — ${formatCategoryLabel(categoria)} / ${formatSubcategoryLabel(subcategoria) || subcategoria}` +
+        (sliceQty ? ` (qty ${sliceQty})` : '') +
+        '?';
     }
     if (els.exportPanel) els.exportPanel.hidden = false;
   }
@@ -310,8 +317,14 @@
     chartState = { tipo: null, categoria: null, items: [], selectedSubcategoria: null };
   }
 
-  function buildLocationProductExcelXml(list) {
-    const headers = ['Location Code', 'Product Code', 'Qty Current', 'Inserted By', 'Date Time Last Update'];
+  function buildTodayMovementsExcelXml(list, meta = {}) {
+    const headers = [
+      'Location Code',
+      'Product Code',
+      'Qty',
+      'Changed By',
+      'Date Time'
+    ];
     const headerRow = headers.map((header) =>
       `<Cell><Data ss:Type="String">${escapeXml(header)}</Data></Cell>`
     ).join('');
@@ -320,27 +333,40 @@
       const qtyCell = Number.isFinite(qty)
         ? `<Cell><Data ss:Type="Number">${qty}</Data></Cell>`
         : `<Cell><Data ss:Type="String">${escapeXml(record.quantityCurrent ?? 0)}</Data></Cell>`;
-      const lastUpdate = record.lastUpdateDatetime || record.entryDatetime || '';
-      const insertedBy = record.usuarioInseriuNome || record.usuarioInseriu || '';
+      const when = record.lastUpdateDatetime || record.entryDatetime || '';
+      const changedBy = record.usuarioInseriuNome || record.usuarioInseriu || '';
       return `<Row>${[
         `<Cell><Data ss:Type="String">${escapeXml(record.locationCode || '')}</Data></Cell>`,
         `<Cell><Data ss:Type="String">${escapeXml(record.productCode || '')}</Data></Cell>`,
         qtyCell,
-        `<Cell><Data ss:Type="String">${escapeXml(insertedBy)}</Data></Cell>`,
-        `<Cell><Data ss:Type="String">${escapeXml(formatExportDateTime(lastUpdate))}</Data></Cell>`
+        `<Cell><Data ss:Type="String">${escapeXml(changedBy)}</Data></Cell>`,
+        `<Cell><Data ss:Type="String">${escapeXml(formatExportDateTime(when))}</Data></Cell>`
       ].join('')}</Row>`;
     }).join('');
+    const total = Number(meta.total);
+    const totalRow = Number.isFinite(total)
+      ? `<Row>
+<Cell><Data ss:Type="String">TOTAL</Data></Cell>
+<Cell><Data ss:Type="String"></Data></Cell>
+<Cell><Data ss:Type="Number">${total}</Data></Cell>
+<Cell><Data ss:Type="String"></Data></Cell>
+<Cell><Data ss:Type="String"></Data></Cell>
+</Row>`
+      : '';
+    const rowCount = list.length + 1 + (totalRow ? 1 : 0);
+    const sheetName = meta.tipo === 'saidas' ? 'Exits Today' : 'Entries Today';
     return `<?xml version="1.0" encoding="UTF-8"?>
 <?mso-application progid="Excel.Sheet"?>
 <Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet"
  xmlns:o="urn:schemas-microsoft-com:office:office"
  xmlns:x="urn:schemas-microsoft-com:office:excel"
  xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet">
-<Worksheet ss:Name="Location Product">
-<Table ss:ExpandedColumnCount="${headers.length}" ss:ExpandedRowCount="${list.length + 1}">
+<Worksheet ss:Name="${escapeXml(sheetName)}">
+<Table ss:ExpandedColumnCount="${headers.length}" ss:ExpandedRowCount="${rowCount}">
 <Column ss:Width="120"/><Column ss:Width="140"/><Column ss:Width="90"/><Column ss:Width="140"/><Column ss:Width="160"/>
 <Row>${headerRow}</Row>
 ${dataRows}
+${totalRow}
 </Table>
 </Worksheet>
 </Workbook>`;
@@ -349,21 +375,31 @@ ${dataRows}
   async function downloadSubcategoryExcel() {
     const categoria = chartState.categoria;
     const subcategoria = chartState.selectedSubcategoria;
-    if (!categoria || !subcategoria) return;
+    const tipo = chartState.tipo;
+    if (!categoria || !subcategoria || !tipo) return;
+    const chartSliceQty = Number(
+      (chartState.items || []).find((item) => item.label === subcategoria)?.quantity
+    ) || 0;
     const els = getEls();
     if (els.exportBtn) {
       els.exportBtn.disabled = true;
       els.exportBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generating...';
     }
     try {
-      const query = new URLSearchParams({ categoria, subcategoria });
-      const response = await fetch(`/api/location-product?${query.toString()}`, { credentials: 'include' });
+      const query = new URLSearchParams({ tipo, categoria, subcategoria });
+      const response = await fetch(`${API_MOVEMENT_LINES}?${query.toString()}`, { credentials: 'include' });
       const result = await response.json().catch(() => ({}));
-      if (!result.success) throw new Error(result.message || 'Failed to load records');
-      const list = Array.isArray(result.data) ? result.data : [];
+      if (!result.success || !result.data) {
+        throw new Error(result.message || 'Failed to load today movement lines');
+      }
+      const list = Array.isArray(result.data.items) ? result.data.items : [];
+      const total = Number(result.data.total) || list.reduce((sum, row) => sum + (Number(row.quantityCurrent) || 0), 0);
       if (!list.length) {
-        alert('No Location Product records found for this subcategory.');
+        alert('No today movements found for this subcategory.');
         return;
+      }
+      if (chartSliceQty > 0 && total !== chartSliceQty) {
+        console.warn('Excel total differs from chart slice', { chartSliceQty, total, categoria, subcategoria, tipo });
       }
       let userPrefix = 'user';
       try {
@@ -376,12 +412,13 @@ ${dataRows}
       } catch {
         // keep default
       }
-      const xml = buildLocationProductExcelXml(list);
+      const xml = buildTodayMovementsExcelXml(list, { tipo, total });
       const blob = new Blob(['\ufeff', xml], { type: 'application/vnd.ms-excel;charset=utf-8;' });
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
+      const kindPart = tipo === 'saidas' ? 'exits-today' : 'entries-today';
       link.href = url;
-      link.download = `${userPrefix}-location-product-${sanitizeFileNamePart(categoria)}-${sanitizeFileNamePart(subcategoria)}-${formatExportFileDate(new Date())}.xls`;
+      link.download = `${userPrefix}-${kindPart}-${sanitizeFileNamePart(categoria)}-${sanitizeFileNamePart(subcategoria)}-${formatExportFileDate(new Date())}.xls`;
       document.body.appendChild(link);
       link.click();
       link.remove();

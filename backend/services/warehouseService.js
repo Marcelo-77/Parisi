@@ -507,6 +507,117 @@ class WarehouseService {
     };
   }
 
+  /**
+   * Detail lines for today's Entries/Exits of one category + subcategory.
+   * Quantities use the same rules as the pie chart (sum matches the slice).
+   */
+  async obterMovimentosHojeLinhas(tipo, categoria, subcategoria) {
+    const kind = String(tipo || '').trim().toLowerCase();
+    if (kind !== 'entradas' && kind !== 'saidas') {
+      throw new Error('Type must be "entradas" or "saidas"');
+    }
+
+    const categoryFilter = categoria != null && String(categoria).trim() !== ''
+      ? String(categoria).trim().toUpperCase()
+      : null;
+    const subcategoryFilter = subcategoria != null && String(subcategoria).trim() !== ''
+      ? String(subcategoria).trim().toUpperCase()
+      : null;
+
+    if (!categoryFilter || !subcategoryFilter) {
+      throw new Error('Category and subcategory are required');
+    }
+
+    const timezone = String(process.env.APP_TIMEZONE || 'Australia/Sydney').trim() || 'Australia/Sydney';
+    const qtyExpr = kind === 'entradas'
+      ? `
+        CASE
+          WHEN UPPER(COALESCE(l.operation_log, '')) = 'INSERT'
+            THEN GREATEST(COALESCE(l.quantity_current_log, 0), 0)
+          WHEN UPPER(COALESCE(l.operation_log, '')) = 'UPDATE'
+            AND COALESCE(l.quantity_current_log, 0) > COALESCE(l.quantity_current_prev_log, 0)
+            THEN COALESCE(l.quantity_current_log, 0) - COALESCE(l.quantity_current_prev_log, 0)
+          ELSE 0
+        END
+      `
+      : `
+        CASE
+          WHEN UPPER(COALESCE(l.operation_log, '')) = 'DELETE'
+            THEN GREATEST(COALESCE(l.quantity_current_prev_log, 0), 0)
+          WHEN UPPER(COALESCE(l.operation_log, '')) = 'UPDATE'
+            AND COALESCE(l.quantity_current_prev_log, 0) > COALESCE(l.quantity_current_log, 0)
+            THEN COALESCE(l.quantity_current_prev_log, 0) - COALESCE(l.quantity_current_log, 0)
+          ELSE 0
+        END
+      `;
+
+    const params = [timezone];
+    let categorySql = '';
+    if (categoryFilter === 'UNCATEGORIZED') {
+      categorySql = ` AND (wi.categoria IS NULL OR TRIM(wi.categoria) = '')`;
+    } else {
+      params.push(categoryFilter);
+      categorySql = ` AND UPPER(TRIM(COALESCE(wi.categoria, ''))) = $${params.length}`;
+    }
+
+    let subcategorySql = '';
+    if (subcategoryFilter === 'NONE') {
+      subcategorySql = ` AND (wi.subcategoria IS NULL OR TRIM(wi.subcategoria) = '')`;
+    } else {
+      params.push(subcategoryFilter);
+      subcategorySql = ` AND UPPER(TRIM(COALESCE(wi.subcategoria, ''))) = $${params.length}`;
+    }
+
+    const result = await query(
+      `
+      SELECT
+        l.location_code_log AS location_code,
+        l.product_code_log AS product_code,
+        (${qtyExpr})::int AS quantity,
+        COALESCE(
+          CASE
+            WHEN LOWER(TRIM(COALESCE(l.usuario_alterou_log, ''))) = 'root' THEN 'Root'
+            ELSE NULLIF(TRIM(f.nome), '')
+          END,
+          NULLIF(TRIM(l.usuario_alterou_log), ''),
+          ''
+        ) AS changed_by,
+        l.entry_datetime_log AS entry_datetime
+      FROM location_product_log l
+      LEFT JOIN warehouse_items wi
+        ON UPPER(TRIM(wi.codigo)) = UPPER(TRIM(l.product_code_log))
+      LEFT JOIN funcionarios f
+        ON f.id::text = l.usuario_alterou_log
+      WHERE ((l.entry_datetime_log AT TIME ZONE 'UTC') AT TIME ZONE $1)::date
+          = (CURRENT_TIMESTAMP AT TIME ZONE $1)::date
+        ${categorySql}
+        ${subcategorySql}
+        AND (${qtyExpr}) > 0
+      ORDER BY l.entry_datetime_log DESC, l.location_code_log ASC, l.product_code_log ASC
+      `,
+      params
+    );
+
+    const items = (result.rows || []).map((row) => ({
+      locationCode: row.location_code != null ? String(row.location_code) : '',
+      productCode: row.product_code != null ? String(row.product_code) : '',
+      quantityCurrent: parseInt(row.quantity, 10) || 0,
+      usuarioInseriuNome: row.changed_by != null ? String(row.changed_by) : '',
+      lastUpdateDatetime: row.entry_datetime || null,
+      entryDatetime: row.entry_datetime || null
+    }));
+
+    const total = items.reduce((sum, item) => sum + (Number(item.quantityCurrent) || 0), 0);
+
+    return {
+      tipo: kind,
+      categoria: categoryFilter,
+      subcategoria: subcategoryFilter,
+      total,
+      items
+    };
+  }
+
   resolveSubcategoria(categoria, subcategoria) {
     if (!categorySupportsSubcategory(categoria)) {
       return null;

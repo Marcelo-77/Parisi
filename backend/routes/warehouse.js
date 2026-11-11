@@ -156,6 +156,25 @@ router.get('/estatisticas/movimentos-hoje', async (req, res) => {
   }
 });
 
+// GET /api/warehouse/estatisticas/movimentos-hoje-linhas?tipo=entradas|saidas&categoria=...&subcategoria=...
+// Today's movement lines for one subcategory (qty sum matches the pie slice).
+router.get('/estatisticas/movimentos-hoje-linhas', async (req, res) => {
+  try {
+    const tipo = String(req.query.tipo || '').trim().toLowerCase();
+    const categoria = req.query.categoria != null ? String(req.query.categoria).trim() : '';
+    const subcategoria = req.query.subcategoria != null ? String(req.query.subcategoria).trim() : '';
+    const data = await warehouseService.obterMovimentosHojeLinhas(tipo, categoria, subcategoria);
+    res.json({ success: true, data });
+  } catch (error) {
+    console.error('Error getting today movement lines:', error);
+    res.status(400).json({
+      success: false,
+      error: 'Error getting today movement lines',
+      message: error.message
+    });
+  }
+});
+
 // GET /api/warehouse/by-code/:codigo - Buscar item por código
 router.get('/by-code/:codigo', async (req, res) => {
   try {
