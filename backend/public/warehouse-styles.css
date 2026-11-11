@@ -77,16 +77,45 @@
     outline: none;
 }
 
+.today-movements-chart-modal.modal {
+    align-items: center;
+    justify-content: center;
+    overflow: auto;
+    padding: 16px;
+    box-sizing: border-box;
+}
+
 .today-movements-chart-modal .today-movements-chart-content {
     max-width: 640px;
     width: min(94vw, 640px);
+    max-height: min(92vh, 780px);
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.today-movements-chart-modal .modal-header {
+    flex-shrink: 0;
+    padding: 14px 20px;
+}
+
+.today-movements-chart-modal .modal-header i {
+    font-size: 1.2rem;
+    margin-bottom: 0;
+    display: inline;
+    margin-right: 8px;
 }
 
 .today-movements-chart-body {
     display: flex;
     flex-direction: column;
-    gap: 12px;
-    padding-bottom: 8px;
+    gap: 10px;
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: auto;
+    padding: 16px 20px 18px;
+    text-align: left;
 }
 
 .today-movements-chart-toolbar {
@@ -94,7 +123,8 @@
     align-items: center;
     justify-content: space-between;
     gap: 12px;
-    min-height: 36px;
+    min-height: 32px;
+    flex-shrink: 0;
 }
 
 .today-movements-chart-hint {
@@ -108,9 +138,15 @@
 .today-movements-chart-wrap {
     position: relative;
     width: 100%;
-    max-width: 420px;
+    max-width: 360px;
     margin: 0 auto;
-    min-height: 280px;
+    height: min(42vh, 300px);
+    min-height: 180px;
+    flex: 0 0 auto;
+}
+
+.today-movements-chart-wrap canvas {
+    max-height: 100% !important;
 }
 
 .today-movements-chart-empty,
@@ -119,15 +155,28 @@
     text-align: center;
     color: #475569;
     font-size: 0.95rem;
+    flex-shrink: 0;
 }
 
 .today-movements-chart-empty {
     color: #94a3b8;
-    padding: 48px 12px;
+    padding: 24px 12px;
 }
 
 .today-movements-chart-total strong {
     color: #0f172a;
+}
+
+@media (max-height: 700px) {
+    .today-movements-chart-wrap {
+        height: min(36vh, 220px);
+        min-height: 150px;
+    }
+
+    .today-movements-chart-body {
+        padding: 12px 16px 14px;
+        gap: 8px;
+    }
 }
 
 .dev-environment-badge {

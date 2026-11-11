@@ -1483,7 +1483,7 @@ function setupEventListeners() {
             return;
         }
         const todayChartModal = document.getElementById('todayMovementsChartModal');
-        if (todayChartModal && todayChartModal.style.display === 'block') {
+        if (todayChartModal && (todayChartModal.style.display === 'block' || todayChartModal.style.display === 'flex')) {
             closeTodayMovementsChartModal();
             return;
         }
@@ -1636,7 +1636,7 @@ async function openTodayMovementsChart(tipo) {
     if (!els.modal) return;
     todayMovementsChartState.tipo = tipo;
     todayMovementsChartState.categoria = null;
-    els.modal.style.display = 'block';
+    els.modal.style.display = 'flex';
     els.modal.setAttribute('aria-hidden', 'false');
     await loadTodayMovementsChart();
 }
@@ -1718,13 +1718,13 @@ async function loadTodayMovementsChart() {
             },
             options: {
                 responsive: true,
-                maintainAspectRatio: true,
+                maintainAspectRatio: false,
                 plugins: {
                     legend: {
                         position: 'bottom',
                         labels: {
-                            boxWidth: 14,
-                            padding: 12,
+                            boxWidth: 12,
+                            padding: 8,
                             generateLabels(chart) {
                                 const data = chart.data;
                                 if (!data.labels?.length || !data.datasets?.length) return [];
