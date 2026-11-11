@@ -1266,6 +1266,8 @@ function setupEventListeners() {
         }
     });
 
+    setupTodayMovementsChartListeners();
+
     // Modal de Item
     document.getElementById('closeModal').addEventListener('click', () => closeItemModal());
     document.getElementById('cancelBtn').addEventListener('click', () => closeItemModal());
@@ -1480,6 +1482,11 @@ function setupEventListeners() {
             closeProductPhotoZoom();
             return;
         }
+        const todayChartModal = document.getElementById('todayMovementsChartModal');
+        if (todayChartModal && todayChartModal.style.display === 'block') {
+            closeTodayMovementsChartModal();
+            return;
+        }
         const arModal = document.getElementById('productArModal');
         if (arModal && arModal.style.display === 'block') {
             closeProductArModal();
@@ -1576,6 +1583,229 @@ async function loadStatistics() {
         lowStockItemsEl.textContent = '0';
         totalEntradasEl.textContent = '0';
         totalSaidasEl.textContent = '0';
+    }
+}
+
+const TODAY_MOVEMENTS_CHART_COLORS = [
+    '#4facfe', '#43e97b', '#f5576c', '#f093fb', '#667eea',
+    '#fbbf24', '#38bdf8', '#34d399', '#fb7185', '#a78bfa',
+    '#f97316', '#14b8a6', '#eab308', '#6366f1', '#ec4899'
+];
+
+let todayMovementsChart = null;
+let todayMovementsChartState = {
+    tipo: null,
+    categoria: null,
+    level: 'categoria',
+    items: []
+};
+
+function getTodayMovementsChartEls() {
+    return {
+        modal: document.getElementById('todayMovementsChartModal'),
+        title: document.getElementById('todayMovementsChartTitle'),
+        hint: document.getElementById('todayMovementsChartHint'),
+        backBtn: document.getElementById('todayMovementsChartBackBtn'),
+        canvas: document.getElementById('todayMovementsChartCanvas'),
+        empty: document.getElementById('todayMovementsChartEmpty'),
+        total: document.getElementById('todayMovementsChartTotal'),
+        wrap: document.querySelector('.today-movements-chart-wrap')
+    };
+}
+
+function destroyTodayMovementsChart() {
+    if (todayMovementsChart) {
+        todayMovementsChart.destroy();
+        todayMovementsChart = null;
+    }
+}
+
+function closeTodayMovementsChartModal() {
+    const els = getTodayMovementsChartEls();
+    if (els.modal) {
+        els.modal.style.display = 'none';
+        els.modal.setAttribute('aria-hidden', 'true');
+    }
+    destroyTodayMovementsChart();
+    todayMovementsChartState = { tipo: null, categoria: null, level: 'categoria', items: [] };
+}
+
+async function openTodayMovementsChart(tipo) {
+    if (!headerStatsEnabled()) return;
+    const els = getTodayMovementsChartEls();
+    if (!els.modal) return;
+    todayMovementsChartState.tipo = tipo;
+    todayMovementsChartState.categoria = null;
+    els.modal.style.display = 'block';
+    els.modal.setAttribute('aria-hidden', 'false');
+    await loadTodayMovementsChart();
+}
+
+async function loadTodayMovementsChart() {
+    const els = getTodayMovementsChartEls();
+    if (!els.canvas || typeof Chart === 'undefined') {
+        if (els.empty) {
+            els.empty.hidden = false;
+            els.empty.textContent = 'Chart library unavailable.';
+        }
+        return;
+    }
+
+    const tipo = todayMovementsChartState.tipo;
+    const categoria = todayMovementsChartState.categoria;
+    const kindLabel = tipo === 'saidas' ? 'Exits Today' : 'Entries Today';
+    const query = new URLSearchParams({ tipo });
+    if (categoria) query.set('categoria', categoria);
+
+    if (els.title) {
+        els.title.innerHTML = categoria
+            ? `<i class="fas fa-chart-pie"></i> ${kindLabel} — ${categoria}`
+            : `<i class="fas fa-chart-pie"></i> ${kindLabel} by Category`;
+    }
+    if (els.backBtn) els.backBtn.hidden = !categoria;
+    if (els.hint) {
+        els.hint.textContent = categoria
+            ? 'Subcategories for the selected category'
+            : 'Click a category to see subcategories';
+    }
+    if (els.empty) {
+        els.empty.hidden = true;
+        els.empty.textContent = 'No movements today for this view.';
+    }
+    if (els.total) els.total.textContent = '';
+    if (els.wrap) els.wrap.hidden = false;
+
+    try {
+        const response = await fetch(`${API_BASE_URL}/estatisticas/movimentos-hoje?${query.toString()}`);
+        const result = await response.json();
+        if (!result.success || !result.data) {
+            throw new Error(result.message || 'Failed to load chart data');
+        }
+
+        const items = Array.isArray(result.data.items) ? result.data.items : [];
+        todayMovementsChartState.level = result.data.level || (categoria ? 'subcategoria' : 'categoria');
+        todayMovementsChartState.items = items;
+        const total = Number(result.data.total) || items.reduce((sum, item) => sum + (Number(item.quantity) || 0), 0);
+
+        destroyTodayMovementsChart();
+
+        if (!items.length) {
+            if (els.wrap) els.wrap.hidden = true;
+            if (els.empty) els.empty.hidden = false;
+            if (els.total) els.total.textContent = '';
+            return;
+        }
+
+        if (els.total) {
+            els.total.innerHTML = `Total: <strong>${total}</strong>`;
+        }
+
+        const labels = items.map((item) => item.label);
+        const values = items.map((item) => Number(item.quantity) || 0);
+        const colors = labels.map((_, index) => TODAY_MOVEMENTS_CHART_COLORS[index % TODAY_MOVEMENTS_CHART_COLORS.length]);
+        const canDrillDown = !categoria;
+
+        todayMovementsChart = new Chart(els.canvas, {
+            type: 'pie',
+            data: {
+                labels,
+                datasets: [{
+                    data: values,
+                    backgroundColor: colors,
+                    borderColor: '#ffffff',
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: {
+                            boxWidth: 14,
+                            padding: 12,
+                            generateLabels(chart) {
+                                const data = chart.data;
+                                if (!data.labels?.length || !data.datasets?.length) return [];
+                                const dataset = data.datasets[0];
+                                return data.labels.map((label, index) => ({
+                                    text: `${label}: ${dataset.data[index] ?? 0}`,
+                                    fillStyle: Array.isArray(dataset.backgroundColor)
+                                        ? dataset.backgroundColor[index]
+                                        : dataset.backgroundColor,
+                                    strokeStyle: '#fff',
+                                    lineWidth: 1,
+                                    hidden: false,
+                                    index
+                                }));
+                            }
+                        }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label(context) {
+                                const value = Number(context.raw) || 0;
+                                const sum = (context.dataset.data || []).reduce((acc, n) => acc + (Number(n) || 0), 0);
+                                const pct = sum ? Math.round((value / sum) * 1000) / 10 : 0;
+                                return `${context.label}: ${value} (${pct}%)`;
+                            }
+                        }
+                    }
+                },
+                onClick: canDrillDown
+                    ? async (_event, elements) => {
+                        if (!elements?.length) return;
+                        const index = elements[0].index;
+                        const label = todayMovementsChartState.items[index]?.label;
+                        if (!label) return;
+                        todayMovementsChartState.categoria = label;
+                        await loadTodayMovementsChart();
+                    }
+                    : undefined
+            }
+        });
+    } catch (error) {
+        console.error('Error loading today movements chart:', error);
+        destroyTodayMovementsChart();
+        if (els.wrap) els.wrap.hidden = true;
+        if (els.empty) {
+            els.empty.hidden = false;
+            els.empty.textContent = 'Could not load chart data.';
+        }
+    }
+}
+
+function setupTodayMovementsChartListeners() {
+    const entriesBtn = document.getElementById('entriesTodayStatBtn');
+    const exitsBtn = document.getElementById('exitsTodayStatBtn');
+    const closeBtn = document.getElementById('closeTodayMovementsChartModal');
+    const backBtn = document.getElementById('todayMovementsChartBackBtn');
+    const modal = document.getElementById('todayMovementsChartModal');
+
+    if (entriesBtn) {
+        entriesBtn.addEventListener('click', () => {
+            void openTodayMovementsChart('entradas');
+        });
+    }
+    if (exitsBtn) {
+        exitsBtn.addEventListener('click', () => {
+            void openTodayMovementsChart('saidas');
+        });
+    }
+    if (closeBtn) {
+        closeBtn.addEventListener('click', () => closeTodayMovementsChartModal());
+    }
+    if (backBtn) {
+        backBtn.addEventListener('click', () => {
+            todayMovementsChartState.categoria = null;
+            void loadTodayMovementsChart();
+        });
+    }
+    if (modal) {
+        modal.addEventListener('click', (event) => {
+            if (event.target === modal) closeTodayMovementsChartModal();
+        });
     }
 }
 

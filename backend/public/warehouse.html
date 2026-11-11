@@ -30,14 +30,14 @@
                 </div>
                 <div class="double-y-wordmark double-y-wordmark--login double-y-wordmark--header double-y-wordmark--mark" aria-label="Double Y"><img src="DoubleYnew.png" alt="Double Y" class="double-y-logo-mark"></div>
                 <div class="header-stats-right">
-                    <div class="header-stat header-stat-entries">
+                    <button type="button" class="header-stat header-stat-entries header-stat-clickable" id="entriesTodayStatBtn" aria-label="Entries Today by category">
                         <span class="header-stat-value" id="totalEntradas">0</span>
                         <span class="header-stat-label">Entries Today</span>
-                    </div>
-                    <div class="header-stat header-stat-exits">
+                    </button>
+                    <button type="button" class="header-stat header-stat-exits header-stat-clickable" id="exitsTodayStatBtn" aria-label="Exits Today by category">
                         <span class="header-stat-value" id="totalSaidas">0</span>
                         <span class="header-stat-label">Exits Today</span>
-                    </div>
+                    </button>
                 </div>
             </div>
             <div class="header-content">
@@ -723,6 +723,28 @@
             </div>
         </div>
 
+        <div id="todayMovementsChartModal" class="modal today-movements-chart-modal" aria-hidden="true">
+            <div class="modal-content today-movements-chart-content">
+                <div class="modal-header">
+                    <h3 id="todayMovementsChartTitle"><i class="fas fa-chart-pie"></i> Today</h3>
+                    <button type="button" class="modal-close" id="closeTodayMovementsChartModal" aria-label="Close">&times;</button>
+                </div>
+                <div class="modal-body today-movements-chart-body">
+                    <div class="today-movements-chart-toolbar">
+                        <button type="button" class="btn btn-secondary btn-sm" id="todayMovementsChartBackBtn" hidden>
+                            <i class="fas fa-arrow-left"></i> Categories
+                        </button>
+                        <p class="today-movements-chart-hint" id="todayMovementsChartHint">Click a category to see subcategories</p>
+                    </div>
+                    <div class="today-movements-chart-wrap">
+                        <canvas id="todayMovementsChartCanvas" aria-label="Today movements pie chart"></canvas>
+                    </div>
+                    <p class="today-movements-chart-empty" id="todayMovementsChartEmpty" hidden>No movements today for this view.</p>
+                    <p class="today-movements-chart-total" id="todayMovementsChartTotal"></p>
+                </div>
+            </div>
+        </div>
+
         <footer class="footer">
             <p>&copy; 2026 Double-Y IT Systems. All rights reserved.</p>
         </footer>
@@ -754,6 +776,7 @@
             }, 500);
         });
     </script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.8/dist/chart.umd.min.js"></script>
     <script src="section-options.js"></script>
     <script src="bathware-subcategory-options.js"></script>
     <script src="product-ar-glb.js"></script>
