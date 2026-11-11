@@ -306,11 +306,17 @@ async function buscarTodos(filtros = {}) {
   }
   const categoria = filtros.categoria != null ? String(filtros.categoria).trim() : '';
   const subcategoria = filtros.subcategoria != null ? String(filtros.subcategoria).trim() : '';
-  if (categoria) {
+  const categoriaUpper = categoria.toUpperCase();
+  const subcategoriaUpper = subcategoria.toUpperCase();
+  if (categoriaUpper === 'UNCATEGORIZED') {
+    whereClauses.push(`(wi.categoria IS NULL OR TRIM(wi.categoria) = '')`);
+  } else if (categoria) {
     whereClauses.push(`UPPER(TRIM(COALESCE(wi.categoria, ''))) = UPPER(TRIM($${idx++}))`);
     values.push(categoria);
   }
-  if (subcategoria) {
+  if (subcategoriaUpper === 'NONE') {
+    whereClauses.push(`(wi.subcategoria IS NULL OR TRIM(wi.subcategoria) = '')`);
+  } else if (subcategoria) {
     whereClauses.push(`UPPER(TRIM(COALESCE(wi.subcategoria, ''))) = UPPER(TRIM($${idx++}))`);
     values.push(subcategoria);
   }

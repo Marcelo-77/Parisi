@@ -167,6 +167,36 @@
     color: #0f172a;
 }
 
+.today-movements-export-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    align-items: center;
+    padding: 12px 14px;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    background: #f8fafc;
+    flex-shrink: 0;
+}
+
+.today-movements-export-panel[hidden] {
+    display: none !important;
+}
+
+.today-movements-export-text {
+    margin: 0;
+    text-align: center;
+    color: #334155;
+    font-size: 0.92rem;
+}
+
+.today-movements-export-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: center;
+}
+
 @media (max-height: 700px) {
     .today-movements-chart-wrap {
         height: min(36vh, 220px);

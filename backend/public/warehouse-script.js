@@ -1597,8 +1597,69 @@ let todayMovementsChartState = {
     tipo: null,
     categoria: null,
     level: 'categoria',
-    items: []
+    items: [],
+    selectedSubcategoria: null
 };
+
+function formatExportDateTime(value) {
+    if (!value) return '';
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return String(value);
+    const pad = (n) => String(n).padStart(2, '0');
+    return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
+}
+
+function getLocationProductInsertedByName(record) {
+    if (!record) return '';
+    return record.usuarioInseriuNome || record.usuarioInseriu || record.usuario_inseriu_nome || record.usuario_inseriu || '';
+}
+
+function buildLocationProductExcelXml(list) {
+    const headers = [
+        'Location Code',
+        'Product Code',
+        'Qty Current',
+        'Inserted By',
+        'Date Time Last Update'
+    ];
+    const headerRow = headers.map((header) =>
+        `<Cell><Data ss:Type="String">${escapeXml(header)}</Data></Cell>`
+    ).join('');
+
+    const dataRows = list.map((record) => {
+        const qty = Number(record.quantityCurrent);
+        const qtyCell = Number.isFinite(qty)
+            ? `<Cell><Data ss:Type="Number">${qty}</Data></Cell>`
+            : `<Cell><Data ss:Type="String">${escapeXml(record.quantityCurrent ?? 0)}</Data></Cell>`;
+        const lastUpdate = record.lastUpdateDatetime || record.entryDatetime || '';
+        return `<Row>${[
+            `<Cell><Data ss:Type="String">${escapeXml(record.locationCode || '')}</Data></Cell>`,
+            `<Cell><Data ss:Type="String">${escapeXml(record.productCode || '')}</Data></Cell>`,
+            qtyCell,
+            `<Cell><Data ss:Type="String">${escapeXml(getLocationProductInsertedByName(record))}</Data></Cell>`,
+            `<Cell><Data ss:Type="String">${escapeXml(formatExportDateTime(lastUpdate))}</Data></Cell>`
+        ].join('')}</Row>`;
+    }).join('');
+
+    return `<?xml version="1.0" encoding="UTF-8"?>
+<?mso-application progid="Excel.Sheet"?>
+<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet"
+ xmlns:o="urn:schemas-microsoft-com:office:office"
+ xmlns:x="urn:schemas-microsoft-com:office:excel"
+ xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet">
+<Worksheet ss:Name="Location Product">
+<Table ss:ExpandedColumnCount="${headers.length}" ss:ExpandedRowCount="${list.length + 1}">
+<Column ss:Width="120"/>
+<Column ss:Width="140"/>
+<Column ss:Width="90"/>
+<Column ss:Width="140"/>
+<Column ss:Width="160"/>
+<Row>${headerRow}</Row>
+${dataRows}
+</Table>
+</Worksheet>
+</Workbook>`;
+}
 
 function getTodayMovementsChartEls() {
     return {
@@ -1609,8 +1670,86 @@ function getTodayMovementsChartEls() {
         canvas: document.getElementById('todayMovementsChartCanvas'),
         empty: document.getElementById('todayMovementsChartEmpty'),
         total: document.getElementById('todayMovementsChartTotal'),
-        wrap: document.querySelector('.today-movements-chart-wrap')
+        wrap: document.querySelector('.today-movements-chart-wrap'),
+        exportPanel: document.getElementById('todayMovementsExportPanel'),
+        exportText: document.getElementById('todayMovementsExportText'),
+        exportBtn: document.getElementById('todayMovementsExportExcelBtn'),
+        exportCancelBtn: document.getElementById('todayMovementsExportCancelBtn')
     };
+}
+
+function hideTodayMovementsExportPanel() {
+    const els = getTodayMovementsChartEls();
+    todayMovementsChartState.selectedSubcategoria = null;
+    if (els.exportPanel) els.exportPanel.hidden = true;
+    if (els.exportText) els.exportText.textContent = '';
+}
+
+function showTodayMovementsExportOption(subcategoria) {
+    const els = getTodayMovementsChartEls();
+    const categoria = todayMovementsChartState.categoria || '';
+    const subLabel = formatSubcategory(subcategoria) || subcategoria || 'NONE';
+    const catLabel = formatCategory(categoria) || categoria || 'Category';
+    todayMovementsChartState.selectedSubcategoria = subcategoria;
+    if (els.exportText) {
+        els.exportText.textContent =
+            `Generate a Location Product Excel for ${catLabel} / ${subLabel}?`;
+    }
+    if (els.exportPanel) els.exportPanel.hidden = false;
+}
+
+async function downloadTodayMovementsSubcategoryExcel() {
+    const categoria = todayMovementsChartState.categoria;
+    const subcategoria = todayMovementsChartState.selectedSubcategoria;
+    if (!categoria || !subcategoria) return;
+
+    const els = getTodayMovementsChartEls();
+    const exportBtn = els.exportBtn;
+    if (exportBtn) {
+        exportBtn.disabled = true;
+        exportBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generating...';
+    }
+
+    try {
+        const query = new URLSearchParams({
+            categoria,
+            subcategoria
+        });
+        const response = await fetch(`/api/location-product?${query.toString()}`);
+        const result = await response.json();
+        if (!result.success) {
+            throw new Error(result.message || 'Failed to load location product records');
+        }
+        const list = Array.isArray(result.data) ? result.data : [];
+        if (!list.length) {
+            alert('No Location Product records found for this subcategory.');
+            return;
+        }
+
+        const userPrefix = await getLoggedUserExportPrefix();
+        const xml = buildLocationProductExcelXml(list);
+        const blob = new Blob(['\ufeff', xml], {
+            type: 'application/vnd.ms-excel;charset=utf-8;'
+        });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        const catPart = sanitizeFileNamePart(categoria);
+        const subPart = sanitizeFileNamePart(subcategoria);
+        link.href = url;
+        link.download = `${userPrefix}-location-product-${catPart}-${subPart}-${formatExportFileDate(new Date())}.xls`;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        URL.revokeObjectURL(url);
+    } catch (error) {
+        console.error('Error exporting subcategory location product Excel:', error);
+        alert('Could not generate Excel for this subcategory.');
+    } finally {
+        if (exportBtn) {
+            exportBtn.disabled = false;
+            exportBtn.innerHTML = '<i class="fas fa-file-excel"></i> Generate Excel';
+        }
+    }
 }
 
 function destroyTodayMovementsChart() {
@@ -1627,7 +1766,14 @@ function closeTodayMovementsChartModal() {
         els.modal.setAttribute('aria-hidden', 'true');
     }
     destroyTodayMovementsChart();
-    todayMovementsChartState = { tipo: null, categoria: null, level: 'categoria', items: [] };
+    hideTodayMovementsExportPanel();
+    todayMovementsChartState = {
+        tipo: null,
+        categoria: null,
+        level: 'categoria',
+        items: [],
+        selectedSubcategoria: null
+    };
 }
 
 async function openTodayMovementsChart(tipo) {
@@ -1636,6 +1782,7 @@ async function openTodayMovementsChart(tipo) {
     if (!els.modal) return;
     todayMovementsChartState.tipo = tipo;
     todayMovementsChartState.categoria = null;
+    hideTodayMovementsExportPanel();
     els.modal.style.display = 'flex';
     els.modal.setAttribute('aria-hidden', 'false');
     await loadTodayMovementsChart();
@@ -1665,9 +1812,10 @@ async function loadTodayMovementsChart() {
     if (els.backBtn) els.backBtn.hidden = !categoria;
     if (els.hint) {
         els.hint.textContent = categoria
-            ? 'Subcategories for the selected category'
+            ? 'Click a subcategory to export Location Product Excel'
             : 'Click a category to see subcategories';
     }
+    if (!categoria) hideTodayMovementsExportPanel();
     if (els.empty) {
         els.empty.hidden = true;
         els.empty.textContent = 'No movements today for this view.';
@@ -1704,6 +1852,7 @@ async function loadTodayMovementsChart() {
         const values = items.map((item) => Number(item.quantity) || 0);
         const colors = labels.map((_, index) => TODAY_MOVEMENTS_CHART_COLORS[index % TODAY_MOVEMENTS_CHART_COLORS.length]);
         const canDrillDown = !categoria;
+        const canExportSubcategory = Boolean(categoria);
 
         todayMovementsChart = new Chart(els.canvas, {
             type: 'pie',
@@ -1753,16 +1902,20 @@ async function loadTodayMovementsChart() {
                         }
                     }
                 },
-                onClick: canDrillDown
-                    ? async (_event, elements) => {
-                        if (!elements?.length) return;
-                        const index = elements[0].index;
-                        const label = todayMovementsChartState.items[index]?.label;
-                        if (!label) return;
+                onClick: async (_event, elements) => {
+                    if (!elements?.length) return;
+                    const index = elements[0].index;
+                    const label = todayMovementsChartState.items[index]?.label;
+                    if (!label) return;
+                    if (canDrillDown) {
                         todayMovementsChartState.categoria = label;
                         await loadTodayMovementsChart();
+                        return;
                     }
-                    : undefined
+                    if (canExportSubcategory) {
+                        showTodayMovementsExportOption(label);
+                    }
+                }
             }
         });
     } catch (error) {
@@ -1799,7 +1952,20 @@ function setupTodayMovementsChartListeners() {
     if (backBtn) {
         backBtn.addEventListener('click', () => {
             todayMovementsChartState.categoria = null;
+            hideTodayMovementsExportPanel();
             void loadTodayMovementsChart();
+        });
+    }
+    const exportBtn = document.getElementById('todayMovementsExportExcelBtn');
+    const exportCancelBtn = document.getElementById('todayMovementsExportCancelBtn');
+    if (exportBtn) {
+        exportBtn.addEventListener('click', () => {
+            void downloadTodayMovementsSubcategoryExcel();
+        });
+    }
+    if (exportCancelBtn) {
+        exportCancelBtn.addEventListener('click', () => {
+            hideTodayMovementsExportPanel();
         });
     }
     if (modal) {
