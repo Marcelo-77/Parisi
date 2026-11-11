@@ -1,15 +1,19 @@
 (function () {
   const TAB_SESSION_KEY = 'doubley_tab_auth';
 
-  // Hide header stats before they paint when System Settings has them disabled.
+  // Header stats only on warehouse.html when System Settings enables them.
   try {
+    const path = String(window.location.pathname || '');
+    const isWarehouse = /\/warehouse\.html$/i.test(path);
+    let showHeaderStats = true;
     const raw = localStorage.getItem('doubley_system_settings');
     if (raw) {
       const parsed = JSON.parse(raw);
-      if (parsed && parsed.showHeaderStats === false) {
-        document.documentElement.classList.add('header-stats-hidden');
-        if (document.body) document.body.classList.add('header-stats-hidden');
-      }
+      if (parsed && parsed.showHeaderStats === false) showHeaderStats = false;
+    }
+    if (!isWarehouse || !showHeaderStats) {
+      document.documentElement.classList.add('header-stats-hidden');
+      if (document.body) document.body.classList.add('header-stats-hidden');
     }
   } catch {
     // ignore storage/parse errors

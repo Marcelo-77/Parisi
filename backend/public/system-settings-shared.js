@@ -51,9 +51,15 @@
     return `linear-gradient(135deg, ${normalized.backgroundColor} 0%, ${normalized.backgroundColorEnd} 100%)`;
   }
 
+  function isWarehousePage() {
+    const path = String(window.location.pathname || '');
+    return /\/warehouse\.html$/i.test(path);
+  }
+
   function areHeaderStatsEnabled(settings) {
     const normalized = normalizeSettings(settings || readCachedSettings() || DEFAULT_SETTINGS);
-    return normalized.showHeaderStats !== false;
+    // Setting on + warehouse.html only (Total/Low/Entries/Exits next to logo).
+    return normalized.showHeaderStats !== false && isWarehousePage();
   }
 
   function applySystemSettings(settings) {
@@ -63,11 +69,12 @@
     const root = document.documentElement;
     root.style.setProperty('--system-bg-start', normalized.backgroundColor);
     root.style.setProperty('--system-bg-end', normalized.backgroundColorEnd);
+    const hideStats = !(normalized.showHeaderStats !== false && isWarehousePage());
     if (document.body) {
       document.body.style.background = buildBackgroundStyle(normalized);
-      document.body.classList.toggle('header-stats-hidden', !normalized.showHeaderStats);
+      document.body.classList.toggle('header-stats-hidden', hideStats);
     }
-    root.classList.toggle('header-stats-hidden', !normalized.showHeaderStats);
+    root.classList.toggle('header-stats-hidden', hideStats);
     window.dispatchEvent(new CustomEvent('doubley:system-settings-applied', { detail: normalized }));
   }
 
@@ -111,10 +118,10 @@
 
   // Apply cached visibility as soon as this script loads (before late async boot).
   const earlyCached = readCachedSettings();
-  if (earlyCached) {
-    document.documentElement.classList.toggle('header-stats-hidden', !earlyCached.showHeaderStats);
-    if (document.body) {
-      document.body.classList.toggle('header-stats-hidden', !earlyCached.showHeaderStats);
-    }
+  const earlyHide = !(earlyCached ? earlyCached.showHeaderStats !== false : DEFAULT_SETTINGS.showHeaderStats)
+    || !isWarehousePage();
+  document.documentElement.classList.toggle('header-stats-hidden', earlyHide);
+  if (document.body) {
+    document.body.classList.toggle('header-stats-hidden', earlyHide);
   }
 })(window);
