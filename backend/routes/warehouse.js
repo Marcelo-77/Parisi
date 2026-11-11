@@ -139,6 +139,23 @@ router.get('/estatisticas', async (req, res) => {
   }
 });
 
+// GET /api/warehouse/estatisticas/movimentos-hoje?tipo=entradas|saidas&categoria=BATHWARE
+router.get('/estatisticas/movimentos-hoje', async (req, res) => {
+  try {
+    const tipo = String(req.query.tipo || '').trim().toLowerCase();
+    const categoria = req.query.categoria != null ? String(req.query.categoria).trim() : null;
+    const data = await warehouseService.obterMovimentosHojeDetalhe(tipo, categoria || null);
+    res.json({ success: true, data });
+  } catch (error) {
+    console.error('Error getting today movements detail:', error);
+    res.status(400).json({
+      success: false,
+      error: 'Error getting today movements detail',
+      message: error.message
+    });
+  }
+});
+
 // GET /api/warehouse/by-code/:codigo - Buscar item por código
 router.get('/by-code/:codigo', async (req, res) => {
   try {
