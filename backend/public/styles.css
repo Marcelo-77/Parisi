@@ -18,6 +18,9 @@ body {
     min-height: 100vh;
 }
 
+/* Header stats (next to Double Y logo) only on warehouse.html when enabled */
+body:not(.warehouse-page) .header-stats-left .header-stat,
+body:not(.warehouse-page) .header-stats-right .header-stat,
 html.header-stats-hidden .header-stats-left .header-stat,
 html.header-stats-hidden .header-stats-right .header-stat,
 body.header-stats-hidden .header-stats-left .header-stat,
