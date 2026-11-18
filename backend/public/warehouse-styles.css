@@ -2759,6 +2759,10 @@ input.input-readonly {
     transform: translateX(-50%);
     bottom: 16px;
     white-space: nowrap;
+    z-index: 5;
+    pointer-events: auto;
+    min-height: 44px;
+    padding: 10px 16px;
 }
 
 .product-ar-status {
