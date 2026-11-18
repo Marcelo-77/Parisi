@@ -1,0 +1,141 @@
+.search-product-ar-page .spar-panel {
+    width: 100%;
+    max-width: none;
+}
+
+.spar-help {
+    color: #555;
+    margin: 0 0 14px;
+    line-height: 1.45;
+}
+
+.spar-search-row {
+    display: grid;
+    grid-template-columns: minmax(160px, 200px) minmax(220px, 1fr) auto;
+    gap: 14px;
+    align-items: end;
+}
+
+.spar-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.spar-actions-label {
+    display: block;
+    visibility: hidden;
+}
+
+.spar-status {
+    margin: 12px 0 0;
+    min-height: 1.2em;
+    color: #475569;
+    font-size: 0.92rem;
+}
+
+.spar-status.is-error {
+    color: #b91c1c;
+}
+
+.spar-results {
+    margin-top: 18px;
+}
+
+.spar-count {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 2rem;
+    padding: 2px 10px;
+    border-radius: 999px;
+    background: rgba(15, 23, 42, 0.08);
+    font-weight: 700;
+    font-size: 0.9rem;
+}
+
+.spar-table .spar-actions-cell {
+    white-space: nowrap;
+}
+
+.spar-table .btn {
+    margin: 0 4px 4px 0;
+}
+
+.spar-table .btn.is-disabled,
+.spar-table .btn:disabled,
+#sparViewArBtn.is-disabled,
+#sparViewArBtn:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
+.spar-photo-yes {
+    color: #15803d;
+    font-weight: 600;
+}
+
+.spar-photo-no {
+    color: #94a3b8;
+}
+
+.spar-view-content {
+    max-width: 720px;
+    width: min(94vw, 720px);
+}
+
+.spar-view-body {
+    display: grid;
+    gap: 14px;
+    text-align: left;
+}
+
+.spar-view-grid {
+    display: grid;
+    grid-template-columns: minmax(140px, 220px) 1fr;
+    gap: 16px;
+    align-items: start;
+}
+
+.spar-view-photo {
+    width: 100%;
+    max-height: 220px;
+    object-fit: contain;
+    border-radius: 10px;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+}
+
+.spar-view-photo-empty {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 160px;
+    border-radius: 10px;
+    background: #f8fafc;
+    border: 1px dashed #cbd5e1;
+    color: #94a3b8;
+    font-size: 0.9rem;
+}
+
+.spar-view-meta p {
+    margin: 0 0 8px;
+    color: #334155;
+}
+
+.spar-view-meta .detail-label {
+    display: inline-block;
+    min-width: 96px;
+    color: #64748b;
+    font-weight: 600;
+}
+
+@media (max-width: 900px) {
+    .spar-search-row {
+        grid-template-columns: 1fr;
+    }
+
+    .spar-view-grid {
+        grid-template-columns: 1fr;
+    }
+}

@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Double-Y Warehouse System - Search Product AR</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="warehouse-styles.css">
+    <link rel="stylesheet" href="pesquisa-styles.css">
+    <link rel="stylesheet" href="search-product-ar-styles.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body class="search-product-ar-page">
+    <script src="auth-check.js"></script>
+    <script src="header-menu.js"></script>
+    <script src="menu-access.js"></script>
+    <script src="double-y-logo-effect.js"></script>
+    <script src="dev-environment-badge.js"></script>
+    <div class="container">
+        <header class="header">
+            <div class="header-stats-row">
+                <div class="header-stats-left">
+                    <div class="header-stat header-stat-total">
+                        <span class="header-stat-value" id="totalItems">0</span>
+                        <span class="header-stat-label">Total Items</span>
+                    </div>
+                    <div class="header-stat header-stat-low">
+                        <span class="header-stat-value" id="lowStockItems">0</span>
+                        <span class="header-stat-label">Low Stock</span>
+                    </div>
+                </div>
+                <div class="double-y-wordmark" aria-label="Double Y">
+                    <img src="doubley-glyph.png" alt="" class="double-y-glyph" aria-hidden="true">
+                    <span class="double-y-name">Double Y</span>
+                    <img src="doubley-glyph-bottom.png" alt="" class="double-y-glyph double-y-glyph-bottom" aria-hidden="true">
+                </div>
+                <div class="header-stats-right">
+                    <div class="header-stat header-stat-entries">
+                        <span class="header-stat-value" id="totalEntradas">0</span>
+                        <span class="header-stat-label">Entries Today</span>
+                    </div>
+                    <div class="header-stat header-stat-exits">
+                        <span class="header-stat-value" id="totalSaidas">0</span>
+                        <span class="header-stat-label">Exits Today</span>
+                    </div>
+                </div>
+            </div>
+            <div class="header-content">
+                <h1><i class="fas fa-warehouse"></i> Double-Y Warehouse System</h1>
+                <p class="header-search-users-label">Search Product AR — Augmented Reality</p>
+                <div class="header-actions" id="headerActionsHost"></div>
+            </div>
+        </header>
+
+        <main class="main-content">
+            <div class="form-container spar-panel">
+                <div class="filters-container">
+                    <div class="filters-header">
+                        <h2><i class="fas fa-cube"></i> Search Product AR</h2>
+                    </div>
+                    <div class="filters-content show">
+                        <p class="spar-help">
+                            Search by <strong>Code</strong>, <strong>Name</strong> or <strong>Barcode</strong>.
+                            Use <strong>With Photo</strong> to list products that already have a linked photo (search term optional).
+                            Open <strong>View</strong> for product details, or <strong>AR</strong> when a photo is available.
+                        </p>
+                        <div class="spar-search-row">
+                            <div class="filter-group">
+                                <label for="sparSearchBy"><i class="fas fa-filter"></i> Search By</label>
+                                <select id="sparSearchBy">
+                                    <option value="codigo" selected>Code</option>
+                                    <option value="nome">Name</option>
+                                    <option value="barcode">Barcode</option>
+                                    <option value="withPhoto">With Photo</option>
+                                </select>
+                            </div>
+                            <div class="filter-group spar-term-group">
+                                <label for="sparSearchInput"><i class="fas fa-search"></i> Product</label>
+                                <input type="text" id="sparSearchInput" placeholder="Enter code..." autocomplete="off">
+                            </div>
+                            <div class="filter-group spar-actions-group">
+                                <label class="spar-actions-label">&nbsp;</label>
+                                <div class="spar-actions">
+                                    <button type="button" class="btn btn-primary" id="sparSearchBtn">
+                                        <i class="fas fa-search"></i> Search
+                                    </button>
+                                    <button type="button" class="btn btn-secondary" id="sparClearBtn">
+                                        <i class="fas fa-eraser"></i> Clear
+                                    </button>
+                                    <button type="button" class="btn btn-secondary location-page-close-btn" id="sparCloseBtn" title="Close">
+                                        <i class="fas fa-door-open"></i> Close
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <p id="sparStatus" class="spar-status" aria-live="polite"></p>
+                    </div>
+                </div>
+
+                <div class="results-container spar-results">
+                    <div class="results-header">
+                        <h3><i class="fas fa-boxes-stacked"></i> Products</h3>
+                        <span id="sparResultsCount" class="spar-count">0</span>
+                    </div>
+                    <div class="results-content">
+                        <div class="table-container">
+                            <table class="data-table spar-table" id="sparProductsTable">
+                                <thead>
+                                    <tr>
+                                        <th>Code</th>
+                                        <th>Name</th>
+                                        <th>Category</th>
+                                        <th>Photo</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="sparProductsBody">
+                                    <tr>
+                                        <td colspan="5" class="empty-state">Use filters and click Search to load products.</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <div id="sparViewModal" class="modal spar-view-modal" aria-hidden="true">
+            <div class="modal-content spar-view-content">
+                <div class="modal-header success">
+                    <h3><i class="fas fa-info-circle"></i> Product View</h3>
+                    <button type="button" class="modal-close" id="sparViewCloseBtn" aria-label="Close">&times;</button>
+                </div>
+                <div class="modal-body spar-view-body" id="sparViewBody"></div>
+                <div class="modal-footer form-actions">
+                    <button type="button" class="btn btn-primary" id="sparViewArBtn" disabled>
+                        <i class="fas fa-cube"></i> AR — Augmented Reality
+                    </button>
+                    <button type="button" class="btn btn-secondary" id="sparViewCloseFooterBtn">
+                        <i class="fas fa-times"></i> Close
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div id="productArModal" class="modal product-ar-modal" aria-hidden="true">
+            <div class="modal-content product-ar-modal-content">
+                <div class="modal-header success">
+                    <h3><i class="fas fa-cube"></i> AR – Augmented Reality</h3>
+                    <button type="button" class="modal-close" id="closeProductArModal" aria-label="Close">&times;</button>
+                </div>
+                <div class="modal-body product-ar-modal-body">
+                    <p id="productArProductLabel" class="product-ar-product-label">-</p>
+                    <div id="productArPhotoWrap" class="product-ar-photo-wrap" hidden>
+                        <img id="productArPhotoImg" class="product-ar-photo-img" src="" alt="Product photo">
+                    </div>
+                    <p class="product-ar-help">
+                        The product photo is cut out and placed in AR. Use a photo on a plain light background for best results.
+                    </p>
+                    <ul class="product-ar-platforms">
+                        <li><strong>iPhone (Safari):</strong> Quick Look — tap the shutter icon to save a photo</li>
+                        <li><strong>Android (Chrome):</strong> Scene Viewer — tap the camera icon for photo or video</li>
+                    </ul>
+                    <model-viewer
+                        id="productArViewer"
+                        class="product-ar-viewer"
+                        src="/models/product-box.glb"
+                        alt="Product 3D model for augmented reality"
+                        ar
+                        ar-modes="scene-viewer quick-look webxr"
+                        ar-scale="fixed"
+                        camera-controls
+                        auto-rotate
+                        rotation-per-second="28deg"
+                        touch-action="pan-y"
+                        shadow-intensity="1.4"
+                        exposure="1.05"
+                    >
+                        <button slot="ar-button" type="button" class="btn btn-primary product-ar-native-btn">
+                            <i class="fas fa-camera"></i> View in your space
+                        </button>
+                    </model-viewer>
+                    <p id="productArStatus" class="product-ar-status" role="status"></p>
+                </div>
+                <div class="modal-footer form-actions">
+                    <button type="button" id="productArLaunchBtn" class="btn btn-primary" disabled>
+                        <i class="fas fa-camera"></i> Open Camera AR
+                    </button>
+                    <button type="button" id="closeProductArFooterBtn" class="btn btn-secondary">
+                        <i class="fas fa-times"></i> Close
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <footer class="footer">
+            <p>&copy; 2026 Double-Y IT Systems. All rights reserved.</p>
+        </footer>
+    </div>
+
+    <script src="section-options.js"></script>
+    <script src="product-ar-glb.js"></script>
+    <script type="module" src="https://cdn.jsdelivr.net/npm/@google/model-viewer@4.0.0/dist/model-viewer.min.js"></script>
+    <script src="search-product-ar-script.js"></script>
+</body>
+</html>

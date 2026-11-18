@@ -87,6 +87,7 @@ router.get('/', [
   query('barcode').optional().isLength({ min: 1 }).trim(),
   query('localizacao').optional().isLength({ min: 1 }).trim(),
   query('withLocation').optional().isIn(['true', '1', 'yes']),
+  query('withPhoto').optional().isIn(['true', '1', 'yes']),
   query('codigoExact').optional().isIn(['true', '1', 'yes', 'false', '0', 'no']),
   query('ordenarPor').optional().isIn(['nome', 'codigo', 'categoria', 'quantidade']),
   query('direcao').optional().isIn(['asc', 'desc'])
@@ -99,6 +100,7 @@ router.get('/', [
       nome: req.query.nome,
       barcode: req.query.barcode,
       withLocation: ['true', '1', 'yes'].includes(String(req.query.withLocation || '').toLowerCase()),
+      withPhoto: ['true', '1', 'yes'].includes(String(req.query.withPhoto || '').toLowerCase()),
       codigoExact: ['true', '1', 'yes'].includes(String(req.query.codigoExact || '').toLowerCase()),
       ordenarPor: req.query.ordenarPor,
       direcao: req.query.direcao

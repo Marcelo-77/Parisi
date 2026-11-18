@@ -369,6 +369,7 @@ async function initDatabase() {
       { application: 'warehouse.html', menuName: 'Product' },
       { application: 'special-search-product.html', menuName: 'Product_Special_Search' },
       { application: 'Search-Product-Tablet.html', menuName: 'Product_Search_Tablet' },
+      { application: 'Search-Product-AR.html', menuName: 'Product_Search_AR' },
       { application: 'search-special-location-a21x.html', menuName: 'Location_Search_Special_A21X' },
       { application: 'upload-warehouse-map.html', menuName: 'Applications_Upload_Warehouse_Map' },
       { application: 'System-Documentation.html', menuName: 'Applications_System_Documentation' },
