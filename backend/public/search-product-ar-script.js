@@ -93,16 +93,11 @@
     if (!els.productsBody || els.productsBody.dataset.actionsBound === 'true') return;
     els.productsBody.dataset.actionsBound = 'true';
     els.productsBody.addEventListener('click', (event) => {
-      const button = event.target.closest('.spar-view-btn, .spar-ar-btn');
+      const button = event.target.closest('.spar-ar-btn');
       if (!button || button.disabled) return;
       const id = button.getAttribute('data-id');
       const item = products.find((row) => String(row.id) === String(id));
-      if (!item) return;
-      if (button.classList.contains('spar-ar-btn')) {
-        void openProductArModal(item);
-        return;
-      }
-      void openViewModal(item);
+      if (item) void openProductArModal(item);
     });
   }
 
@@ -138,10 +133,7 @@
         </tr>
         <tr class="item-actions-row">
           <td colspan="4" class="action-buttons-cell">
-            <div class="action-buttons">
-              <button type="button" class="btn-action view spar-view-btn" data-id="${escapeHtml(item.id)}" title="View details">
-                <i class="fas fa-eye"></i> <span>View</span>
-              </button>
+            <div class="action-buttons spar-ar-only">
               <button type="button" class="btn-action ar spar-ar-btn ${arClass}" data-id="${escapeHtml(item.id)}" ${arDisabled} title="${arTitle}">
                 <i class="fas fa-cube"></i> <span>AR</span>
               </button>
@@ -505,41 +497,64 @@
       else els.arViewer.removeAttribute('poster');
 
       productArPublicModelUrl = `${window.location.origin}/public-ar/${currentItem.id}.glb`;
-      configureArModes(els.arViewer, detectArPlatform());
+      const platform = detectArPlatform();
+      configureArModes(els.arViewer, platform);
       els.arViewer.removeAttribute('ios-src');
 
-      let previewUrl = '/models/product-box.glb';
+      // WebXR needs a local model with the photo baked in. Transparent cutouts often
+      // look empty in WebXR, so Android uses an opaque photo panel.
+      let previewUrl = null;
       let glbBase64 = null;
+      let usedPhotoModel = false;
       if (photoSrc && window.WarehouseProductArGlb && typeof window.WarehouseProductArGlb.createProductPhotoGlbAssets === 'function') {
         setProductArStatus('Building photo model…');
+        const forWebXr = platform.isAndroid || (!platform.isIOS && !platform.isAndroid);
         const assets = await withTimeout(
           window.WarehouseProductArGlb.createProductPhotoGlbAssets(photoSrc, {
-            maxSideMeters: 0.42,
-            depthMeters: 0.012,
-            maxImageEdge: 512,
-            cutout: true,
-            removeBackground: true
+            maxSideMeters: 0.45,
+            depthMeters: forWebXr ? 0.035 : 0.012,
+            maxImageEdge: 768,
+            cutout: !forWebXr,
+            removeBackground: !forWebXr
           }),
-          12000,
+          20000,
           'Timed out building the photo model'
         ).catch((error) => {
           console.warn('Client AR GLB build failed:', error);
           return null;
         });
-        if (assets && assets.base64) glbBase64 = assets.base64;
+        if (assets && assets.base64) {
+          glbBase64 = assets.base64;
+          usedPhotoModel = true;
+          if (assets.objectUrl) {
+            revokeProductArModelUrl();
+            productArModelObjectUrl = assets.objectUrl;
+            previewUrl = assets.objectUrl;
+          }
+        }
       }
 
-      setProductArStatus('Preparing AR for photo capture…');
-      previewUrl = toPublicHttpsModelUrl(
-        await resolveArModelUrl(currentItem, glbBase64),
-        currentItem.id
-      );
-      productArPublicModelUrl = previewUrl;
+      setProductArStatus('Preparing AR model…');
+      // Cache on server in the background (for public URL); WebXR prefers the local blob.
+      if (glbBase64) {
+        void resolveArModelUrl(currentItem, glbBase64).then((publicUrl) => {
+          if (publicUrl) productArPublicModelUrl = toPublicHttpsModelUrl(publicUrl, currentItem.id);
+        }).catch(() => {});
+      }
+
+      if (!previewUrl) {
+        previewUrl = toPublicHttpsModelUrl(
+          await resolveArModelUrl(currentItem, glbBase64),
+          currentItem.id
+        );
+        productArPublicModelUrl = previewUrl;
+      }
+
       els.arViewer.src = previewUrl;
 
       await waitForModelViewerDefined(10000);
       try {
-        await waitForViewerModel(els.arViewer, 12000);
+        await waitForViewerModel(els.arViewer, 15000);
       } catch (loadError) {
         console.warn('AR viewer load warning:', loadError);
       }
@@ -547,13 +562,12 @@
       productArReady = true;
       setProductArLaunchEnabled(true);
 
-      const platform = detectArPlatform();
-      if (!previewUrl || previewUrl.endsWith('/models/product-box.glb')) {
-        setProductArStatus('Could not embed the photo quickly. Using default model — tap Open Camera AR.', true);
+      if (!usedPhotoModel || !previewUrl || String(previewUrl).endsWith('/models/product-box.glb')) {
+        setProductArStatus('Could not embed the photo. Using default model — try another product photo.', true);
       } else if (platform.isIOS) {
         setProductArStatus('Ready. Tap View in your space / Open Camera AR (Quick Look).');
       } else if (platform.isAndroid) {
-        setProductArStatus('Ready. Tap View in your space / Open Camera AR (stays in Chrome when WebXR is available).');
+        setProductArStatus('Ready. Tap View in your space / Open Camera AR — the product photo should appear in the camera.');
       } else {
         setProductArStatus('Product photo preview ready. Use an Android/iPhone to place it in AR.');
       }
