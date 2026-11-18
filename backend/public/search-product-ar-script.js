@@ -515,9 +515,8 @@
       els.arViewer.setAttribute('poster', photoSrc);
 
       const platform = detectArPlatform();
-      // Android WebXR: opaque photo board — BLEND cutouts often render invisible in the camera.
-      // iOS Quick Look: keep cutout (transparent background).
-      const useCutout = Boolean(platform.isIOS);
+      // Transparent cutout (remove light background) on Android WebXR and iOS Quick Look.
+      const useCutout = true;
       productArPublicModelUrl = `${window.location.origin}/public-ar/${currentItem.id}.glb`;
       configureArModes(els.arViewer, platform);
       els.arViewer.removeAttribute('ios-src');
@@ -530,10 +529,10 @@
         const assets = await withTimeout(
           window.WarehouseProductArGlb.createProductPhotoGlbAssets(photoSrc, {
             maxSideMeters: 0.42,
-            depthMeters: useCutout ? 0.012 : 0.04,
-            maxImageEdge: useCutout ? 512 : 640,
-            cutout: useCutout,
-            removeBackground: useCutout
+            depthMeters: 0.012,
+            maxImageEdge: 512,
+            cutout: true,
+            removeBackground: true
           }),
           12000,
           'Timed out building the photo model'
@@ -552,7 +551,7 @@
 
       setProductArStatus('Preparing AR for photo capture…');
       // WebXR needs an HTTPS model URL (not blob:). Cache the client GLB when available.
-      const prepared = await resolveArModelUrl(currentItem, glbBase64, 14000, { cutout: useCutout });
+      const prepared = await resolveArModelUrl(currentItem, glbBase64, 14000, { cutout: true });
       previewUrl = toPublicHttpsModelUrl(prepared && prepared.url, currentItem.id);
       const preparedHasPhoto = Boolean(prepared && prepared.hasPhoto) || builtWithPhoto;
       productArPublicModelUrl = previewUrl;

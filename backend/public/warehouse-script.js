@@ -2602,11 +2602,6 @@ async function openProductArModal() {
         configureWarehouseArModes(viewer, detectArPlatform());
         viewer.removeAttribute('ios-src');
 
-        const platformEarly = detectArPlatform();
-        // Android WebXR: opaque photo board — BLEND/MASK cutouts often look empty in camera.
-        // iOS Quick Look: keep cutout with transparent background.
-        const useCutout = Boolean(platformEarly.isIOS);
-
         let previewUrl = '/models/product-box.glb';
         let glbBase64 = null;
         if (photoSrc && window.WarehouseProductArGlb && typeof window.WarehouseProductArGlb.createProductPhotoGlbAssets === 'function') {
@@ -2614,10 +2609,10 @@ async function openProductArModal() {
             const assets = await withTimeout(
                 window.WarehouseProductArGlb.createProductPhotoGlbAssets(photoSrc, {
                     maxSideMeters: 0.42,
-                    depthMeters: useCutout ? 0.012 : 0.04,
-                    maxImageEdge: useCutout ? 512 : 640,
-                    cutout: useCutout,
-                    removeBackground: useCutout
+                    depthMeters: 0.012,
+                    maxImageEdge: 512,
+                    cutout: true,
+                    removeBackground: true
                 }),
                 12000,
                 'Timed out building the photo model'
@@ -2632,7 +2627,7 @@ async function openProductArModal() {
 
         setProductArStatus('Preparing AR for photo capture…');
         previewUrl = toPublicHttpsModelUrl(
-            await resolveArModelUrl(item, glbBase64, 14000, { cutout: useCutout }),
+            await resolveArModelUrl(item, glbBase64, 14000, { cutout: true }),
             item.id
         );
         productArPublicModelUrl = previewUrl;
