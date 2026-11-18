@@ -1049,15 +1049,50 @@
         table.addEventListener('pointerleave', () => hideMapTooltip());
     }
 
+    function addBayMapKeys(keys, bayRaw) {
+        const bay = String(bayRaw || '').trim().toUpperCase();
+        if (!bay) return;
+        keys.add(bay);
+
+        // A1 / A01 → A1
+        const simple = bay.match(/^([A-Z])(\d+)$/);
+        if (simple) {
+            keys.add(simple[1] + String(Number(simple[2])));
+            return;
+        }
+
+        // A21X1 → keep full bay and also A21 for coarser map bins
+        const a21 = bay.match(/^([A-Z])(\d+)X(\d+)$/);
+        if (a21) {
+            keys.add(a21[1] + String(Number(a21[2])));
+            keys.add(a21[1] + a21[2]);
+        }
+    }
+
     function getMapMatchKeys(productLocation) {
         const keys = new Set();
         const prod = String(productLocation || '').trim().toUpperCase();
         if (!prod) return keys;
 
         keys.add(prod);
+
+        // Classic side suffix: D15-1R → D15-1
         const noSide = prod.replace(/[RLM]$/, '');
         if (noSide !== prod) {
             keys.add(noSide);
+        }
+
+        // New Bay/Level/Position nomenclature:
+        // A1-L0, A1-L0-1, A1-2-1, A1-0-1, A1-L0B → map bin A1
+        const withoutBehind = prod.replace(/B$/, '');
+        if (withoutBehind !== prod) {
+            keys.add(withoutBehind);
+        }
+        const baySep = withoutBehind.indexOf('-');
+        if (baySep > 0) {
+            addBayMapKeys(keys, withoutBehind.slice(0, baySep));
+        } else {
+            addBayMapKeys(keys, withoutBehind);
         }
 
         const simple = noSide.match(/^([A-Z])(\d+)$/);

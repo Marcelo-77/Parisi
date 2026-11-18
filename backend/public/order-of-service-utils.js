@@ -389,27 +389,27 @@
   }
 
   function renderPersonLine(label, person) {
-    if (!person) {
-      return `<li><span class="order-print-label">${escapeHtml(label)}</span></li>`;
-    }
+    // Blank data field: omit item from list and numbering.
+    if (!person) return '';
     return `<li><span class="order-print-label">${escapeHtml(label)}</span> <span class="order-print-person">${escapeHtml(person)}</span></li>`;
   }
 
   function buildOrderListHtml(order, t, language) {
-    const empty = t.empty;
     const songsHtml = order.worshipSongs.length
       ? `<ol>${order.worshipSongs.map((song) => `<li>${escapeHtml(song)}</li>`).join('')}</ol>`
-      : `<div class="order-print-note">${escapeHtml(empty)}</div>`;
-
-    const praiseLine = order.praiseLeader
-      ? escapeHtml(order.praiseLeader)
-      : escapeHtml(empty);
+      : '';
 
     const itemBuilders = {
-      opening: () => `<li>${escapeHtml(order.openingAct)}</li>`,
-      worship: () => `<li><strong>${escapeHtml(t.worshipSongs)}</strong>${songsHtml}</li>`,
+      opening: () => (order.openingAct
+        ? `<li>${escapeHtml(order.openingAct)}</li>`
+        : ''),
+      worship: () => (order.worshipSongs.length
+        ? `<li><strong>${escapeHtml(t.worshipSongs)}</strong>${songsHtml}</li>`
+        : ''),
       scripture: () => renderPersonLine(t.scriptureReading, order.scriptureReader),
-      praise: () => `<li><span class="order-print-label">${escapeHtml(t.praise)}</span> <span class="order-print-person">${praiseLine}</span></li>`,
+      praise: () => (order.praiseLeader
+        ? `<li><span class="order-print-label">${escapeHtml(t.praise)}</span> <span class="order-print-person">${escapeHtml(order.praiseLeader)}</span></li>`
+        : ''),
       message: () => renderPersonLine(t.message, order.messageSpeaker),
       custom: () => {
         const label = order.customItemLabel || '';
@@ -423,7 +423,9 @@
         }
         return `<li>${escapeHtml(description)}</li>`;
       },
-      announcements: () => `<li><span class="order-print-label">${escapeHtml(t.closing)}</span>${order.closingPrayerLeader ? ` <span class="order-print-person">${escapeHtml(order.closingPrayerLeader)}</span>` : ''}</li>`,
+      announcements: () => (order.closingPrayerLeader
+        ? `<li><span class="order-print-label">${escapeHtml(t.closing)}</span> <span class="order-print-person">${escapeHtml(order.closingPrayerLeader)}</span></li>`
+        : ''),
       priestly: () => renderPersonLine(t.priestlyBlessing, order.priestlyBlessingLeader)
     };
 
