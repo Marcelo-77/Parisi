@@ -2512,9 +2512,11 @@ function toPublicHttpsModelUrl(urlOrPath, itemId) {
     }
 }
 
-function queuePrepareArModel(itemId, glbBase64) {
+function queuePrepareArModel(itemId, glbBase64, options = {}) {
     if (!itemId) return Promise.resolve(null);
-    const body = glbBase64 ? { glbBase64 } : {};
+    const body = {};
+    if (glbBase64) body.glbBase64 = glbBase64;
+    if (options && options.cutout === false) body.cutout = false;
     return fetch(`${API_BASE_URL}/${itemId}/prepare-ar-model`, {
         method: 'POST',
         credentials: 'same-origin',
@@ -2536,11 +2538,11 @@ function queuePrepareArModel(itemId, glbBase64) {
         .catch(() => null);
 }
 
-async function resolveArModelUrl(item, glbBase64, timeoutMs = 14000) {
+async function resolveArModelUrl(item, glbBase64, timeoutMs = 14000, options = {}) {
     const fallback = `${window.location.origin}/public-ar/${item.id}.glb`;
     try {
         const cached = await withTimeout(
-            queuePrepareArModel(item.id, glbBase64),
+            queuePrepareArModel(item.id, glbBase64, options),
             timeoutMs,
             'Timed out preparing AR model'
         );
@@ -2600,6 +2602,11 @@ async function openProductArModal() {
         configureWarehouseArModes(viewer, detectArPlatform());
         viewer.removeAttribute('ios-src');
 
+        const platformEarly = detectArPlatform();
+        // Android WebXR: opaque photo board — BLEND/MASK cutouts often look empty in camera.
+        // iOS Quick Look: keep cutout with transparent background.
+        const useCutout = Boolean(platformEarly.isIOS);
+
         let previewUrl = '/models/product-box.glb';
         let glbBase64 = null;
         if (photoSrc && window.WarehouseProductArGlb && typeof window.WarehouseProductArGlb.createProductPhotoGlbAssets === 'function') {
@@ -2607,10 +2614,10 @@ async function openProductArModal() {
             const assets = await withTimeout(
                 window.WarehouseProductArGlb.createProductPhotoGlbAssets(photoSrc, {
                     maxSideMeters: 0.42,
-                    depthMeters: 0.012,
-                    maxImageEdge: 512,
-                    cutout: true,
-                    removeBackground: true
+                    depthMeters: useCutout ? 0.012 : 0.04,
+                    maxImageEdge: useCutout ? 512 : 640,
+                    cutout: useCutout,
+                    removeBackground: useCutout
                 }),
                 12000,
                 'Timed out building the photo model'
@@ -2624,7 +2631,10 @@ async function openProductArModal() {
         }
 
         setProductArStatus('Preparing AR for photo capture…');
-        previewUrl = toPublicHttpsModelUrl(await resolveArModelUrl(item, glbBase64), item.id);
+        previewUrl = toPublicHttpsModelUrl(
+            await resolveArModelUrl(item, glbBase64, 14000, { cutout: useCutout }),
+            item.id
+        );
         productArPublicModelUrl = previewUrl;
         viewer.src = previewUrl;
 

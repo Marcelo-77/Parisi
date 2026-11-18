@@ -204,8 +204,9 @@ function buildProductPhotoGlb(photoDataUrl, options = {}) {
         metallicFactor: 0,
         roughnessFactor: cutout ? 0.55 : 0.72
       },
-      alphaMode: cutout ? 'BLEND' : 'OPAQUE',
-      alphaCutoff: cutout ? 0.04 : undefined,
+      // MASK is more reliable than BLEND in WebXR / Scene Viewer for photo cutouts.
+      alphaMode: cutout ? 'MASK' : 'OPAQUE',
+      alphaCutoff: cutout ? 0.45 : undefined,
       doubleSided: cutout
     }],
     samplers: [{
@@ -304,12 +305,13 @@ function findLatestCachedModel(itemId) {
   }
 }
 
-function writeProductArModel(item, photoOverride = null, glbBase64 = null) {
+function writeProductArModel(item, photoOverride = null, glbBase64 = null, options = {}) {
   ensureArCacheDir();
   const stamp = Date.now();
   const fileName = `${item.id}-${stamp}.glb`;
   const filePath = path.join(getArCacheDir(), fileName);
   const defaultBoxPath = path.join(__dirname, '..', 'public', 'models', 'product-box.glb');
+  const wantCutout = !(options && options.cutout === false);
 
   let glb = null;
   let hasPhoto = false;
@@ -340,8 +342,8 @@ function writeProductArModel(item, photoOverride = null, glbBase64 = null) {
       } else {
         glb = buildProductPhotoGlb(photo, {
           maxSideMeters: 0.42,
-          depthMeters: 0.012,
-          cutout: true
+          depthMeters: wantCutout ? 0.012 : 0.04,
+          cutout: wantCutout
         });
         hasPhoto = Boolean(glb);
         if (!glb) photoError = 'Could not encode product photo into GLB';
