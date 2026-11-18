@@ -59,6 +59,15 @@
     color: #2e7d32;
 }
 
+.search-product-ar-page .action-buttons.spar-ar-only {
+    display: flex;
+    justify-content: flex-start;
+}
+
+.search-product-ar-page .action-buttons.spar-ar-only .btn-action.ar {
+    min-width: 120px;
+}
+
 .search-product-ar-page .btn-action.ar:hover:not(:disabled) {
     background: #c8e6c9;
 }
@@ -293,6 +302,15 @@
         display: grid;
         grid-template-columns: repeat(2, minmax(0, 1fr));
         gap: 8px;
+        width: 100%;
+    }
+
+    .search-product-ar-page .spar-table .action-buttons.spar-ar-only {
+        display: flex;
+        grid-template-columns: none;
+    }
+
+    .search-product-ar-page .spar-table .action-buttons.spar-ar-only .btn-action.ar {
         width: 100%;
     }
 
