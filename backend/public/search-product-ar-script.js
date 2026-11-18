@@ -406,24 +406,101 @@
     anchor.remove();
   }
 
-  async function launchProductAr() {
-    if (!productArReady || !els.arViewer) return;
+  function launchProductAr() {
+    const viewer = els.arViewer;
+    if (!viewer) return;
+
     const platform = detectArPlatform();
-    const title = currentItem ? `${currentItem.codigo || ''} ${currentItem.nome || ''}`.trim() : 'Product AR';
+    if (!platform.isMobile) {
+      setProductArStatus(
+        'Use an iPhone (ARKit) or Android phone (ARCore) to open the camera and place the model in real size.',
+        true
+      );
+      return;
+    }
+
+    if (!productArReady) {
+      setProductArStatus('AR model is still loading. Wait a moment and tap again.', true);
+      return;
+    }
+
+    const modelUrl = productArPublicModelUrl || viewer.src;
+    const title = (currentItem && (currentItem.codigo || currentItem.nome)) || 'Product AR';
+    const isHttps = String(window.location.protocol).toLowerCase() === 'https:';
+    const arModelUrl = String(modelUrl || '').startsWith('blob:')
+      ? (currentItem && currentItem.id ? `${window.location.origin}/public-ar/${currentItem.id}.glb` : '')
+      : modelUrl;
+
+    if (!arModelUrl || !String(arModelUrl).startsWith('http')) {
+      setProductArStatus('AR model URL is not ready. Close and open AR again.', true);
+      return;
+    }
+
     try {
-      if (platform.isAndroid && productArPublicModelUrl) {
-        launchSceneViewerIntent(productArPublicModelUrl, title);
+      // Android: Scene Viewer has native photo/video capture (WebXR does not).
+      if (platform.isAndroid && isHttps) {
+        setProductArStatus('Opening Scene Viewer… Tap the camera icon to take a photo or video.');
+        launchSceneViewerIntent(arModelUrl, String(title));
         return;
       }
-      if (typeof els.arViewer.activateAR === 'function') {
-        await els.arViewer.activateAR();
+
+      // iOS: Quick Look has native shutter / screenshot capture.
+      if (platform.isIOS) {
+        viewer.setAttribute('ar-modes', 'quick-look scene-viewer webxr');
+        if (viewer.src !== arModelUrl) viewer.src = arModelUrl;
+        setProductArStatus('Opening Quick Look… Tap the shutter icon to save a photo.');
+        if (typeof viewer.activateAR === 'function') {
+          const maybePromise = viewer.activateAR();
+          if (maybePromise && typeof maybePromise.catch === 'function') {
+            maybePromise.catch((error) => {
+              console.error('activateAR failed:', error);
+              setProductArStatus(
+                (error && error.message ? `${error.message} ` : '') +
+                'Could not start AR. Use Safari on iPhone.',
+                true
+              );
+            });
+          }
+          return;
+        }
+      }
+
+      viewer.setAttribute('ar-modes', 'scene-viewer quick-look webxr');
+      if (viewer.src !== arModelUrl) viewer.src = arModelUrl;
+      setProductArStatus('Opening camera AR… Use the camera/shutter icon inside AR to save a photo.');
+
+      if (typeof viewer.activateAR === 'function') {
+        const maybePromise = viewer.activateAR();
+        if (maybePromise && typeof maybePromise.catch === 'function') {
+          maybePromise.catch((error) => {
+            console.error('activateAR failed:', error);
+            if (platform.isAndroid && isHttps) {
+              launchSceneViewerIntent(arModelUrl, String(title));
+              setProductArStatus('Opened Scene Viewer fallback — tap the camera icon to capture.');
+            } else {
+              setProductArStatus(
+                (error && error.message ? `${error.message} ` : '') +
+                'Could not start AR. On Android use Chrome over HTTPS with ARCore.',
+                true
+              );
+            }
+          });
+        }
         return;
       }
-      const nativeBtn = document.querySelector('.product-ar-native-btn');
-      if (nativeBtn) nativeBtn.click();
+
+      setProductArStatus(
+        'AR is not available in this browser. On Android use Chrome with ARCore; on iPhone use Safari.',
+        true
+      );
     } catch (error) {
-      console.error('Launch AR failed:', error);
-      setProductArStatus(error.message || 'Could not open camera AR.', true);
+      console.error('AR launch error:', error);
+      setProductArStatus(
+        error && error.message
+          ? error.message
+          : 'Could not start AR. Check camera permission and ARKit/ARCore support.',
+        true
+      );
     }
   }
 
@@ -564,7 +641,15 @@
 
     els.arCloseBtn?.addEventListener('click', closeProductArModal);
     els.arCloseFooterBtn?.addEventListener('click', closeProductArModal);
-    els.arLaunchBtn?.addEventListener('click', () => { void launchProductAr(); });
+    els.arLaunchBtn?.addEventListener('click', () => { launchProductAr(); });
+    const nativeArBtn = document.querySelector('.product-ar-native-btn');
+    if (nativeArBtn) {
+      nativeArBtn.addEventListener('click', (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        launchProductAr();
+      });
+    }
     els.arModal?.addEventListener('click', (event) => {
       if (event.target === els.arModal) closeProductArModal();
     });
