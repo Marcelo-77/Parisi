@@ -2597,7 +2597,7 @@ async function openProductArModal() {
         productArPublicModelUrl = `${window.location.origin}/public-ar/${item.id}.glb`;
 
         // Scene Viewer / Quick Look support photo capture; WebXR does not.
-        viewer.setAttribute('ar-modes', 'scene-viewer quick-look webxr');
+        configureWarehouseArModes(viewer, detectArPlatform());
         viewer.removeAttribute('ios-src');
 
         let previewUrl = '/models/product-box.glb';
@@ -2642,12 +2642,12 @@ async function openProductArModal() {
         const platform = detectArPlatform();
         if (!photoSrc) {
             setProductArStatus('This product has no photo. Using the default box model.', true);
-        } else if (previewUrl === '/models/product-box.glb') {
+        } else if (!previewUrl || String(previewUrl).endsWith('/models/product-box.glb')) {
             setProductArStatus('Could not embed the photo quickly. Using default model — tap Open Camera AR.', true);
         } else if (platform.isIOS) {
-            setProductArStatus('Ready. Tap Open Camera AR — then use the shutter button in Quick Look to save a photo.');
+            setProductArStatus('Ready. Tap View in your space / Open Camera AR (Quick Look).');
         } else if (platform.isAndroid) {
-            setProductArStatus('Ready. Tap Open Camera AR — then use the camera icon in Scene Viewer to take a photo or video.');
+            setProductArStatus('Ready. Tap View in your space / Open Camera AR (stays in Chrome).');
         } else {
             setProductArStatus('Product photo preview ready. Use an Android/iPhone to place it in AR.');
         }
@@ -2683,10 +2683,15 @@ function closeProductArModal() {
     setProductArStatus('');
 }
 
-function sameArModelUrl(a, b) {
-    const left = toPublicHttpsModelUrl(a, currentItem && currentItem.id);
-    const right = toPublicHttpsModelUrl(b, currentItem && currentItem.id);
-    return Boolean(left && right && left === right);
+function configureWarehouseArModes(viewer, platform) {
+    if (!viewer) return;
+    // Android: WebXR only so AR stays in Chrome (Scene Viewer leaves/reloads the page).
+    // iPhone: Quick Look (system viewer).
+    if (platform.isIOS) {
+        viewer.setAttribute('ar-modes', 'quick-look');
+    } else {
+        viewer.setAttribute('ar-modes', 'webxr');
+    }
 }
 
 function launchProductAr() {
@@ -2696,7 +2701,7 @@ function launchProductAr() {
     const platform = detectArPlatform();
     if (!platform.isMobile) {
         setProductArStatus(
-            'Use an iPhone (Safari) or Android phone (Chrome) to open the camera and place the model in real size.',
+            'Use an iPhone (Safari) or Android phone (Chrome) to open AR.',
             true
         );
         return;
@@ -2707,59 +2712,30 @@ function launchProductAr() {
         return;
     }
 
-    const isHttps = String(window.location.protocol).toLowerCase() === 'https:';
-    const arModelUrl = toPublicHttpsModelUrl(
-        productArPublicModelUrl || viewer.src,
-        currentItem && currentItem.id
-    );
-
-    if (!arModelUrl || !String(arModelUrl).startsWith('https')) {
-        setProductArStatus(
-            isHttps
-                ? 'AR model URL is not ready. Close and open AR again.'
-                : 'AR needs HTTPS. Open this page on the deployed site (not http localhost).',
-            true
-        );
+    if (String(window.location.protocol).toLowerCase() !== 'https:') {
+        setProductArStatus('AR needs HTTPS. Open the deployed site on your phone.', true);
         return;
     }
 
     try {
-        productArPublicModelUrl = arModelUrl;
-        // Do NOT reassign src on click — reloading here can kick the user out of the screen.
-        if (!sameArModelUrl(viewer.getAttribute('src') || viewer.src, arModelUrl)) {
-            setProductArStatus('AR model changed. Close and open AR again.', true);
-            return;
-        }
-
         if (platform.isIOS) {
-            viewer.setAttribute('ar-modes', 'quick-look scene-viewer webxr');
-            setProductArStatus('Opening Quick Look… Tap the shutter icon to save a photo.');
-        } else if (platform.isAndroid) {
-            viewer.setAttribute('ar-modes', 'scene-viewer quick-look webxr');
-            setProductArStatus('Opening Scene Viewer… Stay in Chrome until the camera opens.');
+            setProductArStatus('Opening AR… On iPhone this uses Quick Look.');
         } else {
-            viewer.setAttribute('ar-modes', 'scene-viewer quick-look webxr');
-            setProductArStatus('Opening camera AR…');
+            setProductArStatus('Opening AR in Chrome… Point the camera at the floor.');
         }
 
         if (typeof viewer.activateAR !== 'function') {
-            setProductArStatus(
-                'AR is not available in this browser. On Android use Chrome; on iPhone use Safari.',
-                true
-            );
+            setProductArStatus('AR is not available in this browser. Use Chrome (Android) or Safari (iPhone).', true);
             return;
         }
 
-        // Only activateAR — never navigate with intent:// (fallback reloads/leaves the page).
         const maybePromise = viewer.activateAR();
         if (maybePromise && typeof maybePromise.catch === 'function') {
             maybePromise.catch((error) => {
                 console.error('activateAR failed:', error);
                 setProductArStatus(
                     (error && error.message ? error.message + ' ' : '') +
-                    (platform.isIOS
-                        ? 'Could not start AR. Use Safari on iPhone.'
-                        : 'Could not start AR. Use Chrome with Google app + ARCore installed.'),
+                    'Could not start AR. On Android use Chrome with ARCore; on iPhone use Safari.',
                     true
                 );
             });
@@ -2769,7 +2745,7 @@ function launchProductAr() {
         setProductArStatus(
             error && error.message
                 ? error.message
-                : 'Could not start AR. Check camera permission and ARKit/ARCore support.',
+                : 'Could not start AR. Check camera permission.',
             true
         );
     }
