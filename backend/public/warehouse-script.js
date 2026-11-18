@@ -1317,19 +1317,17 @@ function setupEventListeners() {
     if (productArLaunchBtn) {
         productArLaunchBtn.addEventListener('click', () => launchProductAr());
     }
-    const productArNativeBtn = document.querySelector('.product-ar-native-btn');
-    if (productArNativeBtn) {
-        productArNativeBtn.addEventListener('click', (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            launchProductAr();
-        });
-    }
     const productArModal = document.getElementById('productArModal');
     if (productArModal) {
         productArModal.addEventListener('click', (e) => {
+            const nativeArBtn = e.target.closest('.product-ar-native-btn');
+            if (nativeArBtn) {
+                e.preventDefault();
+                launchProductAr();
+                return;
+            }
             if (e.target === productArModal) closeProductArModal();
-        });
+        }, true);
     }
 
     const itemDetailsEl = document.getElementById('itemDetails');
@@ -2499,18 +2497,34 @@ function setProductArLaunchEnabled(enabled) {
     btn.classList.toggle('is-disabled', !enabled);
 }
 
+function toPublicHttpsModelUrl(urlOrPath, itemId) {
+    const origin = window.location.origin;
+    const fallback = itemId ? `${origin}/public-ar/${itemId}.glb` : '';
+    if (!urlOrPath) return fallback;
+    const raw = String(urlOrPath).trim().split('#')[0].split('?')[0];
+    if (!raw || raw.startsWith('blob:')) return fallback;
+    if (raw.startsWith('/')) return `${origin}${raw}`;
+    try {
+        const parsed = new URL(raw, origin);
+        return `${origin}${parsed.pathname}`;
+    } catch (_error) {
+        return fallback;
+    }
+}
+
 function launchSceneViewerIntent(modelUrl, title) {
-    // Scene Viewer is picky: use a clean .glb URL (no query string).
-    const cleanUrl = String(modelUrl || '').split('#')[0].split('?')[0];
+    // Match model-viewer: Google app package + Scene Viewer 1.2 (not com.google.ar.core).
+    const cleanUrl = toPublicHttpsModelUrl(modelUrl, currentItem && currentItem.id);
+    if (!cleanUrl) return false;
     const fallback = window.location.href;
     const params = new URLSearchParams({
-        file: cleanUrl,
         mode: 'ar_preferred',
-        title: String(title || 'Product AR').slice(0, 80)
+        title: String(title || 'Product AR').slice(0, 80),
+        file: cleanUrl
     });
     const intent =
-        `intent://arvr.google.com/scene-viewer/1.0?${params.toString()}` +
-        `#Intent;scheme=https;package=com.google.ar.core;action=android.intent.action.VIEW;` +
+        `intent://arvr.google.com/scene-viewer/1.2?${params.toString()}` +
+        `#Intent;scheme=https;package=com.google.android.googlequicksearchbox;action=android.intent.action.VIEW;` +
         `S.browser_fallback_url=${encodeURIComponent(fallback)};end;`;
     const anchor = document.createElement('a');
     anchor.href = intent;
@@ -2518,6 +2532,7 @@ function launchSceneViewerIntent(modelUrl, title) {
     document.body.appendChild(anchor);
     anchor.click();
     anchor.remove();
+    return true;
 }
 
 function queuePrepareArModel(itemId, glbBase64) {
@@ -2532,9 +2547,11 @@ function queuePrepareArModel(itemId, glbBase64) {
         .then((res) => res.json().catch(() => null))
         .then((result) => {
             if (result && result.success && result.data) {
-                if (result.data.url) return result.data.url;
                 if (result.data.relativeUrl) {
-                    return `${window.location.origin}${result.data.relativeUrl}`;
+                    return toPublicHttpsModelUrl(result.data.relativeUrl, itemId);
+                }
+                if (result.data.url) {
+                    return toPublicHttpsModelUrl(result.data.url, itemId);
                 }
             }
             return null;
@@ -2696,7 +2713,7 @@ function launchProductAr() {
     const platform = detectArPlatform();
     if (!platform.isMobile) {
         setProductArStatus(
-            'Use an iPhone (ARKit) or Android phone (ARCore) to open the camera and place the model in real size.',
+            'Use an iPhone (Safari) or Android phone (Chrome) to open the camera and place the model in real size.',
             true
         );
         return;
@@ -2707,83 +2724,75 @@ function launchProductAr() {
         return;
     }
 
-    const modelUrl = productArPublicModelUrl || viewer.src;
     const title = (currentItem && (currentItem.codigo || currentItem.nome)) || 'Product AR';
     const isHttps = String(window.location.protocol).toLowerCase() === 'https:';
-    const arModelUrl = String(modelUrl || '').startsWith('blob:')
-        ? (currentItem && currentItem.id ? `${window.location.origin}/public-ar/${currentItem.id}.glb` : '')
-        : modelUrl;
+    const arModelUrl = toPublicHttpsModelUrl(
+        productArPublicModelUrl || viewer.src,
+        currentItem && currentItem.id
+    );
 
-    if (!arModelUrl || !String(arModelUrl).startsWith('http')) {
-        setProductArStatus('AR model URL is not ready. Close and open AR again.', true);
+    if (!arModelUrl || !String(arModelUrl).startsWith('https')) {
+        setProductArStatus(
+            isHttps
+                ? 'AR model URL is not ready. Close and open AR again.'
+                : 'AR needs HTTPS. Open this page on the deployed site (not http localhost).',
+            true
+        );
         return;
     }
 
     try {
-        // Android: Scene Viewer has native photo/video capture (WebXR does not).
-        if (platform.isAndroid && isHttps) {
-            setProductArStatus('Opening Scene Viewer… Tap the camera icon to take a photo or video.');
-            launchSceneViewerIntent(arModelUrl, String(title));
-            return;
+        productArPublicModelUrl = arModelUrl;
+        if (viewer.getAttribute('src') !== arModelUrl) {
+            viewer.src = arModelUrl;
         }
 
-        // iOS: Quick Look has native shutter / screenshot capture.
         if (platform.isIOS) {
             viewer.setAttribute('ar-modes', 'quick-look scene-viewer webxr');
-            if (viewer.src !== arModelUrl) viewer.src = arModelUrl;
             setProductArStatus('Opening Quick Look… Tap the shutter icon to save a photo.');
-            if (typeof viewer.activateAR === 'function') {
-                const maybePromise = viewer.activateAR();
-                if (maybePromise && typeof maybePromise.catch === 'function') {
-                    maybePromise.catch((error) => {
-                        console.error('activateAR failed:', error);
-                        setProductArStatus(
-                            (error && error.message ? error.message + ' ' : '') +
-                            'Could not start AR. Use Safari on iPhone.',
-                            true
-                        );
-                    });
-                }
-                return;
-            }
+        } else if (platform.isAndroid) {
+            viewer.setAttribute('ar-modes', 'scene-viewer quick-look webxr');
+            setProductArStatus('Opening Scene Viewer… Tap the camera icon to take a photo or video.');
+        } else {
+            viewer.setAttribute('ar-modes', 'scene-viewer quick-look webxr');
+            setProductArStatus('Opening camera AR…');
         }
-
-        viewer.setAttribute('ar-modes', 'scene-viewer quick-look webxr');
-        if (viewer.src !== arModelUrl) viewer.src = arModelUrl;
-        setProductArStatus('Opening camera AR… Use the camera/shutter icon inside AR to save a photo.');
 
         if (typeof viewer.activateAR === 'function') {
             const maybePromise = viewer.activateAR();
             if (maybePromise && typeof maybePromise.catch === 'function') {
                 maybePromise.catch((error) => {
                     console.error('activateAR failed:', error);
-                    if (platform.isAndroid && isHttps) {
-                        launchSceneViewerIntent(arModelUrl, String(title));
+                    if (platform.isAndroid && isHttps && launchSceneViewerIntent(arModelUrl, String(title))) {
                         setProductArStatus('Opened Scene Viewer fallback — tap the camera icon to capture.');
-                    } else {
-                        setProductArStatus(
-                            (error && error.message ? error.message + ' ' : '') +
-                            'Could not start AR. On Android use Chrome over HTTPS with ARCore.',
-                            true
-                        );
+                        return;
                     }
+                    setProductArStatus(
+                        (error && error.message ? error.message + ' ' : '') +
+                        (platform.isIOS
+                            ? 'Could not start AR. Use Safari on iPhone.'
+                            : 'Could not start AR. Use Chrome with Google app + ARCore.'),
+                        true
+                    );
                 });
             }
             return;
         }
 
-        const slotBtn = viewer.querySelector('[slot="ar-button"]');
-        if (slotBtn) {
-            slotBtn.click();
+        if (platform.isAndroid && isHttps && launchSceneViewerIntent(arModelUrl, String(title))) {
             return;
         }
 
         setProductArStatus(
-            'AR is not available in this browser. On Android use Chrome with ARCore; on iPhone use Safari.',
+            'AR is not available in this browser. On Android use Chrome; on iPhone use Safari.',
             true
         );
     } catch (error) {
         console.error('AR launch error:', error);
+        if (platform.isAndroid && isHttps && launchSceneViewerIntent(arModelUrl, String(title))) {
+            setProductArStatus('Opened Scene Viewer fallback — tap the camera icon to capture.');
+            return;
+        }
         setProductArStatus(
             error && error.message
                 ? error.message
