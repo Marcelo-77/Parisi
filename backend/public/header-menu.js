@@ -35,7 +35,6 @@
                                     <button type="button" id="searchProductBtn" class="dropdown-item" data-app="warehouse.html"><i class="fas fa-search"></i> Search Product</button>
                                     <a href="Search-Product-Tablet.html" class="dropdown-item" data-app="Search-Product-Tablet.html"><i class="fas fa-tablet-screen-button"></i> Search Product Tablet</a>
                                     <a href="special-search-product.html" class="dropdown-item" data-app="special-search-product.html"><i class="fas fa-map"></i> Special Search Product</a>
-                                    <a href="Search-Product-AR.html" class="dropdown-item" data-app="Search-Product-AR.html"><i class="fas fa-cube"></i> Search Product AR</a>
                                     <a href="search-special-location-a21x.html" class="dropdown-item" data-app="search-special-location-a21x.html"><i class="fas fa-camera"></i> Search Special Location A21X</a>
                                 </div>
                             </div>
@@ -63,6 +62,14 @@
                                     <a href="change-between-location-products.html" class="dropdown-item" data-app="change-between-location-products.html"><i class="fas fa-list-check"></i> Change Between Location Products</a>
                                 </div>
                             </div>
+                        </div>
+                    </div>
+                    <div class="augmented-reality-dropdown">
+                        <button type="button" class="btn btn-primary" id="augmentedRealityMenuBtn" aria-haspopup="true" aria-expanded="false">
+                            <i class="fas fa-cube"></i> Augmented Reality <i class="fas fa-chevron-down"></i>
+                        </button>
+                        <div class="augmented-reality-dropdown-menu" id="augmentedRealityDropdownMenu" aria-hidden="true">
+                            <a href="Search-Product-AR.html" class="dropdown-item" data-app="Search-Product-AR.html"><i class="fas fa-cube"></i> Search Product AR</a>
                         </div>
                     </div>
                     <div class="applications-dropdown">
@@ -224,6 +231,7 @@
   const MENU_BUTTON_IDS = [
     'usersMenuBtn',
     'masterDataMenuBtn',
+    'augmentedRealityMenuBtn',
     'applicationsMenuBtn',
     'movementMenuBtn',
     'pickingMenuBtn',

@@ -538,6 +538,7 @@ body.has-environment-banner-fixed {
 
 .header-actions > .users-dropdown,
 .header-actions > .master-data-dropdown,
+.header-actions > .augmented-reality-dropdown,
 .header-actions > .applications-dropdown,
 .header-actions > .movement-dropdown,
 .header-actions > .picking-dropdown,
@@ -873,6 +874,60 @@ body.has-environment-banner-fixed {
     background: #f0f0f0;
 }
 .help-dropdown-menu .dropdown-item i {
+    color: #667eea;
+    width: 20px;
+}
+
+/* Augmented Reality dropdown no header */
+.augmented-reality-dropdown {
+    position: relative;
+    display: inline-block;
+}
+.augmented-reality-dropdown .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+.augmented-reality-dropdown .btn .fa-chevron-down {
+    font-size: 0.75rem;
+    margin-left: 2px;
+}
+.augmented-reality-dropdown-menu {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    margin-top: 6px;
+    min-width: 220px;
+    background: white;
+    border-radius: 10px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+    padding: 6px 0;
+    z-index: 1000;
+    border: 1px solid #e1e5e9;
+}
+.augmented-reality-dropdown-menu[aria-hidden="true"] {
+    display: none;
+}
+.augmented-reality-dropdown-menu .dropdown-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    padding: 10px 16px;
+    border: none;
+    background: none;
+    text-align: left;
+    font-size: 0.95rem;
+    color: #333;
+    text-decoration: none;
+    cursor: pointer;
+    transition: background 0.2s;
+    box-sizing: border-box;
+}
+.augmented-reality-dropdown-menu .dropdown-item:hover {
+    background: #f0f0f0;
+}
+.augmented-reality-dropdown-menu .dropdown-item i {
     color: #667eea;
     width: 20px;
 }
@@ -3351,6 +3406,7 @@ input.input-readonly {
 
     .header-actions > .users-dropdown,
     .header-actions > .master-data-dropdown,
+    .header-actions > .augmented-reality-dropdown,
     .header-actions > .applications-dropdown,
     .header-actions > .movement-dropdown,
     .header-actions > .picking-dropdown,
