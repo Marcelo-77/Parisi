@@ -243,7 +243,8 @@ router.post('/:id/prepare-ar-model', [
     const warehouseArGlbService = require('../services/warehouseArGlbService');
     const photoOverride = req.body && req.body.photo ? req.body.photo : null;
     const glbBase64 = req.body && req.body.glbBase64 ? req.body.glbBase64 : null;
-    const prepared = warehouseArGlbService.writeProductArModel(item, photoOverride, glbBase64);
+    const cutout = !(req.body && req.body.cutout === false);
+    const prepared = warehouseArGlbService.writeProductArModel(item, photoOverride, glbBase64, { cutout });
     const absoluteUrl = `${req.protocol}://${req.get('host')}${prepared.relativeUrl}?v=${Date.now()}`;
 
     res.json({

@@ -214,8 +214,9 @@
           metallicFactor: 0,
           roughnessFactor: cutout ? 0.55 : 0.72
         },
-        alphaMode: cutout ? 'BLEND' : 'OPAQUE',
-        alphaCutoff: cutout ? 0.04 : undefined,
+        // MASK is more reliable than BLEND in WebXR / Scene Viewer for photo cutouts.
+        alphaMode: cutout ? 'MASK' : 'OPAQUE',
+        alphaCutoff: cutout ? 0.45 : undefined,
         doubleSided: cutout
       }],
       samplers: [{ magFilter: 9729, minFilter: 9729, wrapS: 33071, wrapT: 33071 }],

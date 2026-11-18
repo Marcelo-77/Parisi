@@ -50,11 +50,16 @@
     return categoria || '-';
   }
 
-  function productHasPhoto(item) {
+  function productHasPhotoBytes(item) {
     if (!item) return false;
-    if (item.hasPhoto === true || item.hasPhoto === 't') return true;
     const photo = item.photo != null ? String(item.photo).trim() : '';
     return Boolean(photo) && photo.toLowerCase() !== 'null' && photo.toLowerCase() !== 'undefined';
+  }
+
+  function productHasPhoto(item) {
+    if (!item) return false;
+    if (productHasPhotoBytes(item)) return true;
+    return item.hasPhoto === true || item.hasPhoto === 't';
   }
 
   function setStatus(message, isError) {
@@ -358,9 +363,11 @@
     }
   }
 
-  function queuePrepareArModel(itemId, glbBase64) {
+  function queuePrepareArModel(itemId, glbBase64, options = {}) {
     if (!itemId) return Promise.resolve(null);
-    const body = glbBase64 ? { glbBase64 } : {};
+    const body = {};
+    if (glbBase64) body.glbBase64 = glbBase64;
+    if (options && options.cutout === false) body.cutout = false;
     return fetch(`${API_BASE}/${itemId}/prepare-ar-model`, {
       method: 'POST',
       credentials: 'same-origin',
@@ -370,11 +377,14 @@
       .then((res) => res.json().catch(() => null))
       .then((result) => {
         if (result && result.success && result.data) {
-          if (result.data.relativeUrl) {
-            return toPublicHttpsModelUrl(result.data.relativeUrl, itemId);
-          }
-          if (result.data.url) {
-            return toPublicHttpsModelUrl(result.data.url, itemId);
+          const url = result.data.relativeUrl
+            ? toPublicHttpsModelUrl(result.data.relativeUrl, itemId)
+            : (result.data.url ? toPublicHttpsModelUrl(result.data.url, itemId) : null);
+          if (url) {
+            return {
+              url,
+              hasPhoto: result.data.hasPhoto === true || result.data.hasPhoto === 't'
+            };
           }
         }
         return null;
@@ -382,19 +392,21 @@
       .catch(() => null);
   }
 
-  async function resolveArModelUrl(item, glbBase64, timeoutMs = 14000) {
+  async function resolveArModelUrl(item, glbBase64, timeoutMs = 14000, options = {}) {
     const fallback = toPublicHttpsModelUrl(null, item.id);
     try {
       const cached = await withTimeout(
-        queuePrepareArModel(item.id, glbBase64),
+        queuePrepareArModel(item.id, glbBase64, options),
         timeoutMs,
         'Timed out preparing AR model'
       );
-      if (cached && String(cached).startsWith('http')) return cached;
+      if (cached && cached.url && String(cached.url).startsWith('http')) {
+        return cached;
+      }
     } catch (error) {
       console.warn('AR model prepare warning:', error);
     }
-    return fallback;
+    return { url: fallback, hasPhoto: false };
   }
 
   function configureArModes(viewer, platform) {
@@ -467,13 +479,15 @@
   }
 
   async function openProductArModal(item) {
-    // Same prepare flow as warehouse View → AR (works with photo in the camera).
-    let nextItem = await loadProductDetails(item);
-    if (!productHasPhoto(nextItem)) {
-      // Force reload once more like warehouse ensureCurrentItemPhoto.
+    // Load real photo bytes (list results only send hasPhoto).
+    let nextItem = item;
+    if (!productHasPhotoBytes(nextItem)) {
       nextItem = await loadProductDetails(item);
     }
-    if (!productHasPhoto(nextItem)) {
+    if (!productHasPhotoBytes(nextItem)) {
+      nextItem = await loadProductDetails(item);
+    }
+    if (!productHasPhotoBytes(nextItem)) {
       setStatus('AR is disabled for products without a linked photo.', true);
       return;
     }
@@ -493,31 +507,33 @@
       const name = currentItem.nome || '-';
       if (els.arLabel) els.arLabel.textContent = `${code} — ${name}`;
 
-      const photoSrc = currentItem.photo && String(currentItem.photo).trim()
-        ? String(currentItem.photo).trim()
-        : '';
+      const photoSrc = String(currentItem.photo).trim();
       setProductArPhotoPreview(photoSrc);
       revokeProductArModelUrl();
 
       els.arViewer.setAttribute('alt', `Product photo AR model for ${name}`);
-      if (photoSrc) els.arViewer.setAttribute('poster', photoSrc);
-      else els.arViewer.removeAttribute('poster');
+      els.arViewer.setAttribute('poster', photoSrc);
 
+      const platform = detectArPlatform();
+      // Android WebXR: opaque photo board — BLEND cutouts often render invisible in the camera.
+      // iOS Quick Look: keep cutout (transparent background).
+      const useCutout = Boolean(platform.isIOS);
       productArPublicModelUrl = `${window.location.origin}/public-ar/${currentItem.id}.glb`;
-      configureArModes(els.arViewer, detectArPlatform());
+      configureArModes(els.arViewer, platform);
       els.arViewer.removeAttribute('ios-src');
 
       let previewUrl = '/models/product-box.glb';
       let glbBase64 = null;
-      if (photoSrc && window.WarehouseProductArGlb && typeof window.WarehouseProductArGlb.createProductPhotoGlbAssets === 'function') {
+      let builtWithPhoto = false;
+      if (window.WarehouseProductArGlb && typeof window.WarehouseProductArGlb.createProductPhotoGlbAssets === 'function') {
         setProductArStatus('Building photo model…');
         const assets = await withTimeout(
           window.WarehouseProductArGlb.createProductPhotoGlbAssets(photoSrc, {
             maxSideMeters: 0.42,
-            depthMeters: 0.012,
-            maxImageEdge: 512,
-            cutout: true,
-            removeBackground: true
+            depthMeters: useCutout ? 0.012 : 0.04,
+            maxImageEdge: useCutout ? 512 : 640,
+            cutout: useCutout,
+            removeBackground: useCutout
           }),
           12000,
           'Timed out building the photo model'
@@ -527,15 +543,18 @@
         });
         if (assets && assets.base64) {
           glbBase64 = assets.base64;
+          builtWithPhoto = true;
+          if (assets.objectUrl) {
+            productArModelObjectUrl = assets.objectUrl;
+          }
         }
       }
 
       setProductArStatus('Preparing AR for photo capture…');
-      // Must use the cached HTTPS GLB (same as warehouse View AR) so WebXR shows the photo.
-      previewUrl = toPublicHttpsModelUrl(
-        await resolveArModelUrl(currentItem, glbBase64),
-        currentItem.id
-      );
+      // WebXR needs an HTTPS model URL (not blob:). Cache the client GLB when available.
+      const prepared = await resolveArModelUrl(currentItem, glbBase64, 14000, { cutout: useCutout });
+      previewUrl = toPublicHttpsModelUrl(prepared && prepared.url, currentItem.id);
+      const preparedHasPhoto = Boolean(prepared && prepared.hasPhoto) || builtWithPhoto;
       productArPublicModelUrl = previewUrl;
       els.arViewer.src = previewUrl;
 
@@ -549,10 +568,7 @@
       productArReady = true;
       setProductArLaunchEnabled(true);
 
-      const platform = detectArPlatform();
-      if (!photoSrc) {
-        setProductArStatus('This product has no photo. Using the default box model.', true);
-      } else if (!previewUrl || String(previewUrl).endsWith('/models/product-box.glb')) {
+      if (!preparedHasPhoto) {
         setProductArStatus('Could not embed the photo quickly. Using default model — tap Open Camera AR.', true);
       } else if (platform.isIOS) {
         setProductArStatus('Ready. Tap View in your space / Open Camera AR (Quick Look).');
@@ -619,18 +635,16 @@
     els.arCloseBtn?.addEventListener('click', closeProductArModal);
     els.arCloseFooterBtn?.addEventListener('click', closeProductArModal);
     els.arLaunchBtn?.addEventListener('click', () => { launchProductAr(); });
-    // Single handler: AR button launches in-place; backdrop click closes.
-    // stopPropagation avoids model-viewer also firing an intent that reloads/leaves the page.
+    // Match warehouse: capture-phase so activateAR runs with the prepared HTTPS photo model.
     els.arModal?.addEventListener('click', (event) => {
       const nativeArBtn = event.target.closest('.product-ar-native-btn');
       if (nativeArBtn) {
         event.preventDefault();
-        event.stopPropagation();
         launchProductAr();
         return;
       }
       if (event.target === els.arModal) closeProductArModal();
-    });
+    }, true);
 
     document.addEventListener('keydown', (event) => {
       if (event.key !== 'Escape') return;
