@@ -110,6 +110,12 @@ class WarehouseService {
       )`);
     }
 
+    if (filtros.withPhoto) {
+      whereClauses.push(`photo IS NOT NULL
+        AND TRIM(photo) <> ''
+        AND LOWER(TRIM(photo)) NOT IN ('null', 'undefined')`);
+    }
+
     let orderBy = 'nome ASC';
     if (filtros.ordenarPor) {
       const direcao = filtros.direcao === 'desc' ? 'DESC' : 'ASC';

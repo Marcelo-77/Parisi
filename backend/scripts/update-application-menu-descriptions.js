@@ -8,6 +8,7 @@ const systemApplicationMenus = [
   { application: 'warehouse.html', menuName: 'Product' },
   { application: 'special-search-product.html', menuName: 'Product_Special_Search' },
   { application: 'Search-Product-Tablet.html', menuName: 'Product_Search_Tablet' },
+  { application: 'Search-Product-AR.html', menuName: 'Product_Search_AR' },
   { application: 'upload-warehouse-map.html', menuName: 'Applications_Upload_Warehouse_Map' },
   { application: 'System-Documentation.html', menuName: 'Applications_System_Documentation' },
   { application: 'System-Documentation-Search.html', menuName: 'Applications_System_Documentation_Search' },
