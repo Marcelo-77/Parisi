@@ -158,10 +158,10 @@
                         <img id="productArPhotoImg" class="product-ar-photo-img" src="" alt="Product photo">
                     </div>
                     <p class="product-ar-help">
-                        The product photo is cut out and placed in AR. Use a photo on a plain light background for best results.
+                        The product photo is cut out (no white box) and placed in AR. Use a photo on a plain light background for best results.
                     </p>
                     <ul class="product-ar-platforms">
-                        <li><strong>iPhone (Safari):</strong> Quick Look</li>
+                        <li><strong>iPhone (Safari):</strong> Quick Look — tap the shutter icon to save a photo</li>
                         <li><strong>Android (Chrome):</strong> WebXR in the browser (stays on this page when supported)</li>
                     </ul>
                     <model-viewer
@@ -172,14 +172,12 @@
                         ar
                         ar-modes="webxr"
                         ar-scale="fixed"
-                        ar-placement="floor"
-                        xr-environment
                         camera-controls
                         auto-rotate
                         rotation-per-second="28deg"
                         touch-action="pan-y"
                         shadow-intensity="1.4"
-                        exposure="1.2"
+                        exposure="1.05"
                     >
                         <button slot="ar-button" type="button" class="btn btn-primary product-ar-native-btn">
                             <i class="fas fa-camera"></i> View in your space
