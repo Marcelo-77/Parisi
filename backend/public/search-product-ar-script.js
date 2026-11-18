@@ -76,14 +76,34 @@
     else els.searchInput.placeholder = 'Enter code...';
   }
 
-  function renderEmpty(message) {
+  function renderEmpty(message, icon) {
     if (els.resultsCount) els.resultsCount.textContent = '0';
     if (!els.productsBody) return;
     els.productsBody.innerHTML = `
-      <tr>
-        <td colspan="5" class="empty-state">${escapeHtml(message || 'No products found.')}</td>
+      <tr class="empty-state-row">
+        <td colspan="4" class="empty-state">
+          <i class="fas ${escapeHtml(icon || 'fa-box-open')}"></i>
+          <p>${message || 'No products found.'}</p>
+        </td>
       </tr>
     `;
+  }
+
+  function bindResultActions() {
+    if (!els.productsBody || els.productsBody.dataset.actionsBound === 'true') return;
+    els.productsBody.dataset.actionsBound = 'true';
+    els.productsBody.addEventListener('click', (event) => {
+      const button = event.target.closest('.spar-view-btn, .spar-ar-btn');
+      if (!button || button.disabled) return;
+      const id = button.getAttribute('data-id');
+      const item = products.find((row) => String(row.id) === String(id));
+      if (!item) return;
+      if (button.classList.contains('spar-ar-btn')) {
+        void openProductArModal(item);
+        return;
+      }
+      void openViewModal(item);
+    });
   }
 
   function renderProducts(list) {
@@ -92,7 +112,7 @@
     if (!els.productsBody) return;
 
     if (!products.length) {
-      renderEmpty('No products found for this search.');
+      renderEmpty('No products found for this search.', 'fa-box-open');
       return;
     }
 
@@ -103,42 +123,35 @@
       const arTitle = hasPhoto
         ? 'Open Augmented Reality'
         : 'AR disabled — this product has no linked photo';
+      const code = escapeHtml(item.codigo || '-');
+      const name = escapeHtml(item.nome || '-');
+      const category = escapeHtml(formatCategory(item.categoria));
+      const photoHtml = hasPhoto
+        ? '<span class="spar-photo-yes"><i class="fas fa-check"></i> Yes</span>'
+        : '<span class="spar-photo-no">No</span>';
       return `
-        <tr data-id="${escapeHtml(item.id)}">
-          <td>${escapeHtml(item.codigo || '-')}</td>
-          <td>${escapeHtml(item.nome || '-')}</td>
-          <td>${escapeHtml(formatCategory(item.categoria))}</td>
-          <td>${hasPhoto
-            ? '<span class="spar-photo-yes"><i class="fas fa-check"></i> Yes</span>'
-            : '<span class="spar-photo-no">No</span>'}</td>
-          <td class="spar-actions-cell">
-            <button type="button" class="btn btn-secondary btn-sm spar-view-btn" data-id="${escapeHtml(item.id)}">
-              <i class="fas fa-eye"></i> View
-            </button>
-            <button type="button" class="btn btn-primary btn-sm spar-ar-btn ${arClass}" data-id="${escapeHtml(item.id)}" ${arDisabled} title="${arTitle}">
-              <i class="fas fa-cube"></i> AR
-            </button>
+        <tr class="item-data-row" data-id="${escapeHtml(item.id)}">
+          <td data-label="Code"><strong>${code}</strong></td>
+          <td data-label="Name">${name}</td>
+          <td data-label="Category">${category}</td>
+          <td data-label="Photo">${photoHtml}</td>
+        </tr>
+        <tr class="item-actions-row">
+          <td colspan="4" class="action-buttons-cell">
+            <div class="action-buttons">
+              <button type="button" class="btn-action view spar-view-btn" data-id="${escapeHtml(item.id)}" title="View details">
+                <i class="fas fa-eye"></i> <span>View</span>
+              </button>
+              <button type="button" class="btn-action ar spar-ar-btn ${arClass}" data-id="${escapeHtml(item.id)}" ${arDisabled} title="${arTitle}">
+                <i class="fas fa-cube"></i> <span>AR</span>
+              </button>
+            </div>
           </td>
         </tr>
       `;
     }).join('');
 
-    els.productsBody.querySelectorAll('.spar-view-btn').forEach((btn) => {
-      btn.addEventListener('click', () => {
-        const id = btn.getAttribute('data-id');
-        const item = products.find((row) => String(row.id) === String(id));
-        if (item) void openViewModal(item);
-      });
-    });
-
-    els.productsBody.querySelectorAll('.spar-ar-btn').forEach((btn) => {
-      btn.addEventListener('click', () => {
-        if (btn.disabled) return;
-        const id = btn.getAttribute('data-id');
-        const item = products.find((row) => String(row.id) === String(id));
-        if (item) void openProductArModal(item);
-      });
-    });
+    bindResultActions();
   }
 
   async function searchProducts() {
@@ -194,7 +207,7 @@
     if (els.searchInput) els.searchInput.value = '';
     syncSearchMode();
     products = [];
-    renderEmpty('Use filters and click Search to load products.');
+    renderEmpty('Use filters and click <strong>Search</strong> to load products.', 'fa-search');
     setStatus('');
     closeViewModal();
     closeProductArModal();
@@ -573,6 +586,7 @@
   }
 
   syncSearchMode();
-  renderEmpty('Use filters and click Search to load products.');
+  renderEmpty('Use filters and click <strong>Search</strong> to load products.', 'fa-search');
+  bindResultActions();
   bindEvents();
 })();
