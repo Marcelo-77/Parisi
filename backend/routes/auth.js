@@ -36,15 +36,6 @@ function getForgotPasswordEnvironmentLabel() {
   return env.charAt(0).toUpperCase() + env.slice(1);
 }
 
-function createTemporaryPassword() {
-  const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789';
-  let out = '';
-  for (let i = 0; i < 10; i += 1) {
-    out += alphabet[crypto.randomInt(0, alphabet.length)];
-  }
-  return out;
-}
-
 async function startUserSession(req, res, user) {
   const sessionId = crypto.randomUUID();
   const userKey = user.isRoot ? ROOT_USER : user.id;
@@ -490,33 +481,23 @@ router.post('/forgot-password', async (req, res) => {
 
   try {
     const user = await funcionarioServiceDB.findActiveCredentialsByEmail(email);
-    if (user && user.password) {
-      let passwordToSend = user.password;
-      let issuedNewPassword = false;
-
-      // Warehouse stores scrypt hashes — email a newly issued password when hashed.
-      if (isHashedPassword(user.password)) {
-        passwordToSend = createTemporaryPassword();
-        await funcionarioServiceDB.setPasswordById(user.id, passwordToSend);
-        issuedNewPassword = true;
-      }
-
+    // Same rule as Schedule: never change the password; email the registered one.
+    // Hashed passwords cannot be recovered for email — skip send, keep generic response.
+    if (user && user.password && !isHashedPassword(user.password)) {
       const displayName = user.nome || 'there';
       const envLabel = getForgotPasswordEnvironmentLabel();
       const productName = envLabel
         ? `Double-Y Warehouse (${envLabel})`
         : 'Double-Y Warehouse';
       const subject = `${productName} — your password`;
-      const intro = issuedNewPassword
-        ? `A new password was issued for your ${productName} account.`
-        : `You requested your ${productName} password.`;
+      const intro = `You requested your ${productName} password.`;
       const text = [
         `Hello ${displayName},`,
         '',
         intro,
         '',
         `Email: ${user.email}`,
-        `Password: ${passwordToSend}`,
+        `Password: ${user.password}`,
         '',
         'If you did not request this, please contact office@doubleyitsystem.com.',
         '',
@@ -527,7 +508,7 @@ router.post('/forgot-password', async (req, res) => {
           <p>Hello ${displayName},</p>
           <p>${intro}</p>
           <p><strong>Email:</strong> ${user.email}<br>
-          <strong>Password:</strong> ${String(passwordToSend).replace(/</g, '&lt;')}</p>
+          <strong>Password:</strong> ${String(user.password).replace(/</g, '&lt;')}</p>
           <p>If you did not request this, please contact
             <a href="mailto:office@doubleyitsystem.com">office@doubleyitsystem.com</a>.
           </p>
