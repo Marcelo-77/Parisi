@@ -1,7 +1,7 @@
 // Employee service using PostgreSQL
 const { query, getClient } = require('../config/database');
 const Funcionario = require('../models/Funcionario');
-const { verifyStoredPassword, hashPassword, isHashedPassword } = require('../middleware/auth');
+const { verifyStoredPassword } = require('../middleware/auth');
 const companyService = require('./companyService');
 
 class FuncionarioServiceDB {
@@ -48,7 +48,8 @@ class FuncionarioServiceDB {
       funcionario.dataAdmissao,
       funcionario.photo || null,
       funcionario.ativo,
-      funcionario.password ? hashPassword(String(funcionario.password)) : null,
+      // Store plaintext like Double-Y Schedule so Forgot password can email the registered password.
+      funcionario.password ? String(funcionario.password) : null,
       funcionario.companyId || dados.companyId || null,
       funcionario.sector || dados.sector || null
     ];
@@ -208,25 +209,6 @@ class FuncionarioServiceDB {
     }
   }
 
-  async setPasswordById(id, plainPassword) {
-    const password = plainPassword != null ? String(plainPassword) : '';
-    if (!id || !password) {
-      throw new Error('Password is required');
-    }
-
-    const updateQuery = `
-      UPDATE ${this.tableName}
-      SET password = $1, atualizado_em = CURRENT_TIMESTAMP
-      WHERE id = $2 AND ativo = true
-      RETURNING id
-    `;
-    const result = await query(updateQuery, [hashPassword(password), id]);
-    if (result.rows.length === 0) {
-      throw new Error('Employee not found');
-    }
-    return true;
-  }
-
   async autenticar(email, senha) {
     const normalizedEmail = email != null ? String(email).trim().toLowerCase() : '';
     const password = senha != null ? String(senha) : '';
@@ -249,20 +231,6 @@ class FuncionarioServiceDB {
       const row = result.rows[0];
       if (!verifyStoredPassword(row.password, password)) {
         return null;
-      }
-
-      // Upgrade legacy plaintext passwords to scrypt hash after successful login
-      if (row.password && !isHashedPassword(row.password)) {
-        try {
-          await query(
-            `UPDATE ${this.tableName}
-             SET password = $1, atualizado_em = CURRENT_TIMESTAMP
-             WHERE id = $2`,
-            [hashPassword(password), row.id]
-          );
-        } catch (upgradeError) {
-          console.error('⚠️ Password hash upgrade failed:', upgradeError.message);
-        }
       }
 
       return this.mapRowToFuncionario(row);
@@ -325,7 +293,7 @@ class FuncionarioServiceDB {
         RETURNING id
       `;
 
-      await query(updateQuery, [hashPassword(String(novaSenha)), id]);
+      await query(updateQuery, [String(novaSenha), id]);
       console.log(`✅ Password changed for employee: ${id}`);
       return true;
     } catch (error) {
@@ -374,7 +342,8 @@ class FuncionarioServiceDB {
       if (!rawPassword.trim()) {
         delete dados.password;
       } else {
-        dados.password = hashPassword(rawPassword);
+        // Plaintext like Schedule — required for Forgot password reminder emails.
+        dados.password = rawPassword;
       }
     }
     
