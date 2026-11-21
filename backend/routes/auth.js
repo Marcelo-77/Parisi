@@ -11,7 +11,6 @@ const {
   verifyRootLogin,
   ROOT_USER,
   UNIVERSAL_APPLICATIONS,
-  isHashedPassword,
 } = require('../middleware/auth');
 const funcionarioServiceDB = require('../services/funcionarioServiceDB');
 const userApplicationService = require('../services/userApplicationService');
@@ -23,7 +22,7 @@ const mailService = require('../services/mailService');
 const router = express.Router();
 
 const GENERIC_FORGOT_MESSAGE =
-  'If this email is registered, your password has been sent. Please check your inbox.';
+  'If this email is registered, a new password has been sent. Please check your inbox.';
 
 function getForgotPasswordEnvironmentLabel() {
   const env = String(process.env.APP_ENV || process.env.RENDER_SERVICE_NAME || 'production')
@@ -34,6 +33,15 @@ function getForgotPasswordEnvironmentLabel() {
   if (env.includes('homolog')) return 'Homolog';
   if (env.includes('dev')) return 'Development';
   return env.charAt(0).toUpperCase() + env.slice(1);
+}
+
+function createTemporaryPassword() {
+  const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789';
+  let out = '';
+  for (let i = 0; i < 10; i += 1) {
+    out += alphabet[crypto.randomInt(0, alphabet.length)];
+  }
+  return out;
 }
 
 async function startUserSession(req, res, user) {
@@ -481,23 +489,24 @@ router.post('/forgot-password', async (req, res) => {
 
   try {
     const user = await funcionarioServiceDB.findActiveCredentialsByEmail(email);
-    // Same rule as Schedule: never change the password; email the registered one.
-    // Hashed passwords cannot be recovered for email — skip send, keep generic response.
-    if (user && user.password && !isHashedPassword(user.password)) {
+    if (user && user.password) {
+      const passwordToSend = createTemporaryPassword();
+      await funcionarioServiceDB.setPasswordById(user.id, passwordToSend);
+
       const displayName = user.nome || 'there';
       const envLabel = getForgotPasswordEnvironmentLabel();
       const productName = envLabel
         ? `Double-Y Warehouse (${envLabel})`
         : 'Double-Y Warehouse';
       const subject = `${productName} — your password`;
-      const intro = `You requested your ${productName} password.`;
+      const intro = `A new password was issued for your ${productName} account.`;
       const text = [
         `Hello ${displayName},`,
         '',
         intro,
         '',
         `Email: ${user.email}`,
-        `Password: ${user.password}`,
+        `Password: ${passwordToSend}`,
         '',
         'If you did not request this, please contact office@doubleyitsystem.com.',
         '',
@@ -508,7 +517,7 @@ router.post('/forgot-password', async (req, res) => {
           <p>Hello ${displayName},</p>
           <p>${intro}</p>
           <p><strong>Email:</strong> ${user.email}<br>
-          <strong>Password:</strong> ${String(user.password).replace(/</g, '&lt;')}</p>
+          <strong>Password:</strong> ${String(passwordToSend).replace(/</g, '&lt;')}</p>
           <p>If you did not request this, please contact
             <a href="mailto:office@doubleyitsystem.com">office@doubleyitsystem.com</a>.
           </p>
