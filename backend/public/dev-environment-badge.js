@@ -42,10 +42,20 @@
     if (!host || host === 'localhost' || host === '127.0.0.1' || host === '[::1]') {
       return host ? 'development' : '';
     }
-    if (host.startsWith('approval.') || host === 'approval.double-y.online') {
+    if (
+      host.startsWith('approval.')
+      || host === 'approval.double-y.online'
+      || host === 'approval.doubleyitsystem.com'
+      || host.includes('approval')
+    ) {
       return 'approval';
     }
-    if (host.startsWith('homolog.') || host === 'homolog.double-y.online') {
+    if (
+      host.startsWith('homolog.')
+      || host === 'homolog.double-y.online'
+      || host === 'homolog.doubleyitsystem.com'
+      || host.includes('homolog')
+    ) {
       return 'homolog';
     }
     return '';

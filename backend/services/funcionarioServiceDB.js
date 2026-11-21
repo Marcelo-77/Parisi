@@ -180,6 +180,53 @@ class FuncionarioServiceDB {
     }
   }
 
+  // Active user credentials for password reminder (funcionarios = system users).
+  async findActiveCredentialsByEmail(email) {
+    const normalizedEmail = email != null ? String(email).trim().toLowerCase() : '';
+    if (!normalizedEmail) return null;
+
+    const selectQuery = `
+      SELECT id, nome, email, password, ativo
+      FROM ${this.tableName}
+      WHERE LOWER(email) = $1 AND ativo = true
+      LIMIT 1
+    `;
+
+    try {
+      const result = await query(selectQuery, [normalizedEmail]);
+      if (result.rows.length === 0) return null;
+      const row = result.rows[0];
+      return {
+        id: row.id,
+        nome: row.nome,
+        email: row.email,
+        password: row.password != null ? String(row.password) : ''
+      };
+    } catch (error) {
+      console.error('❌ Error fetching credentials by email:', error);
+      throw error;
+    }
+  }
+
+  async setPasswordById(id, plainPassword) {
+    const password = plainPassword != null ? String(plainPassword) : '';
+    if (!id || !password) {
+      throw new Error('Password is required');
+    }
+
+    const updateQuery = `
+      UPDATE ${this.tableName}
+      SET password = $1, atualizado_em = CURRENT_TIMESTAMP
+      WHERE id = $2 AND ativo = true
+      RETURNING id
+    `;
+    const result = await query(updateQuery, [hashPassword(password), id]);
+    if (result.rows.length === 0) {
+      throw new Error('Employee not found');
+    }
+    return true;
+  }
+
   async autenticar(email, senha) {
     const normalizedEmail = email != null ? String(email).trim().toLowerCase() : '';
     const password = senha != null ? String(senha) : '';

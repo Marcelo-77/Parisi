@@ -1,7 +1,8 @@
 (function () {
   const TAB_SESSION_KEY = 'doubley_tab_auth';
-  const SIGN_IN_LABEL = '<i class="fas fa-sign-in-alt"></i> Sign In';
-  const SIGNING_IN_LABEL = '<i class="fas fa-spinner fa-spin"></i> Signing in...';
+  const REMEMBER_EMAIL_KEY = 'doubley_login_remember_email';
+  const SIGN_IN_LABEL = 'Sign In';
+  const SIGNING_IN_LABEL = 'Signing in...';
 
   const form = document.getElementById('loginForm');
   const emailInput = document.getElementById('email');
@@ -9,21 +10,47 @@
   const loginBtn = document.getElementById('loginBtn');
   const loginError = document.getElementById('loginError');
   const loginErrorText = document.getElementById('loginErrorText');
+  const loginInfo = document.getElementById('loginInfo');
+  const loginInfoText = document.getElementById('loginInfoText');
   const captchaPanel = document.getElementById('captchaPanel');
   const captchaQuestion = document.getElementById('captchaQuestion');
   const captchaAnswerInput = document.getElementById('captchaAnswer');
   const captchaIdInput = document.getElementById('captchaId');
   const refreshCaptchaBtn = document.getElementById('refreshCaptchaBtn');
   const togglePasswordBtn = document.getElementById('togglePasswordBtn');
+  const forgotPasswordLink = document.getElementById('forgotPasswordLink');
+  const rememberMe = document.getElementById('rememberMe');
+  const loginYear = document.getElementById('loginYear');
 
   let captchaRequired = false;
+  let forgotBusy = false;
+
+  if (loginYear) {
+    loginYear.textContent = String(new Date().getFullYear());
+  }
 
   function hideError() {
+    if (!loginError) return;
     loginError.hidden = true;
     loginError.style.display = 'none';
   }
 
+  function hideInfo() {
+    if (!loginInfo) return;
+    loginInfo.hidden = true;
+    loginInfo.style.display = 'none';
+  }
+
+  function showInfo(message) {
+    hideError();
+    if (!loginInfo || !loginInfoText) return;
+    loginInfoText.textContent = message;
+    loginInfo.hidden = false;
+    loginInfo.style.display = 'flex';
+  }
+
   function showError(message, focusTarget) {
+    hideInfo();
     loginErrorText.textContent = message;
     loginError.hidden = false;
     loginError.style.display = 'flex';
@@ -37,7 +64,7 @@
 
   function setSigningIn(isSigningIn) {
     loginBtn.disabled = isSigningIn;
-    loginBtn.innerHTML = isSigningIn ? SIGNING_IN_LABEL : SIGN_IN_LABEL;
+    loginBtn.textContent = isSigningIn ? SIGNING_IN_LABEL : SIGN_IN_LABEL;
   }
 
   function hideCaptcha() {
@@ -84,6 +111,29 @@
     return passwordInput;
   }
 
+  function restoreRememberedEmail() {
+    try {
+      const saved = String(localStorage.getItem(REMEMBER_EMAIL_KEY) || '').trim();
+      if (!saved || !emailInput) return;
+      emailInput.value = saved;
+      if (rememberMe) rememberMe.checked = true;
+    } catch {
+      // ignore
+    }
+  }
+
+  function persistRememberedEmail(email) {
+    try {
+      if (rememberMe && rememberMe.checked && email) {
+        localStorage.setItem(REMEMBER_EMAIL_KEY, email);
+      } else {
+        localStorage.removeItem(REMEMBER_EMAIL_KEY);
+      }
+    } catch {
+      // ignore
+    }
+  }
+
   function getSafeNextUrl(apps, isRoot) {
     const raw = new URLSearchParams(window.location.search).get('next');
     if (!raw) return null;
@@ -117,12 +167,10 @@
         const nextUrl = getSafeNextUrl(apps, !!data.isRoot);
         if (nextUrl) return nextUrl;
 
-        // Always prefer Product (warehouse) when available.
         if (data.isRoot || apps.includes('warehouse.html')) {
           return '/warehouse.html';
         }
 
-        // Staff without Product: prefer general apps; tablet search is last.
         const preferred = [
           'location-product.html',
           'pesquisa.html',
@@ -189,10 +237,53 @@
       togglePasswordBtn.setAttribute('aria-pressed', isHidden ? 'true' : 'false');
       togglePasswordBtn.setAttribute('aria-label', isHidden ? 'Hide password' : 'Show password');
       togglePasswordBtn.title = isHidden ? 'Hide password' : 'Show password';
-      togglePasswordBtn.innerHTML = isHidden
-        ? '<i class="fas fa-eye-slash" aria-hidden="true"></i>'
-        : '<i class="fas fa-eye" aria-hidden="true"></i>';
+      togglePasswordBtn.textContent = isHidden ? 'Hide' : 'Show';
       passwordInput.focus();
+    });
+  }
+
+  async function requestPasswordReminder() {
+    if (forgotBusy) return;
+    hideError();
+    hideInfo();
+
+    const email = emailInput.value.trim();
+    if (!email) {
+      showError('Enter your email first to recover your password.', emailInput);
+      return;
+    }
+    if (email.toLowerCase() === 'root') {
+      showError('Root password is managed by system configuration.', emailInput);
+      return;
+    }
+
+    forgotBusy = true;
+    if (forgotPasswordLink) forgotPasswordLink.classList.add('is-busy');
+
+    try {
+      const res = await fetch('/api/auth/forgot-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email })
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.success) {
+        showError(data.message || 'Unable to send password reminder. Please try again.', emailInput);
+        return;
+      }
+      showInfo(data.message || 'If this email is registered, your password has been sent.');
+    } catch {
+      showError('Unable to connect to the server. Please try again.', emailInput);
+    } finally {
+      forgotBusy = false;
+      if (forgotPasswordLink) forgotPasswordLink.classList.remove('is-busy');
+    }
+  }
+
+  if (forgotPasswordLink) {
+    forgotPasswordLink.addEventListener('click', (event) => {
+      event.preventDefault();
+      requestPasswordReminder();
     });
   }
 
@@ -202,9 +293,17 @@
     });
   }
 
+  if (emailInput) {
+    emailInput.addEventListener('input', () => {
+      hideError();
+      hideInfo();
+    });
+  }
+
   form.addEventListener('submit', async (event) => {
     event.preventDefault();
     hideError();
+    hideInfo();
 
     const email = emailInput.value.trim();
     const password = passwordInput.value;
@@ -232,6 +331,7 @@
 
       if (res.ok) {
         hideCaptcha();
+        persistRememberedEmail(email);
         sessionStorage.setItem(TAB_SESSION_KEY, '1');
         try {
           localStorage.removeItem('doubley_header_stats');
@@ -269,7 +369,9 @@
   });
 
   setupPasswordToggle();
+  restoreRememberedEmail();
   checkExistingSession();
   hideError();
+  hideInfo();
   hideCaptcha();
 })();

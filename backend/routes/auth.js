@@ -11,14 +11,39 @@ const {
   verifyRootLogin,
   ROOT_USER,
   UNIVERSAL_APPLICATIONS,
+  isHashedPassword,
 } = require('../middleware/auth');
 const funcionarioServiceDB = require('../services/funcionarioServiceDB');
 const userApplicationService = require('../services/userApplicationService');
 const systemApplicationService = require('../services/systemApplicationService');
 const userSessionService = require('../services/userSessionService');
 const loginProtectionService = require('../services/loginProtectionService');
+const mailService = require('../services/mailService');
 
 const router = express.Router();
+
+const GENERIC_FORGOT_MESSAGE =
+  'If this email is registered, your password has been sent. Please check your inbox.';
+
+function getForgotPasswordEnvironmentLabel() {
+  const env = String(process.env.APP_ENV || process.env.RENDER_SERVICE_NAME || 'production')
+    .trim()
+    .toLowerCase();
+  if (!env || env === 'production' || env === 'prod' || env === 'live') return '';
+  if (env.includes('approval')) return 'Approval';
+  if (env.includes('homolog')) return 'Homolog';
+  if (env.includes('dev')) return 'Development';
+  return env.charAt(0).toUpperCase() + env.slice(1);
+}
+
+function createTemporaryPassword() {
+  const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789';
+  let out = '';
+  for (let i = 0; i < 10; i += 1) {
+    out += alphabet[crypto.randomInt(0, alphabet.length)];
+  }
+  return out;
+}
 
 async function startUserSession(req, res, user) {
   const sessionId = crypto.randomUUID();
@@ -431,6 +456,102 @@ router.post('/heartbeat', async (req, res) => {
     return res.status(500).json({
       success: false,
       error: error.message || 'Error updating session'
+    });
+  }
+});
+
+router.post('/forgot-password', async (req, res) => {
+  const emailRaw = req.body && req.body.email != null ? String(req.body.email).trim() : '';
+  const email = emailRaw.toLowerCase();
+
+  if (!email) {
+    return res.status(400).json({
+      success: false,
+      error: 'Email required',
+      message: 'Enter your email to recover your password.'
+    });
+  }
+
+  if (email === ROOT_USER) {
+    return res.status(400).json({
+      success: false,
+      error: 'Root password cannot be recovered here',
+      message: 'Root password is managed by system configuration.'
+    });
+  }
+
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    return res.status(400).json({
+      success: false,
+      error: 'Invalid email',
+      message: 'Enter a valid email address.'
+    });
+  }
+
+  try {
+    const user = await funcionarioServiceDB.findActiveCredentialsByEmail(email);
+    if (user && user.password) {
+      let passwordToSend = user.password;
+      let issuedNewPassword = false;
+
+      // Warehouse stores scrypt hashes — email a newly issued password when hashed.
+      if (isHashedPassword(user.password)) {
+        passwordToSend = createTemporaryPassword();
+        await funcionarioServiceDB.setPasswordById(user.id, passwordToSend);
+        issuedNewPassword = true;
+      }
+
+      const displayName = user.nome || 'there';
+      const envLabel = getForgotPasswordEnvironmentLabel();
+      const productName = envLabel
+        ? `Double-Y Warehouse (${envLabel})`
+        : 'Double-Y Warehouse';
+      const subject = `${productName} — your password`;
+      const intro = issuedNewPassword
+        ? `A new password was issued for your ${productName} account.`
+        : `You requested your ${productName} password.`;
+      const text = [
+        `Hello ${displayName},`,
+        '',
+        intro,
+        '',
+        `Email: ${user.email}`,
+        `Password: ${passwordToSend}`,
+        '',
+        'If you did not request this, please contact office@doubleyitsystem.com.',
+        '',
+        'Double-Y IT Systems'
+      ].join('\n');
+      const html = `
+        <div style="font-family:Segoe UI,Arial,sans-serif;color:#17243a;line-height:1.5">
+          <p>Hello ${displayName},</p>
+          <p>${intro}</p>
+          <p><strong>Email:</strong> ${user.email}<br>
+          <strong>Password:</strong> ${String(passwordToSend).replace(/</g, '&lt;')}</p>
+          <p>If you did not request this, please contact
+            <a href="mailto:office@doubleyitsystem.com">office@doubleyitsystem.com</a>.
+          </p>
+          <p>Double-Y IT Systems</p>
+        </div>
+      `;
+      await mailService.sendMail({
+        to: user.email,
+        subject,
+        text,
+        html
+      });
+    }
+
+    return res.json({
+      success: true,
+      message: GENERIC_FORGOT_MESSAGE
+    });
+  } catch (error) {
+    console.error('Forgot password error:', error);
+    return res.status(500).json({
+      success: false,
+      error: 'Forgot password failed',
+      message: 'Unable to send password reminder. Please try again.'
     });
   }
 });
