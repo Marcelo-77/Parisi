@@ -82,41 +82,21 @@ body.login-body {
 .login-card > .login-wordmark {
   margin-top: 16px;
   margin-bottom: 8px;
-  padding: 8px 14px;
-  transform: scale(0.92);
-  transform-origin: center top;
+  padding: 10px 16px;
+  align-self: center;
+  width: auto;
+  max-width: none;
+  flex: 0 0 auto;
 }
 
-/* Classic wordmark pulse (same visual effect as before) */
+/* Keep classic glyph proportions; pulse comes from styles.css */
 .login-wordmark.double-y-wordmark--login .double-y-glyph {
-  filter: drop-shadow(0 0 4px rgba(102, 126, 234, 0.35));
-  animation: doubleYGlyphPulseLogin 2.8s ease-in-out infinite;
-}
-
-.login-wordmark.double-y-wordmark--login .double-y-glyph-bottom {
-  animation-delay: 0.35s;
-}
-
-@keyframes doubleYGlyphPulseLogin {
-  0%, 100% {
-    transform: scale(1) rotate(0deg);
-    filter: drop-shadow(0 0 3px rgba(102, 126, 234, 0.25));
-  }
-  50% {
-    transform: scale(1.15) rotate(3deg);
-    filter: drop-shadow(0 0 8px rgba(118, 75, 162, 0.55));
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .login-wordmark.double-y-wordmark--login .double-y-glyph {
-    animation: none !important;
-  }
-}
-
-.login-wordmark.double-y-wordmark--login.double-y-wordmark--settled .double-y-glyph {
-  animation: none !important;
-  transform: none;
+  width: 1rem;
+  height: auto;
+  max-width: none;
+  object-fit: contain;
+  display: block;
+  flex-shrink: 0;
 }
 
 .login-card h1 {
