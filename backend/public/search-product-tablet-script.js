@@ -16,6 +16,7 @@
     searchInput: document.getElementById('searchInput'),
     searchBtn: document.getElementById('searchBtn'),
     clearBtn: document.getElementById('clearBtn'),
+    askForkliftDataBtn: document.getElementById('askForkliftDataBtn'),
     status: document.getElementById('sptStatus'),
     resultsCount: document.getElementById('resultsCount'),
     productsBody: document.getElementById('productsBody'),
@@ -291,6 +292,7 @@
           forkliftPreferredMessageType = 'SMS';
           forkliftDriversLoadedAt = 0;
           syncLocationsHint();
+          syncAskForkliftDataButton();
           return;
         }
         const previousEnabled = forkliftUseEnabled;
@@ -301,6 +303,7 @@
           : 'SMS';
         forkliftDriversLoadedAt = Date.now();
         syncLocationsHint();
+        syncAskForkliftDataButton();
         if (refreshLocations && previousEnabled !== forkliftUseEnabled && lastLocations.length && selectedProduct) {
           renderLocations(lastLocations, selectedProduct);
         }
@@ -311,6 +314,7 @@
         forkliftPreferredMessageType = 'SMS';
         forkliftDriversLoadedAt = 0;
         syncLocationsHint();
+        syncAskForkliftDataButton();
       } finally {
         forkliftDriversLoading = null;
       }
@@ -377,7 +381,19 @@
     }).filter((item) => item.productCode);
   }
 
-  function buildForkliftMessageContent({ locationCode, productCode, productName, requester, locationSection, requestedItems }) {
+  function buildForkliftMessageContent({
+    locationCode,
+    productCode,
+    productName,
+    requester,
+    locationSection,
+    requestedItems,
+    skipLocationProduct = false,
+    freeComment = false
+  }) {
+    // Ask Forklift Data: user writes their own comment — no generated default text.
+    if (freeComment) return '';
+
     const location = String(locationCode || '').trim();
     const section = String(locationSection || '').trim();
     const requestedBy = String(requester || '').trim();
@@ -391,17 +407,17 @@
     const lines = [];
     if (requestedBy) lines.push(`Requested by: ${requestedBy}`);
     if (section) lines.push(`Location section: ${section}`);
-    lines.push(`Location Code: ${location}`);
+    if (location) lines.push(`Location Code: ${location}`);
     items.forEach((item) => {
       const code = String(item.productCode || '').trim();
       const name = String(item.productName || '').trim();
       const productLine = name ? `${code} - ${name}` : code;
       const qty = Number(item.qty);
-      lines.push(`Product Code and name: ${productLine}`);
+      if (productLine) lines.push(`Product Code and name: ${productLine}`);
       if (Number.isFinite(qty) && qty > 0) {
         lines.push(`Qty requested: ${qty}`);
       }
-      if (location && code) {
+      if (!skipLocationProduct && location && code) {
         lines.push(`Location Product: ${locationProductLink(location, code)}`);
       }
     });
@@ -506,6 +522,8 @@
   function refreshForkliftMessageContent(context, requester) {
     const el = document.getElementById('sptForkliftMessageContent');
     if (!el || !context) return;
+    // Keep the user's free comment — do not overwrite with a generated default.
+    if (context.freeComment) return;
     const requestedItems = getForkliftRequestedLines().filter((item) => item.qty > 0);
     el.value = buildForkliftMessageContent({
       locationCode: context.locationCode || '',
@@ -513,6 +531,8 @@
       productName: context.productName || '',
       requester: requester || document.getElementById('sptForkliftRequester')?.value || '',
       locationSection: context.locationSection || '',
+      skipLocationProduct: Boolean(context.skipLocationProduct),
+      freeComment: Boolean(context.freeComment),
       requestedItems: requestedItems.length ? requestedItems : [{
         productCode: context.productCode || '',
         productName: context.productName || '',
@@ -521,15 +541,45 @@
     });
   }
 
-  function renderForkliftQtyRows(productsAtLocation, selectedProductCode) {
+  function setForkliftMessageFieldMode(freeComment) {
+    const el = document.getElementById('sptForkliftMessageContent');
+    const label = document.querySelector('label[for="sptForkliftMessageContent"]');
+    const qtyLabel = document.getElementById('sptForkliftQtyLabel');
+    const qtyHelp = document.getElementById('sptForkliftQtyHelp');
+    if (label) {
+      label.textContent = freeComment ? 'Your comment *' : 'Message content *';
+    }
+    if (qtyLabel) {
+      qtyLabel.textContent = freeComment ? 'Qty requested (optional)' : 'Qty requested *';
+    }
+    if (qtyHelp) {
+      qtyHelp.textContent = freeComment
+        ? 'Optional. No Location Product link is sent — write your comment below.'
+        : 'Enter quantity for the product, or for each product at this location.';
+    }
+    if (!el) return;
+    if (freeComment) {
+      el.value = '';
+      el.placeholder = 'Write your comment for the forklift driver...';
+      el.dataset.freeComment = '1';
+    } else {
+      el.placeholder = '';
+      delete el.dataset.freeComment;
+    }
+  }
+
+  function renderForkliftQtyRows(productsAtLocation, selectedProductCode, options = {}) {
     const list = document.getElementById('sptForkliftQtyList');
     if (!list) return;
+    const freeQty = options.freeQty === true;
     const selected = String(selectedProductCode || '').trim().toUpperCase();
     const rows = Array.isArray(productsAtLocation) && productsAtLocation.length
       ? productsAtLocation
       : [];
     if (!rows.length) {
-      list.innerHTML = '<p class="spt-forklift-qty-empty">No products at this location.</p>';
+      list.innerHTML = freeQty
+        ? '<p class="spt-forklift-qty-empty">Select a product first.</p>'
+        : '<p class="spt-forklift-qty-empty">No products at this location.</p>';
       return;
     }
     list.innerHTML = rows.map((item) => {
@@ -538,24 +588,38 @@
       const current = Math.max(0, Number(item.quantityCurrent != null ? item.quantityCurrent : 0) || 0);
       const isSelected = code.toUpperCase() === selected;
       const label = name ? `${code} — ${name}` : code;
-      const disabled = current <= 0 ? ' disabled' : '';
+      const disabled = !freeQty && current <= 0 ? ' disabled' : '';
+      const maxAttr = freeQty ? '' : ` max="${escapeHtml(current)}"`;
+      const metaQty = freeQty
+        ? (current > 0 ? `<span>Qty total: ${escapeHtml(current)}</span>` : '<span>No location required</span>')
+        : `<span>Qty current: ${escapeHtml(current)}</span>`;
       return `
-        <div class="spt-forklift-qty-row${isSelected ? ' is-selected' : ''}" data-product="${escapeHtml(code)}" data-name="${escapeHtml(name)}" data-qty-current="${escapeHtml(current)}">
+        <div class="spt-forklift-qty-row${isSelected ? ' is-selected' : ''}" data-product="${escapeHtml(code)}" data-name="${escapeHtml(name)}" data-qty-current="${escapeHtml(freeQty ? 999999 : current)}" data-free-qty="${freeQty ? '1' : '0'}">
           <div class="spt-forklift-qty-meta">
             <strong>${escapeHtml(label)}</strong>
-            <span>Qty current: ${escapeHtml(current)}</span>
+            ${metaQty}
           </div>
-          <input type="number" min="1" max="${escapeHtml(current)}" step="1" inputmode="numeric" class="spt-forklift-qty-input" aria-label="Qty requested for ${escapeHtml(code)}" placeholder="Qty"${disabled}>
+          <input type="number" min="1"${maxAttr} step="1" inputmode="numeric" class="spt-forklift-qty-input" aria-label="Qty requested for ${escapeHtml(code)}" placeholder="Qty"${disabled}>
         </div>
       `;
     }).join('');
     list.querySelectorAll('.spt-forklift-qty-input').forEach((input) => {
       input.addEventListener('input', () => {
         const row = input.closest('.spt-forklift-qty-row');
-        const max = Number(row?.getAttribute('data-qty-current') || 0);
-        const clamped = normalizeRequestedQty(input.value, max);
-        if (String(input.value || '').trim() !== '' && Number(input.value) !== clamped) {
-          input.value = clamped > 0 ? String(clamped) : '';
+        const isFree = row?.getAttribute('data-free-qty') === '1';
+        if (!isFree) {
+          const max = Number(row?.getAttribute('data-qty-current') || 0);
+          const clamped = normalizeRequestedQty(input.value, max);
+          if (String(input.value || '').trim() !== '' && Number(input.value) !== clamped) {
+            input.value = clamped > 0 ? String(clamped) : '';
+          }
+        } else {
+          const qty = Number(input.value);
+          if (String(input.value || '').trim() !== '' && (!Number.isFinite(qty) || qty < 1)) {
+            input.value = '';
+          } else if (Number.isFinite(qty) && qty > 0 && Math.floor(qty) !== qty) {
+            input.value = String(Math.floor(qty));
+          }
         }
         refreshForkliftMessageContent(
           forkliftContext,
@@ -565,7 +629,7 @@
     });
     const focusRow = list.querySelector('.spt-forklift-qty-row.is-selected .spt-forklift-qty-input')
       || list.querySelector('.spt-forklift-qty-input');
-    if (focusRow && rows.length === 1) {
+    if (focusRow && rows.length === 1 && !forkliftContext?.freeComment) {
       try { focusRow.focus({ preventScroll: true }); } catch (_) { focusRow.focus(); }
     }
   }
@@ -644,6 +708,14 @@
     hideForkliftModal(els.forkliftRequestModal);
     pendingForkliftPayload = null;
     forkliftContext = null;
+    setForkliftMessageFieldMode(false);
+  }
+
+  function syncAskForkliftDataButton() {
+    const btn = els.askForkliftDataBtn;
+    if (!btn) return;
+    btn.hidden = !forkliftUseEnabled;
+    btn.disabled = !forkliftUseEnabled;
   }
 
   function closeForkliftConfirmModal() {
@@ -672,6 +744,87 @@
     showForkliftModal(els.forkliftConfirmModal);
   }
 
+  async function openAskForkliftDataRequest() {
+    if (!forkliftUseEnabled && !forkliftDriversLoadedAt) {
+      await loadForkliftSettings({ refreshLocations: false });
+    }
+    if (!forkliftUseEnabled) {
+      alert('Forklift is disabled. Turn on Use forklift in Setting Forklift Driver to enable requests.');
+      return;
+    }
+
+    const productCode = String(selectedProduct?.codigo || selectedCode || '').trim();
+    const productName = String(selectedProduct?.nome || '').trim();
+    if (!productCode) {
+      alert('Select a product in the table first.');
+      return;
+    }
+
+    const qtyTotal = Number(selectedProduct?.quantidade != null ? selectedProduct.quantidade : 0) || 0;
+    forkliftContext = {
+      locationCode: '',
+      locationSection: '',
+      productCode,
+      productName,
+      skipLocationProduct: true,
+      freeComment: true
+    };
+    pendingForkliftPayload = null;
+
+    document.getElementById('sptForkliftRequestNumber').value = 'Loading...';
+    document.getElementById('sptForkliftRequestDatetime').value = new Date().toLocaleString();
+    document.getElementById('sptForkliftSubject').value = '';
+    document.getElementById('sptForkliftSubject').placeholder = 'Subject...';
+    document.getElementById('sptForkliftRequester').value = cachedRequesterName || 'Loading...';
+    const prioritySelect = document.getElementById('sptForkliftPriority');
+    if (prioritySelect) prioritySelect.value = 'NORMAL';
+    if (els.forkliftMessageType) {
+      els.forkliftMessageType.value = forkliftPreferredMessageType;
+      els.forkliftMessageType.disabled = true;
+    }
+    fillForkliftDriverOptions(forkliftPreferredMessageType);
+    setForkliftMessageFieldMode(true);
+    renderForkliftQtyRows([{
+      productCode,
+      productName,
+      quantityCurrent: qtyTotal
+    }], productCode, { freeQty: true });
+    showForkliftModal(els.forkliftRequestModal);
+    document.getElementById('sptForkliftMessageContent')?.focus();
+
+    try {
+      const requesterPromise = getLoggedRequesterName();
+      const driversPromise = loadForkliftSettings({ refreshLocations: false });
+      const requestNumberPromise = fetchNextForkliftRequestNumber();
+
+      const requester = await requesterPromise;
+      document.getElementById('sptForkliftRequester').value = requester;
+
+      await driversPromise;
+      if (!forkliftUseEnabled) {
+        closeForkliftRequestModal();
+        alert('Forklift is disabled. Turn on Use forklift in Setting Forklift Driver to enable requests.');
+        return;
+      }
+      if (els.forkliftMessageType) {
+        els.forkliftMessageType.value = forkliftPreferredMessageType;
+      }
+      fillForkliftDriverOptions(forkliftPreferredMessageType);
+      syncAskForkliftDataButton();
+
+      const nextRequestNumber = await requestNumberPromise;
+      document.getElementById('sptForkliftRequestNumber').value = nextRequestNumber;
+    } catch (error) {
+      console.error('Error preparing Ask Forklift Data request:', error);
+      document.getElementById('sptForkliftRequestNumber').value = 'Next available';
+      const requesterEl = document.getElementById('sptForkliftRequester');
+      if (!requesterEl.value || requesterEl.value === 'Loading...') {
+        requesterEl.value = cachedRequesterName || 'User';
+      }
+      fillForkliftDriverOptions(forkliftPreferredMessageType);
+    }
+  }
+
   async function openTabletForkliftRequest(locationCode, locationSection) {
     if (!forkliftUseEnabled && !forkliftDriversLoadedAt) {
       await loadForkliftSettings({ refreshLocations: false });
@@ -689,7 +842,9 @@
       locationCode: code,
       locationSection: String(locationSection || '').trim(),
       productCode,
-      productName
+      productName,
+      skipLocationProduct: false,
+      freeComment: false
     };
     pendingForkliftPayload = null;
 
@@ -697,6 +852,7 @@
     document.getElementById('sptForkliftRequestNumber').value = 'Loading...';
     document.getElementById('sptForkliftRequestDatetime').value = new Date().toLocaleString();
     document.getElementById('sptForkliftSubject').value = 'Lower the pallet';
+    document.getElementById('sptForkliftSubject').placeholder = '';
     document.getElementById('sptForkliftRequester').value = cachedRequesterName || 'Loading...';
     const prioritySelect = document.getElementById('sptForkliftPriority');
     if (prioritySelect) prioritySelect.value = 'NORMAL';
@@ -705,6 +861,7 @@
       els.forkliftMessageType.disabled = true;
     }
     fillForkliftDriverOptions(forkliftPreferredMessageType);
+    setForkliftMessageFieldMode(false);
     renderForkliftQtyRows([{
       productCode,
       productName,
@@ -921,29 +1078,36 @@
     els.productsBody?.addEventListener('keydown', onProductsKeydown);
     els.locationsBody?.addEventListener('click', onLocationsClick);
 
+    els.askForkliftDataBtn?.addEventListener('click', () => {
+      void openAskForkliftDataRequest();
+    });
     els.forkliftDriverSelect?.addEventListener('change', updateForkliftDriverContactHint);
     els.forkliftRequestForm?.addEventListener('submit', (event) => {
       event.preventDefault();
+      const freeComment = Boolean(forkliftContext?.freeComment);
       const messageType = forkliftPreferredMessageType || String(els.forkliftMessageType?.value || 'SMS').toUpperCase();
       const priorityRaw = String(document.getElementById('sptForkliftPriority')?.value || 'NORMAL').trim().toUpperCase();
       const allowedPriorities = ['LOW', 'NORMAL', 'HIGH', 'URGENT'];
       const priority = allowedPriorities.includes(priorityRaw) ? priorityRaw : 'NORMAL';
-      const subject = String(document.getElementById('sptForkliftSubject')?.value || '').trim() || 'Lower the pallet';
+      const subjectRaw = String(document.getElementById('sptForkliftSubject')?.value || '').trim();
+      const subject = subjectRaw || (freeComment ? 'Ask Forklift Data' : 'Lower the pallet');
       const requestedLines = getForkliftRequestedLines();
-      const overQty = requestedLines.find((item) => item.qty > item.qtyCurrent);
-      if (overQty) {
-        alert(`Qty requested for ${overQty.productCode} must be ${overQty.qtyCurrent} or less (qty at this location).`);
-        const overInput = document.querySelector(`#sptForkliftQtyList .spt-forklift-qty-row[data-product="${CSS.escape(overQty.productCode)}"] input`);
-        overInput?.focus();
-        return;
+      if (!freeComment) {
+        const overQty = requestedLines.find((item) => item.qty > item.qtyCurrent);
+        if (overQty) {
+          alert(`Qty requested for ${overQty.productCode} must be ${overQty.qtyCurrent} or less (qty at this location).`);
+          const overInput = document.querySelector(`#sptForkliftQtyList .spt-forklift-qty-row[data-product="${CSS.escape(overQty.productCode)}"] input`);
+          overInput?.focus();
+          return;
+        }
+        const requestedItems = requestedLines.filter((item) => item.qty > 0);
+        if (!requestedItems.length) {
+          alert('Enter Qty requested for at least one product. It cannot be greater than Qty current at this location.');
+          document.querySelector('#sptForkliftQtyList .spt-forklift-qty-input:not([disabled])')?.focus();
+          return;
+        }
+        refreshForkliftMessageContent(forkliftContext, document.getElementById('sptForkliftRequester')?.value || '');
       }
-      const requestedItems = requestedLines.filter((item) => item.qty > 0);
-      if (!requestedItems.length) {
-        alert('Enter Qty requested for at least one product. It cannot be greater than Qty current at this location.');
-        document.querySelector('#sptForkliftQtyList .spt-forklift-qty-input:not([disabled])')?.focus();
-        return;
-      }
-      refreshForkliftMessageContent(forkliftContext, document.getElementById('sptForkliftRequester')?.value || '');
       const messageContent = String(document.getElementById('sptForkliftMessageContent')?.value || '').trim();
       const selectedValue = String(els.forkliftDriverSelect?.value || '');
       const driverNotDefined = selectedValue === '__NOT_DEFINED__';
@@ -955,7 +1119,7 @@
         return;
       }
       if (!messageContent) {
-        alert('Message content is required.');
+        alert(freeComment ? 'Write your comment for the forklift driver.' : 'Message content is required.');
         document.getElementById('sptForkliftMessageContent')?.focus();
         return;
       }
@@ -1058,6 +1222,7 @@
   loadStatistics();
   // Prefetch requester + drivers so opening the dialog is fast.
   getLoggedRequesterName().catch(() => {});
+  syncAskForkliftDataButton();
   loadForkliftSettings({ refreshLocations: true }).catch(() => {});
 
   if (isTabletOrPhone()) {
