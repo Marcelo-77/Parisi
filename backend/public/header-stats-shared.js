@@ -80,6 +80,12 @@
     }
   }
 
+  function setMetricText(selector, value) {
+    document.querySelectorAll(selector).forEach((el) => {
+      el.textContent = value;
+    });
+  }
+
   function applyToDom(data) {
     const stats = data || readCache() || {
       total: 0,
@@ -88,14 +94,25 @@
       entradas: 0,
       saidas: 0
     };
+    const total = String(stats.total ?? 0);
+    const low = String((stats.estoqueBaixo ?? 0) + (stats.esgotado ?? 0));
+    const entries = String(stats.entradas ?? 0);
+    const exits = String(stats.saidas ?? 0);
+
     const totalEl = document.getElementById('totalItems');
     const lowEl = document.getElementById('lowStockItems');
     const entriesEl = document.getElementById('totalEntradas');
     const exitsEl = document.getElementById('totalSaidas');
-    if (totalEl) totalEl.textContent = String(stats.total ?? 0);
-    if (lowEl) lowEl.textContent = String((stats.estoqueBaixo ?? 0) + (stats.esgotado ?? 0));
-    if (entriesEl) entriesEl.textContent = String(stats.entradas ?? 0);
-    if (exitsEl) exitsEl.textContent = String(stats.saidas ?? 0);
+    if (totalEl) totalEl.textContent = total;
+    if (lowEl) lowEl.textContent = low;
+    if (entriesEl) entriesEl.textContent = entries;
+    if (exitsEl) exitsEl.textContent = exits;
+
+    // Warehouse home dashboard cards (Sidebar layout).
+    setMetricText('[data-metric="totalItems"], [data-metric="overviewTotal"]', total);
+    setMetricText('[data-metric="lowStock"], [data-metric="overviewLow"]', low);
+    setMetricText('[data-metric="entriesToday"], [data-metric="overviewEntries"]', entries);
+    setMetricText('[data-metric="exitsToday"], [data-metric="overviewExits"]', exits);
     return stats;
   }
 

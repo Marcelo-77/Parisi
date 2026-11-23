@@ -156,8 +156,13 @@
   }
 
   async function loadStats() {
+    // Use login cache only. Fresh server fetch happens on first create (login)
+    // or when the user clicks Entries/Exits to open the charts.
     const cached = readCachedStats();
-    if (cached) applyStats(cached);
+    if (cached) {
+      applyStats(cached);
+      return;
+    }
 
     try {
       if (window.DoubleYHeaderStats?.refreshFromServer) {
@@ -169,9 +174,16 @@
       const data = await res.json().catch(() => ({}));
       if (res.ok && data.success && data.data) {
         applyStats(data.data);
+        try {
+          const payload = JSON.stringify(data.data);
+          localStorage.setItem('doubley_header_stats', payload);
+          sessionStorage.setItem('doubley_header_stats', payload);
+        } catch {
+          // ignore
+        }
       }
     } catch {
-      // keep cached values
+      // keep empty placeholders
     }
   }
 
