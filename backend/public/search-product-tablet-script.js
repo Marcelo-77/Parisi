@@ -391,7 +391,7 @@
     skipLocationProduct = false,
     freeComment = false
   }) {
-    // Ask Forklift Data: user writes their own comment — no generated default text.
+    // Ask Forklift no Data: user writes their own comment — no generated default text.
     if (freeComment) return '';
 
     const location = String(locationCode || '').trim();
@@ -554,7 +554,7 @@
     }
     if (qtyHelp) {
       qtyHelp.textContent = freeComment
-        ? 'Optional. No Location Product link is sent — write your comment below.'
+        ? 'Optional. Ask Forklift no Data — no Location Product link; write your comment below.'
         : 'Enter quantity for the product, or for each product at this location.';
     }
     if (!el) return;
@@ -815,7 +815,7 @@
       const nextRequestNumber = await requestNumberPromise;
       document.getElementById('sptForkliftRequestNumber').value = nextRequestNumber;
     } catch (error) {
-      console.error('Error preparing Ask Forklift Data request:', error);
+      console.error('Error preparing Ask Forklift no Data request:', error);
       document.getElementById('sptForkliftRequestNumber').value = 'Next available';
       const requesterEl = document.getElementById('sptForkliftRequester');
       if (!requesterEl.value || requesterEl.value === 'Loading...') {
@@ -1090,7 +1090,7 @@
       const allowedPriorities = ['LOW', 'NORMAL', 'HIGH', 'URGENT'];
       const priority = allowedPriorities.includes(priorityRaw) ? priorityRaw : 'NORMAL';
       const subjectRaw = String(document.getElementById('sptForkliftSubject')?.value || '').trim();
-      const subject = subjectRaw || (freeComment ? 'Ask Forklift Data' : 'Lower the pallet');
+      const subject = subjectRaw || (freeComment ? 'Ask Forklift no Data' : 'Lower the pallet');
       const requestedLines = getForkliftRequestedLines();
       if (!freeComment) {
         const overQty = requestedLines.find((item) => item.qty > item.qtyCurrent);
