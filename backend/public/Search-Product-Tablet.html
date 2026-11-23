@@ -8,7 +8,7 @@
     <link rel="stylesheet" href="styles.css">
     <link rel="stylesheet" href="warehouse-styles.css">
     <link rel="stylesheet" href="pesquisa-styles.css">
-    <link rel="stylesheet" href="search-product-tablet-styles.css">
+    <link rel="stylesheet" href="search-product-tablet-styles.css?v=20261123spt1">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
 </head>
 <body class="search-product-tablet-page">
@@ -55,10 +55,27 @@
 
         <main class="main-content">
             <section class="spt-panel" id="sptPanel" tabindex="-1" aria-label="Tablet product search">
+                <div class="spt-page-hero">
+                    <div class="spt-page-hero-icon" aria-hidden="true">
+                        <i class="fas fa-search"></i>
+                    </div>
+                    <div class="spt-page-hero-text">
+                        <h2>Search Product Tablet</h2>
+                        <p>Find products, check stock and view locations.</p>
+                    </div>
+                    <button type="button" id="closeBtn" class="spt-close-btn location-page-close-btn" title="Close">
+                        <i class="fas fa-door-open" aria-hidden="true"></i>
+                        <span>Close</span>
+                    </button>
+                </div>
+
                 <div class="spt-search-card" id="sptSearchBar">
                     <div class="spt-search-card-head">
-                        <h3><i class="fas fa-filter"></i> Search by</h3>
-                        <span class="spt-search-card-tag">Display</span>
+                        <h3><i class="fas fa-filter" aria-hidden="true"></i> Search by</h3>
+                        <button type="button" id="sptSearchHelpBtn" class="spt-help-btn" aria-expanded="false" aria-controls="sptSearchHelpPanel" title="Search help">
+                            <i class="fas fa-circle-question" aria-hidden="true"></i>
+                            <span>Help</span>
+                        </button>
                     </div>
                     <div class="spt-search-by" role="radiogroup" aria-label="Search by">
                         <label class="spt-search-by-row" for="searchByCodeRadio">
@@ -73,10 +90,6 @@
                             <input type="checkbox" id="exactCodeCheckbox" checked>
                             <span>Code equals</span>
                         </label>
-                        <button type="button" id="sptSearchHelpBtn" class="spt-help-btn" aria-expanded="false" aria-controls="sptSearchHelpPanel" title="Search help">
-                            <i class="fas fa-circle-question" aria-hidden="true"></i>
-                            <span>Help</span>
-                        </button>
                     </div>
                     <div id="sptSearchHelpPanel" class="spt-help-panel" hidden>
                         <h4>How search works</h4>
@@ -91,12 +104,15 @@
                         <option value="nome">Name</option>
                     </select>
                     <div class="spt-search-bar">
-                        <input type="text" id="searchInput" class="spt-input" placeholder="Enter code or name..." autocomplete="off" enterkeyhint="search" inputmode="search" aria-label="Enter code or name">
-                        <button type="button" id="searchBtn" class="btn btn-primary spt-btn">
-                            <i class="fas fa-search"></i> Search
+                        <label class="spt-input-wrap" for="searchInput">
+                            <i class="fas fa-barcode" aria-hidden="true"></i>
+                            <input type="text" id="searchInput" class="spt-input" placeholder="Enter exact code..." autocomplete="off" enterkeyhint="search" inputmode="search" aria-label="Enter code or name">
+                        </label>
+                        <button type="button" id="searchBtn" class="btn btn-primary spt-btn spt-btn-search">
+                            <i class="fas fa-search" aria-hidden="true"></i> Search
                         </button>
-                        <button type="button" id="closeBtn" class="btn btn-secondary spt-btn location-page-close-btn" title="Close">
-                            <i class="fas fa-door-open"></i> Close
+                        <button type="button" id="clearBtn" class="btn btn-secondary spt-btn spt-btn-clear">
+                            <i class="fas fa-trash-can" aria-hidden="true"></i> Clear
                         </button>
                     </div>
                 </div>
@@ -106,8 +122,8 @@
                 <div class="spt-layout">
                     <div class="spt-card">
                         <div class="spt-card-head">
-                            <h2><i class="fas fa-box"></i> Products</h2>
-                            <span id="resultsCount" class="spt-count">0</span>
+                            <h2><i class="fas fa-cubes" aria-hidden="true"></i> Products</h2>
+                            <span id="resultsCount" class="spt-count">Total: 0</span>
                         </div>
                         <div class="spt-table-wrap">
                             <table class="spt-table" id="productsTable">
@@ -121,7 +137,16 @@
                                 </thead>
                                 <tbody id="productsBody">
                                     <tr class="spt-empty-row">
-                                        <td colspan="4">Search by code or name to find products.</td>
+                                        <td colspan="4">
+                                            <div class="spt-empty-state">
+                                                <div class="spt-empty-art spt-empty-art-boxes" aria-hidden="true">
+                                                    <i class="fas fa-box"></i>
+                                                    <i class="fas fa-box"></i>
+                                                    <i class="fas fa-box"></i>
+                                                </div>
+                                                <p>Search by code or name to find products.</p>
+                                            </div>
+                                        </td>
                                     </tr>
                                 </tbody>
                             </table>
@@ -130,10 +155,10 @@
 
                     <div class="spt-card" id="locationsCard">
                         <div class="spt-card-head">
-                            <h2><i class="fas fa-map-marker-alt"></i> Product Locations</h2>
+                            <h2><i class="fas fa-map-marker-alt" aria-hidden="true"></i> Product Locations</h2>
                             <span id="selectedProductLabel" class="spt-selected-label"></span>
                         </div>
-                        <p class="spt-locations-hint" id="sptLocationsHint">Locations with situation Full and active status (A).</p>
+                        <p class="spt-locations-hint" id="sptLocationsHint">Locations with situation Full and active status (A). Tap a Location Code to request a forklift driver.</p>
                         <div class="spt-table-wrap">
                             <table class="spt-table product-location-table" id="locationsTable">
                                 <thead>
@@ -146,7 +171,14 @@
                                 </thead>
                                 <tbody id="locationsBody">
                                     <tr class="spt-empty-row">
-                                        <td colspan="4">Select a product to view locations.</td>
+                                        <td colspan="4">
+                                            <div class="spt-empty-state">
+                                                <div class="spt-empty-art spt-empty-art-forklift" aria-hidden="true">
+                                                    <i class="fas fa-truck-ramp-box"></i>
+                                                </div>
+                                                <p>Select a product to view locations.</p>
+                                            </div>
+                                        </td>
                                     </tr>
                                 </tbody>
                             </table>
@@ -251,6 +283,6 @@
     </div>
 
     <script src="location-page-close.js"></script>
-    <script src="search-product-tablet-script.js"></script>
+    <script src="search-product-tablet-script.js?v=20261123spt1"></script>
 </body>
 </html>

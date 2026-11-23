@@ -15,6 +15,7 @@
     searchHelpPanel: document.getElementById('sptSearchHelpPanel'),
     searchInput: document.getElementById('searchInput'),
     searchBtn: document.getElementById('searchBtn'),
+    clearBtn: document.getElementById('clearBtn'),
     status: document.getElementById('sptStatus'),
     resultsCount: document.getElementById('resultsCount'),
     productsBody: document.getElementById('productsBody'),
@@ -149,28 +150,40 @@
     els.status.classList.toggle('is-error', Boolean(isError));
   }
 
-  function setLocationsEmpty(message) {
-    if (!els.locationsBody) return;
-    els.locationsBody.innerHTML = `
+  function setResultsCount(count) {
+    if (els.resultsCount) els.resultsCount.textContent = `Total: ${Number(count) || 0}`;
+  }
+
+  function emptyStateHtml(kind, message) {
+    const art = kind === 'locations'
+      ? `<div class="spt-empty-art spt-empty-art-forklift" aria-hidden="true"><i class="fas fa-truck-ramp-box"></i></div>`
+      : `<div class="spt-empty-art spt-empty-art-boxes" aria-hidden="true"><i class="fas fa-box"></i><i class="fas fa-box"></i><i class="fas fa-box"></i></div>`;
+    return `
       <tr class="spt-empty-row">
-        <td colspan="4">${escapeHtml(message)}</td>
+        <td colspan="4">
+          <div class="spt-empty-state">
+            ${art}
+            <p>${escapeHtml(message)}</p>
+          </div>
+        </td>
       </tr>
     `;
+  }
+
+  function setLocationsEmpty(message) {
+    if (!els.locationsBody) return;
+    els.locationsBody.innerHTML = emptyStateHtml('locations', message);
   }
 
   function setProductsEmpty(message) {
     if (!els.productsBody) return;
-    els.productsBody.innerHTML = `
-      <tr class="spt-empty-row">
-        <td colspan="4">${escapeHtml(message)}</td>
-      </tr>
-    `;
-    if (els.resultsCount) els.resultsCount.textContent = '0';
+    els.productsBody.innerHTML = emptyStateHtml('products', message);
+    setResultsCount(0);
   }
 
   function renderProducts(list) {
     products = Array.isArray(list) ? list : [];
-    if (els.resultsCount) els.resultsCount.textContent = String(products.length);
+    setResultsCount(products.length);
 
     if (!products.length) {
       setProductsEmpty('No products found.');
@@ -244,6 +257,20 @@
   function prepareSearchInputForNextEntry() {
     if (!els.searchInput) return;
     els.searchInput.value = '';
+  }
+
+  function clearSearchResults() {
+    products = [];
+    selectedCode = '';
+    selectedProduct = null;
+    lastLocations = [];
+    if (els.searchInput) els.searchInput.value = '';
+    setStatus('');
+    setProductsEmpty('Search by code or name to find products.');
+    if (els.selectedProductLabel) els.selectedProductLabel.textContent = '';
+    setLocationsEmpty('Select a product to view locations.');
+    syncSearchByField(getSearchBy());
+    els.searchInput?.focus();
   }
 
   async function loadForkliftSettings(options = {}) {
@@ -857,6 +884,7 @@
 
   function bindEvents() {
     els.searchBtn?.addEventListener('click', searchProducts);
+    els.clearBtn?.addEventListener('click', clearSearchResults);
     els.searchInput?.addEventListener('keydown', (event) => {
       if (event.key === 'Enter') {
         event.preventDefault();
