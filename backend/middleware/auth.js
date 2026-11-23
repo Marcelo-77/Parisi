@@ -12,7 +12,9 @@ const SESSION_PAYLOAD_SEPARATOR = ':';
 const PAGE_ACCESS_ALIASES = {
   'location-migrate-status.html': 'Setting-Location.html',
   'warehouse-home.html': 'warehouse.html',
-  'Setting-Screen-Display.html': 'System-settings.html'
+  'Setting-Screen-Display.html': 'System-settings.html',
+  'New-Company.html': 'warehouse.html',
+  'search-company.html': 'warehouse.html'
 };
 
 function signToken(payload) {

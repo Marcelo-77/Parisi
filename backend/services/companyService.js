@@ -5,6 +5,31 @@ const COMPANY_COLUMNS = `
   id, name, logo, responsible_name, email, phone, address, criado_em, atualizado_em
 `;
 
+let schemaReady = false;
+
+async function ensureSchema() {
+  if (schemaReady) return;
+  await query(`
+    CREATE TABLE IF NOT EXISTS company (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      name VARCHAR(150) NOT NULL UNIQUE,
+      logo TEXT,
+      responsible_name VARCHAR(100),
+      email VARCHAR(255),
+      phone VARCHAR(20),
+      address VARCHAR(255),
+      criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      atualizado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+  await query(`ALTER TABLE company ADD COLUMN IF NOT EXISTS logo TEXT`);
+  await query(`ALTER TABLE company ADD COLUMN IF NOT EXISTS responsible_name VARCHAR(100)`);
+  await query(`ALTER TABLE company ADD COLUMN IF NOT EXISTS email VARCHAR(255)`);
+  await query(`ALTER TABLE company ADD COLUMN IF NOT EXISTS phone VARCHAR(20)`);
+  await query(`ALTER TABLE company ADD COLUMN IF NOT EXISTS address VARCHAR(255)`);
+  schemaReady = true;
+}
+
 function mapRow(row, options = {}) {
   const includeLogo = options.includeLogo !== false;
   return {
@@ -67,6 +92,7 @@ function normalizePayload(data, { requireName = false, existing = null } = {}) {
 }
 
 async function list(filters = {}) {
+  await ensureSchema();
   const whereClauses = [];
   const values = [];
   let idx = 1;
@@ -85,6 +111,7 @@ async function list(filters = {}) {
 }
 
 async function findById(id) {
+  await ensureSchema();
   const result = await query(
     `SELECT ${COMPANY_COLUMNS} FROM ${TABLE} WHERE id = $1`,
     [id]
@@ -116,12 +143,14 @@ function parseStoredLogo(logo) {
 }
 
 async function findLogoById(id) {
+  await ensureSchema();
   const result = await query(`SELECT logo FROM ${TABLE} WHERE id = $1`, [id]);
   if (!result.rows.length) return null;
   return parseStoredLogo(result.rows[0].logo);
 }
 
 async function create(data) {
+  await ensureSchema();
   const payload = normalizePayload(data, { requireName: true });
 
   try {
@@ -148,6 +177,7 @@ async function create(data) {
 }
 
 async function update(id, data) {
+  await ensureSchema();
   const existing = await findById(id);
   if (!existing) {
     throw new Error('Company not found');
