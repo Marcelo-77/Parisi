@@ -153,7 +153,8 @@ router.put('/screen-display', async (req, res) => {
     const screenDisplay = await userUiPreferencesService.upsertForOwner(ownerKey, {
       mode: body.mode,
       color: body.color,
-      tone: body.tone
+      tone: body.tone,
+      layoutNoticeSeen: body.layoutNoticeSeen
     });
     return res.json({ success: true, screenDisplay });
   } catch (error) {

@@ -1,0 +1,121 @@
+.layout-refresh-notice-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 14000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 18px;
+  background: rgba(15, 31, 61, 0.45);
+  backdrop-filter: blur(2px);
+}
+
+.layout-refresh-notice-modal {
+  width: min(560px, 100%);
+  max-height: min(88vh, 720px);
+  overflow: auto;
+  border-radius: 16px;
+  border: 1px solid #d5e4f8;
+  background: #fff;
+  box-shadow: 0 24px 48px rgba(15, 31, 61, 0.22);
+  color: #10233f;
+}
+
+.layout-refresh-notice-header {
+  padding: 18px 22px 10px;
+  border-bottom: 1px solid #e8eef6;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.layout-refresh-notice-header h2 {
+  margin: 0;
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: #0f1f3d;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+}
+
+.layout-refresh-notice-header h2 i {
+  color: #2563eb;
+  flex-shrink: 0;
+}
+
+.layout-refresh-notice-langs {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.layout-refresh-notice-lang-btn {
+  width: 36px;
+  height: 28px;
+  padding: 0;
+  border-radius: 8px;
+  border: 1px solid #d5e4f8;
+  background: #f8fbff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+}
+
+.layout-refresh-notice-lang-btn:hover {
+  border-color: #93c5fd;
+  background: #eff6ff;
+}
+
+.layout-refresh-notice-lang-btn.is-active {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.22);
+  background: #eff6ff;
+}
+
+.layout-refresh-notice-flag {
+  width: 22px;
+  height: 15px;
+  display: block;
+  border-radius: 2px;
+  box-shadow: 0 0 0 1px rgba(15, 35, 77, 0.18);
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.layout-refresh-notice-body {
+  padding: 18px 22px;
+  display: grid;
+  gap: 12px;
+}
+
+.layout-refresh-notice-body p {
+  margin: 0;
+  color: #334155;
+  font-size: 0.95rem;
+  line-height: 1.55;
+  font-weight: 500;
+}
+
+.layout-refresh-notice-body .layout-refresh-notice-signoff {
+  margin-top: 4px;
+  color: #0f1f3d;
+  font-weight: 750;
+}
+
+.layout-refresh-notice-footer {
+  padding: 12px 22px 18px;
+  display: flex;
+  justify-content: center;
+  border-top: 1px solid #e8eef6;
+}
+
+.layout-refresh-notice-footer .btn {
+  min-width: 110px;
+}

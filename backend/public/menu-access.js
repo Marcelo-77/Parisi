@@ -590,6 +590,18 @@
       console.warn('Screen display:', error.message);
       window.DoubleYScreenDisplay?.apply?.({ reveal: true, force: true });
     }
+
+    try {
+      await loadStylesheetOnce('layout-refresh-notice.css?v=20261123notice2').catch(() => {});
+      await loadScriptOnce('layout-refresh-notice.js?v=20261123notice2');
+      if (window.DoubleYLayoutRefreshNotice?.maybeShow) {
+        window.setTimeout(() => {
+          void window.DoubleYLayoutRefreshNotice.maybeShow(latestAccessData || null);
+        }, 450);
+      }
+    } catch (error) {
+      console.warn('Layout refresh notice:', error.message);
+    }
   }
 
   if (document.readyState === 'loading') {

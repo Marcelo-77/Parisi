@@ -154,6 +154,22 @@
         'success'
       );
       loadCurrent();
+      try {
+        const cached = JSON.parse(window.sessionStorage.getItem('doubley_menu_access') || 'null') || {};
+        cached.screenDisplay = {
+          ...(cached.screenDisplay || {}),
+          mode,
+          color: draftColor,
+          tone: draftTone,
+          saved: true
+        };
+        window.sessionStorage.setItem('doubley_menu_access', JSON.stringify(cached));
+      } catch {
+        // ignore
+      }
+      window.dispatchEvent(new CustomEvent('doubley:screen-display-saved', {
+        detail: { mode, color: draftColor, tone: draftTone }
+      }));
     } catch (error) {
       showMessage(
         msg(
