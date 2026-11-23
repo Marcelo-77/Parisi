@@ -7,9 +7,12 @@
   let lastVisible = null;
   let renderTimer = null;
 
+  const VERSE_EN = 'I can do all things through Christ who strengthens me. — Philippians 4:13';
+  const VERSE_PT = 'Posso todas as coisas naquele que me fortalece. — Filipenses 4.13';
+
   const I18N = {
     'Welcome back,': 'Bem-vindo de volta,',
-    'Double-Y Warehouse System': 'Sistema Double-Y Warehouse',
+    [VERSE_EN]: VERSE_PT,
     'Total Items': 'Total de itens',
     'Low Stock': 'Estoque baixo',
     'Entries Today': 'Entradas hoje',
@@ -28,10 +31,20 @@
     'Outbound movements recorded today.': 'Movimentos de saída registrados hoje.'
   };
 
+  function currentLang() {
+    return window.DoubleYScreenDisplay?.getLang?.()
+      || window.DoubleYScreenDisplay?.getLanguage?.()
+      || 'en';
+  }
+
   function tr(text) {
-    const lang = window.DoubleYScreenDisplay?.getLanguage?.() || 'en';
+    const lang = currentLang();
     if (lang === 'pt' && I18N[text]) return I18N[text];
     return text;
+  }
+
+  function welcomeVerse() {
+    return currentLang() === 'pt' ? VERSE_PT : VERSE_EN;
   }
 
   function escapeHtml(value) {
@@ -198,7 +211,7 @@
     root.innerHTML = `
       <div class="whd-welcome">
         <h2>${escapeHtml(tr('Welcome back,'))} ${escapeHtml(name)}</h2>
-        <p>${escapeHtml(tr('Double-Y Warehouse System'))}</p>
+        <p class="whd-welcome-verse">${escapeHtml(welcomeVerse())}</p>
       </div>
 
       <div class="whd-metrics">

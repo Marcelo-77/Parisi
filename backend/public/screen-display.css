@@ -1187,6 +1187,8 @@ body.screen-display-sidebar #ssdHeaderLangSwitch {
   .ssd-welcome-role {
     font-size: 0.78rem;
     opacity: .88;
+    font-style: italic;
+    line-height: 1.35;
   }
 
   .ssd-welcome-company {

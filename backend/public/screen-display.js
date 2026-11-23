@@ -8,7 +8,7 @@
   const DEFAULT_COLOR = '#101d35';
   const DEFAULT_TONE = 50;
   const LANG_STORAGE_KEY = 'doubley-site-lang';
-  const STYLE_HREF = 'screen-display.css?v=20261123role1';
+  const STYLE_HREF = 'screen-display.css?v=20261124verse1';
   const REVEAL_HOLD_KEY = 'doubley_ssd_reveal_hold';
   const TAB_SESSION_KEY = 'doubley_tab_auth';
   const NARROW_MQ = '(max-width: 900px)';
@@ -104,6 +104,8 @@
     'Mobile home navigation': 'Navegação mobile',
     Language: 'Idioma',
     'Welcome back,': 'Bem-vindo de volta,',
+    'I can do all things through Christ who strengthens me. — Philippians 4:13':
+      'Posso todas as coisas naquele que me fortalece. — Filipenses 4.13',
     Company: 'Empresa',
     'Double-Y Warehouse System': 'Sistema Double-Y Warehouse',
     'Manage products, locations, movements and warehouse operations.':
@@ -1185,7 +1187,7 @@
             <div class="ssd-welcome-copy">
               <span class="ssd-welcome-hello" data-ssd-en="Welcome back,">${escapeHtml(tr('Welcome back,'))}</span>
               <strong class="ssd-welcome-name">${escapeHtml(userName)}</strong>
-              <span class="ssd-welcome-role">${escapeHtml(userRole || '—')}</span>
+              <span class="ssd-welcome-role" data-ssd-en="I can do all things through Christ who strengthens me. — Philippians 4:13">${escapeHtml(tr('I can do all things through Christ who strengthens me. — Philippians 4:13'))}</span>
             </div>
             <div class="ssd-welcome-company">
               <span data-ssd-en="Company">${escapeHtml(tr('Company'))}</span>
