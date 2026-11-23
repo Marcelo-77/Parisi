@@ -578,7 +578,7 @@
       : [];
     if (!rows.length) {
       list.innerHTML = freeQty
-        ? '<p class="spt-forklift-qty-empty">Select a product first.</p>'
+        ? '<p class="spt-forklift-qty-empty">No product required. Qty is optional.</p>'
         : '<p class="spt-forklift-qty-empty">No products at this location.</p>';
       return;
     }
@@ -753,13 +753,9 @@
       return;
     }
 
+    // Product is optional — Ask Forklift no Data only needs driver + user comment.
     const productCode = String(selectedProduct?.codigo || selectedCode || '').trim();
     const productName = String(selectedProduct?.nome || '').trim();
-    if (!productCode) {
-      alert('Select a product in the table first.');
-      return;
-    }
-
     const qtyTotal = Number(selectedProduct?.quantidade != null ? selectedProduct.quantidade : 0) || 0;
     forkliftContext = {
       locationCode: '',
@@ -784,11 +780,15 @@
     }
     fillForkliftDriverOptions(forkliftPreferredMessageType);
     setForkliftMessageFieldMode(true);
-    renderForkliftQtyRows([{
-      productCode,
-      productName,
-      quantityCurrent: qtyTotal
-    }], productCode, { freeQty: true });
+    if (productCode) {
+      renderForkliftQtyRows([{
+        productCode,
+        productName,
+        quantityCurrent: qtyTotal
+      }], productCode, { freeQty: true });
+    } else {
+      renderForkliftQtyRows([], '', { freeQty: true });
+    }
     showForkliftModal(els.forkliftRequestModal);
     document.getElementById('sptForkliftMessageContent')?.focus();
 
