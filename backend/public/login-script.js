@@ -211,6 +211,45 @@
     }
   }
 
+  function normalizeDisplayMode(value) {
+    return String(value || '').trim().toLowerCase() === 'sidebar' ? 'sidebar' : 'classic';
+  }
+
+  function applyScreenDisplayPrefs(screenDisplay) {
+    // Always prefer the logged-in user's server prefs — never reuse another user's localStorage.
+    const mode = normalizeDisplayMode(screenDisplay?.mode);
+    const color = String(screenDisplay?.color || '#101d35').trim() || '#101d35';
+    const tone = String(
+      screenDisplay?.tone != null ? screenDisplay.tone : 50
+    ).trim() || '50';
+    try {
+      sessionStorage.setItem('doubley_ssd_reveal_hold', '1');
+      localStorage.setItem('doubley_screen_display_preferred', mode);
+      localStorage.setItem('doubley_screen_display_preferred_color', color);
+      localStorage.setItem('doubley_screen_display_preferred_tone', tone);
+      sessionStorage.setItem('doubley_screen_display_active', mode);
+      sessionStorage.setItem('doubley_screen_display_active_color', color);
+      sessionStorage.setItem('doubley_screen_display_active_tone', tone);
+    } catch {
+      // ignore storage errors
+    }
+  }
+
+  async function fetchAndApplyScreenDisplayPrefs() {
+    try {
+      const res = await fetch('/api/auth/screen-display', { credentials: 'include' });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && data.success && data.screenDisplay) {
+        applyScreenDisplayPrefs(data.screenDisplay);
+        return data.screenDisplay;
+      }
+    } catch {
+      // ignore
+    }
+    applyScreenDisplayPrefs({ mode: 'classic' });
+    return null;
+  }
+
   async function checkExistingSession() {
     if (!sessionStorage.getItem(TAB_SESSION_KEY)) return;
 
@@ -218,6 +257,7 @@
       const res = await fetch('/api/auth/check');
       const data = await res.json();
       if (data.authenticated) {
+        await fetchAndApplyScreenDisplayPrefs();
         await prefetchHeaderStats();
         window.location.href = await resolveLandingPage();
         return;
@@ -337,21 +377,13 @@
           localStorage.removeItem('doubley_header_stats');
           sessionStorage.removeItem('doubley_header_stats');
           sessionStorage.removeItem('doubley_menu_access');
-          // Hold first paint until server screen-display prefs apply.
-          sessionStorage.setItem('doubley_ssd_reveal_hold', '1');
-          const preferred = String(localStorage.getItem('doubley_screen_display_preferred') || 'classic')
-            .trim()
-            .toLowerCase();
-          sessionStorage.setItem(
-            'doubley_screen_display_active',
-            preferred === 'sidebar' ? 'sidebar' : 'classic'
-          );
-          const preferredColor = String(localStorage.getItem('doubley_screen_display_preferred_color') || '#101d35').trim();
-          const preferredTone = String(localStorage.getItem('doubley_screen_display_preferred_tone') ?? '50').trim();
-          sessionStorage.setItem('doubley_screen_display_active_color', preferredColor || '#101d35');
-          sessionStorage.setItem('doubley_screen_display_active_tone', preferredTone || '50');
         } catch {
           // ignore
+        }
+        if (data.screenDisplay) {
+          applyScreenDisplayPrefs(data.screenDisplay);
+        } else {
+          await fetchAndApplyScreenDisplayPrefs();
         }
         await prefetchHeaderStats(true);
         window.location.href = await resolveLandingPage();
