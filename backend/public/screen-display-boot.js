@@ -7,15 +7,24 @@
     var path = window.location.pathname || '';
     if (path.endsWith('/login.html') || path.endsWith('/index.html')) return;
 
-    // Use the session active mode when present so a "next login" preferred
-    // change cannot flash the wrong shell before apply().
+    // Once Sidebar is configured (preferred), keep that shell on every page.
+    // Fall back to session active only when preferred is still classic.
     var preferred = String(localStorage.getItem('doubley_screen_display_preferred') || 'classic')
       .trim()
       .toLowerCase();
     var active = String(sessionStorage.getItem('doubley_screen_display_active') || '')
       .trim()
       .toLowerCase();
-    var mode = active === 'sidebar' || active === 'classic' ? active : preferred;
+    var mode = preferred === 'sidebar'
+      ? 'sidebar'
+      : (active === 'sidebar' || active === 'classic' ? active : preferred);
+    if (mode === 'sidebar') {
+      try {
+        sessionStorage.setItem('doubley_screen_display_active', 'sidebar');
+      } catch (e) {
+        /* ignore */
+      }
+    }
     var narrow = window.matchMedia && window.matchMedia('(max-width: 900px)').matches;
     var holdReveal = false;
     try {
@@ -92,7 +101,7 @@
     // Preload sidebar CSS so white layout rules arrive ASAP.
     if (!document.querySelector('link[data-ssd-boot-css="1"]')) {
       document.write(
-        '<link rel="stylesheet" href="screen-display.css?v=20261122ssd33" data-ssd-boot-css="1">'
+        '<link rel="stylesheet" href="screen-display.css?v=20261123ssd50" data-ssd-boot-css="1">'
       );
     }
 

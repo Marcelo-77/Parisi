@@ -8,7 +8,7 @@
   const DEFAULT_COLOR = '#101d35';
   const DEFAULT_TONE = 50;
   const LANG_STORAGE_KEY = 'doubley-site-lang';
-  const STYLE_HREF = 'screen-display.css?v=20261122ssd49';
+  const STYLE_HREF = 'screen-display.css?v=20261123ssd50';
   const REVEAL_HOLD_KEY = 'doubley_ssd_reveal_hold';
   const TAB_SESSION_KEY = 'doubley_tab_auth';
   const NARROW_MQ = '(max-width: 900px)';
@@ -343,18 +343,25 @@
   }
 
   function readActiveMode() {
-    // Prefer the login-activated session mode so phones do not flash Sidebar blue
-    // before classic (or the reverse) from a preferred-only override.
+    const preferred = readPreferredMode();
+    // Once Sidebar is saved, keep it across every app navigation — never flash Classic.
+    if (preferred === 'sidebar') {
+      try {
+        if (window.sessionStorage.getItem(ACTIVE_KEY) !== 'sidebar') {
+          writeActiveMode('sidebar');
+          writeActiveColor(readPreferredColor());
+          writeActiveTone(readPreferredTone());
+        }
+      } catch {
+        /* ignore */
+      }
+      return 'sidebar';
+    }
     try {
       const active = window.sessionStorage.getItem(ACTIVE_KEY);
       if (active) return normalizeMode(active);
     } catch {
       /* ignore */
-    }
-    const preferred = readPreferredMode();
-    if (isNarrowViewport() && preferred === 'sidebar') {
-      writeActiveMode('sidebar');
-      return 'sidebar';
     }
     // Recover after www/non-www hop where sessionStorage was reset but preferred remains.
     if (hasTabSession()) {
@@ -455,7 +462,7 @@
       if (localMode === 'sidebar' || localColor !== DEFAULT_COLOR || localTone !== DEFAULT_TONE) {
         saveToServer({ mode: localMode, color: localColor, tone: localTone }).catch(() => {});
       }
-      if (isNarrowViewport() && localMode === 'sidebar') {
+      if (localMode === 'sidebar') {
         writeActiveMode('sidebar');
         writeActiveColor(localColor);
         writeActiveTone(localTone);
@@ -1450,6 +1457,12 @@
         clearBootHint();
       }
       return mode;
+    }
+
+    // Keep the early boot cover while rebuilding so Classic never flashes.
+    if (mode === 'sidebar') {
+      document.documentElement.classList.add('ssd-boot-sidebar');
+      if (isNarrowViewport()) document.documentElement.classList.add('ssd-boot-narrow');
     }
 
     clearSidebarUi();
