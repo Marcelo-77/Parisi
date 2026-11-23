@@ -101,7 +101,7 @@
     // Preload sidebar CSS so white layout rules arrive ASAP.
     if (!document.querySelector('link[data-ssd-boot-css="1"]')) {
       document.write(
-        '<link rel="stylesheet" href="screen-display.css?v=20261123ssd50" data-ssd-boot-css="1">'
+        '<link rel="stylesheet" href="screen-display.css?v=20261123role1" data-ssd-boot-css="1">'
       );
     }
 
