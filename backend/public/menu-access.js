@@ -2,6 +2,9 @@
   const MENU_ACCESS_KEY = 'doubley_menu_access';
   const TAB_SESSION_KEY = 'doubley_tab_auth';
   const MENU_HEARTBEAT_MS = 30000;
+  const SSD_CSS = 'screen-display.css?v=20261123wh3';
+  const SSD_JS = 'screen-display.js?v=20261123wh3';
+  const HEADER_SESSION_CSS = 'header-session.css?v=20261123wh3';
   let heartbeatTimer = null;
   let inactivityTimer = null;
 
@@ -480,8 +483,35 @@
     });
   }
 
+  async function ensureScreenDisplayScript(screenDisplayPrefs, options = {}) {
+    if (!window.DoubleYScreenDisplay) {
+      await loadStylesheetOnce(SSD_CSS).catch(() => {});
+      await loadScriptOnce(SSD_JS);
+    }
+    if (screenDisplayPrefs && window.DoubleYScreenDisplay?.hydrateFromServer) {
+      window.DoubleYScreenDisplay.hydrateFromServer(screenDisplayPrefs);
+    }
+    window.DoubleYScreenDisplay?.apply(options);
+  }
+
   async function initMenuAccess() {
     if (window.location.pathname.endsWith('/login.html')) return;
+
+    const earlyScreenDisplay = ensureScreenDisplayScript().catch((error) => {
+      console.warn('Screen display early load:', error.message);
+    });
+
+    try {
+      await loadStylesheetOnce(HEADER_SESSION_CSS).catch(() => {});
+      await loadScriptOnce('header-session.js?v=20261123wh2');
+      await loadScriptOnce('brand-image.js?v=20261123wh2');
+    } catch (error) {
+      console.warn('Header session script:', error.message);
+    }
+
+    if (window.DoubleYHeaderSession) {
+      window.DoubleYHeaderSession.prepareHeader();
+    }
 
     await ensureSystemSettingsScripts();
 
@@ -498,19 +528,36 @@
     const cached = readCachedMenuAccess();
     if (cached && document.querySelector('.header-actions')) {
       applyMenuAccess(cached);
-      renderLoggedUserInfo(cached.user);
+      if (window.DoubleYHeaderSession) {
+        await window.DoubleYHeaderSession.render(cached);
+      } else {
+        renderLoggedUserInfo(cached.user);
+      }
     } else if (cached) {
       notifyMenuAccessApplied(cached);
     }
 
     try {
+      await earlyScreenDisplay;
+      window.DoubleYScreenDisplay?.apply?.({ holdBoot: true });
+    } catch (error) {
+      console.warn('Screen display early apply:', error.message);
+    }
+
+    let latestAccessData = cached;
+    try {
       const accessData = await fetchMenuAccess();
+      latestAccessData = accessData;
       if (document.querySelector('.header-actions')) {
         applyMenuAccess(accessData);
       } else {
         notifyMenuAccessApplied(accessData);
       }
-      renderLoggedUserInfo(accessData.user);
+      if (window.DoubleYHeaderSession) {
+        await window.DoubleYHeaderSession.render(accessData);
+      } else {
+        renderLoggedUserInfo(accessData.user);
+      }
       if (window.DoubleYHeaderMenu) {
         window.DoubleYHeaderMenu.setupDropdowns();
       }
@@ -518,10 +565,15 @@
     } catch (error) {
       console.error('Menu access error:', error);
       if (cached) {
+        latestAccessData = cached;
         if (document.querySelector('.header-actions')) {
           applyMenuAccess(cached);
         }
-        renderLoggedUserInfo(cached.user);
+        if (window.DoubleYHeaderSession) {
+          await window.DoubleYHeaderSession.render(cached);
+        } else {
+          renderLoggedUserInfo(cached.user);
+        }
       } else {
         await fetchLoggedUserFallback();
         revealMenuWithoutFilter();
@@ -531,6 +583,13 @@
     await showNewsAnnouncementsIfNeeded();
     startSessionHeartbeat();
     bindInactivityListeners();
+
+    try {
+      await ensureScreenDisplayScript(latestAccessData?.screenDisplay, { reveal: true, force: true });
+    } catch (error) {
+      console.warn('Screen display:', error.message);
+      window.DoubleYScreenDisplay?.apply?.({ reveal: true, force: true });
+    }
   }
 
   if (document.readyState === 'loading') {

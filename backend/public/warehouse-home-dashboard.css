@@ -1,0 +1,447 @@
+/* Desktop corporate dashboard for Warehouse Home (Sidebar). Does not affect mobile Model celular. */
+
+html:has(body.warehouse-home-page.screen-display-sidebar:not(.ssd-narrow)),
+body.warehouse-home-page.screen-display-sidebar:not(.ssd-narrow) {
+  --whd-navy: var(--ssd-rail, #0f1f3d);
+  --whd-royal: var(--ssd-accent, #2563eb);
+  --whd-royal-soft: var(--ssd-accent-soft, #e8f1ff);
+  --whd-ink: #10233f;
+  --whd-muted: #64748b;
+  --whd-line: color-mix(in srgb, var(--ssd-accent, #5ea0ff) 16%, #e4ebf5);
+  --whd-card: #ffffff;
+  --whd-bg: var(--ssd-app-bg, #f3f6fb);
+  background: var(--whd-bg) !important;
+  background-image: none !important;
+}
+
+body.warehouse-home-page.screen-display-sidebar:not(.ssd-narrow) {
+  height: 100vh;
+  overflow: hidden;
+}
+
+body.warehouse-home-page.screen-display-sidebar:not(.ssd-narrow) .container {
+  height: 100vh;
+  max-height: 100vh;
+  width: calc(100vw - 248px) !important;
+  max-width: none !important;
+  margin-left: 248px !important;
+  margin-right: 0 !important;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px 16px !important;
+  background: transparent !important;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+body.warehouse-home-page.screen-display-sidebar:not(.ssd-narrow) .header {
+  flex: 0 0 auto;
+  margin-bottom: 0;
+  background: transparent;
+  box-shadow: none;
+  border: 0;
+}
+
+body.warehouse-home-page.screen-display-sidebar:not(.ssd-narrow) .header-content {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+  padding: 0;
+}
+
+body.warehouse-home-page.screen-display-sidebar:not(.ssd-narrow) .header-search-users-label,
+body.warehouse-home-page.screen-display-sidebar:not(.ssd-narrow) .header-content > h1 {
+  display: none !important;
+}
+
+body.warehouse-home-page.screen-display-sidebar:not(.ssd-narrow) .bp-header-session,
+body.warehouse-home-page.screen-display-sidebar:not(.ssd-narrow) .header-content--bp .bp-header-session {
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  padding: 8px 14px;
+  border-radius: 14px;
+  border: 1px solid #d5e4f8;
+  background: linear-gradient(90deg, #eaf2ff 0%, #f7faff 52%, #eef4ff 100%);
+  box-shadow: 0 8px 18px rgba(15, 31, 61, .05);
+  justify-content: center;
+  gap: 14px 18px;
+}
+
+body.warehouse-home-page.screen-display-sidebar:not(.ssd-narrow) .bp-header-session .bp-hero-user,
+body.warehouse-home-page.screen-display-sidebar:not(.ssd-narrow) .bp-header-session .bp-hero-company {
+  align-items: center;
+  gap: 10px;
+}
+
+body.warehouse-home-page.screen-display-sidebar:not(.ssd-narrow) .bp-header-session .bp-hero-user-text,
+body.warehouse-home-page.screen-display-sidebar:not(.ssd-narrow) .bp-header-session .bp-hero-company-text {
+  align-items: flex-start;
+  text-align: left;
+  gap: 2px;
+}
+
+body.warehouse-home-page.screen-display-sidebar:not(.ssd-narrow) .bp-header-session .bp-hero-label {
+  color: #64748b;
+  font-size: 0.62rem;
+  letter-spacing: .06em;
+}
+
+body.warehouse-home-page.screen-display-sidebar:not(.ssd-narrow) .bp-header-session .bp-hero-user-text strong,
+body.warehouse-home-page.screen-display-sidebar:not(.ssd-narrow) .bp-header-session .bp-hero-company-text strong {
+  color: #0f1f3d !important;
+  text-align: left;
+  font-size: 0.94rem;
+  font-weight: 800;
+  line-height: 1.15;
+}
+
+body.warehouse-home-page.screen-display-sidebar:not(.ssd-narrow) .bp-header-session .bp-hero-user-text .session-user-role {
+  color: #475569 !important;
+  font-size: 0.8rem !important;
+  font-weight: 650 !important;
+}
+
+body.warehouse-home-page.screen-display-sidebar:not(.ssd-narrow) .bp-header-session .bp-hero-divider {
+  height: 38px;
+  background: linear-gradient(180deg, transparent, #b7c9e4, transparent);
+}
+
+body.warehouse-home-page.screen-display-sidebar:not(.ssd-narrow) .bp-header-session .brand-image--hero-user .brand-image-img,
+body.warehouse-home-page.screen-display-sidebar:not(.ssd-narrow) .bp-header-session .brand-image--hero-user .brand-image-initials {
+  width: 42px;
+  height: 42px;
+}
+
+body.warehouse-home-page.screen-display-sidebar:not(.ssd-narrow) .bp-header-session .brand-image--hero-company .brand-image-img,
+body.warehouse-home-page.screen-display-sidebar:not(.ssd-narrow) .bp-header-session .brand-image--hero-company .brand-image-initials {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+}
+
+body.warehouse-home-page.screen-display-sidebar:not(.ssd-narrow) .main-content {
+  flex: 1 1 auto;
+  min-height: 0;
+  width: 100% !important;
+  max-width: none !important;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch !important;
+  justify-content: flex-start !important;
+}
+
+body.warehouse-home-page.screen-display-sidebar:not(.ssd-narrow) .double-y-wordmark--corner,
+body.warehouse-home-page.screen-display-sidebar:not(.ssd-narrow) #doubleYCornerBrand {
+  display: none !important;
+}
+
+#warehouseHomeDashboard {
+  display: none;
+}
+
+body.warehouse-home-page.screen-display-sidebar:not(.ssd-narrow) #warehouseHomeDashboard {
+  display: grid;
+  grid-template-rows: auto auto minmax(0, 1fr);
+  gap: 10px;
+  width: 100%;
+  max-width: none;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+.whd-welcome {
+  display: grid;
+  gap: 2px;
+  padding: 0 2px;
+}
+
+.whd-welcome h2 {
+  margin: 0;
+  color: var(--whd-ink);
+  font-size: clamp(1.2rem, 1.6vw, 1.45rem);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+}
+
+.whd-welcome p {
+  margin: 0;
+  color: var(--whd-muted);
+  font-size: 0.86rem;
+  font-weight: 600;
+}
+
+.whd-metrics {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.whd-metric {
+  display: grid;
+  grid-template-columns: 36px 1fr;
+  gap: 10px;
+  align-items: center;
+  padding: 10px 12px;
+  border-radius: 14px;
+  border: 1px solid var(--whd-line);
+  background: var(--whd-card);
+  box-shadow: 0 8px 18px rgba(15, 31, 61, .04);
+  text-decoration: none;
+  color: inherit;
+  transition: transform .16s ease, box-shadow .16s ease, border-color .16s ease;
+}
+
+.whd-metric:hover {
+  transform: translateY(-1px);
+  border-color: #c7dbff;
+  box-shadow: 0 10px 20px rgba(37, 99, 235, .08);
+}
+
+button.whd-metric {
+  width: 100%;
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+}
+
+button.whd-metric:focus-visible {
+  outline: 2px solid var(--whd-royal, #2563eb);
+  outline-offset: 2px;
+}
+
+.whd-metric-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 11px;
+  display: grid;
+  place-items: center;
+  background: var(--whd-royal-soft);
+  color: var(--whd-royal);
+  font-size: 0.92rem;
+}
+
+.whd-metric strong {
+  display: block;
+  color: var(--whd-ink);
+  font-size: 0.82rem;
+  font-weight: 750;
+}
+
+.whd-metric span {
+  display: block;
+  margin-top: 1px;
+  color: #94a3b8;
+  font-size: 1.05rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.whd-body {
+  display: grid;
+  grid-template-columns: minmax(0, 1.7fr) minmax(280px, 1fr);
+  gap: 12px;
+  align-items: stretch;
+  min-height: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+.whd-panel {
+  border-radius: 14px;
+  border: 1px solid var(--whd-line);
+  background: var(--whd-card);
+  box-shadow: 0 8px 18px rgba(15, 31, 61, .04);
+  padding: 10px 12px 12px;
+  min-height: 0;
+}
+
+.whd-overview {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  height: 100%;
+  overflow: hidden;
+}
+
+.whd-panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 6px;
+  flex: 0 0 auto;
+}
+
+.whd-panel-head h3 {
+  margin: 0;
+  color: var(--whd-ink);
+  font-size: 0.92rem;
+  font-weight: 800;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.whd-panel-head h3 i {
+  color: var(--whd-royal);
+}
+
+.whd-overview-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.whd-overview-card {
+  display: grid;
+  gap: 6px;
+  align-content: start;
+  padding: 14px;
+  border-radius: 12px;
+  background: #f7faff;
+  border: 1px solid #edf2f9;
+  min-height: 0;
+}
+
+.whd-overview-card strong {
+  color: var(--whd-ink);
+  font-size: 0.88rem;
+  font-weight: 750;
+}
+
+.whd-overview-card span {
+  color: #64748b;
+  font-size: 0.78rem;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.whd-overview-card em {
+  margin-top: 4px;
+  color: var(--whd-royal);
+  font-style: normal;
+  font-size: 1.35rem;
+  font-weight: 800;
+}
+
+.whd-side {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: 10px;
+  min-height: 0;
+  height: 100%;
+  overflow: hidden;
+}
+
+.whd-side .whd-panel:last-child {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.whd-quick-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.whd-quick {
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+  padding: 12px 8px;
+  border-radius: 12px;
+  border: 1px solid #dbe7f8;
+  background: #fff;
+  text-decoration: none;
+  color: var(--whd-ink);
+  box-shadow: 0 6px 14px rgba(15, 31, 61, .04);
+  transition: transform .16s ease, border-color .16s ease, box-shadow .16s ease;
+}
+
+.whd-quick:hover {
+  transform: translateY(-1px);
+  border-color: #b8d0ff;
+  box-shadow: 0 10px 18px rgba(37, 99, 235, .08);
+}
+
+.whd-quick i {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  background: var(--whd-royal-soft);
+  color: var(--whd-royal);
+  font-size: 0.92rem;
+}
+
+.whd-quick span {
+  font-size: 0.78rem;
+  font-weight: 750;
+  text-align: center;
+}
+
+.whd-activity-empty {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: grid;
+  place-items: center;
+  gap: 8px;
+  text-align: center;
+  color: #8aa0bb;
+  border-radius: 12px;
+  background:
+    radial-gradient(120% 90% at 20% 0%, rgba(37, 99, 235, .08), transparent 55%),
+    #f7faff;
+  border: 1px dashed #d7e4f7;
+  padding: 14px 12px;
+}
+
+.whd-activity-empty i {
+  font-size: 1.25rem;
+  color: #9eb6d8;
+}
+
+.whd-activity-empty p {
+  margin: 0;
+  font-size: 0.8rem;
+  font-weight: 650;
+  max-width: 22ch;
+}
+
+@media (max-width: 1200px) {
+  .whd-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .whd-body {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-height: 820px) {
+  .whd-welcome h2 {
+    font-size: 1.15rem;
+  }
+
+  .whd-metric {
+    padding: 8px 10px;
+  }
+
+  .whd-quick {
+    padding: 10px 6px;
+  }
+}

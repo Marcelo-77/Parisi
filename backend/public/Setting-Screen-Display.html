@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <script src="screen-display-boot.js?v=20261123wh1"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Double-Y Warehouse System - Setting Screen Display</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="warehouse-styles.css">
+    <link rel="stylesheet" href="pesquisa-styles.css">
+    <link rel="stylesheet" href="system-settings-styles.css">
+    <link rel="stylesheet" href="screen-display.css?v=20261123wh1">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body class="system-settings-page">
+    <script src="auth-check.js"></script>
+    <script src="system-settings-shared.js"></script>
+    <script src="system-settings-apply.js"></script>
+    <script src="header-menu.js"></script>
+    <script src="menu-access.js?v=20261123wh1"></script>
+    <script src="double-y-logo-effect.js"></script>
+    <script src="dev-environment-badge.js"></script>
+
+    <div class="container">
+        <header class="header">
+            <div class="header-stats-row" style="display:none"></div>
+            <div class="header-content">
+                <h1><i class="fas fa-warehouse"></i> Double-Y Warehouse System</h1>
+                <p class="header-search-users-label">Setting Screen Display</p>
+                <div class="header-actions"></div>
+            </div>
+        </header>
+
+        <main class="main-content system-settings-main">
+            <section class="system-settings-section">
+                <div class="system-settings-white-panel">
+                    <div class="system-settings-page-intro">
+                        <div class="system-settings-page-intro-text">
+                            <h2><i class="fas fa-display"></i> Setting Screen Display</h2>
+                            <p>Choose how menus appear across the system. Classic keeps today’s top menu. Sidebar keeps the <strong>same menu structure and applications as today</strong>, shown in a left blue panel with a white content area (desktop) and a mobile/tablet home-style layout.</p>
+                            <p id="screenDisplaySessionNote" class="system-settings-help" style="margin-top:10px;"></p>
+                        </div>
+                    </div>
+
+                    <form id="screenDisplayForm" novalidate>
+                        <div class="ssd-option-grid">
+                            <label class="ssd-option">
+                                <input type="radio" name="screenDisplayMode" value="classic" checked>
+                                <span class="ssd-option-body">
+                                    <strong><i class="fas fa-bars"></i> Classic menu</strong>
+                                    <p>Current Double-Y header with dropdown menus (Users, Master Data, Applications…).</p>
+                                    <span class="ssd-preview ssd-preview--classic" aria-hidden="true">
+                                        <span></span><span></span><span></span><span></span>
+                                    </span>
+                                </span>
+                            </label>
+
+                            <label class="ssd-option">
+                                <input type="radio" name="screenDisplayMode" value="sidebar">
+                                <span class="ssd-option-body">
+                                    <strong><i class="fas fa-table-columns"></i> Sidebar menu</strong>
+                                    <p>Left blue sidebar with the same groups as today. White content on the right. On phones/tablets, a home-style layout opens the full menu. Pick a color and tone below.</p>
+                                    <span class="ssd-preview ssd-preview--sidebar" id="ssdSidebarPreview" aria-hidden="true">
+                                        <span class="ssd-preview-rail">
+                                            <span class="ssd-preview-rail-brand"></span>
+                                            <span class="ssd-preview-rail-link is-active"></span>
+                                            <span class="ssd-preview-rail-link"></span>
+                                            <span class="ssd-preview-rail-link"></span>
+                                            <span class="ssd-preview-rail-link"></span>
+                                        </span>
+                                        <span class="ssd-preview-pane"></span>
+                                    </span>
+                                </span>
+                            </label>
+                        </div>
+
+                        <div id="ssdThemePanel" class="ssd-theme-panel" hidden>
+                            <h3><i class="fas fa-palette"></i> Sidebar color &amp; tone</h3>
+                            <p class="ssd-theme-help">Choose a color and adjust how dark or light the sidebar looks. Applies with Sidebar menu on your next screens.</p>
+
+                            <div class="ssd-swatch-row" id="ssdSwatchRow" role="listbox" aria-label="Sidebar color">
+                                <button type="button" class="ssd-swatch" data-color="#101d35" title="Navy" aria-label="Navy" style="--swatch:#101d35"></button>
+                                <button type="button" class="ssd-swatch" data-color="#0c4a6e" title="Ocean" aria-label="Ocean" style="--swatch:#0c4a6e"></button>
+                                <button type="button" class="ssd-swatch" data-color="#1e3a8a" title="Royal" aria-label="Royal" style="--swatch:#1e3a8a"></button>
+                                <button type="button" class="ssd-swatch" data-color="#115e59" title="Teal" aria-label="Teal" style="--swatch:#115e59"></button>
+                                <button type="button" class="ssd-swatch" data-color="#14532d" title="Forest" aria-label="Forest" style="--swatch:#14532d"></button>
+                                <button type="button" class="ssd-swatch" data-color="#334155" title="Slate" aria-label="Slate" style="--swatch:#334155"></button>
+                                <button type="button" class="ssd-swatch" data-color="#292524" title="Charcoal" aria-label="Charcoal" style="--swatch:#292524"></button>
+                                <button type="button" class="ssd-swatch" data-color="#7f1d1d" title="Wine" aria-label="Wine" style="--swatch:#7f1d1d"></button>
+                                <button type="button" class="ssd-swatch" data-color="#581c87" title="Plum" aria-label="Plum" style="--swatch:#581c87"></button>
+                            </div>
+
+                            <div class="ssd-theme-controls">
+                                <label class="ssd-theme-field ssd-theme-custom">
+                                    <span>Custom color</span>
+                                    <input type="color" id="ssdCustomColor" value="#101d35">
+                                </label>
+                                <label class="ssd-theme-field ssd-theme-tone">
+                                    <span>Tone <em id="ssdToneLabel">Standard</em></span>
+                                    <input type="range" id="ssdToneRange" min="0" max="100" step="1" value="50">
+                                    <span class="ssd-tone-ends"><span>Darker</span><span>Lighter</span></span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="form-actions ic-settings-actions" style="margin-top: 22px;">
+                            <button type="submit" class="btn btn-primary" id="saveScreenDisplayBtn">
+                                <i class="fas fa-save"></i> Save display
+                            </button>
+                            <a href="warehouse-home.html" class="btn btn-secondary">Cancel</a>
+                        </div>
+                        <p id="screenDisplayMessage" class="ssd-message" role="status" hidden></p>
+                    </form>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script src="screen-display.js?v=20261123wh1"></script>
+    <script src="setting-screen-display-script.js?v=20261123wh1"></script>
+</body>
+</html>

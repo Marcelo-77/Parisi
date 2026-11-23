@@ -10,7 +10,9 @@ const SESSION_PAYLOAD_SEPARATOR = ':';
 
 /** Pages that reuse another application's access grant. */
 const PAGE_ACCESS_ALIASES = {
-  'location-migrate-status.html': 'Setting-Location.html'
+  'location-migrate-status.html': 'Setting-Location.html',
+  'warehouse-home.html': 'warehouse.html',
+  'Setting-Screen-Display.html': 'System-settings.html'
 };
 
 function signToken(payload) {
@@ -261,11 +263,12 @@ async function protectPages(req, res, next) {
 
       const accessibleApps = await userApplicationService.listAccessibleApplications(userId);
       const appNames = accessibleApps.map((app) => app.syapNmApplication).filter(Boolean);
-      if (appNames.includes('warehouse.html')) {
-        return res.redirect('/warehouse.html');
+      if (appNames.includes('warehouse.html') || appNames.includes('warehouse-home.html')) {
+        return res.redirect('/warehouse-home.html');
       }
       // Prefer general apps over tablet search when bouncing unauthorized pages.
       const preferred = [
+        'warehouse-home.html',
         'location-product.html',
         'pesquisa.html',
         'picking.html',

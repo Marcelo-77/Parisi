@@ -1,6 +1,6 @@
 (function () {
   function closeLocationPage() {
-    window.location.replace('warehouse.html');
+    window.location.replace('warehouse-home.html');
   }
 
   function bindCloseButtons() {

@@ -454,7 +454,7 @@
   }
 
   function closePage() {
-    window.location.replace('warehouse.html');
+    window.location.replace('warehouse-home.html');
   }
 
   function revealForkliftDriverScreen() {

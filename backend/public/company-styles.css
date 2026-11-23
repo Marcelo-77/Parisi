@@ -1,0 +1,82 @@
+/* Company form / search — brand image + logo preview */
+
+.brand-image-wrap {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.brand-image-img,
+.brand-image-initials {
+    width: 56px;
+    height: 56px;
+    border-radius: 12px;
+    object-fit: contain;
+    background: #fff;
+    border: 1px solid #e1e5e9;
+}
+
+.brand-image-initials {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    color: #667eea;
+    background: linear-gradient(135deg, #eef1ff 0%, #f7f8ff 100%);
+}
+
+.brand-image-initials[hidden],
+.brand-image-img[hidden] {
+    display: none !important;
+}
+
+.brand-image--header .brand-image-img,
+.brand-image--header .brand-image-initials {
+    width: 72px;
+    height: 72px;
+}
+
+.brand-image--header .brand-image-initials {
+    font-size: 1.35rem;
+}
+
+.brand-image--table .brand-image-img,
+.brand-image--table .brand-image-initials {
+    width: 48px;
+    height: 48px;
+}
+
+.brand-image--table .brand-image-initials {
+    font-size: 0.95rem;
+}
+
+.company-form-header-main {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.company-form-header-text {
+    min-width: 0;
+}
+
+.company-form-header-text p {
+    margin: 8px 0 0;
+    color: #666;
+}
+
+.company-logo-file-preview {
+    margin-top: 12px;
+    display: none;
+}
+
+.company-logo-file-preview img {
+    width: 96px;
+    height: 96px;
+    object-fit: contain;
+    border: 2px solid #e1e5e9;
+    border-radius: 12px;
+    padding: 8px;
+    background: #fff;
+}

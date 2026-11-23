@@ -1472,7 +1472,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const cancelSearchBtn = document.getElementById('cancelLocationSearch');
     if (cancelSearchBtn) {
         cancelSearchBtn.addEventListener('click', () => {
-            window.location.href = 'warehouse.html';
+            window.location.href = 'warehouse-home.html';
         });
     }
 
