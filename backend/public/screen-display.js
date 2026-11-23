@@ -482,6 +482,9 @@
       color: normalizeHex(prefs?.color ?? readPreferredColor()),
       tone: normalizeTone(prefs?.tone ?? readPreferredTone())
     };
+    if (prefs && Object.prototype.hasOwnProperty.call(prefs, 'layoutNoticeSeen')) {
+      payload.layoutNoticeSeen = prefs.layoutNoticeSeen === true;
+    }
     writePreferredMode(payload.mode);
     writePreferredColor(payload.color);
     writePreferredTone(payload.tone);
