@@ -212,7 +212,7 @@
     try {
       await loadScriptOnce('system-settings-shared.js');
       await loadScriptOnce('system-settings-apply.js');
-      await loadScriptOnce('header-stats-shared.js');
+      await loadScriptOnce('header-stats-shared.js?v=20261123stats1');
       if (window.DoubleYHeaderStats && typeof window.DoubleYHeaderStats.init === 'function') {
         window.DoubleYHeaderStats.init();
       }
