@@ -833,13 +833,24 @@
     window.dispatchEvent(new CustomEvent('doubley:languagechange', { detail: { lang: readLang() } }));
   }
 
+  function resolveMenuItemHref(el) {
+    if (!el) return '';
+    const id = String(el.id || '').trim();
+    if (id === 'newProductBtn') return 'warehouse.html?action=new';
+    if (id === 'searchProductBtn') return 'warehouse.html?action=search';
+    const href = el.getAttribute('href');
+    if (href) return href;
+    const app = el.getAttribute('data-app') || '';
+    return app;
+  }
+
   function linkFromAnchor(a) {
     if (!isAccessVisible(a)) return null;
     const app = a.getAttribute('data-app') || '';
-    const href = a.getAttribute('href') || app;
+    const href = resolveMenuItemHref(a);
     if (!href) return null;
     return {
-      app,
+      app: app || String(href).split('?')[0],
       href,
       label: englishLabel(a) || app || href,
       icon: extractIcon(a)
@@ -888,8 +899,8 @@
             icon: extractIcon(trigger),
             items: []
           };
-          submenu.querySelectorAll('a.dropdown-item').forEach((a) => {
-            const item = linkFromAnchor(a);
+          submenu.querySelectorAll('a.dropdown-item, button.dropdown-item').forEach((el) => {
+            const item = linkFromAnchor(el);
             if (item) group.items.push(item);
           });
           if (group.items.length) section.groups.push(group);
