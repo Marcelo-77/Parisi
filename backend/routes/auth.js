@@ -284,10 +284,12 @@ router.post('/login', async (req, res) => {
         companyName: 'All Companies'
       };
       await startUserSession(req, res, user);
+      const screenDisplay = await getScreenDisplayForRequest(req);
       return res.json({
         success: true,
         message: 'Login successful',
-        user
+        user,
+        screenDisplay
       });
     }
 
@@ -326,10 +328,12 @@ router.post('/login', async (req, res) => {
       photo: profile.photo || null
     };
     await startUserSession(req, res, sessionUser);
+    const screenDisplay = await getScreenDisplayForRequest(req);
     return res.json({
       success: true,
       message: 'Login successful',
-      user: sessionUser
+      user: sessionUser,
+      screenDisplay
     });
   } catch (error) {
     console.error('Login error:', error);
