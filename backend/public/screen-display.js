@@ -8,7 +8,7 @@
   const DEFAULT_COLOR = '#101d35';
   const DEFAULT_TONE = 50;
   const LANG_STORAGE_KEY = 'doubley-site-lang';
-  const STYLE_HREF = 'screen-display.css?v=20261123ssd50';
+  const STYLE_HREF = 'screen-display.css?v=20261123role1';
   const REVEAL_HOLD_KEY = 'doubley_ssd_reveal_hold';
   const TAB_SESSION_KEY = 'doubley_tab_auth';
   const NARROW_MQ = '(max-width: 900px)';
@@ -1107,6 +1107,17 @@
     }
   }
 
+  function resolveUserRole(user) {
+    const role = user?.cargo
+      || user?.businessPartner?.role
+      || user?.businessPartnerRole
+      || user?.role
+      || null;
+    if (role && String(role).trim()) return String(role).trim();
+    if (user?.isRoot) return 'System Administrator';
+    return '';
+  }
+
   function sectionItems(section) {
     const items = [...(section.items || [])];
     (section.groups || []).forEach((group) => {
@@ -1129,10 +1140,7 @@
 
     const user = readSessionUser();
     const userName = user?.nome || user?.email || 'User';
-    const userRole = user?.businessPartner?.role
-      || user?.businessPartnerRole
-      || user?.role
-      || (user?.isRoot ? 'System Administrator' : '');
+    const userRole = resolveUserRole(user);
     const companyName = user?.companyName || user?.businessPartner?.companyName || '';
     const photo = user?.photo && String(user.photo).trim() && user.photo !== 'null'
       ? user.photo
@@ -1159,7 +1167,9 @@
           <span class="ssd-brand-system">IT&nbsp;System</span>
         </span>
       </a>
-      <div class="ssd-mobile-top-actions" id="ssdMobileTopActions"></div>
+      <div class="ssd-mobile-top-actions" id="ssdMobileTopActions">
+        ${userRole ? `<span class="ssd-mobile-top-role" title="${escapeHtml(userRole)}">${escapeHtml(userRole)}</span>` : ''}
+      </div>
     `;
     top.querySelector('#ssdMobileTopActions')?.appendChild(buildLangSwitch());
     document.body.appendChild(top);
