@@ -380,11 +380,11 @@
         } catch {
           // ignore
         }
+        // Prefer login payload (keyed by this user id), then re-fetch with the new cookie.
         if (data.screenDisplay) {
           applyScreenDisplayPrefs(data.screenDisplay);
-        } else {
-          await fetchAndApplyScreenDisplayPrefs();
         }
+        await fetchAndApplyScreenDisplayPrefs();
         await prefetchHeaderStats(true);
         window.location.href = await resolveLandingPage();
         return;

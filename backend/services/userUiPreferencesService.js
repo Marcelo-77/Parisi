@@ -67,15 +67,18 @@ function toPublic(row, saved) {
   };
 }
 
-async function getForOwner(ownerKey) {
+async function getForOwner(ownerKey, alternateKeys = []) {
   if (!ownerKey) return { ...DEFAULTS, saved: false };
   await ensureSchema();
+  const keys = [String(ownerKey), ...alternateKeys.map((k) => String(k || '').trim()).filter(Boolean)]
+    .filter((value, index, arr) => value && arr.indexOf(value) === index);
   const result = await query(
-    `SELECT screen_display_mode, screen_display_color, screen_display_tone, layout_notice_seen
+    `SELECT owner_key, screen_display_mode, screen_display_color, screen_display_tone, layout_notice_seen
      FROM user_ui_preferences
-     WHERE owner_key = $1
+     WHERE owner_key = ANY($1::text[])
+     ORDER BY CASE WHEN owner_key = $2 THEN 0 ELSE 1 END, updated_at DESC
      LIMIT 1`,
-    [String(ownerKey)]
+    [keys, String(ownerKey)]
   );
   if (!result.rows[0]) return { ...DEFAULTS, saved: false };
   return toPublic(result.rows[0], true);
