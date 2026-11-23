@@ -12,6 +12,7 @@ class Funcionario {
     this.sector = dados.sector || null;
     this.companyId = dados.companyId || null;
     this.companyName = dados.companyName || null;
+    this.companyLogo = dados.companyLogo || null;
     this.dataAdmissao = dados.dataAdmissao || new Date().toISOString().split('T')[0];
     this.photo = dados.photo || null;
     this.ativo = dados.ativo !== undefined ? dados.ativo : true;
@@ -96,6 +97,7 @@ class Funcionario {
       sector: this.sector || null,
       companyId: this.companyId,
       companyName: this.companyName,
+      companyLogo: this.companyLogo,
       dataAdmissao: this.dataAdmissao,
       photo: this.photo,
       ativo: this.ativo,

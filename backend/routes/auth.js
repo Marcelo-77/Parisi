@@ -5,6 +5,7 @@ const {
   setSessionCookie,
   clearSessionCookie,
   getSessionUserId,
+  getSessionUserKey,
   getSessionId,
   getClientIp,
   isRootSession,
@@ -18,6 +19,7 @@ const systemApplicationService = require('../services/systemApplicationService')
 const userSessionService = require('../services/userSessionService');
 const loginProtectionService = require('../services/loginProtectionService');
 const mailService = require('../services/mailService');
+const userUiPreferencesService = require('../services/userUiPreferencesService');
 
 const router = express.Router();
 
@@ -88,6 +90,7 @@ async function getSessionUserProfile(req) {
     sector: profile.sector || null,
     companyId: profile.companyId || null,
     companyName: profile.companyName || null,
+    companyLogo: profile.companyLogo || null,
     photo: profile.photo || null
   };
 }
@@ -118,6 +121,51 @@ router.get('/check', async (req, res) => {
   }
 });
 
+async function getScreenDisplayForRequest(req) {
+  const ownerKey = getSessionUserKey(req);
+  if (!ownerKey) return { ...userUiPreferencesService.DEFAULTS, saved: false };
+  try {
+    return await userUiPreferencesService.getForOwner(ownerKey);
+  } catch (error) {
+    console.warn('Screen display prefs:', error.message);
+    return { ...userUiPreferencesService.DEFAULTS, saved: false };
+  }
+}
+
+router.get('/screen-display', async (req, res) => {
+  if (!isAuthenticated(req)) {
+    return res.status(401).json({ success: false, error: 'Unauthorized', message: 'Login required' });
+  }
+  const screenDisplay = await getScreenDisplayForRequest(req);
+  return res.json({ success: true, screenDisplay });
+});
+
+router.put('/screen-display', async (req, res) => {
+  if (!isAuthenticated(req)) {
+    return res.status(401).json({ success: false, error: 'Unauthorized', message: 'Login required' });
+  }
+  const ownerKey = getSessionUserKey(req);
+  if (!ownerKey) {
+    return res.status(400).json({ success: false, error: 'No session owner' });
+  }
+  try {
+    const body = req.body || {};
+    const screenDisplay = await userUiPreferencesService.upsertForOwner(ownerKey, {
+      mode: body.mode,
+      color: body.color,
+      tone: body.tone
+    });
+    return res.json({ success: true, screenDisplay });
+  } catch (error) {
+    console.error('Save screen display error:', error);
+    return res.status(500).json({
+      success: false,
+      error: 'Error saving screen display',
+      message: error.message
+    });
+  }
+});
+
 router.get('/menu-access', async (req, res) => {
   if (!isAuthenticated(req)) {
     return res.status(401).json({
@@ -131,12 +179,14 @@ router.get('/menu-access', async (req, res) => {
     if (isRootSession(req)) {
       const allApps = await systemApplicationService.list({});
       const user = await getSessionUserProfile(req);
+      const screenDisplay = await getScreenDisplayForRequest(req);
       return res.json({
         success: true,
         isRoot: true,
         user,
         applications: allApps.map((app) => app.syapNmApplication).filter(Boolean),
-        accessByApplication: {}
+        accessByApplication: {},
+        screenDisplay
       });
     }
 
@@ -147,7 +197,8 @@ router.get('/menu-access', async (req, res) => {
         isRoot: false,
         user: null,
         applications: [],
-        accessByApplication: {}
+        accessByApplication: {},
+        screenDisplay: { ...userUiPreferencesService.DEFAULTS, saved: false }
       });
     }
 
@@ -159,13 +210,15 @@ router.get('/menu-access', async (req, res) => {
 
     const user = await getSessionUserProfile(req);
     const accessByApplication = userApplicationService.buildAccessByApplication(apps, false);
+    const screenDisplay = await getScreenDisplayForRequest(req);
 
     return res.json({
       success: true,
       isRoot: false,
       user,
       applications: applicationNames,
-      accessByApplication
+      accessByApplication,
+      screenDisplay
     });
   } catch (error) {
     console.error('Menu access error:', error);
@@ -268,6 +321,7 @@ router.post('/login', async (req, res) => {
       sector: profile.sector || null,
       companyId: profile.companyId || null,
       companyName: profile.companyName || null,
+      companyLogo: profile.companyLogo || null,
       photo: profile.photo || null
     };
     await startUserSession(req, res, sessionUser);

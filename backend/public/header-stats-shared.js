@@ -312,6 +312,7 @@
       els.modal.style.display = 'none';
       els.modal.setAttribute('aria-hidden', 'true');
     }
+    document.body.style.overflow = '';
     destroyChart();
     hideExportPanel();
     chartState = { tipo: null, categoria: null, items: [], selectedSubcategoria: null };
@@ -566,25 +567,58 @@ ${totalRow}
     }
   }
 
-  async function openChart(tipo) {
-    if (!enabled()) return;
+  async function openChart(tipo, options = {}) {
+    // Home/dashboard metrics can open the chart even if the top indicator strip is hidden.
+    if (!enabled() && options.force !== true) return;
+    ensureModal();
     const els = getEls();
     chartState.tipo = tipo;
     chartState.categoria = null;
     hideExportPanel();
     els.modal.style.display = 'flex';
     els.modal.setAttribute('aria-hidden', 'false');
+    document.body.style.overflow = 'hidden';
+    bindModalControls();
     await loadChart();
   }
 
   async function onEntriesOrExitsClick(tipo) {
-    if (!enabled()) return;
     try {
-      await refreshMovementsFromServer();
+      if (enabled()) {
+        await refreshMovementsFromServer();
+      } else {
+        // Still refresh movement counts for the chart when opened from Home cards.
+        await refreshMovementsFromServerForced();
+      }
     } catch (error) {
       console.error('Header stats refresh failed:', error);
     }
-    await openChart(tipo);
+    await openChart(tipo, { force: true });
+  }
+
+  async function refreshMovementsFromServerForced() {
+    const cached = readCache() || {
+      total: 0,
+      estoqueBaixo: 0,
+      esgotado: 0,
+      entradas: 0,
+      saidas: 0
+    };
+    const response = await fetch(API_STATS, { credentials: 'include' });
+    const result = await response.json().catch(() => ({}));
+    if (!response.ok || !result.success || !result.data) {
+      throw new Error(result.message || 'Unable to load header statistics');
+    }
+    const next = {
+      total: cached.total ?? 0,
+      estoqueBaixo: cached.estoqueBaixo ?? 0,
+      esgotado: cached.esgotado ?? 0,
+      entradas: result.data.entradas ?? 0,
+      saidas: result.data.saidas ?? 0
+    };
+    writeCache(next);
+    applyToDom(next);
+    return next;
   }
 
   function makeClickable(el, tipo) {
@@ -607,12 +641,30 @@ ${totalRow}
   }
 
   function bindClickTargets() {
-    const entriesBtn = document.getElementById('entriesTodayStatBtn');
-    const exitsBtn = document.getElementById('exitsTodayStatBtn');
-    const entriesStat = entriesBtn || document.querySelector('.header-stat-entries');
-    const exitsStat = exitsBtn || document.querySelector('.header-stat-exits');
-    makeClickable(entriesStat, 'entradas');
-    makeClickable(exitsStat, 'saidas');
+    const entriesTargets = [
+      document.getElementById('entriesTodayStatBtn'),
+      document.getElementById('whdEntriesToday'),
+      document.querySelector('.header-stat-entries'),
+      document.querySelector('[data-open-movements-chart="entradas"]')
+    ].filter(Boolean);
+    const exitsTargets = [
+      document.getElementById('exitsTodayStatBtn'),
+      document.getElementById('whdExitsToday'),
+      document.querySelector('.header-stat-exits'),
+      document.querySelector('[data-open-movements-chart="saidas"]')
+    ].filter(Boolean);
+
+    const seen = new Set();
+    entriesTargets.forEach((el) => {
+      if (seen.has(el)) return;
+      seen.add(el);
+      makeClickable(el, 'entradas');
+    });
+    exitsTargets.forEach((el) => {
+      if (seen.has(el)) return;
+      seen.add(el);
+      makeClickable(el, 'saidas');
+    });
   }
 
   function bindModalControls() {
@@ -660,7 +712,6 @@ ${totalRow}
   function init() {
     if (window.location.pathname.endsWith('/login.html')) return;
     applyToDom();
-    if (!enabled()) return;
     bindClickTargets();
     bindModalControls();
     bound = true;
@@ -670,10 +721,8 @@ ${totalRow}
     init();
     window.addEventListener('doubley:system-settings-applied', () => {
       applyToDom();
-      if (enabled()) {
-        bindClickTargets();
-        bindModalControls();
-      }
+      bindClickTargets();
+      bindModalControls();
     });
   }
 
@@ -694,6 +743,7 @@ ${totalRow}
     refreshMovementsFromServer,
     openChart,
     onEntriesOrExitsClick,
+    bindClickTargets,
     init
   };
 })(window);

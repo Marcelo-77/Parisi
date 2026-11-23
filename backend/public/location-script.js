@@ -864,7 +864,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (cancelBtn) {
         cancelBtn.addEventListener('click', () => {
-            window.location.href = 'warehouse.html';
+            window.location.href = 'warehouse-home.html';
         });
     }
 

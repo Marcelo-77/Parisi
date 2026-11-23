@@ -1,0 +1,127 @@
+/* Session banner: user photo + company logo (Schedule-style) */
+
+.bp-hero-card,
+.bp-header-session {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: 16px 20px;
+  width: 100%;
+  max-width: 920px;
+  margin: 0 auto;
+  padding: 12px 20px;
+  border-radius: 12px;
+  border: 1px solid #dfe3f0;
+  background: linear-gradient(135deg, #ffffff 0%, #f5f7ff 55%, #eef2ff 100%);
+  box-shadow: 0 6px 18px rgba(102, 126, 234, 0.07);
+  text-align: left;
+}
+
+.bp-header-session[hidden],
+.bp-header-session.bp-session-hidden {
+  display: none !important;
+}
+
+.bp-hero-user,
+.bp-hero-company {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 10px;
+  min-width: 0;
+  width: auto;
+  flex: 0 1 auto;
+}
+
+.bp-hero-user-text {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  text-align: left;
+  gap: 2px;
+  min-width: 0;
+}
+
+.bp-hero-company-text {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  min-width: 0;
+}
+
+.bp-hero-label {
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #7b86a8;
+}
+
+.bp-hero-user-text strong,
+.bp-hero-user-text .session-user-role {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #2d3142;
+  line-height: 1.2;
+  display: block;
+}
+
+.bp-hero-user-text .session-user-role {
+  font-size: 0.86rem !important;
+  font-weight: 600 !important;
+  color: #667085 !important;
+}
+
+.bp-hero-company-text strong {
+  font-size: 1rem;
+  color: #2d3142;
+  line-height: 1.2;
+}
+
+.bp-hero-user-text .bp-hero-label {
+  display: none !important;
+}
+
+.bp-hero-divider {
+  width: 1px;
+  height: 44px;
+  background: linear-gradient(180deg, transparent, #d5dbef, transparent);
+  flex-shrink: 0;
+}
+
+.brand-image--hero-user .brand-image-img,
+.brand-image--hero-user .brand-image-initials {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid #fff;
+  box-shadow: 0 3px 10px rgba(15, 31, 61, .12);
+}
+
+.brand-image--hero-company .brand-image-img,
+.brand-image--hero-company .brand-image-initials {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  object-fit: contain;
+  background: #fff;
+  border: 1px solid #dbe7f8;
+}
+
+@media (max-width: 700px) {
+  .bp-hero-card,
+  .bp-header-session {
+    flex-wrap: wrap;
+    justify-content: flex-start;
+    gap: 12px;
+  }
+
+  .bp-hero-divider {
+    display: none;
+  }
+}

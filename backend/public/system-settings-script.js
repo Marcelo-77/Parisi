@@ -175,20 +175,7 @@
   }
 
   function closeScreen() {
-    try {
-      window.close();
-    } catch {
-      // ignore and fallback
-    }
-
-    setTimeout(() => {
-      if (window.closed) return;
-      if (window.history.length > 1) {
-        window.history.back();
-        return;
-      }
-      window.location.href = 'applications.html';
-    }, 120);
+    window.location.href = 'warehouse-home.html';
   }
 
   function bindLivePreview() {

@@ -612,7 +612,7 @@
     els.searchBtn?.addEventListener('click', () => { void searchProducts(); });
     els.clearBtn?.addEventListener('click', clearSearch);
     els.closeBtn?.addEventListener('click', () => {
-      window.location.href = 'warehouse.html';
+      window.location.href = 'warehouse-home.html';
     });
     els.searchInput?.addEventListener('keydown', (event) => {
       if (event.key === 'Enter') {

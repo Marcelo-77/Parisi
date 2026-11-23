@@ -167,8 +167,8 @@
         const nextUrl = getSafeNextUrl(apps, !!data.isRoot);
         if (nextUrl) return nextUrl;
 
-        if (data.isRoot || apps.includes('warehouse.html')) {
-          return '/warehouse.html';
+        if (data.isRoot || apps.includes('warehouse-home.html') || apps.includes('warehouse.html')) {
+          return '/warehouse-home.html';
         }
 
         const preferred = [
@@ -185,7 +185,7 @@
     } catch {
       // ignore menu-access errors
     }
-    return getSafeNextUrl([], true) || '/warehouse.html';
+    return getSafeNextUrl([], true) || '/warehouse-home.html';
   }
 
   async function prefetchHeaderStats(forceRefresh) {
@@ -336,6 +336,20 @@
         try {
           localStorage.removeItem('doubley_header_stats');
           sessionStorage.removeItem('doubley_header_stats');
+          sessionStorage.removeItem('doubley_menu_access');
+          // Hold first paint until server screen-display prefs apply.
+          sessionStorage.setItem('doubley_ssd_reveal_hold', '1');
+          const preferred = String(localStorage.getItem('doubley_screen_display_preferred') || 'classic')
+            .trim()
+            .toLowerCase();
+          sessionStorage.setItem(
+            'doubley_screen_display_active',
+            preferred === 'sidebar' ? 'sidebar' : 'classic'
+          );
+          const preferredColor = String(localStorage.getItem('doubley_screen_display_preferred_color') || '#101d35').trim();
+          const preferredTone = String(localStorage.getItem('doubley_screen_display_preferred_tone') ?? '50').trim();
+          sessionStorage.setItem('doubley_screen_display_active_color', preferredColor || '#101d35');
+          sessionStorage.setItem('doubley_screen_display_active_tone', preferredTone || '50');
         } catch {
           // ignore
         }

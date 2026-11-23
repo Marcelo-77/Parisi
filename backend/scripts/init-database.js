@@ -60,11 +60,23 @@ async function initDatabase() {
       CREATE TABLE IF NOT EXISTS company (
         id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
         name VARCHAR(150) NOT NULL UNIQUE,
+        logo TEXT,
+        responsible_name VARCHAR(100),
+        email VARCHAR(255),
+        phone VARCHAR(20),
+        address VARCHAR(255),
         criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         atualizado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
     `);
     console.log('✅ Tabela company criada/verificada');
+
+    await query(`ALTER TABLE company ADD COLUMN IF NOT EXISTS logo TEXT`);
+    await query(`ALTER TABLE company ADD COLUMN IF NOT EXISTS responsible_name VARCHAR(100)`);
+    await query(`ALTER TABLE company ADD COLUMN IF NOT EXISTS email VARCHAR(255)`);
+    await query(`ALTER TABLE company ADD COLUMN IF NOT EXISTS phone VARCHAR(20)`);
+    await query(`ALTER TABLE company ADD COLUMN IF NOT EXISTS address VARCHAR(255)`);
+    console.log('✅ Colunas de logo/contato da company verificadas');
 
     try {
       await query(`
@@ -365,6 +377,8 @@ async function initDatabase() {
     const systemApplicationMenus = [
       { application: 'users.html', menuName: 'Users' },
       { application: 'pesquisa.html', menuName: 'Users_search' },
+      { application: 'New-Company.html', menuName: 'Master_Data_Company_New' },
+      { application: 'search-company.html', menuName: 'Master_Data_Company_Search' },
       { application: 'customer.html', menuName: 'Customer' },
       { application: 'warehouse.html', menuName: 'Product' },
       { application: 'special-search-product.html', menuName: 'Product_Special_Search' },
@@ -375,6 +389,8 @@ async function initDatabase() {
       { application: 'System-Documentation.html', menuName: 'Applications_System_Documentation' },
       { application: 'System-Documentation-Search.html', menuName: 'Applications_System_Documentation_Search' },
       { application: 'System-settings.html', menuName: 'Applications_System_Settings' },
+      { application: 'Setting-Screen-Display.html', menuName: 'Applications_Settings_Screen_Display' },
+      { application: 'warehouse-home.html', menuName: 'Home' },
       { application: 'Setting-Forklift-Driver.html', menuName: 'Applications_Settings_Forklift_Driver' },
       { application: 'Setting-Location.html', menuName: 'Applications_Settings_Location' },
       { application: 'News.html', menuName: 'Applications_News' },

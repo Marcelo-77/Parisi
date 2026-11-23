@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <script src="screen-display-boot.js?v=20261123wh1"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Double-Y Warehouse System - Search Company</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="warehouse-styles.css">
+  <link rel="stylesheet" href="pesquisa-styles.css">
+  <link rel="stylesheet" href="company-styles.css">
+  <link rel="stylesheet" href="screen-display.css?v=20261123wh1">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body class="search-company-page">
+  <script src="auth-check.js"></script>
+  <script src="header-menu.js"></script>
+  <script src="menu-access.js?v=20261123wh1"></script>
+  <script src="dev-environment-badge.js"></script>
+  <div class="container">
+    <header class="header">
+      <div class="header-stats-row" style="display:none"></div>
+      <div class="header-content">
+        <h1><i class="fas fa-warehouse"></i> Double-Y Warehouse System</h1>
+        <p class="header-search-users-label">Search Company</p>
+        <div class="header-actions" id="standardHeaderMenuMount"></div>
+      </div>
+    </header>
+
+    <main class="main-content">
+      <div class="form-container" style="width:100%;max-width:none;">
+        <div class="filters-container">
+          <div class="filters-header">
+            <h2><i class="fas fa-search"></i> Search Company</h2>
+          </div>
+          <div class="filters-content show">
+            <div class="filters-grid">
+              <div class="filter-group">
+                <label for="filterCompanyName"><i class="fas fa-industry"></i> Company Name</label>
+                <input type="text" id="filterCompanyName" placeholder="Type company name">
+              </div>
+              <div class="filter-group">
+                <label for="filterResponsibleName"><i class="fas fa-user-tie"></i> Responsible</label>
+                <input type="text" id="filterResponsibleName" placeholder="Filter by responsible">
+              </div>
+              <div class="filter-group">
+                <label for="filterCompanyEmail"><i class="fas fa-envelope"></i> Email</label>
+                <input type="email" id="filterCompanyEmail" placeholder="Filter by email">
+              </div>
+              <div class="filter-group">
+                <label for="filterHasLogo"><i class="fas fa-image"></i> Logo</label>
+                <select id="filterHasLogo">
+                  <option value="">All Companies</option>
+                  <option value="true">With Logo</option>
+                  <option value="false">Without Logo</option>
+                </select>
+              </div>
+              <div class="filter-group">
+                <label for="ordenarPor"><i class="fas fa-sort"></i> Sort By</label>
+                <select id="ordenarPor">
+                  <option value="name">Company Name</option>
+                  <option value="criadoEm">Creation Date</option>
+                </select>
+              </div>
+              <div class="filter-group">
+                <label for="direcao"><i class="fas fa-arrow-down-wide-short"></i> Direction</label>
+                <select id="direcao">
+                  <option value="asc">Ascending</option>
+                  <option value="desc">Descending</option>
+                </select>
+              </div>
+            </div>
+            <div class="filters-actions">
+              <button id="applyCompanyFiltersBtn" class="btn btn-primary" type="button">
+                <i class="fas fa-search"></i> Search
+              </button>
+              <button id="clearCompanyFiltersBtn" class="btn btn-secondary" type="button">
+                <i class="fas fa-eraser"></i> Clear
+              </button>
+              <a href="New-Company.html" class="btn btn-secondary">
+                <i class="fas fa-plus"></i> New Company
+              </a>
+              <button type="button" class="btn btn-secondary location-page-close-btn" title="Close">
+                <i class="fas fa-times"></i> Close
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="results-container" style="margin-top:20px;">
+          <div class="results-header">
+            <div>
+              <h3>Companies</h3>
+              <div id="companyResultsSummary" class="search-users-summary" hidden></div>
+            </div>
+            <div class="results-info">
+              <span id="companyResultsCount">0 companies</span>
+              <span id="companyResultsTime"></span>
+            </div>
+          </div>
+          <div id="companyLoadingIndicator" class="loading-indicator" style="display: none;">
+            <i class="fas fa-spinner fa-spin"></i> Loading companies...
+          </div>
+          <div class="table-container">
+            <table class="warehouse-table">
+              <thead>
+                <tr>
+                  <th>Company</th>
+                  <th><i class="fas fa-user-tie"></i> Responsible</th>
+                  <th><i class="fas fa-envelope"></i> Email</th>
+                  <th><i class="fas fa-phone"></i> Phone</th>
+                  <th><i class="fas fa-map-marker-alt"></i> Address</th>
+                  <th class="th-actions">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="searchCompanyTableBody">
+                <tr>
+                  <td colspan="6" class="empty-state">
+                    <i class="fas fa-search"></i>
+                    <p>Use the filters above and click <strong>Search</strong> to load companies.</p>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <footer class="footer">
+      <p>&copy; 2026 Double-Y IT Systems. All rights reserved.</p>
+    </footer>
+  </div>
+
+  <script src="brand-image.js"></script>
+  <script src="search-company-script.js"></script>
+  <script src="location-page-close.js"></script>
+</body>
+</html>

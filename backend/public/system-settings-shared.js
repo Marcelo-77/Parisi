@@ -65,8 +65,18 @@
     root.style.setProperty('--system-bg-start', normalized.backgroundColor);
     root.style.setProperty('--system-bg-end', normalized.backgroundColorEnd);
     const hideStats = normalized.showHeaderStats === false;
+    const sidebarActive = Boolean(
+      document.body?.classList?.contains('screen-display-sidebar')
+      || document.documentElement?.classList?.contains('ssd-boot-sidebar')
+    );
     if (document.body) {
-      document.body.style.background = buildBackgroundStyle(normalized);
+      if (sidebarActive) {
+        // Keep Schedule-style light blue content area while Sidebar is on.
+        document.body.style.background = '';
+        document.body.style.backgroundImage = '';
+      } else {
+        document.body.style.background = buildBackgroundStyle(normalized);
+      }
       document.body.classList.toggle('header-stats-hidden', hideStats);
     }
     root.classList.toggle('header-stats-hidden', hideStats);

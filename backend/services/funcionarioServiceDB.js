@@ -552,6 +552,7 @@ class FuncionarioServiceDB {
       sector: row.sector || null,
       companyId: row.company_id || null,
       companyName: row.company_name || null,
+      companyLogo: row.company_id ? companyService.logoUrl(row.company_id) : null,
       dataAdmissao: row.data_admissao,
       photo: row.photo,
       ativo: row.ativo,

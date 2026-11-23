@@ -15,6 +15,16 @@
                             <i class="fas fa-database"></i> Master Data <i class="fas fa-chevron-down"></i>
                         </button>
                         <div class="master-data-dropdown-menu" id="masterDataDropdownMenu" aria-hidden="true">
+                            <div class="dropdown-submenu-group" data-submenu="company">
+                                <button type="button" class="dropdown-submenu-trigger" aria-haspopup="true" aria-expanded="false">
+                                    <span><i class="fas fa-industry"></i> Company</span>
+                                    <i class="fas fa-chevron-right submenu-chevron" aria-hidden="true"></i>
+                                </button>
+                                <div class="dropdown-submenu" aria-hidden="true">
+                                    <a href="New-Company.html" class="dropdown-item" data-app="New-Company.html" data-write-menu="true"><i class="fas fa-plus"></i> New Company</a>
+                                    <a href="search-company.html" class="dropdown-item" data-app="search-company.html"><i class="fas fa-search"></i> Search Company</a>
+                                </div>
+                            </div>
                             <div class="dropdown-submenu-group" data-submenu="customer">
                                 <button type="button" class="dropdown-submenu-trigger" aria-haspopup="true" aria-expanded="false">
                                     <span><i class="fas fa-user"></i> Customer</span>
@@ -107,6 +117,7 @@
                                 </button>
                                 <div class="dropdown-submenu" aria-hidden="true">
                                     <a href="System-settings.html" class="dropdown-item" data-app="System-settings.html"><i class="fas fa-sliders-h"></i> System Settings</a>
+                                    <a href="Setting-Screen-Display.html" class="dropdown-item" data-app="Setting-Screen-Display.html"><i class="fas fa-display"></i> Setting Screen Display</a>
                                     <a href="Setting-Forklift-Driver.html" class="dropdown-item" data-app="Setting-Forklift-Driver.html" data-write-menu="true"><i class="fas fa-truck"></i> Setting Forklift Driver</a>
                                     <a href="Setting-Location.html" class="dropdown-item" data-app="Setting-Location.html" data-write-menu="true"><i class="fas fa-map-marker-alt"></i> Setting Location</a>
                                 </div>

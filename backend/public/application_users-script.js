@@ -368,7 +368,7 @@ function handleApplicationUsersLandingAction() {
 }
 
 function closeApplicationUsersPage() {
-  window.location.replace('warehouse.html');
+  window.location.replace('warehouse-home.html');
 }
 
 function closeUserApplications() {
