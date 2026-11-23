@@ -284,7 +284,8 @@ router.post('/login', async (req, res) => {
         companyName: 'All Companies'
       };
       await startUserSession(req, res, user);
-      const screenDisplay = await getScreenDisplayForRequest(req);
+      // Cookie is only on the response — do not read prefs from the old request session.
+      const screenDisplay = await userUiPreferencesService.getForOwner(ROOT_USER);
       return res.json({
         success: true,
         message: 'Login successful',
@@ -328,7 +329,11 @@ router.post('/login', async (req, res) => {
       photo: profile.photo || null
     };
     await startUserSession(req, res, sessionUser);
-    const screenDisplay = await getScreenDisplayForRequest(req);
+    // Cookie is only on the response — load prefs by the user who just signed in.
+    const screenDisplay = await userUiPreferencesService.getForOwner(
+      String(sessionUser.id),
+      [sessionUser.email]
+    );
     return res.json({
       success: true,
       message: 'Login successful',
