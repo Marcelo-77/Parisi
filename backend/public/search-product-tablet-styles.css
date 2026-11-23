@@ -403,6 +403,47 @@
   color: var(--spt-royal);
 }
 
+.search-product-tablet-page .spt-products-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 16px 12px;
+  border-bottom: 1px solid color-mix(in srgb, var(--spt-line) 70%, #fff);
+  background: #f8fbff;
+}
+
+.search-product-tablet-page .spt-ask-forklift-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 42px;
+  padding: 0 16px;
+  border: 1px solid color-mix(in srgb, var(--spt-royal) 28%, #d5e4f8);
+  border-radius: 12px;
+  background: linear-gradient(135deg, var(--spt-royal) 0%, #1d4ed8 100%);
+  color: #fff;
+  font-size: 0.92rem;
+  font-weight: 750;
+  cursor: pointer;
+  box-shadow: 0 8px 16px color-mix(in srgb, var(--spt-royal) 24%, transparent);
+}
+
+.search-product-tablet-page .spt-ask-forklift-btn:hover {
+  filter: brightness(1.04);
+}
+
+.search-product-tablet-page .spt-ask-forklift-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  filter: none;
+  box-shadow: none;
+}
+
+.search-product-tablet-page .spt-ask-forklift-btn[hidden] {
+  display: none !important;
+}
+
 .search-product-tablet-page .spt-count {
   display: inline-flex;
   align-items: center;
