@@ -171,11 +171,15 @@ body.warehouse-home-page.screen-display-sidebar:not(.ssd-narrow) #warehouseHomeD
   line-height: 1.15;
 }
 
-.whd-welcome p {
+.whd-welcome p,
+.whd-welcome .whd-welcome-verse {
   margin: 0;
   color: var(--whd-muted);
-  font-size: 0.86rem;
+  font-size: 0.9rem;
   font-weight: 600;
+  font-style: italic;
+  max-width: 52rem;
+  line-height: 1.4;
 }
 
 .whd-metrics {

@@ -2,8 +2,8 @@
   const MENU_ACCESS_KEY = 'doubley_menu_access';
   const TAB_SESSION_KEY = 'doubley_tab_auth';
   const MENU_HEARTBEAT_MS = 30000;
-  const SSD_CSS = 'screen-display.css?v=20261123role1';
-  const SSD_JS = 'screen-display.js?v=20261123role1';
+  const SSD_CSS = 'screen-display.css?v=20261124verse1';
+  const SSD_JS = 'screen-display.js?v=20261124verse1';
   const HEADER_SESSION_CSS = 'header-session.css?v=20261123wh6';
   let heartbeatTimer = null;
   let inactivityTimer = null;
