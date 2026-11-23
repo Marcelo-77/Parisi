@@ -555,7 +555,7 @@
     if (qtyHelp) {
       qtyHelp.textContent = freeComment
         ? 'Optional. Ask Forklift no Data — no Location Product link; write your comment below.'
-        : 'Enter quantity for the product, or for each product at this location.';
+        : 'Enter quantity only for the selected product at this location.';
     }
     if (!el) return;
     if (freeComment) {
@@ -880,7 +880,17 @@
       const requester = await requesterPromise;
       document.getElementById('sptForkliftRequester').value = requester;
       const productsAtLocation = await productsPromise;
-      renderForkliftQtyRows(productsAtLocation, productCode);
+      // Only the product the user searched/selected — not every product at the location.
+      const selectedOnly = (Array.isArray(productsAtLocation) ? productsAtLocation : [])
+        .filter((item) => String(item.productCode || '').trim().toUpperCase() === productCode.toUpperCase());
+      const qtyRows = selectedOnly.length
+        ? selectedOnly
+        : [{
+            productCode,
+            productName,
+            quantityCurrent: getLocationQtyCurrent(code, productCode)
+          }];
+      renderForkliftQtyRows(qtyRows, productCode);
       refreshForkliftMessageContent(forkliftContext, requester);
 
       await driversPromise;
