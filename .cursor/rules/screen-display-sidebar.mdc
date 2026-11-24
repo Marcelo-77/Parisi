@@ -1,0 +1,28 @@
+---
+description: Sidebar display mode must apply on every desktop page; phone/tablet keep current mobile shell
+globs: backend/public/screen-display*.js,backend/public/menu-access.js,backend/public/login-script.js,backend/public/setting-screen-display-script.js,backend/routes/auth.js,backend/services/userUiPreferencesService.js
+alwaysApply: false
+---
+
+# Screen Display — Sidebar rule
+
+When account preference `mode` is `sidebar`:
+
+- Force **preferred + active** local/session storage to `sidebar` together (color/tone too).
+- Apply Sidebar on **every desktop page** (boot, body class, left rail, menu hydrate, login apply).
+- Never leave Classic on desktop after server/login says Sidebar.
+- Login must load prefs by the **signed-in user id**, never the previous request cookie.
+
+Phone/tablet (`max-width: 900px`):
+
+- Keep the **existing** narrow mobile shell (top bar / home drawer). Do not redesign or force the desktop left rail on narrow viewports.
+- Still keep `mode = sidebar` so mobile shell stays available; do not fall back to Classic.
+
+```js
+// ❌ BAD — Sidebar preferred but active/classic left on another page
+writePreferredMode('sidebar');
+// active left as classic
+
+// ✅ GOOD
+forceSidebarEverywhere(color, tone); // preferred + active both sidebar
+```
