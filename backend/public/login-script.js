@@ -216,11 +216,21 @@
   }
 
   function applyScreenDisplayPrefs(screenDisplay) {
-    // Always prefer the logged-in user's server prefs — never reuse another user's localStorage.
-    const mode = normalizeDisplayMode(screenDisplay?.mode);
-    const color = String(screenDisplay?.color || '#101d35').trim() || '#101d35';
+    if (!screenDisplay || typeof screenDisplay !== 'object') return;
+    const mode = normalizeDisplayMode(screenDisplay.mode);
+    // Unsaved Classic defaults must not wipe a local Sidebar (same rule as hydrateFromServer).
+    if (screenDisplay.saved === false && mode !== 'sidebar') {
+      try {
+        if (normalizeDisplayMode(localStorage.getItem('doubley_screen_display_preferred')) === 'sidebar') {
+          return;
+        }
+      } catch {
+        // ignore
+      }
+    }
+    const color = String(screenDisplay.color || '#101d35').trim() || '#101d35';
     const tone = String(
-      screenDisplay?.tone != null ? screenDisplay.tone : 50
+      screenDisplay.tone != null ? screenDisplay.tone : 50
     ).trim() || '50';
     try {
       sessionStorage.setItem('doubley_ssd_reveal_hold', '1');

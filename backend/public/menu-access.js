@@ -2,8 +2,8 @@
   const MENU_ACCESS_KEY = 'doubley_menu_access';
   const TAB_SESSION_KEY = 'doubley_tab_auth';
   const MENU_HEARTBEAT_MS = 30000;
-  const SSD_CSS = 'screen-display.css?v=20261124sideforce1';
-  const SSD_JS = 'screen-display.js?v=20261124sideforce1';
+  const SSD_CSS = 'screen-display.css?v=20261124sideforce2';
+  const SSD_JS = 'screen-display.js?v=20261124sideforce2';
   const HEADER_SESSION_CSS = 'header-session.css?v=20261123wh6';
   let heartbeatTimer = null;
   let inactivityTimer = null;
@@ -497,7 +497,9 @@
   async function initMenuAccess() {
     if (window.location.pathname.endsWith('/login.html')) return;
 
-    const earlyScreenDisplay = ensureScreenDisplayScript().catch((error) => {
+    // Hydrate from cache before first paint so Classic never wins over Sidebar.
+    const cached = readCachedMenuAccess();
+    const earlyScreenDisplay = ensureScreenDisplayScript(cached?.screenDisplay, { holdBoot: true }).catch((error) => {
       console.warn('Screen display early load:', error.message);
     });
 
@@ -525,7 +527,6 @@
 
     markMenuAccessPending();
 
-    const cached = readCachedMenuAccess();
     if (cached && document.querySelector('.header-actions')) {
       applyMenuAccess(cached);
       if (window.DoubleYHeaderSession) {
@@ -539,7 +540,6 @@
 
     try {
       await earlyScreenDisplay;
-      window.DoubleYScreenDisplay?.apply?.({ holdBoot: true });
     } catch (error) {
       console.warn('Screen display early apply:', error.message);
     }

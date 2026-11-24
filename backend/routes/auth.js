@@ -121,11 +121,26 @@ router.get('/check', async (req, res) => {
   }
 });
 
-async function getScreenDisplayForRequest(req) {
+async function getScreenDisplayOwnerContext(req) {
   const ownerKey = getSessionUserKey(req);
+  if (!ownerKey) return { ownerKey: null, alternateKeys: [] };
+  if (isRootSession(req)) return { ownerKey, alternateKeys: [] };
+  let email = null;
+  try {
+    const profile = await getSessionUserProfile(req);
+    email = profile?.email ? String(profile.email).trim() : null;
+  } catch {
+    email = null;
+  }
+  return { ownerKey, alternateKeys: email ? [email] : [] };
+}
+
+async function getScreenDisplayForRequest(req) {
+  const { ownerKey, alternateKeys } = await getScreenDisplayOwnerContext(req);
   if (!ownerKey) return { ...userUiPreferencesService.DEFAULTS, saved: false };
   try {
-    return await userUiPreferencesService.getForOwner(ownerKey);
+    // Same owner keys as login (id + email) so Sidebar is never missed after sign-in.
+    return await userUiPreferencesService.getForOwner(ownerKey, alternateKeys);
   } catch (error) {
     console.warn('Screen display prefs:', error.message);
     return { ...userUiPreferencesService.DEFAULTS, saved: false };
@@ -144,18 +159,22 @@ router.put('/screen-display', async (req, res) => {
   if (!isAuthenticated(req)) {
     return res.status(401).json({ success: false, error: 'Unauthorized', message: 'Login required' });
   }
-  const ownerKey = getSessionUserKey(req);
+  const { ownerKey, alternateKeys } = await getScreenDisplayOwnerContext(req);
   if (!ownerKey) {
     return res.status(400).json({ success: false, error: 'No session owner' });
   }
   try {
     const body = req.body || {};
-    const screenDisplay = await userUiPreferencesService.upsertForOwner(ownerKey, {
-      mode: body.mode,
-      color: body.color,
-      tone: body.tone,
-      layoutNoticeSeen: body.layoutNoticeSeen
-    });
+    const screenDisplay = await userUiPreferencesService.upsertForOwner(
+      ownerKey,
+      {
+        mode: body.mode,
+        color: body.color,
+        tone: body.tone,
+        layoutNoticeSeen: body.layoutNoticeSeen
+      },
+      alternateKeys
+    );
     return res.json({ success: true, screenDisplay });
   } catch (error) {
     console.error('Save screen display error:', error);
