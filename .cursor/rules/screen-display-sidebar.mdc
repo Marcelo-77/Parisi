@@ -12,6 +12,9 @@ When account preference `mode` is `sidebar`:
 - Apply Sidebar on **every desktop page** (boot, body class, left rail, menu hydrate, login apply).
 - Never leave Classic on desktop after server/login says Sidebar.
 - Login must load prefs by the **signed-in user id**, never the previous request cookie.
+- GET/PUT `/screen-display` and upsert must use the **same owner keys as login** (id + email).
+- Never write Classic on fetch failure or `saved: false` defaults when local/preferred is already Sidebar.
+- Layout-notice PUT must not create a Classic row that shadows Sidebar.
 
 Phone/tablet (`max-width: 900px`):
 

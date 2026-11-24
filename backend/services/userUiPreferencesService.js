@@ -84,12 +84,13 @@ async function getForOwner(ownerKey, alternateKeys = []) {
   return toPublic(result.rows[0], true);
 }
 
-async function upsertForOwner(ownerKey, prefs = {}) {
+async function upsertForOwner(ownerKey, prefs = {}, alternateKeys = []) {
   if (!ownerKey) {
     throw new Error('Owner key required');
   }
   await ensureSchema();
-  const existing = await getForOwner(ownerKey);
+  // Resolve existing via id + email so a notice-only PUT never invents Classic over Sidebar.
+  const existing = await getForOwner(ownerKey, alternateKeys);
   const mode = prefs.mode !== undefined ? normalizeMode(prefs.mode) : existing.mode;
   const color = prefs.color !== undefined ? normalizeColor(prefs.color) : existing.color;
   const tone = prefs.tone !== undefined ? normalizeTone(prefs.tone) : existing.tone;
