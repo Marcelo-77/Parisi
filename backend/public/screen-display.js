@@ -8,7 +8,7 @@
   const DEFAULT_COLOR = '#101d35';
   const DEFAULT_TONE = 50;
   const LANG_STORAGE_KEY = 'doubley-site-lang';
-  const STYLE_HREF = 'screen-display.css?v=20261124verse1';
+  const STYLE_HREF = 'screen-display.css?v=20261124sideforce1';
   const REVEAL_HOLD_KEY = 'doubley_ssd_reveal_hold';
   const TAB_SESSION_KEY = 'doubley_tab_auth';
   const NARROW_MQ = '(max-width: 900px)';
@@ -449,6 +449,23 @@
     writeActiveTone(readPreferredTone());
   }
 
+  /**
+   * Rule: if Sidebar is the account preference, force preferred + active + theme
+   * in every desktop storage slot. Phone/tablet keep the existing narrow mobile
+   * shell (do not switch them to Classic).
+   */
+  function forceSidebarEverywhere(color, tone) {
+    const nextColor = normalizeHex(color ?? readPreferredColor());
+    const nextTone = normalizeTone(tone ?? readPreferredTone());
+    writePreferredMode('sidebar');
+    writePreferredColor(nextColor);
+    writePreferredTone(nextTone);
+    writeActiveMode('sidebar');
+    writeActiveColor(nextColor);
+    writeActiveTone(nextTone);
+    return 'sidebar';
+  }
+
   function isNarrowViewport() {
     return Boolean(window.matchMedia && window.matchMedia(NARROW_MQ).matches);
   }
@@ -465,9 +482,7 @@
         saveToServer({ mode: localMode, color: localColor, tone: localTone }).catch(() => {});
       }
       if (localMode === 'sidebar') {
-        writeActiveMode('sidebar');
-        writeActiveColor(localColor);
-        writeActiveTone(localTone);
+        return forceSidebarEverywhere(localColor, localTone);
       }
       return readActiveMode();
     }
@@ -475,10 +490,13 @@
     const mode = normalizeMode(prefs.mode);
     const color = normalizeHex(prefs.color);
     const tone = normalizeTone(prefs.tone);
+    if (mode === 'sidebar') {
+      // Desktop: Sidebar in every slot. Narrow viewports still use the mobile shell.
+      return forceSidebarEverywhere(color, tone);
+    }
     writePreferredMode(mode);
     writePreferredColor(color);
     writePreferredTone(tone);
-    // Sync across devices: activate immediately so phone gets Sidebar/Model celular.
     writeActiveMode(mode);
     writeActiveColor(color);
     writeActiveTone(tone);
@@ -1446,6 +1464,10 @@
     }
 
     ensureStylesheet();
+    // Preferred Sidebar must win on every desktop page (active + preferred synced).
+    if (readPreferredMode() === 'sidebar') {
+      forceSidebarEverywhere(readPreferredColor(), readPreferredTone());
+    }
     const mode = readActiveMode();
     const theme = mode === 'sidebar' ? getActiveTheme() : null;
     // Include menu-access readiness so a later force rebuild can repaint allowed apps + user card.
@@ -1555,6 +1577,7 @@
     setLang: setLanguage,
     activatePreferredForSession,
     hydrateFromServer,
+    forceSidebarEverywhere,
     saveToServer,
     isNarrowViewport,
     clearBootHint,

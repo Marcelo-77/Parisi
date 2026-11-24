@@ -227,6 +227,8 @@
       localStorage.setItem('doubley_screen_display_preferred', mode);
       localStorage.setItem('doubley_screen_display_preferred_color', color);
       localStorage.setItem('doubley_screen_display_preferred_tone', tone);
+      // Rule: Sidebar must be written to preferred + active together (desktop).
+      // Phone/tablet still use the existing narrow mobile shell when mode is sidebar.
       sessionStorage.setItem('doubley_screen_display_active', mode);
       sessionStorage.setItem('doubley_screen_display_active_color', color);
       sessionStorage.setItem('doubley_screen_display_active_tone', tone);
@@ -246,7 +248,7 @@
     } catch {
       // ignore
     }
-    applyScreenDisplayPrefs({ mode: 'classic' });
+    // Keep whatever login already applied — never wipe Sidebar with Classic on a failed refetch.
     return null;
   }
 
